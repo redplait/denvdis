@@ -92,7 +92,7 @@ struct one_md {
 // for release 10.1, V10.1.243, md5 390a9f711384f09fbf0e77c6e8903efb
 const one_md mds[] = {
  { 0x6FFC40, 0x92405, 0, 0x4816, "sm3_1" },
- { 0x792060, 0x11ACF, 1, 0x4816, "sm2_2" },
+ { 0x792060, 0x11ACF, 1, 0x4816, "sm3_2" },
  { 0x7A3B40, 0x10F41, 2, 0x4816, "sm3_3" },
  { 0x7B4AA0, 0xB4D23, 0, 0x1486, "sm4_1" },
  { 0x8697E0, 0x11E22, 1, 0x1486, "sm4_2" },
@@ -129,13 +129,18 @@ bool decrypt_part(section *d, int idx) {
   fname += mds[idx].name;
   fname += ".txt";
   FILE *fp = fopen(fname.c_str(), "w");
-  if ( !fp ) return false;
+  if ( !fp ) {
+    fprintf(stderr, "cannot create %s, error %d (%s)\n", fname.c_str(), errno, strerror(errno));
+    return false;
+  }
   size_t curr = 0;
   decr_ctx ctx;
   ctx.wtf = mds[idx].init;
   ctx.seed = 0;
   ctx.res = 1;
-  ctx.l = 0xe9;
+  // via assign to mdObfuscation_ptr
+  _BYTE l = mds[idx].init & 0xff;
+  ctx.l = ~l;
   for ( size_t curr = 0; curr < mds[idx].size; curr += buf_size )
   {
     auto csize = std::min(buf_size, int(mds[idx].size - curr));
