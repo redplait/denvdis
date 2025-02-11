@@ -1,0 +1,614 @@
+JUMP_UNCOND:
+    BRA `(DUMMY);
+
+EQUIV_ISET_ISET: .annotate EQUIV_ISET_ISET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%RegisterFAU (K) , %%Predicate (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%RegisterFAU (K) , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%RegisterFAU (K) , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISET_NoBop_ISET: .annotate EQUIV_ISET_NoBop_ISET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISET_Imm_ISET: .annotate EQUIV_ISET_Imm_ISET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , IMMK , %%Predicate (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , IMMK , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , IMMK , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISET_NoBop_Imm_ISET: .annotate EQUIV_ISET_NoBop_Imm_ISET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISET_Const_ISET: .annotate EQUIV_ISET_Const_ISET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISET_NoBop_Const_ISET: .annotate EQUIV_ISET_NoBop_Const_ISET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpAll (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISET_ISET_U: .annotate EQUIV_ISET_ISET_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%Register (H) . %%optCC (I) , %%Register (J) , %%Register (K) , %%Predicate (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%Register (H) . %%optCC (I) , %%Register (J) , %%Register (K) , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%Register (H) . %%optCC (I) , %%Register (J) , %%Register (K) , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISET_NoBop_ISET_U: .annotate EQUIV_ISET_NoBop_ISET_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%Register (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%Register (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%Register (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISET_Imm_ISET_U: .annotate EQUIV_ISET_Imm_ISET_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%Register (H) . %%optCC (I) , %%Register (J) , IMMK , %%Predicate (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%Register (H) . %%optCC (I) , %%Register (J) , IMMK , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%Register (H) . %%optCC (I) , %%Register (J) , IMMK , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISET_NoBop_Imm_ISET_U: .annotate EQUIV_ISET_NoBop_Imm_ISET_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , IMMJ  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , IMMJ  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , IMMJ  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISET_Const_ISET_U: .annotate EQUIV_ISET_Const_ISET_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%Register (H) . %%optCC (I) , %%Register (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%Register (H) . %%optCC (I) , %%Register (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%Bop (F) . %%S (G) %%Register (H) . %%optCC (I) , %%Register (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISET_NoBop_Const_ISET_U: .annotate EQUIV_ISET_NoBop_Const_ISET_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISET . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETfau_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETxlu_pipe . %%BVal (B) . %%ICmpU (C) . %%Integer32 (D) . %%X (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_ISETP: .annotate EQUIV_ISETP_ISETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%RegisterFAU (J) , %%RegisterFAU (K) , %%Predicate (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%RegisterFAU (J) , %%RegisterFAU (K) , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%RegisterFAU (J) , %%RegisterFAU (K) , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_NoBop_ISETP: .annotate EQUIV_ISETP_NoBop_ISETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%RegisterFAU (H) , %%RegisterFAU (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%RegisterFAU (H) , %%RegisterFAU (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%RegisterFAU (H) , %%RegisterFAU (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_Imm_ISETP: .annotate EQUIV_ISETP_Imm_ISETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%RegisterFAU (J) , IMMK , %%Predicate (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%RegisterFAU (J) , IMMK , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%RegisterFAU (J) , IMMK , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_NoBop_Imm_ISETP: .annotate EQUIV_ISETP_NoBop_Imm_ISETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%RegisterFAU (H) , IMMI  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%RegisterFAU (H) , IMMI  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%RegisterFAU (H) , IMMI  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_Const_ISETP: .annotate EQUIV_ISETP_Const_ISETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_NoBop_Const_ISETP: .annotate EQUIV_ISETP_NoBop_Const_ISETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_ISETP_U: .annotate EQUIV_ISETP_ISETP_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%Register (J) , %%Register (K) , %%Predicate (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%Register (J) , %%Register (K) , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%Register (J) , %%Register (K) , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_NoBop_ISETP_U: .annotate EQUIV_ISETP_NoBop_ISETP_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%Register (H) , %%Register (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%Register (H) , %%Register (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%Register (H) , %%Register (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_Imm_ISETP_U: .annotate EQUIV_ISETP_Imm_ISETP_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%Register (J) , IMMK , %%Predicate (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%Register (J) , IMMK , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%Register (J) , IMMK , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_NoBop_Imm_ISETP_U: .annotate EQUIV_ISETP_NoBop_Imm_ISETP_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%Register (H) , IMMI  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%Register (H) , IMMI  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%Register (H) , IMMI  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_Const_ISETP_U: .annotate EQUIV_ISETP_Const_ISETP_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%Register (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%Register (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Bop (E) . %%Pipe2 (F) . %%S (G) %%Predicate (H) , %%Predicate (I) , %%Register (J) , %%C (K) [ IMML ] [ IMMM ] , %%Predicate (N)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISETP_NoBop_Const_ISETP_U: .annotate EQUIV_ISETP_NoBop_Const_ISETP_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISETP . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%Register (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPfau_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%Register (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISETPxlu_pipe . %%ICmpU (B) . %%Integer32 (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%Predicate (G) , %%Register (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ICMP_ICMP: .annotate EQUIV_ICMP_ICMP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ICMP . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%Register (H)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPfau_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%Register (H)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPxlu_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%Register (H)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ICMP_Imm_ICMP: .annotate EQUIV_ICMP_Imm_ICMP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ICMP . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , IMMG , %%Register (H)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPfau_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , IMMG , %%Register (H)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPxlu_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , IMMG , %%Register (H)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ICMP_Const_ICMP: .annotate EQUIV_ICMP_Const_ICMP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ICMP . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Register (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPfau_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Register (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPxlu_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Register (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ICMP_Const1_ICMP: .annotate EQUIV_ICMP_Const1_ICMP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ICMP . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPfau_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPxlu_pipe . %%ICmpAll (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ICMP_ICMP_U: .annotate EQUIV_ICMP_ICMP_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ICMP . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%Register (H)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPfau_pipe . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%Register (H)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPxlu_pipe . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%Register (H)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ICMP_Imm_ICMP_U: .annotate EQUIV_ICMP_Imm_ICMP_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ICMP . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , IMMG , %%Register (H)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPfau_pipe . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , IMMG , %%Register (H)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPxlu_pipe . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , IMMG , %%Register (H)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ICMP_Const_ICMP_U: .annotate EQUIV_ICMP_Const_ICMP_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ICMP . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Register (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPfau_pipe . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Register (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPxlu_pipe . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Register (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ICMP_Const1_ICMP_U: .annotate EQUIV_ICMP_Const1_ICMP_U,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ICMP . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPfau_pipe . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ICMPxlu_pipe . %%ICmpU (B) . %%Integer32 (C) . %%S (D) %%Register (E) , %%Register (F) , %%Register (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_BRX_BRX: .annotate EQUIV_BRX_BRX,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  BRX . %%LMT (B) %%CC (C) . %%Test (D) , %%Register (E) IMMF  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  BRXadu_pipe . %%LMT (B) %%CC (C) . %%Test (D) , %%Register (E) IMMF  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  BRXbru_pipe . %%LMT (B) %%CC (C) . %%Test (D) , %%Register (E) IMMF  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_BRX_BRX_c: .annotate EQUIV_BRX_BRX_c,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  BRX . %%LMT (B) %%CC (C) . %%Test (D) , %%C (E) [ IMMF ] [ %%Register (G)  + IMMH ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  BRXadu_pipe . %%LMT (B) %%CC (C) . %%Test (D) , %%C (E) [ IMMF ] [ %%Register (G)  + IMMH ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  BRXbru_pipe . %%LMT (B) %%CC (C) . %%Test (D) , %%C (E) [ IMMF ] [ %%Register (G)  + IMMH ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_JMX_JMX: .annotate EQUIV_JMX_JMX,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  JMX . %%LMT (B) %%CC (C) . %%Test (D) , %%Register (E) IMMF  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  JMXadu_pipe . %%LMT (B) %%CC (C) . %%Test (D) , %%Register (E) IMMF  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  JMXbru_pipe . %%LMT (B) %%CC (C) . %%Test (D) , %%Register (E) IMMF  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_JMX_JMX_c: .annotate EQUIV_JMX_JMX_c,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  JMX . %%LMT (B) %%CC (C) . %%Test (D) , %%C (E) [ IMMF ] [ %%Register (G)  + IMMH ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  JMXadu_pipe . %%LMT (B) %%CC (C) . %%Test (D) , %%C (E) [ IMMF ] [ %%Register (G)  + IMMH ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  JMXbru_pipe . %%LMT (B) %%CC (C) . %%Test (D) , %%C (E) [ IMMF ] [ %%Register (G)  + IMMH ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_DFMA_DFMA: .annotate EQUIV_DFMA_DFMA,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  DFMA . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G) , %%Register (H)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DFMAfmaXliteW_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G) , %%Register (H)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DFMAfmaX_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G) , %%Register (H)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_DFMA_Imm_DFMA: .annotate EQUIV_DFMA_Imm_DFMA,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  DFMA . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , IMMG . %%UnaryNeg (H) , %%Register (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DFMAfmaXliteW_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , IMMG . %%UnaryNeg (H) , %%Register (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DFMAfmaX_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , IMMG . %%UnaryNeg (H) , %%Register (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_DFMA_Const_DFMA: .annotate EQUIV_DFMA_Const_DFMA,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  DFMA . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Register (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DFMAfmaXliteW_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Register (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DFMAfmaX_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Register (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_DFMA_Const1_DFMA: .annotate EQUIV_DFMA_Const1_DFMA,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  DFMA . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DFMAfmaXliteW_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DFMAfmaX_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_DADD_DADD: .annotate EQUIV_DADD_DADD,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  DADD . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DADDfmaXliteW_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DADDfmaX_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_DADD_Imm_DADD: .annotate EQUIV_DADD_Imm_DADD,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  DADD . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DADDfmaXliteW_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DADDfmaX_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_DADD_Const_DADD: .annotate EQUIV_DADD_Const_DADD,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  DADD . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DADDfmaXliteW_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DADDfmaX_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_DMUL_DMUL: .annotate EQUIV_DMUL_DMUL,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  DMUL . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DMULfmaXliteW_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DMULfmaX_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%Register (G)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_DMUL_Imm_DMUL: .annotate EQUIV_DMUL_Imm_DMUL,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  DMUL . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , IMMG . %%UnaryNeg (H)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DMULfmaXliteW_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , IMMG . %%UnaryNeg (H)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DMULfmaX_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , IMMG . %%UnaryNeg (H)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_DMUL_Const_DMUL: .annotate EQUIV_DMUL_Const_DMUL,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  DMUL . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DMULfmaXliteW_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  DMULfmaX_pipe . %%Round1 (B) . %%S (C) %%Register (D) . %%optCC (E) , %%Register (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FFMA_FFMA: .annotate EQUIV_FFMA_FFMA,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FFMA . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J) , %%RegisterFAU (K)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfau_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J) , %%RegisterFAU (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfmaXliteW_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J) , %%RegisterFAU (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfmaX_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J) , %%RegisterFAU (K)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FFMA_Imm_FFMA: .annotate EQUIV_FFMA_Imm_FFMA,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FFMA . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K) , %%RegisterFAU (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfau_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K) , %%RegisterFAU (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfmaXliteW_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K) , %%RegisterFAU (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfmaX_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K) , %%RegisterFAU (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FFMA_Const_FFMA: .annotate EQUIV_FFMA_Const_FFMA,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FFMA . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ] , %%RegisterFAU (M)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfau_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ] , %%RegisterFAU (M)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfmaXliteW_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ] , %%RegisterFAU (M)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfmaX_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ] , %%RegisterFAU (M)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FFMA_Const1_FFMA: .annotate EQUIV_FFMA_Const1_FFMA,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FFMA . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfau_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfmaXliteW_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMAfmaX_pipe . %%FMZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FFMA32I_FFMA32I: .annotate EQUIV_FFMA32I_FFMA32I,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FFMA32I . %%FMZ (B) . %%SAT (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , IMMH , %%RegisterFAU (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMA32Ifau_pipe . %%FMZ (B) . %%SAT (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , IMMH , %%RegisterFAU (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMA32IfmaXliteW_pipe . %%FMZ (B) . %%SAT (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , IMMH , %%RegisterFAU (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMA32IfmaX_pipe . %%FMZ (B) . %%SAT (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , IMMH , %%RegisterFAU (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FFMA32I_FFMA32I_2: .annotate EQUIV_FFMA32I_FFMA32I_2,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FFMA32I . %%FMZ (B) . %%SAT (C) . %%S (D) %%Register (E) . %%optCC (F) , %%Register (G) , IMMH  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMA32Ifau_pipe . %%FMZ (B) . %%SAT (C) . %%S (D) %%Register (E) . %%optCC (F) , %%Register (G) , IMMH  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMA32IfmaXliteW_pipe . %%FMZ (B) . %%SAT (C) . %%S (D) %%Register (E) . %%optCC (F) , %%Register (G) , IMMH  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FFMA32IfmaX_pipe . %%FMZ (B) . %%SAT (C) . %%S (D) %%Register (E) . %%optCC (F) , %%Register (G) , IMMH  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FADD_FADD: .annotate EQUIV_FADD_FADD,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FADD . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADDfau_pipe . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADDfmaXliteW_pipe . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADDfmaX_pipe . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FADD_Imm_FADD: .annotate EQUIV_FADD_Imm_FADD,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FADD . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K) . %%UnaryAbs (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADDfau_pipe . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K) . %%UnaryAbs (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADDfmaXliteW_pipe . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K) . %%UnaryAbs (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADDfmaX_pipe . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K) . %%UnaryAbs (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FADD_Const_FADD: .annotate EQUIV_FADD_Const_FADD,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FADD . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADDfau_pipe . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADDfmaXliteW_pipe . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADDfmaX_pipe . %%FTZ (B) . %%Round1 (C) . %%SAT (D) . %%Pipe2FMALite (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FADD32I_FADD32I: .annotate EQUIV_FADD32I_FADD32I,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FADD32I . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADD32Ifau_pipe . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADD32IfmaXliteW_pipe . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FADD32IfmaX_pipe . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FCMP_FCMP: .annotate EQUIV_FCMP_FCMP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FCMP . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , %%RegisterFAU (G) , %%RegisterFAU (H)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FCMPfau_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , %%RegisterFAU (G) , %%RegisterFAU (H)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FCMPxlu_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , %%RegisterFAU (G) , %%RegisterFAU (H)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FCMP_Imm_FCMP: .annotate EQUIV_FCMP_Imm_FCMP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FCMP . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , IMMG , %%RegisterFAU (H)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FCMPfau_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , IMMG , %%RegisterFAU (H)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FCMPxlu_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , IMMG , %%RegisterFAU (H)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FCMP_Const_FCMP: .annotate EQUIV_FCMP_Const_FCMP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FCMP . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ] , %%RegisterFAU (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FCMPfau_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ] , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FCMPxlu_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ] , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FCMP_Const1_FCMP: .annotate EQUIV_FCMP_Const1_FCMP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FCMP . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , %%RegisterFAU (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FCMPfau_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , %%RegisterFAU (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FCMPxlu_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%RegisterFAU (E) , %%RegisterFAU (F) , %%RegisterFAU (G) , %%C (H) [ IMMI ] [ IMMJ ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FMUL_FMUL: .annotate EQUIV_FMUL_FMUL,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FMUL . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%RegisterFAU (K)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMULfau_pipe . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%RegisterFAU (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMULfmaXliteW_pipe . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%RegisterFAU (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMULfmaX_pipe . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%RegisterFAU (K)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FMUL_Imm_FMUL: .annotate EQUIV_FMUL_Imm_FMUL,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FMUL . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , IMMK . %%UnaryNeg (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMULfau_pipe . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , IMMK . %%UnaryNeg (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMULfmaXliteW_pipe . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , IMMK . %%UnaryNeg (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMULfmaX_pipe . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , IMMK . %%UnaryNeg (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FMUL_Const_FMUL: .annotate EQUIV_FMUL_Const_FMUL,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FMUL . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMULfau_pipe . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMULfmaXliteW_pipe . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMULfmaX_pipe . %%FMZ (B) . %%Scale (C) . %%Round1 (D) . %%SAT (E) . %%Pipe2FMALite (F) . %%S (G) %%RegisterFAU (H) . %%optCC (I) , %%RegisterFAU (J) , %%C (K) [ IMML ] [ IMMM ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FMUL32I_FMUL32I: .annotate EQUIV_FMUL32I_FMUL32I,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FMUL32I . %%FMZ (B) . %%SAT (C) . %%Pipe2FMALite (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMUL32Ifau_pipe . %%FMZ (B) . %%SAT (C) . %%Pipe2FMALite (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMUL32IfmaXliteW_pipe . %%FMZ (B) . %%SAT (C) . %%Pipe2FMALite (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMUL32IfmaX_pipe . %%FMZ (B) . %%SAT (C) . %%Pipe2FMALite (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FMNMX_FMNMX: .annotate EQUIV_FMNMX_FMNMX,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FMNMX . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , %%RegisterFAU (G) , %%Predicate (H)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMNMXfau_pipe . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , %%RegisterFAU (G) , %%Predicate (H)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMNMXfmaX_pipe . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , %%RegisterFAU (G) , %%Predicate (H)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FMNMX_Imm_FMNMX: .annotate EQUIV_FMNMX_Imm_FMNMX,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FMNMX . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I) , %%Predicate (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMNMXfau_pipe . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I) , %%Predicate (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMNMXfmaX_pipe . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I) , %%Predicate (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FMNMX_Const_FMNMX: .annotate EQUIV_FMNMX_Const_FMNMX,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FMNMX . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Predicate (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMNMXfau_pipe . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Predicate (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FMNMXfmaX_pipe . %%FTZ (B) . %%S (C) %%RegisterFAU (D) . %%optCC (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ] , %%Predicate (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSET_FSET: .annotate EQUIV_FSET_FSET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSET . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%Bop (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J) , %%Predicate (K)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfau_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%Bop (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J) , %%Predicate (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfmaX_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%Bop (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J) , %%Predicate (K)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSET_NoBop_FSET: .annotate EQUIV_FSET_NoBop_FSET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSET . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%RegisterFAU (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfau_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%RegisterFAU (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfmaX_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%RegisterFAU (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSET_Imm_FSET: .annotate EQUIV_FSET_Imm_FSET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSET . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%Bop (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K) . %%UnaryAbs (L) , %%Predicate (M)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfau_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%Bop (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K) . %%UnaryAbs (L) , %%Predicate (M)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfmaX_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%Bop (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K) . %%UnaryAbs (L) , %%Predicate (M)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSET_NoBop_Imm_FSET: .annotate EQUIV_FSET_NoBop_Imm_FSET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSET . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI . %%UnaryNeg (J) . %%UnaryAbs (K)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfau_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI . %%UnaryNeg (J) . %%UnaryAbs (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfmaX_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI . %%UnaryNeg (J) . %%UnaryAbs (K)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSET_Const_FSET: .annotate EQUIV_FSET_Const_FSET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSET . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%Bop (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ] , %%Predicate (M)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfau_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%Bop (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ] , %%Predicate (M)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfmaX_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%Bop (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ] , %%Predicate (M)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSET_NoBop_Const_FSET: .annotate EQUIV_FSET_NoBop_Const_FSET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSET . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfau_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETfmaX_pipe . %%BVal (B) . %%Test (C) . %%FTZ (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSETP_FSETP: .annotate EQUIV_FSETP_FSETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSETP . %%Test (B) . %%FTZ (C) . %%Bop (D) . %%S (E) %%Predicate (F) , %%Predicate (G) , %%RegisterFAU (H) , %%RegisterFAU (I) , %%Predicate (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfau_pipe . %%Test (B) . %%FTZ (C) . %%Bop (D) . %%S (E) %%Predicate (F) , %%Predicate (G) , %%RegisterFAU (H) , %%RegisterFAU (I) , %%Predicate (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfmaX_pipe . %%Test (B) . %%FTZ (C) . %%Bop (D) . %%S (E) %%Predicate (F) , %%Predicate (G) , %%RegisterFAU (H) , %%RegisterFAU (I) , %%Predicate (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSETP_NoBop_FSETP: .annotate EQUIV_FSETP_NoBop_FSETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSETP . %%Test (B) . %%FTZ (C) . %%S (D) %%Predicate (E) , %%RegisterFAU (F) , %%RegisterFAU (G)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfau_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%Predicate (E) , %%RegisterFAU (F) , %%RegisterFAU (G)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfmaX_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%Predicate (E) , %%RegisterFAU (F) , %%RegisterFAU (G)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSETP_Imm_FSETP: .annotate EQUIV_FSETP_Imm_FSETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSETP . %%Test (B) . %%FTZ (C) . %%Bop (D) . %%S (E) %%Predicate (F) , %%Predicate (G) , %%RegisterFAU (H) , IMMI . %%UnaryNeg (J) . %%UnaryAbs (K) , %%Predicate (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfau_pipe . %%Test (B) . %%FTZ (C) . %%Bop (D) . %%S (E) %%Predicate (F) , %%Predicate (G) , %%RegisterFAU (H) , IMMI . %%UnaryNeg (J) . %%UnaryAbs (K) , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfmaX_pipe . %%Test (B) . %%FTZ (C) . %%Bop (D) . %%S (E) %%Predicate (F) , %%Predicate (G) , %%RegisterFAU (H) , IMMI . %%UnaryNeg (J) . %%UnaryAbs (K) , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSETP_NoBop_Imm_FSETP: .annotate EQUIV_FSETP_NoBop_Imm_FSETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSETP . %%Test (B) . %%FTZ (C) . %%S (D) %%Predicate (E) , %%RegisterFAU (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfau_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%Predicate (E) , %%RegisterFAU (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfmaX_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%Predicate (E) , %%RegisterFAU (F) , IMMG . %%UnaryNeg (H) . %%UnaryAbs (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSETP_Const_FSETP: .annotate EQUIV_FSETP_Const_FSETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSETP . %%Test (B) . %%FTZ (C) . %%Bop (D) . %%S (E) %%Predicate (F) , %%Predicate (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ] , %%Predicate (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfau_pipe . %%Test (B) . %%FTZ (C) . %%Bop (D) . %%S (E) %%Predicate (F) , %%Predicate (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ] , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfmaX_pipe . %%Test (B) . %%FTZ (C) . %%Bop (D) . %%S (E) %%Predicate (F) , %%Predicate (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ] , %%Predicate (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_FSETP_NoBop_Const_FSETP: .annotate EQUIV_FSETP_NoBop_Const_FSETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  FSETP . %%Test (B) . %%FTZ (C) . %%S (D) %%Predicate (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfau_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%Predicate (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  FSETPfmaX_pipe . %%Test (B) . %%FTZ (C) . %%S (D) %%Predicate (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_MOV32I_MOV32I: .annotate EQUIV_MOV32I_MOV32I,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  MOV32I . %%S (B) %%RegisterFAU (C) , IMMD , IMME  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOV32Ifau_pipe . %%S (B) %%RegisterFAU (C) , IMMD , IMME  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOV32IfmaXliteW_pipe . %%S (B) %%RegisterFAU (C) , IMMD , IMME  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOV32IfmaX_pipe . %%S (B) %%RegisterFAU (C) , IMMD , IMME  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOV32Ifu_pipe . %%S (B) %%RegisterFAU (C) , IMMD , IMME  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOV32Ixlu_pipe . %%S (B) %%RegisterFAU (C) , IMMD , IMME  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_MOV_MOV: .annotate EQUIV_MOV_MOV,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  MOV . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , IMMF  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfau_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , IMMF  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfmaXliteW_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , IMMF  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfmaX_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , IMMF  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfu_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , IMMF  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVxlu_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , IMMF  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_MOV_Imm_MOV: .annotate EQUIV_MOV_Imm_MOV,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  MOV . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , IMME , IMMF  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfau_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , IMME , IMMF  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfmaXliteW_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , IMME , IMMF  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfmaX_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , IMME , IMMF  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfu_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , IMME , IMMF  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVxlu_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , IMME , IMMF  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_MOV_Const_MOV: .annotate EQUIV_MOV_Const_MOV,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  MOV . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%C (E) [ IMMF ] [ IMMG ] , IMMH  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfau_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%C (E) [ IMMF ] [ IMMG ] , IMMH  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfmaXliteW_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%C (E) [ IMMF ] [ IMMG ] , IMMH  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfmaX_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%C (E) [ IMMF ] [ IMMG ] , IMMH  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVfu_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%C (E) [ IMMF ] [ IMMG ] , IMMH  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  MOVxlu_pipe . %%Pipe2 (B) . %%S (C) %%RegisterFAU (D) , %%C (E) [ IMMF ] [ IMMG ] , IMMH  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_SEL_SEL: .annotate EQUIV_SEL_SEL,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  SEL . %%S (B) %%RegisterFAU (C) , %%RegisterFAU (D) , %%RegisterFAU (E) , %%Predicate (F)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SELfau_pipe . %%S (B) %%RegisterFAU (C) , %%RegisterFAU (D) , %%RegisterFAU (E) , %%Predicate (F)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SELxlu_pipe . %%S (B) %%RegisterFAU (C) , %%RegisterFAU (D) , %%RegisterFAU (E) , %%Predicate (F)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_SEL_Imm_SEL: .annotate EQUIV_SEL_Imm_SEL,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  SEL . %%S (B) %%RegisterFAU (C) , %%RegisterFAU (D) , IMME , %%Predicate (F)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SELfau_pipe . %%S (B) %%RegisterFAU (C) , %%RegisterFAU (D) , IMME , %%Predicate (F)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SELxlu_pipe . %%S (B) %%RegisterFAU (C) , %%RegisterFAU (D) , IMME , %%Predicate (F)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_SEL_Const_SEL: .annotate EQUIV_SEL_Const_SEL,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  SEL . %%S (B) %%RegisterFAU (C) , %%RegisterFAU (D) , %%C (E) [ IMMF ] [ IMMG ] , %%Predicate (H)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SELfau_pipe . %%S (B) %%RegisterFAU (C) , %%RegisterFAU (D) , %%C (E) [ IMMF ] [ IMMG ] , %%Predicate (H)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SELxlu_pipe . %%S (B) %%RegisterFAU (C) , %%RegisterFAU (D) , %%C (E) [ IMMF ] [ IMMG ] , %%Predicate (H)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_S2R_S2R: .annotate EQUIV_S2R_S2R,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  S2R . %%S (B) %%RegisterFAU (C) , %%SpecialRegister (D)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  S2Rfau_pipe . %%S (B) %%RegisterFAU (C) , %%SpecialRegister (D)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  S2Rxlu_pipe . %%S (B) %%RegisterFAU (C) , %%SpecialRegister (D)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_PRMT_PRMT: .annotate EQUIV_PRMT_PRMT,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  PRMT . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , %%RegisterFAU (F) , %%RegisterFAU (G)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PRMTfau_pipe . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , %%RegisterFAU (F) , %%RegisterFAU (G)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PRMTxlu_pipe . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , %%RegisterFAU (F) , %%RegisterFAU (G)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_PRMT_Imm_PRMT: .annotate EQUIV_PRMT_Imm_PRMT,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  PRMT . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , IMMF , %%RegisterFAU (G)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PRMTfau_pipe . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , IMMF , %%RegisterFAU (G)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PRMTxlu_pipe . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , IMMF , %%RegisterFAU (G)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_PRMT_Const_PRMT: .annotate EQUIV_PRMT_Const_PRMT,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  PRMT . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , %%C (F) [ IMMG ] [ IMMH ] , %%RegisterFAU (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PRMTfau_pipe . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , %%C (F) [ IMMG ] [ IMMH ] , %%RegisterFAU (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PRMTxlu_pipe . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , %%C (F) [ IMMG ] [ IMMH ] , %%RegisterFAU (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_PRMT_Const1_PRMT: .annotate EQUIV_PRMT_Const1_PRMT,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  PRMT . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PRMTfau_pipe . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PRMTxlu_pipe . %%PMode (B) . %%S (C) %%RegisterFAU (D) , %%RegisterFAU (E) , %%RegisterFAU (F) , %%C (G) [ IMMH ] [ IMMI ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_IADD_IADD: .annotate EQUIV_IADD_IADD,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  IADD . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IADDfau_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IADDxlu_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_IADD_Imm_IADD: .annotate EQUIV_IADD_Imm_IADD,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  IADD . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IADDfau_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IADDxlu_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ . %%UnaryNeg (K)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_IADD_Const_IADD: .annotate EQUIV_IADD_Const_IADD,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  IADD . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IADDfau_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IADDxlu_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISUB_ISUB: .annotate EQUIV_ISUB_ISUB,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISUB . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISUBfau_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISUBxlu_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISUB_Imm_ISUB: .annotate EQUIV_ISUB_Imm_ISUB,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISUB . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISUBfau_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISUBxlu_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , IMMJ  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISUB_Imm_ISUB1: .annotate EQUIV_ISUB_Imm_ISUB1,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISUB . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , IMMI , %%RegisterFAU (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISUBfau_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , IMMI , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISUBxlu_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , IMMI , %%RegisterFAU (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISUB_Const_ISUB: .annotate EQUIV_ISUB_Const_ISUB,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISUB . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISUBfau_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISUBxlu_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%RegisterFAU (I) , %%C (J) [ IMMK ] [ IMML ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_ISUB_Const_ISUB1: .annotate EQUIV_ISUB_Const_ISUB1,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  ISUB . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%C (I) [ IMMJ ] [ IMMK ] , %%RegisterFAU (L)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISUBfau_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%C (I) [ IMMJ ] [ IMMK ] , %%RegisterFAU (L)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  ISUBxlu_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%Pipe2 (E) . %%S (F) %%RegisterFAU (G) . %%optCC (H) , %%C (I) [ IMMJ ] [ IMMK ] , %%RegisterFAU (L)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_IADD32I_IADD32I: .annotate EQUIV_IADD32I_IADD32I,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  IADD32I . %%PO (B) . %%SAT (C) . %%X (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IADD32Ifau_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IADD32Ixlu_pipe . %%PO (B) . %%SAT (C) . %%X (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_IMNMX_IMNMX: .annotate EQUIV_IMNMX_IMNMX,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  IMNMX . %%Integer32 (B) . %%XMode (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , %%RegisterFAU (H) , %%Predicate (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IMNMXfau_pipe . %%Integer32 (B) . %%XMode (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , %%RegisterFAU (H) , %%Predicate (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IMNMXxlu_pipe . %%Integer32 (B) . %%XMode (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , %%RegisterFAU (H) , %%Predicate (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_IMNMX_Imm_IMNMX: .annotate EQUIV_IMNMX_Imm_IMNMX,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  IMNMX . %%Integer32 (B) . %%XMode (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , IMMH , %%Predicate (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IMNMXfau_pipe . %%Integer32 (B) . %%XMode (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , IMMH , %%Predicate (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IMNMXxlu_pipe . %%Integer32 (B) . %%XMode (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , IMMH , %%Predicate (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_IMNMX_Const_IMNMX: .annotate EQUIV_IMNMX_Const_IMNMX,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  IMNMX . %%Integer32 (B) . %%XMode (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , %%C (H) [ IMMI ] [ IMMJ ] , %%Predicate (K)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IMNMXfau_pipe . %%Integer32 (B) . %%XMode (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , %%C (H) [ IMMI ] [ IMMJ ] , %%Predicate (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  IMNMXxlu_pipe . %%Integer32 (B) . %%XMode (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , %%C (H) [ IMMI ] [ IMMJ ] , %%Predicate (K)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_SHF_SHF_L_imm: .annotate EQUIV_SHF_SHF_L_imm,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  SHF . %%SHF_L (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , IMMJ , %%Register (K)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SHFxlu_pipe . %%SHF_L (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , IMMJ , %%Register (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SHFfmaX_pipe . %%SHF_L (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , IMMJ , %%Register (K)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_SHF_SHF_R_imm: .annotate EQUIV_SHF_SHF_R_imm,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  SHF . %%SHF_R (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , IMMJ , %%Register (K)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SHFxlu_pipe . %%SHF_R (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , IMMJ , %%Register (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SHFfmaX_pipe . %%SHF_R (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , IMMJ , %%Register (K)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_SHF_SHF_L_reg: .annotate EQUIV_SHF_SHF_L_reg,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  SHF . %%SHF_L (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%Register (J) , %%Register (K)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SHFxlu_pipe . %%SHF_L (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%Register (J) , %%Register (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SHFfmaX_pipe . %%SHF_L (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%Register (J) , %%Register (K)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_SHF_SHF_R_reg: .annotate EQUIV_SHF_SHF_R_reg,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  SHF . %%SHF_R (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%Register (J) , %%Register (K)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SHFxlu_pipe . %%SHF_R (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%Register (J) , %%Register (K)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  SHFfmaX_pipe . %%SHF_R (B) . %%CWMode (C) . %%maxShift (D) . %%SHFXMode (E) . %%S (F) %%Register (G) . %%optCC (H) , %%Register (I) , %%Register (J) , %%Register (K)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_LOP_LOP: .annotate EQUIV_LOP_LOP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  LOP . %%LOP (B) . %%X (C) . %%Pipe2 (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%RegisterFAU (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  LOPfau_pipe . %%LOP (B) . %%X (C) . %%Pipe2 (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%RegisterFAU (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  LOPxlu_pipe . %%LOP (B) . %%X (C) . %%Pipe2 (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%RegisterFAU (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_LOP_Imm_LOP: .annotate EQUIV_LOP_Imm_LOP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  LOP . %%LOP (B) . %%X (C) . %%Pipe2 (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI . %%UnaryInv (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  LOPfau_pipe . %%LOP (B) . %%X (C) . %%Pipe2 (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI . %%UnaryInv (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  LOPxlu_pipe . %%LOP (B) . %%X (C) . %%Pipe2 (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , IMMI . %%UnaryInv (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_LOP_Const_LOP: .annotate EQUIV_LOP_Const_LOP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  LOP . %%LOP (B) . %%X (C) . %%Pipe2 (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  LOPfau_pipe . %%LOP (B) . %%X (C) . %%Pipe2 (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  LOPxlu_pipe . %%LOP (B) . %%X (C) . %%Pipe2 (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%RegisterFAU (H) , %%C (I) [ IMMJ ] [ IMMK ]  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_LOP32I_LOP32I: .annotate EQUIV_LOP32I_LOP32I,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  LOP32I . %%LOP (B) . %%X (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , IMMH . %%UnaryInv (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  LOP32Ifau_pipe . %%LOP (B) . %%X (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , IMMH . %%UnaryInv (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  LOP32Ixlu_pipe . %%LOP (B) . %%X (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%RegisterFAU (G) , IMMH . %%UnaryInv (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_VABSDIFF4_VABSDIFF4: .annotate EQUIV_VABSDIFF4_VABSDIFF4,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  VABSDIFF4 . %%DFormat (B) . %%Integer8 (C) . %%Integer8 (D) . %%SAT (E) . %%VRed2 (F) . %%LaneMask4 (G) . %%S (H) %%RegisterFAU (I) . %%optCC (J) , %%RegisterFAU (K) . %%ASel4 (L) , %%RegisterFAU (M) . %%BSel4 (N) , %%RegisterFAU (O)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  VABSDIFF4fau_pipe . %%DFormat (B) . %%Integer8 (C) . %%Integer8 (D) . %%SAT (E) . %%VRed2 (F) . %%LaneMask4 (G) . %%S (H) %%RegisterFAU (I) . %%optCC (J) , %%RegisterFAU (K) . %%ASel4 (L) , %%RegisterFAU (M) . %%BSel4 (N) , %%RegisterFAU (O)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  VABSDIFF4xlu_pipe . %%DFormat (B) . %%Integer8 (C) . %%Integer8 (D) . %%SAT (E) . %%VRed2 (F) . %%LaneMask4 (G) . %%S (H) %%RegisterFAU (I) . %%optCC (J) , %%RegisterFAU (K) . %%ASel4 (L) , %%RegisterFAU (M) . %%BSel4 (N) , %%RegisterFAU (O)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_VABSDIFF4_Imm_VABSDIFF4: .annotate EQUIV_VABSDIFF4_Imm_VABSDIFF4,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  VABSDIFF4 . %%DFormat (B) . %%Integer8 (C) . %%Integer8 (D) . %%SAT (E) . %%VRed2 (F) . %%LaneMask4 (G) . %%S (H) %%RegisterFAU (I) . %%optCC (J) , %%RegisterFAU (K) . %%ASel4 (L) , IMMM , %%RegisterFAU (N)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  VABSDIFF4fau_pipe . %%DFormat (B) . %%Integer8 (C) . %%Integer8 (D) . %%SAT (E) . %%VRed2 (F) . %%LaneMask4 (G) . %%S (H) %%RegisterFAU (I) . %%optCC (J) , %%RegisterFAU (K) . %%ASel4 (L) , IMMM , %%RegisterFAU (N)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  VABSDIFF4xlu_pipe . %%DFormat (B) . %%Integer8 (C) . %%Integer8 (D) . %%SAT (E) . %%VRed2 (F) . %%LaneMask4 (G) . %%S (H) %%RegisterFAU (I) . %%optCC (J) , %%RegisterFAU (K) . %%ASel4 (L) , IMMM , %%RegisterFAU (N)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_PSETP_PSETP: .annotate EQUIV_PSETP_PSETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  PSETP . %%Bop (B) . %%Bop (C) . %%S (D) %%Predicate (E) , %%Predicate (F) , %%Predicate (G) , %%Predicate (H) , %%Predicate (I)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PSETPfau_pipe . %%Bop (B) . %%Bop (C) . %%S (D) %%Predicate (E) , %%Predicate (F) , %%Predicate (G) , %%Predicate (H) , %%Predicate (I)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PSETPxlu_pipe . %%Bop (B) . %%Bop (C) . %%S (D) %%Predicate (E) , %%Predicate (F) , %%Predicate (G) , %%Predicate (H) , %%Predicate (I)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_PSETP_NoBop_PSETP: .annotate EQUIV_PSETP_NoBop_PSETP,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  PSETP . %%Bop (B) . %%S (C) %%Predicate (D) , %%Predicate (E) , %%Predicate (F)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PSETPfau_pipe . %%Bop (B) . %%S (C) %%Predicate (D) , %%Predicate (E) , %%Predicate (F)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PSETPxlu_pipe . %%Bop (B) . %%S (C) %%Predicate (D) , %%Predicate (E) , %%Predicate (F)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_PSET_PSET: .annotate EQUIV_PSET_PSET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  PSET . %%BVal (B) . %%Bop (C) . %%Bop (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%Predicate (H) , %%Predicate (I) , %%Predicate (J)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PSETfau_pipe . %%BVal (B) . %%Bop (C) . %%Bop (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%Predicate (H) , %%Predicate (I) , %%Predicate (J)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PSETxlu_pipe . %%BVal (B) . %%Bop (C) . %%Bop (D) . %%S (E) %%RegisterFAU (F) . %%optCC (G) , %%Predicate (H) , %%Predicate (I) , %%Predicate (J)  (*"EQUIV_MATCH_NEG"*);
+
+EQUIV_PSET_NoBop_PSET: .annotate EQUIV_PSET_NoBop_PSET,"EQUIV_ALLOW_SIDE_EFFECTS"
+    @ %%Predicate (A)  PSET . %%BVal (B) . %%Bop (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%Predicate (G) , %%Predicate (H)  (*"EQUIV_IGNORE","EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PSETfau_pipe . %%BVal (B) . %%Bop (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%Predicate (G) , %%Predicate (H)  (*"EQUIV_MATCH_NEG"*);
+    @ %%Predicate (A)  PSETxlu_pipe . %%BVal (B) . %%Bop (C) . %%S (D) %%RegisterFAU (E) . %%optCC (F) , %%Predicate (G) , %%Predicate (H)  (*"EQUIV_MATCH_NEG"*);
+

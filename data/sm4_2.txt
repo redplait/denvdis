@@ -1,0 +1,754 @@
+OPERATION SETS
+    bru_pipe = { NOP, NOPbru_pipe, BRA, BRAbru_pipe, BPT, BPTbru_pipe, EXIT, EXITbru_pipe, CONT, CONTbru_pipe, BRK, BRKbru_pipe, KIL, KILbru_pipe, LONGJMP, LONGJMPbru_pipe, RET, RETbru_pipe, JCAL, JCALbru_pipe, JMP, JMPbru_pipe, RAM, RAMbru_pipe, SAM, SAMbru_pipe, RTT, RTTbru_pipe, PCNT, PCNTbru_pipe, PBK, PBKbru_pipe, SSY, SSYbru_pipe, PLONGJMP, PLONGJMPbru_pipe, PRET, PRETbru_pipe, CAL, CALbru_pipe, SETCRSPTR, SETCRSPTRbru_pipe, GETCRSPTR, GETCRSPTRbru_pipe, IDE, IDEbru_pipe, BRX, BRXbru_pipe, JMX, JMXbru_pipe, TEXDEPBAR, TEXDEPBARbru_pipe, };
+
+    fau_pipe = { MOV, MOVfau_pipe, MOV32I, MOV32Ifau_pipe, IADD, IADDfau_pipe, ISUB, ISUBfau_pipe, IADD32I, IADD32Ifau_pipe, LOP, LOPfau_pipe, LOP32I, LOP32Ifau_pipe, ISETP, ISETPfau_pipe, S2R, S2Rfau_pipe, PRMT, PRMTfau_pipe, VABSDIFF4, VABSDIFF4fau_pipe, FFMA, FFMAfau_pipe, FFMA32I, FFMA32Ifau_pipe, FADD, FADDfau_pipe, FADD32I, FADD32Ifau_pipe, FMUL, FMULfau_pipe, FMUL32I, FMUL32Ifau_pipe, FMNMX, FMNMXfau_pipe, FSET, FSETfau_pipe, FSETP, FSETPfau_pipe, IMNMX, IMNMXfau_pipe, ISET, ISETfau_pipe, SEL, SELfau_pipe, PSET, PSETfau_pipe, PSETP, PSETPfau_pipe, FCMP, FCMPfau_pipe, ICMP, ICMPfau_pipe, };
+
+    fmaXliteW_64_pipe = { DADD, DADDfmaXliteW_pipe, DFMA, DFMAfmaXliteW_pipe, DMUL, DMULfmaXliteW_pipe, };
+    fmaXliteW_32_pipe = { MOVfmaXliteW_pipe, MOV32IfmaXliteW_pipe, FFMAfmaXliteW_pipe, FFMA32IfmaXliteW_pipe, FADDfmaXliteW_pipe, FADD32IfmaXliteW_pipe, FMULfmaXliteW_pipe, FMUL32IfmaXliteW_pipe, };
+
+    fmaX_64_pipe = { DMNMX, DMNMXfmaX_pipe, DSETP, DSETPfmaX_pipe, DSET, DSETfmaX_pipe, DCHK, DCHKfmaX_pipe, DADDfmaX_pipe, DFMAfmaX_pipe, DMULfmaX_pipe, };
+    fmaX_32_pipe = { MOVfmaX_pipe, MOV32IfmaX_pipe, FFMAfmaX_pipe, FFMA32IfmaX_pipe, FADDfmaX_pipe, FADD32IfmaX_pipe, FMULfmaX_pipe, FMUL32IfmaX_pipe, FMNMXfmaX_pipe, FSETfmaX_pipe, FSETPfmaX_pipe, VMAD, VMADfmaX_pipe, FSWZ, FSWZfmaX_pipe, FCCO, FCCOfmaX_pipe, FCHK, FCHKfmaX_pipe, RRO, RROfmaX_pipe, IMAD, IMADfmaX_pipe, IMADSP, IMADSPfmaX_pipe, IMAD32I, IMAD32IfmaX_pipe, IMUL, IMULfmaX_pipe, IMUL32I, IMUL32IfmaX_pipe, F2F, F2FfmaX_pipe, F2I, F2IfmaX_pipe, I2F, I2FfmaX_pipe, POPC, POPCfmaX_pipe, SHF, SHFfmaX_pipe, };
+
+    fu_pipe = { MOVfu_pipe, MOV32Ifu_pipe, MUFU, MUFUfu_pipe, };
+
+    xlu_pipe = { MOVxlu_pipe, MOV32Ixlu_pipe, IADDxlu_pipe, ISUBxlu_pipe, IADD32Ixlu_pipe, LOPxlu_pipe, LOP32Ixlu_pipe, ISETPxlu_pipe, S2Rxlu_pipe, PRMTxlu_pipe, VABSDIFF4xlu_pipe, IMNMXxlu_pipe, ISETxlu_pipe, SELxlu_pipe, PSETxlu_pipe, PSETPxlu_pipe, FCMPxlu_pipe, ICMPxlu_pipe, AL2P, AL2Pxlu_pipe, LDC, LDCxlu_pipe, ISCADD, ISCADDxlu_pipe, ISCADD32I, ISCADD32Ixlu_pipe, ISAD, ISADxlu_pipe, I2I, I2Ixlu_pipe, BFE, BFExlu_pipe, BFI, BFIxlu_pipe, FLO, FLOxlu_pipe, SHR, SHRxlu_pipe, SHL, SHLxlu_pipe, CSET, CSETxlu_pipe, CSETP, CSETPxlu_pipe, LEPC, LEPCxlu_pipe, P2R, P2Rxlu_pipe, R2P, R2Pxlu_pipe, VADD, VADDxlu_pipe, VABSDIFF, VABSDIFFxlu_pipe, VMNMX, VMNMXxlu_pipe, VSET, VSETxlu_pipe, VSHL, VSHLxlu_pipe, VSHR, VSHRxlu_pipe, VSETP, VSETPxlu_pipe, VADD2, VADD2xlu_pipe, VABSDIFF2, VABSDIFF2xlu_pipe, VMNMX2, VMNMX2xlu_pipe, VSET2, VSET2xlu_pipe, VSEL2, VSEL2xlu_pipe, VADD4, VADD4xlu_pipe, VMNMX4, VMNMX4xlu_pipe, VSET4, VSET4xlu_pipe, VSEL4, VSEL4xlu_pipe, SUCLAMP, SUCLAMPxlu_pipe, SUBFM, SUBFMxlu_pipe, SUEAU, SUEAUxlu_pipe, SHFxlu_pipe, };
+
+    tex_pipe = { TEX, TEXtex_pipe, TLD, TLDtex_pipe, TLD4, TLD4tex_pipe, TMML, TMMLtex_pipe, TXA, TXAtex_pipe, TXD, TXDtex_pipe, TXQ, TXQtex_pipe, LDG, LDGtex_pipe, CCTLT, CCTLTtex_pipe };
+
+    fe_pipe = { BAR, BARfe_pipe, B2R, B2Rfe_pipe, R2B, R2Bfe_pipe, STP, STPfe_pipe, PIXLD, PIXLDfe_pipe, SHINT, SHINTfe_pipe, };
+
+    bar_pipe = { VOTE, VOTEbar_pipe, };
+
+    agu_pipe = { LDL, LDLagu_pipe, LD, LDagu_pipe, LDS, LDSagu_pipe, LDSLK, LDSLKagu_pipe, ALD, ALDagu_pipe, ATOM, ATOMagu_pipe, VILD, VILDagu_pipe, SULDGA, SULDGAagu_pipe, STL, STLagu_pipe, ST, STagu_pipe, STS, STSagu_pipe, STSCUL, STSCULagu_pipe, RED, REDagu_pipe, OUT, OUTagu_pipe, AST, ASTagu_pipe, SUSTGA, SUSTGAagu_pipe, CCTL, CCTLagu_pipe, CCTLL, CCTLLagu_pipe, CCTLS, CCTLSagu_pipe, MEMBAR, MEMBARagu_pipe, SETLMEMBASE, SETLMEMBASEagu_pipe, GETLMEMBASE, GETLMEMBASEagu_pipe, SHFL, SHFLagu_pipe, };
+
+    adu_pipe = { BRXadu_pipe, JMXadu_pipe, };
+
+    su_pipe = { IPA, IPAsu_pipe, };
+
+    FAU_OPS = fau_pipe;
+    FMAX_64_OPS = fmaX_64_pipe;
+    FMAX_32_OPS = fmaX_32_pipe;
+    FMALITE_64_OPS = fmaXliteW_64_pipe;
+    FMALITE_32_OPS = fmaXliteW_32_pipe;
+    SU_OPS = su_pipe;
+    BAR_OPS = bar_pipe;
+    FE_OPS = fe_pipe;
+    XLU_OPS = xlu_pipe;
+    FU_OPS = fu_pipe;
+    ADU_OPS = adu_pipe;
+    LSU_OPS = agu_pipe;
+    BRU_OPS = bru_pipe;
+    TEX_OPS = tex_pipe;
+
+    OP_NOP = { NOP, NOPbru_pipe };
+    OP_IMNMX = { IMNMX, IMNMXfau_pipe, IMNMXxlu_pipe };
+    OP_SHF = { SHF, SHFfmaX_pipe, SHFxlu_pipe };
+    OP_LDL = { LDL, LDLagu_pipe };
+    OP_LDS = { LDS, LDSagu_pipe };
+    OP_LDSLK = { LDSLK, LDSLKagu_pipe };
+    OP_LD = { LD, LDagu_pipe };
+    OP_STL = { STL, STLagu_pipe };
+    OP_STS = { STS, STSagu_pipe };
+    OP_STSCUL = { STSCUL, STSCULagu_pipe };
+    OP_ST = { ST, STagu_pipe };
+    OP_CCTL = { CCTL, CCTLagu_pipe };
+    OP_CCTLL = { CCTLL, CCTLLagu_pipe };
+    OP_CCTLS = { CCTLS, CCTLSagu_pipe };
+    OP_SUSTGA = { SUSTGA, SUSTGAagu_pipe };
+    OP_SULDGA = { SULDGA, SULDGAagu_pipe };
+    OP_GETLMEMBASE = { GETLMEMBASE, GETLMEMBASEagu_pipe };
+    OP_SETLMEMBASE = { SETLMEMBASE, SETLMEMBASEagu_pipe };
+    OP_LDC = { LDC, LDCxlu_pipe };
+    OP_ALD = { ALD, ALDagu_pipe };
+    OP_AST = { AST, ASTagu_pipe };
+    OP_F2I = { F2I, F2IfmaX_pipe };
+    OP_I2F = { I2F, I2FfmaX_pipe };
+    OP_F2F = { F2F, F2FfmaX_pipe };
+    OP_TEX = { TEX, TEXtex_pipe };
+    OP_TLD = { TLD, TLDtex_pipe };
+    OP_TLD4 = { TLD4, TLD4tex_pipe };
+    OP_TXD = { TXD, TXDtex_pipe };
+    OP_TXA = { TXA, TXAtex_pipe };
+    OP_TXQ = { TXQ, TXQtex_pipe };
+    OP_TMML = { TMML, TMMLtex_pipe };
+    OP_LDG = { LDG, LDGtex_pipe };
+    OP_BAR = { BAR, BARfe_pipe };
+    OP_P2R = { P2R, P2Rxlu_pipe };
+    OP_R2P = { R2P, R2Pxlu_pipe };
+    OP_TEXDEPBAR = { TEXDEPBAR, TEXDEPBARbru_pipe };
+    OP_MEMBAR = { MEMBAR, MEMBARagu_pipe };
+    OP_VOTE = { VOTE, VOTEbar_pipe };
+    OP_BPT = { BPT, BPTbru_pipe };
+
+    CACHE_OPS = { CCTL, CCTLagu_pipe, CCTLL, CCTLLagu_pipe,
+                  CCTLS, CCTLSagu_pipe, CCTLT, CCTLTtex_pipe };
+    LOAD_OPS = { LDL, LDLagu_pipe, LD, LDagu_pipe, LDU, LDUagu_pipe,
+                 LDS, LDSagu_pipe, LDLK, LDLKagu_pipe, LDSLK, LDSLKagu_pipe,
+                 ATOM, ATOMagu_pipe, RED, REDagu_pipe, LDG, LDGtex_pipe };
+    STORE_OPS = { STL, STLagu_pipe, ST, STagu_pipe, STS, STSagu_pipe,
+                  STUL, STULagu_pipe, STSCUL, STSCULagu_pipe,
+                  ATOM, ATOMagu_pipe, RED, REDagu_pipe };
+    BAR_RD_OPS = { BAR, BARfe_pipe, B2R, B2Rfe_pipe };
+    BAR_WR_OPS = { BAR, BARfe_pipe, EXIT, EXITbru_pipe, RET, RETbru_pipe };
+    SHMEMLK_RD_OPS = { LDSLK, LDSLKagu_pipe, STSCUL, STSCULagu_pipe };
+    SHMEMLK_WR_OPS = { CCTLS, CCTLSagu_pipe };
+    ISBE_RD_OPS = { ALD, ALDagu_pipe, AST, ASTagu_pipe, VILD, VILDagu_pipe };
+    ISBE_WR_OPS = { AST, ASTagu_pipe };
+
+
+    WIDE_MEM_OPS = { LD, LDagu_pipe, LDLDS, LDLDSagu_pipe, LDSLK, LDSLKagu_pipe,
+                     LDL, LDLagu_pipe, LDS, LDSagu_pipe,
+                     ST, STagu_pipe, STSCUL, STSCULagu_pipe,
+                     STL, STLagu_pipe, STS, STSagu_pipe };
+
+    WIDE_ATOM_OPS = { ATOM, ATOMagu_pipe, RED, REDagu_pipe };
+    WIDE_ATTR_OPS = { ALD, ALDagu_pipe, AST, ASTagu_pipe };
+
+    WIDE_FP64_FMAX_OPS = { DADDfmaX_pipe, DFMAfmaX_pipe, DMULfmaX_pipe, DMNMX, DMNMXfmaX_pipe, };
+    WIDE_FP64_SET_OPS = { DSET, DSETfmaX_pipe, DSETP , DSETPfmax_pipe};
+
+    WIDE_FP64_FMALITE_OPS = { DADD, DADDfmaXliteW_pipe, DFMA, DFMAfmaXliteW_pipe, DMUL, DMULfmaXliteW_pipe };
+
+CONNECTOR CONDITIONS
+
+
+    ATOM_E_WIDTH = ((?e) ? 2 : 1);
+    ATOM_SZ_WIDTH = ((cas == 0) && ((size == 1) ? 2 : 1)) _OR_ ((size == 4) ? 4 : (((size == 2) || (size == 5)) ? 2 : 1));
+
+OPERATION SETS
+    SHARED_OPS = FMAX_64_OPS + FMAX_32_OPS + FMALITE_64_OPS + FMALITE_32_OPS + SU_OPS + XLU_OPS + FU_OPS + ADU_OPS;
+    ALL_OPS = FAU_OPS + FMAX_64_OPS + FMAX_32_OPS + FMALITE_64_OPS + FMALITE_32_OPS + SU_OPS + XLU_OPS + FU_OPS + ADU_OPS + LSU_OPS + BRU_OPS + TEX_OPS + FE_OPS + BAR_OPS;
+
+
+
+
+    LSU_WIDE_READ_OPS = WIDE_MEM_OPS + WIDE_ATOM_OPS + OP_AST + OP_CCTL + OP_SUSTGA + OP_SULDGA + OP_SETLMEMBASE;
+    LSU_WIDE_WRITE_OPS = WIDE_MEM_OPS + WIDE_ATOM_OPS + OP_ALD + OP_SULDGA + OP_GETLMEMBASE;
+    LSU_NARROW_READ_OPS = LSU_OPS - LSU_WIDE_READ_OPS;
+    LSU_NARROW_WRITE_OPS = LSU_OPS - LSU_WIDE_WRITE_OPS;
+
+
+    XLU_WIDE_WRITE_OPS = OP_LDC;
+    XLU_NARROW_WRITE_OPS = XLU_OPS - XLU_WIDE_WRITE_OPS;
+
+
+    FMAX_64_WIDE_READ_OPS = WIDE_FP64_FMAX_OPS + WIDE_FP64_SET_OPS;
+    FMAX_64_WIDE_WRITE_OPS = WIDE_FP64_FMAX_OPS;
+    FMAX_64_NARROW_READ_OPS = FMAX_64_OPS - FMAX_64_WIDE_READ_OPS;
+    FMAX_64_NARROW_WRITE_OPS = FMAX_64_OPS - FMAX_64_WIDE_WRITE_OPS;
+
+    FMAX_32_WIDE_OPS = OP_F2I + OP_F2F + OP_I2F;
+    FMAX_32_NARROW_OPS = FMAX_32_OPS - FMAX_32_WIDE_OPS;
+
+
+    FMALITE_64_WIDE_OPS = WIDE_FP64_FMALITE_OPS;
+    FMALITE_64_NARROW_OPS = FMALITE_64_OPS - FMALITE_64_WIDE_OPS;
+
+
+    WIDE_TEXTURE_OPS = TEX_OPS - OP_LDG;
+
+    TEX_WIDE_READ_OPS = OP_TEX + OP_TLD + OP_TLD4 + OP_TXD + OP_TXA + OP_TXQ + OP_TMML + OP_LDG;
+    TEX_WIDE_WRITE_OPS = WIDE_TEXTURE_OPS + OP_LDG;
+    TEX_NARROW_READ_OPS = TEX_OPS - TEX_WIDE_READ_OPS;
+    TEX_NARROW_WRITE_OPS = TEX_OPS - TEX_WIDE_WRITE_OPS;
+
+    ALL_WIDE_READ_OPS = LSU_WIDE_READ_OPS + FMAX_64_WIDE_READ_OPS + FMAX_32_WIDE_OPS + FMALITE_64_WIDE_OPS + TEX_WIDE_READ_OPS;
+    ALL_WIDE_WRITE_OPS = LSU_WIDE_WRITE_OPS + XLU_WIDE_WRITE_OPS + FMAX_64_WIDE_WRITE_OPS + FMAX_32_WIDE_OPS + FMALITE_64_WIDE_OPS + TEX_WIDE_WRITE_OPS;
+    ALL_NARROW_READ_OPS = ALL_OPS - ALL_WIDE_READ_OPS;
+    ALL_NARROW_WRITE_OPS = ALL_OPS - ALL_WIDE_WRITE_OPS;
+HARD RESOURCE
+    GPR(R1) = { R(0.. 254 ), RZ } DEFAULT_ANTI=ORDERED_ZERO;
+
+CONNECTOR NAMES
+    Ra, Rb, Rc, Rd: GPR;
+
+CONNECTOR CONDITIONS
+    MEM_SZ_WIDTH = ((size >= 6) ? 4 : ( (size == 5) ? 2 : 1));
+    MEM_RD_WIDTH = MEM_SZ_WIDTH;
+    MEM_RB_WIDTH = MEM_SZ_WIDTH;
+
+    MEM_E_WIDTH = ((?e) ? 2 : 1) _AND_ 1;
+    MEM_RA_WIDTH = MEM_E_WIDTH;
+
+    SUSTGA_RGBA_WIDTH = (((rgba & 0x1) == 0x1) + ((rgba & 0x2) == 0x2) + ((rgba & 0x4) == 0x4) + ((rgba & 0x8) == 0x8));
+    SUSTGA_RC_WIDTH = ((b-1) + MEM_SZ_WIDTH) _OR_ (p + SUSTGA_RGBA_WIDTH);
+    SULDGA_RD_WIDTH = MEM_SZ_WIDTH;
+
+    CCTL_E_WIDTH = ((?e && cctlop != 6) ? 2 : 1);
+    CCTL_RA_WIDTH = CCTL_E_WIDTH;
+
+    ATTR_SZ_WIDTH = ((size == 3) ? 4 : ((size == 2) ? 3 : ((size == 1) ? 2 : 1)));
+    ATTR_RD_WIDTH = ATTR_SZ_WIDTH;
+    ATTR_RB_WIDTH = ATTR_SZ_WIDTH;
+
+
+    ATOM_RD_WIDTH = ATOM_SZ_WIDTH;
+    ATOM_RB_WIDTH = ATOM_SZ_WIDTH;
+    ATOM_RC_WIDTH = ATOM_SZ_WIDTH;
+
+
+    ATOM_RA_WIDTH = ATOM_E_WIDTH;
+
+    F2I_RD_WIDTH = ((dstfmt >= 8) ? 4 : ((dstfmt >= 6) ? 2 : 1));
+    I2F_RB_WIDTH = ((srcfmt >= 8) ? 4 : ((srcfmt >= 6) ? 2 : 1));
+
+    I2F_RD_WIDTH = ((dstfmt == 3) ? 2 : 1);
+    F2I_RB_WIDTH = ((srcfmt == 3) ? 2 : 1);
+
+    F2F_RD_WIDTH = ((fmts == 3 || fmts == 7 || fmts == 11 || fmts == 15) ? 2 : 1);
+    F2F_RB_WIDTH = ((fmts == 12 || fmts == 13 || fmts == 14 || fmts == 15) ? 2 : 1);
+
+
+    COORDCOUNT_COMMON = (bindless == 1 _OR_ 0) + ((((paramA & 0x1) == 0x1) ? 1 : 0) + (((paramA & 0x6) == 0x0) ? 1 : (((paramA & 0x6) == 0x2) ? 2 : 3)));
+    COORDCOUNT_TEX = COORDCOUNT_COMMON + (?dc) + ((lod > 1) ? 1 : 0) + (toff);
+    COORDCOUNT_TLD = COORDCOUNT_COMMON + ((lod == 1) ? 1 : 0) + (?ms) + (toff);
+    COORDCOUNT_TLD4 = COORDCOUNT_COMMON + (toff) + (?dc);
+
+    COORDCOUNT_TXD = COORDCOUNT_COMMON + ((toff == 1) && ((paramA & 0x1) != 0x1)) + ((ndp == 0) ? (((paramA & 0x6) == 0x0) ? 2 : (((paramA & 0x6) == 0x2) ? 4 : -100)) : 0);
+
+    COORDCOUNT_TXQ = (bindless == 1 _OR_ 0) + (((query == 0) || (query == 2)) ? 1 : 0);
+    COORDCOUNT_TMML = COORDCOUNT_COMMON;
+
+    TEX_RA_WIDTH = (((COORDCOUNT_TEX) < (4)) ? (COORDCOUNT_TEX) : (4));
+    TEX_RB_WIDTH = (((COORDCOUNT_TEX - 4) >= (1)) ? (COORDCOUNT_TEX - 4) : (1));
+
+    TLD_RA_WIDTH = (((COORDCOUNT_TLD) < (4)) ? (COORDCOUNT_TLD) : (4));
+    TLD_RB_WIDTH = (((COORDCOUNT_TLD - 4) >= (1)) ? (COORDCOUNT_TLD - 4) : (1));
+
+    TLD4_RA_WIDTH = (((COORDCOUNT_TLD4) < (4)) ? (COORDCOUNT_TLD4) : (4));
+    TLD4_RB_WIDTH = (((COORDCOUNT_TLD4 - 4) >= (1)) ? (COORDCOUNT_TLD4 - 4) : (1));
+
+    TXD_RA_WIDTH = (((COORDCOUNT_TXD) < (4)) ? (COORDCOUNT_TXD) : (4));
+    TXD_RB_WIDTH = (((COORDCOUNT_TXD - 4) >= (1)) ? (COORDCOUNT_TXD - 4) : (1));
+
+    TXQ_RA_WIDTH = (((COORDCOUNT_TXQ) >= (1)) ? (COORDCOUNT_TXQ) : (1));
+
+    TMML_RA_WIDTH = (((COORDCOUNT_TMML) < (4)) ? (COORDCOUNT_TMML) : (4));
+    TMML_RB_WIDTH = (((COORDCOUNT_TMML - 4) >= (1)) ? (COORDCOUNT_TMML - 4) : (1));
+
+    TEX_RD_WIDTH = ((((((wmsk & 0x1) == 0x1) + ((wmsk & 0x2) == 0x2) + ((wmsk & 0x4) == 0x4) + ((wmsk & 0x8) == 0x8))) >= (1)) ? ((((wmsk & 0x1) == 0x1) + ((wmsk & 0x2) == 0x2) + ((wmsk & 0x4) == 0x4) + ((wmsk & 0x8) == 0x8))) : (1));
+
+TABLE_TRUE(GPR) : (
+                                           ALL_NARROW_READ_OPS`{Ra,Rb,Rc} +
+                                           WIDE_MEM_OPS`{Ra @MEM_RA_WIDTH,Rb @MEM_RB_WIDTH} +
+                                           OP_SETLMEMBASE`{Ra @2} +
+                                           OP_SUSTGA`{Ra @2,Rb @1,Rc @SUSTGA_RC_WIDTH} +
+                                           OP_SULDGA`{Ra @2,Rb @1} +
+                                           OP_CCTL`{Ra @CCTL_RA_WIDTH} +
+                                           WIDE_ATOM_OPS`{Ra @ATOM_RA_WIDTH,Rb @ATOM_RB_WIDTH,Rc @ATOM_RC_WIDTH} +
+                                           OP_AST`{Ra,Rb @ATTR_RB_WIDTH,Rc} +
+                                           OP_F2I`{Rb @F2I_RB_WIDTH} +
+                                           OP_F2F`{Rb @F2F_RB_WIDTH} +
+                                           OP_I2F`{Rb @I2F_RB_WIDTH} +
+                                           FMAX_64_WIDE_READ_OPS`{Ra @2,Rb @2,Rc @2} +
+                                           FMALITE_64_WIDE_OPS`{Ra @2,Rb @2,Rc @2}
+                                           )
+                                                            (
+                                                            OP_TEX`{Ra @TEX_RA_WIDTH,Rb @TEX_RB_WIDTH} +
+                                                            OP_TLD`{Ra @TLD_RA_WIDTH,Rb @TLD_RB_WIDTH} +
+                                                            OP_TLD4`{Ra @TLD4_RA_WIDTH,Rb @TLD4_RB_WIDTH} +
+                                                            OP_TXD`{Ra @TXD_RA_WIDTH,Rb @TXD_RB_WIDTH} +
+                                                            OP_TXA`{Ra @3} +
+                                                            OP_TXQ`{Ra @TXQ_RA_WIDTH} +
+                                                            OP_TMML`{Ra @TMML_RA_WIDTH,Rb @TMML_RB_WIDTH} +
+                                                            OP_LDG`{Ra @MEM_RA_WIDTH}
+                                                            ) =
+{
+    FAU_OPS`{Rd} : 9 { (((9 - 14) >= (0)) ? (9 - 14) : (0)) }
+
+    FMAX_64_NARROW_WRITE_OPS`{Rd} : 10 { (((10 - 14) >= (0)) ? (10 - 14) : (0)) }
+    FMAX_64_WIDE_WRITE_OPS`{Rd @2} : 10 { (((10 - 14) >= (0)) ? (10 - 14) : (0)) }
+    FMAX_32_NARROW_OPS`{Rd} : 9 { (((9 - 14) >= (0)) ? (9 - 14) : (0)) }
+    OP_F2I`{Rd @F2I_RD_WIDTH} : 9 { (((9 - 14) >= (0)) ? (9 - 14) : (0)) }
+    OP_F2F`{Rd @F2F_RD_WIDTH} : 9 { (((9 - 14) >= (0)) ? (9 - 14) : (0)) }
+    OP_I2F`{Rd @I2F_RD_WIDTH} : 9 { (((9 - 14) >= (0)) ? (9 - 14) : (0)) }
+
+    FMALITE_64_NARROW_OPS`{Rd} : 10 { (((10 - 14) >= (0)) ? (10 - 14) : (0)) }
+    FMALITE_64_WIDE_OPS`{Rd @2} : 10 { (((10 - 14) >= (0)) ? (10 - 14) : (0)) }
+    FMALITE_32_OPS`{Rd} : 9 { (((9 - 14) >= (0)) ? (9 - 14) : (0)) }
+
+    SU_OPS`{Rd} : 15 { (((15 - 14) >= (0)) ? (15 - 14) : (0)) }
+
+    XLU_NARROW_WRITE_OPS`{Rd} : 9 { (((9 - 14) >= (0)) ? (9 - 14) : (0)) }
+    OP_LDC`{Rd @MEM_RD_WIDTH} : 9 { (((9 - 14) >= (0)) ? (9 - 14) : (0)) }
+
+    FU_OPS`{Rd} : 9 { (((9 - 14) >= (0)) ? (9 - 14) : (0)) }
+    ADU_OPS`{Rd} : 17 { (((17 - 14) >= (0)) ? (17 - 14) : (0)) }
+
+    LSU_NARROW_WRITE_OPS`{Rd} : 21 { (((21 - 14) >= (0)) ? (21 - 14) : (0)) }
+    WIDE_MEM_OPS`{Rd @MEM_RD_WIDTH} : 21 { (((21 - 14) >= (0)) ? (21 - 14) : (0)) }
+    OP_SULDGA`{Rd @SULDGA_RD_WIDTH} : 21 { (((21 - 14) >= (0)) ? (21 - 14) : (0)) }
+    OP_GETLMEMBASE`{Rd @2} : 21 { (((21 - 14) >= (0)) ? (21 - 14) : (0)) }
+    WIDE_ATOM_OPS`{Rd @ATOM_RD_WIDTH} : 21 { (((21 - 14) >= (0)) ? (21 - 14) : (0)) }
+    OP_ALD`{Rd @ATTR_RD_WIDTH} : 21 { (((21 - 14) >= (0)) ? (21 - 14) : (0)) }
+
+    BRU_OPS`{Rd} : 5 { (((5 - 14) >= (0)) ? (5 - 14) : (0)) }
+
+    TEX_NARROW_WRITE_OPS`{Rd} : 4
+    WIDE_TEXTURE_OPS`{Rd @TEX_RD_WIDTH} : 4
+    OP_LDG`{Rd @MEM_RD_WIDTH} : 4
+
+    FE_OPS`{Rd} : 5
+    BAR_OPS`{Rd} : 5
+};
+
+
+
+TABLE_ANTI(GPR) : FAU_OPS`{Rd}
+                  FMAX_64_NARROW_WRITE_OPS`{Rd}
+                  FMAX_64_WIDE_WRITE_OPS`{Rd @2}
+                  FMAX_32_NARROW_OPS`{Rd}
+                  OP_F2I`{Rd @F2I_RD_WIDTH}
+                  OP_F2F`{Rd @F2F_RD_WIDTH}
+                  OP_I2F`{Rd @I2F_RD_WIDTH}
+                  FMALITE_64_NARROW_OPS`{Rd}
+                  FMALITE_64_WIDE_OPS`{Rd @2}
+                  FMALITE_32_OPS`{Rd}
+                  SU_OPS`{Rd}
+                  XLU_NARROW_WRITE_OPS`{Rd}
+                  OP_LDC`{Rd @MEM_RD_WIDTH}
+                  FU_OPS`{Rd}
+                  ADU_OPS`{Rd}
+                  LSU_NARROW_WRITE_OPS`{Rd}
+                  WIDE_MEM_OPS`{Rd @MEM_RD_WIDTH}
+                  OP_SULDGA`{Rd @MEM_RD_WIDTH}
+                  OP_GETLMEMBASE`{Rd @2}
+                  WIDE_ATOM_OPS`{Rd @ATOM_RD_WIDTH}
+                  OP_ALD`{Rd @ATTR_RD_WIDTH}
+                  BRU_OPS`{Rd}
+                  TEX_NARROW_WRITE_OPS`{Rd}
+                  WIDE_TEXTURE_OPS`{Rd @TEX_RD_WIDTH}
+                  OP_LDG`{Rd @MEM_RD_WIDTH}
+                  FE_OPS`{Rd}
+                  BAR_OPS`{Rd} =
+{
+    LSU_NARROW_READ_OPS`{Ra,Rb,Rc} : 15
+    WIDE_MEM_OPS`{Ra @MEM_RA_WIDTH,Rb @MEM_RB_WIDTH} : 15
+    OP_LDC`{Ra} : 15
+    OP_CCTL`{Ra @CCTL_RA_WIDTH} : 15
+    OP_SETLMEMBASE`{Ra @2} : 15
+    WIDE_ATOM_OPS`{Ra @ATOM_RA_WIDTH,Rb @ATOM_RB_WIDTH,Rc @ATOM_RC_WIDTH} : 15
+    OP_AST`{Ra,Rb @ATTR_RB_WIDTH,Rc} : 15
+    OP_TEX`{Ra @TEX_RA_WIDTH,Rb @TEX_RB_WIDTH} : 1
+    OP_TLD`{Ra @TLD_RA_WIDTH,Rb @TLD_RB_WIDTH} : 1
+    OP_TLD4`{Ra @TLD4_RA_WIDTH,Rb @TLD4_RB_WIDTH} : 1
+    OP_TXD`{Ra @TXD_RA_WIDTH,Rb @TXD_RB_WIDTH} : 1
+    OP_TXA`{Ra @3} : 1
+    OP_TXQ`{Ra @TXQ_RA_WIDTH} : 1
+    OP_TMML`{Ra @TMML_RA_WIDTH,Rb @TMML_RB_WIDTH} : 1
+    OP_LDG`{Ra @MEM_RA_WIDTH} : 1
+};
+TABLE_OUTPUT(GPR) : FAU_OPS`{Rd}
+                                          FMAX_64_NARROW_WRITE_OPS`{Rd}
+                                          FMAX_64_WIDE_WRITE_OPS`{Rd @2}
+                                          FMAX_32_NARROW_OPS`{Rd}
+                                          OP_F2I`{Rd @F2I_RD_WIDTH}
+                                          OP_F2F`{Rd @F2F_RD_WIDTH}
+                                          OP_I2F`{Rd @I2F_RD_WIDTH}
+                                          FMALITE_64_NARROW_OPS`{Rd}
+                                          FMALITE_64_WIDE_OPS`{Rd @2}
+                                          FMALITE_32_OPS`{Rd}
+                                          SU_OPS`{Rd}
+                                          XLU_NARROW_WRITE_OPS`{Rd}
+                                          OP_LDC`{Rd @MEM_RD_WIDTH}
+                                          FU_OPS`{Rd}
+                                          ADU_OPS`{Rd}
+                                          LSU_NARROW_WRITE_OPS`{Rd}
+                                          WIDE_MEM_OPS`{Rd @MEM_RD_WIDTH}
+                                          OP_SULDGA`{Rd @MEM_RD_WIDTH}
+                                          OP_GETLMEMBASE`{Rd @2}
+                                          WIDE_ATOM_OPS`{Rd @ATOM_RD_WIDTH}
+                                          OP_ALD`{Rd @ATTR_RD_WIDTH}
+                                          BRU_OPS`{Rd}
+                                          TEX_NARROW_WRITE_OPS`{Rd}
+                                          WIDE_TEXTURE_OPS`{Rd @TEX_RD_WIDTH}
+                                          OP_LDG`{Rd @MEM_RD_WIDTH}
+                                          FE_OPS`{Rd}
+                                          BAR_OPS`{Rd}=
+{
+    FAU_OPS`{Rd} : { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 15) >= (1)) ? (9 - 15) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 17) >= (1)) ? (9 - 17) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) }
+
+    FMAX_64_NARROW_WRITE_OPS`{Rd} : { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 15) >= (1)) ? (10 - 15) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 17) >= (1)) ? (10 - 17) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) } { (((10 - 4) >= (1)) ? (10 - 4) : (1)) } { (((10 - 4) >= (1)) ? (10 - 4) : (1)) } { (((10 - 4 +4) >= (1)) ? (10 - 4 +4) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) }
+    FMAX_64_WIDE_WRITE_OPS`{Rd @2} : { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 15) >= (1)) ? (10 - 15) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 17) >= (1)) ? (10 - 17) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) } { (((10 - 4) >= (1)) ? (10 - 4) : (1)) } { (((10 - 4) >= (1)) ? (10 - 4) : (1)) } { (((10 - 4 +4) >= (1)) ? (10 - 4 +4) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) }
+    FMAX_32_NARROW_OPS`{Rd} : { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 15) >= (1)) ? (9 - 15) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 17) >= (1)) ? (9 - 17) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) }
+    OP_F2I`{Rd @F2I_RD_WIDTH} : { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 15) >= (1)) ? (9 - 15) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 17) >= (1)) ? (9 - 17) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) }
+    OP_F2F`{Rd @F2F_RD_WIDTH} : { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 15) >= (1)) ? (9 - 15) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 17) >= (1)) ? (9 - 17) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) }
+    OP_I2F`{Rd @I2F_RD_WIDTH} : { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 15) >= (1)) ? (9 - 15) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 17) >= (1)) ? (9 - 17) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) }
+
+    FMALITE_64_NARROW_OPS`{Rd} : { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 15) >= (1)) ? (10 - 15) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 17) >= (1)) ? (10 - 17) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) } { (((10 - 4) >= (1)) ? (10 - 4) : (1)) } { (((10 - 4) >= (1)) ? (10 - 4) : (1)) } { (((10 - 4 +4) >= (1)) ? (10 - 4 +4) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) }
+    FMALITE_64_WIDE_OPS`{Rd @2} : { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 10) >= (1)) ? (10 - 10) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 15) >= (1)) ? (10 - 15) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 9) >= (1)) ? (10 - 9) : (1)) } { (((10 - 17) >= (1)) ? (10 - 17) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 21) >= (1)) ? (10 - 21) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) } { (((10 - 4) >= (1)) ? (10 - 4) : (1)) } { (((10 - 4) >= (1)) ? (10 - 4) : (1)) } { (((10 - 4 +4) >= (1)) ? (10 - 4 +4) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) } { (((10 - 5) >= (1)) ? (10 - 5) : (1)) }
+    FMALITE_32_OPS`{Rd} : { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 15) >= (1)) ? (9 - 15) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 17) >= (1)) ? (9 - 17) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) }
+
+    SU_OPS`{Rd} : { (((15 - 9) >= (1)) ? (15 - 9) : (1)) } { (((15 - 10) >= (1)) ? (15 - 10) : (1)) } { (((15 - 10) >= (1)) ? (15 - 10) : (1)) } { (((15 - 9) >= (1)) ? (15 - 9) : (1)) } { (((15 - 9) >= (1)) ? (15 - 9) : (1)) } { (((15 - 9) >= (1)) ? (15 - 9) : (1)) } { (((15 - 9) >= (1)) ? (15 - 9) : (1)) } { (((15 - 10) >= (1)) ? (15 - 10) : (1)) } { (((15 - 10) >= (1)) ? (15 - 10) : (1)) } { (((15 - 9) >= (1)) ? (15 - 9) : (1)) } { (((15 - 15) >= (1)) ? (15 - 15) : (1)) } { (((15 - 9) >= (1)) ? (15 - 9) : (1)) } { (((15 - 9) >= (1)) ? (15 - 9) : (1)) } { (((15 - 9) >= (1)) ? (15 - 9) : (1)) } { (((15 - 17) >= (1)) ? (15 - 17) : (1)) } { (((15 - 21) >= (1)) ? (15 - 21) : (1)) } { (((15 - 21) >= (1)) ? (15 - 21) : (1)) } { (((15 - 21) >= (1)) ? (15 - 21) : (1)) } { (((15 - 21) >= (1)) ? (15 - 21) : (1)) } { (((15 - 21) >= (1)) ? (15 - 21) : (1)) } { (((15 - 21) >= (1)) ? (15 - 21) : (1)) } { (((15 - 5) >= (1)) ? (15 - 5) : (1)) } { (((15 - 4) >= (1)) ? (15 - 4) : (1)) } { (((15 - 4) >= (1)) ? (15 - 4) : (1)) } { (((15 - 4 +4) >= (1)) ? (15 - 4 +4) : (1)) } { (((15 - 5) >= (1)) ? (15 - 5) : (1)) } { (((15 - 5) >= (1)) ? (15 - 5) : (1)) }
+
+    XLU_NARROW_WRITE_OPS`{Rd} : { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 15) >= (1)) ? (9 - 15) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 17) >= (1)) ? (9 - 17) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) }
+    OP_LDC`{Rd @MEM_RD_WIDTH} : { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 15) >= (1)) ? (9 - 15) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 17) >= (1)) ? (9 - 17) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) }
+
+    FU_OPS`{Rd} : { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 10) >= (1)) ? (9 - 10) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 15) >= (1)) ? (9 - 15) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 9) >= (1)) ? (9 - 9) : (1)) } { (((9 - 17) >= (1)) ? (9 - 17) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 21) >= (1)) ? (9 - 21) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4) >= (1)) ? (9 - 4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) } { (((9 - 5) >= (1)) ? (9 - 5) : (1)) }
+    ADU_OPS`{Rd} : { (((17 - 9) >= (1)) ? (17 - 9) : (1)) } { (((17 - 10) >= (1)) ? (17 - 10) : (1)) } { (((17 - 10) >= (1)) ? (17 - 10) : (1)) } { (((17 - 9) >= (1)) ? (17 - 9) : (1)) } { (((17 - 9) >= (1)) ? (17 - 9) : (1)) } { (((17 - 9) >= (1)) ? (17 - 9) : (1)) } { (((17 - 9) >= (1)) ? (17 - 9) : (1)) } { (((17 - 10) >= (1)) ? (17 - 10) : (1)) } { (((17 - 10) >= (1)) ? (17 - 10) : (1)) } { (((17 - 9) >= (1)) ? (17 - 9) : (1)) } { (((17 - 15) >= (1)) ? (17 - 15) : (1)) } { (((17 - 9) >= (1)) ? (17 - 9) : (1)) } { (((17 - 9) >= (1)) ? (17 - 9) : (1)) } { (((17 - 9) >= (1)) ? (17 - 9) : (1)) } { (((17 - 17) >= (1)) ? (17 - 17) : (1)) } { (((17 - 21) >= (1)) ? (17 - 21) : (1)) } { (((17 - 21) >= (1)) ? (17 - 21) : (1)) } { (((17 - 21) >= (1)) ? (17 - 21) : (1)) } { (((17 - 21) >= (1)) ? (17 - 21) : (1)) } { (((17 - 21) >= (1)) ? (17 - 21) : (1)) } { (((17 - 21) >= (1)) ? (17 - 21) : (1)) } { (((17 - 5) >= (1)) ? (17 - 5) : (1)) } { (((17 - 4) >= (1)) ? (17 - 4) : (1)) } { (((17 - 4) >= (1)) ? (17 - 4) : (1)) } { (((17 - 4 +4) >= (1)) ? (17 - 4 +4) : (1)) } { (((17 - 5) >= (1)) ? (17 - 5) : (1)) } { (((17 - 5) >= (1)) ? (17 - 5) : (1)) }
+
+    LSU_NARROW_WRITE_OPS`{Rd} : { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 15) >= (1)) ? (21 - 15) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 17) >= (1)) ? (21 - 17) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4 +4) >= (1)) ? (21 - 4 +4) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) }
+    WIDE_MEM_OPS`{Rd @MEM_RD_WIDTH} : { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 15) >= (1)) ? (21 - 15) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 17) >= (1)) ? (21 - 17) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4 +4) >= (1)) ? (21 - 4 +4) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) }
+    OP_SULDGA`{Rd @MEM_RD_WIDTH} : { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 15) >= (1)) ? (21 - 15) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 17) >= (1)) ? (21 - 17) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4 +4) >= (1)) ? (21 - 4 +4) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) }
+    OP_GETLMEMBASE`{Rd @2} : { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 15) >= (1)) ? (21 - 15) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 17) >= (1)) ? (21 - 17) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4 +4) >= (1)) ? (21 - 4 +4) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) }
+    WIDE_ATOM_OPS`{Rd @ATOM_RD_WIDTH} : { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 15) >= (1)) ? (21 - 15) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 17) >= (1)) ? (21 - 17) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4 +4) >= (1)) ? (21 - 4 +4) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) }
+    OP_ALD`{Rd @ATTR_RD_WIDTH} : { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 10) >= (1)) ? (21 - 10) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 15) >= (1)) ? (21 - 15) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 9) >= (1)) ? (21 - 9) : (1)) } { (((21 - 17) >= (1)) ? (21 - 17) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 21) >= (1)) ? (21 - 21) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4) >= (1)) ? (21 - 4) : (1)) } { (((21 - 4 +4) >= (1)) ? (21 - 4 +4) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) } { (((21 - 5) >= (1)) ? (21 - 5) : (1)) }
+
+    BRU_OPS`{Rd} : { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 15) >= (1)) ? (5 - 15) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 17) >= (1)) ? (5 - 17) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 5) >= (1)) ? (5 - 5) : (1)) } { (((5 - 4) >= (1)) ? (5 - 4) : (1)) } { (((5 - 4) >= (1)) ? (5 - 4) : (1)) } { (((5 - 4 +4) >= (1)) ? (5 - 4 +4) : (1)) } { (((5 - 5) >= (1)) ? (5 - 5) : (1)) } { (((5 - 5) >= (1)) ? (5 - 5) : (1)) }
+
+    TEX_NARROW_WRITE_OPS`{Rd} : { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 15) >= (1)) ? (4 - 15) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 17) >= (1)) ? (4 - 17) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 5) >= (1)) ? (4 - 5) : (1)) } { (((4 - 4) >= (1)) ? (4 - 4) : (1)) } { (((4 - 4) >= (1)) ? (4 - 4) : (1)) } { (((4 - 4 +4) >= (1)) ? (4 - 4 +4) : (1)) } { (((4 - 5) >= (1)) ? (4 - 5) : (1)) } { (((4 - 5) >= (1)) ? (4 - 5) : (1)) }
+    WIDE_TEXTURE_OPS`{Rd @TEX_RD_WIDTH} : { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 15) >= (1)) ? (4 - 15) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 17) >= (1)) ? (4 - 17) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 5) >= (1)) ? (4 - 5) : (1)) } { (((4 - 4) >= (1)) ? (4 - 4) : (1)) } { (((4 - 4) >= (1)) ? (4 - 4) : (1)) } { (((4 - 4 +4) >= (1)) ? (4 - 4 +4) : (1)) } { (((4 - 5) >= (1)) ? (4 - 5) : (1)) } { (((4 - 5) >= (1)) ? (4 - 5) : (1)) }
+    OP_LDG`{Rd @MEM_RD_WIDTH} : { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 10) >= (1)) ? (4 - 10) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 15) >= (1)) ? (4 - 15) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 9) >= (1)) ? (4 - 9) : (1)) } { (((4 - 17) >= (1)) ? (4 - 17) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 21) >= (1)) ? (4 - 21) : (1)) } { (((4 - 5) >= (1)) ? (4 - 5) : (1)) } { (((4 - 4) >= (1)) ? (4 - 4) : (1)) } { (((4 - 4) >= (1)) ? (4 - 4) : (1)) } { (((4 - 4 +4) >= (1)) ? (4 - 4 +4) : (1)) } { (((4 - 5) >= (1)) ? (4 - 5) : (1)) } { (((4 - 5) >= (1)) ? (4 - 5) : (1)) }
+
+    FE_OPS`{Rd} : { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 15) >= (1)) ? (5 - 15) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 17) >= (1)) ? (5 - 17) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 5) >= (1)) ? (5 - 5) : (1)) } { (((5 - 4) >= (1)) ? (5 - 4) : (1)) } { (((5 - 4) >= (1)) ? (5 - 4) : (1)) } { (((5 - 4 +4) >= (1)) ? (5 - 4 +4) : (1)) } { (((5 - 5) >= (1)) ? (5 - 5) : (1)) } { (((5 - 5) >= (1)) ? (5 - 5) : (1)) }
+    BAR_OPS`{Rd} : { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 10) >= (1)) ? (5 - 10) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 15) >= (1)) ? (5 - 15) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 9) >= (1)) ? (5 - 9) : (1)) } { (((5 - 17) >= (1)) ? (5 - 17) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 21) >= (1)) ? (5 - 21) : (1)) } { (((5 - 5) >= (1)) ? (5 - 5) : (1)) } { (((5 - 4) >= (1)) ? (5 - 4) : (1)) } { (((5 - 4) >= (1)) ? (5 - 4) : (1)) } { (((5 - 4 +4) >= (1)) ? (5 - 4 +4) : (1)) } { (((5 - 5) >= (1)) ? (5 - 5) : (1)) } { (((5 - 5) >= (1)) ? (5 - 5) : (1)) }
+};
+RESOURCE
+    SR(SR1) = { SR(0..255) } DEFAULT_ANTI=ORDERED_ZERO;
+
+CONNECTOR NAMES
+    SR, SRd: SR;
+
+
+
+TABLE_TRUE(SR) : ALL_OPS`{SR} = { ALL_OPS`{SRd} : 1 };
+HARD RESOURCE
+    PRED(P1) = { P(0..6), PT } DEFAULT_ANTI=ORDERED_ZERO;
+
+CONNECTOR NAMES
+    Pa, Pb, Pc, Pg, Pd, nPd, Pcl : PRED;
+    PR_PRED { P(0..6) } : PRED;
+
+
+
+TABLE_TRUE(PRED) : ALL_OPS`{Pa,Pb,Pc,Pg}
+                                  OP_P2R`{PR_PRED} =
+{
+    FAU_OPS`{Pd,nPd,Pcl} : {9 + 4}
+    FMAX_64_OPS`{Pd,nPd,Pcl} : {10 + 4}
+    FMAX_32_OPS`{Pd,nPd,Pcl} : {9 + 4}
+    FMALITE_64_OPS`{Pd,nPd,Pcl} : {10 + 4}
+    FMALITE_32_OPS`{Pd,nPd,Pcl} : {9 + 4}
+    SU_OPS`{Pd,nPd,Pcl} : {15 + 4}
+    XLU_OPS`{Pd,nPd,Pcl} : {9 + 4}
+    OP_R2P`{PR_PRED} : {9 + 4}
+    FU_OPS`{Pd,nPd,Pcl} : {9 + 4}
+    ADU_OPS`{Pd,nPd,Pcl} : {17 + 4}
+    LSU_OPS`{Pd,nPd,Pcl} : {21 + 4}
+    BRU_OPS`{Pd,nPd,Pcl} : {5 + 4}
+    TEX_OPS`{Pd,nPd,Pcl} : {4 + 4}
+    FE_OPS`{Pd,nPd,Pcl} : {5 + 4}
+    BAR_OPS`{Pd,nPd,Pcl} : {5 + 4}
+};
+
+
+TABLE_ANTI(PRED) : ALL_OPS`{Pd,nPd,Pcl}
+                            OP_R2P`{PR_PRED}=
+{
+    LSU_OPS`{Pa,Pb,Pc,Pg} : 1
+    TEX_OPS`{Pa,Pb,Pc,Pg} : 1
+};
+
+
+TABLE_OUTPUT(PRED) : FAU_OPS`{Pd,nPd,Pcl}
+                              FMAX_64_OPS`{Pd,nPd,Pcl}
+                              FMAX_32_OPS`{Pd,nPd,Pcl}
+                              FMALITE_64_OPS`{Pd,nPd,Pcl}
+                              FMALITE_32_OPS`{Pd,nPd,Pcl}
+                              SU_OPS`{Pd,nPd,Pcl}
+                              XLU_OPS`{Pd,nPd,Pcl}
+                              OP_R2P`{PR_PRED}
+                              FU_OPS`{Pd,nPd,Pcl}
+                              ADU_OPS`{Pd,nPd,Pcl}
+                              LSU_OPS`{Pd,nPd,Pcl}
+                              BRU_OPS`{Pd,nPd,Pcl}
+                              TEX_OPS`{Pd,nPd,Pcl}
+                              FE_OPS`{Pd,nPd,Pcl}
+                              BAR_OPS`{Pd,nPd,Pcl} =
+{
+    FAU_OPS`{Pd,nPd,Pcl} : { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 15 +4) >= (1)) ? (9 - 15 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 17 +4) >= (1)) ? (9 - 17 +4) : (1)) } { (((9 - 21 +4) >= (1)) ? (9 - 21 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) }
+    FMAX_64_OPS`{Pd,nPd,Pcl} : { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 10 +4) >= (1)) ? (10 - 10 +4) : (1)) } { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 10 +4) >= (1)) ? (10 - 10 +4) : (1)) } { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 15 +4) >= (1)) ? (10 - 15 +4) : (1)) } { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 17 +4) >= (1)) ? (10 - 17 +4) : (1)) } { (((10 - 21 +4) >= (1)) ? (10 - 21 +4) : (1)) } { (((10 - 5 +4) >= (1)) ? (10 - 5 +4) : (1)) } { (((10 - 4 +4) >= (1)) ? (10 - 4 +4) : (1)) } { (((10 - 5 +4) >= (1)) ? (10 - 5 +4) : (1)) } { (((10 - 5 +4) >= (1)) ? (10 - 5 +4) : (1)) }
+    FMAX_32_OPS`{Pd,nPd,Pcl} : { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 15 +4) >= (1)) ? (9 - 15 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 17 +4) >= (1)) ? (9 - 17 +4) : (1)) } { (((9 - 21 +4) >= (1)) ? (9 - 21 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) }
+    FMALITE_64_OPS`{Pd,nPd,Pcl} : { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 10 +4) >= (1)) ? (10 - 10 +4) : (1)) } { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 10 +4) >= (1)) ? (10 - 10 +4) : (1)) } { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 15 +4) >= (1)) ? (10 - 15 +4) : (1)) } { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 9 +4) >= (1)) ? (10 - 9 +4) : (1)) } { (((10 - 17 +4) >= (1)) ? (10 - 17 +4) : (1)) } { (((10 - 21 +4) >= (1)) ? (10 - 21 +4) : (1)) } { (((10 - 5 +4) >= (1)) ? (10 - 5 +4) : (1)) } { (((10 - 4 +4) >= (1)) ? (10 - 4 +4) : (1)) } { (((10 - 5 +4) >= (1)) ? (10 - 5 +4) : (1)) } { (((10 - 5 +4) >= (1)) ? (10 - 5 +4) : (1)) }
+    FMALITE_32_OPS`{Pd,nPd,Pcl} : { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 15 +4) >= (1)) ? (9 - 15 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 17 +4) >= (1)) ? (9 - 17 +4) : (1)) } { (((9 - 21 +4) >= (1)) ? (9 - 21 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) }
+    SU_OPS`{Pd,nPd,Pcl} : { (((15 - 9 +4) >= (1)) ? (15 - 9 +4) : (1)) } { (((15 - 10 +4) >= (1)) ? (15 - 10 +4) : (1)) } { (((15 - 9 +4) >= (1)) ? (15 - 9 +4) : (1)) } { (((15 - 10 +4) >= (1)) ? (15 - 10 +4) : (1)) } { (((15 - 9 +4) >= (1)) ? (15 - 9 +4) : (1)) } { (((15 - 15 +4) >= (1)) ? (15 - 15 +4) : (1)) } { (((15 - 9 +4) >= (1)) ? (15 - 9 +4) : (1)) } { (((15 - 9 +4) >= (1)) ? (15 - 9 +4) : (1)) } { (((15 - 9 +4) >= (1)) ? (15 - 9 +4) : (1)) } { (((15 - 17 +4) >= (1)) ? (15 - 17 +4) : (1)) } { (((15 - 21 +4) >= (1)) ? (15 - 21 +4) : (1)) } { (((15 - 5 +4) >= (1)) ? (15 - 5 +4) : (1)) } { (((15 - 4 +4) >= (1)) ? (15 - 4 +4) : (1)) } { (((15 - 5 +4) >= (1)) ? (15 - 5 +4) : (1)) } { (((15 - 5 +4) >= (1)) ? (15 - 5 +4) : (1)) }
+    XLU_OPS`{Pd,nPd,Pcl} : { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 15 +4) >= (1)) ? (9 - 15 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 17 +4) >= (1)) ? (9 - 17 +4) : (1)) } { (((9 - 21 +4) >= (1)) ? (9 - 21 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) }
+    OP_R2P`{PR_PRED} : { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 15 +4) >= (1)) ? (9 - 15 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 17 +4) >= (1)) ? (9 - 17 +4) : (1)) } { (((9 - 21 +4) >= (1)) ? (9 - 21 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) }
+    FU_OPS`{Pd,nPd,Pcl} : { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 10 +4) >= (1)) ? (9 - 10 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 15 +4) >= (1)) ? (9 - 15 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 9 +4) >= (1)) ? (9 - 9 +4) : (1)) } { (((9 - 17 +4) >= (1)) ? (9 - 17 +4) : (1)) } { (((9 - 21 +4) >= (1)) ? (9 - 21 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 4 +4) >= (1)) ? (9 - 4 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) } { (((9 - 5 +4) >= (1)) ? (9 - 5 +4) : (1)) }
+    ADU_OPS`{Pd,nPd,Pcl} : { (((17 - 9 +4) >= (1)) ? (17 - 9 +4) : (1)) } { (((17 - 10 +4) >= (1)) ? (17 - 10 +4) : (1)) } { (((17 - 9 +4) >= (1)) ? (17 - 9 +4) : (1)) } { (((17 - 10 +4) >= (1)) ? (17 - 10 +4) : (1)) } { (((17 - 9 +4) >= (1)) ? (17 - 9 +4) : (1)) } { (((17 - 15 +4) >= (1)) ? (17 - 15 +4) : (1)) } { (((17 - 9 +4) >= (1)) ? (17 - 9 +4) : (1)) } { (((17 - 9 +4) >= (1)) ? (17 - 9 +4) : (1)) } { (((17 - 9 +4) >= (1)) ? (17 - 9 +4) : (1)) } { (((17 - 17 +4) >= (1)) ? (17 - 17 +4) : (1)) } { (((17 - 21 +4) >= (1)) ? (17 - 21 +4) : (1)) } { (((17 - 5 +4) >= (1)) ? (17 - 5 +4) : (1)) } { (((17 - 4 +4) >= (1)) ? (17 - 4 +4) : (1)) } { (((17 - 5 +4) >= (1)) ? (17 - 5 +4) : (1)) } { (((17 - 5 +4) >= (1)) ? (17 - 5 +4) : (1)) }
+    LSU_OPS`{Pd,nPd,Pcl} : { (((21 - 9 +4) >= (1)) ? (21 - 9 +4) : (1)) } { (((21 - 10 +4) >= (1)) ? (21 - 10 +4) : (1)) } { (((21 - 9 +4) >= (1)) ? (21 - 9 +4) : (1)) } { (((21 - 10 +4) >= (1)) ? (21 - 10 +4) : (1)) } { (((21 - 9 +4) >= (1)) ? (21 - 9 +4) : (1)) } { (((21 - 15 +4) >= (1)) ? (21 - 15 +4) : (1)) } { (((21 - 9 +4) >= (1)) ? (21 - 9 +4) : (1)) } { (((21 - 9 +4) >= (1)) ? (21 - 9 +4) : (1)) } { (((21 - 9 +4) >= (1)) ? (21 - 9 +4) : (1)) } { (((21 - 17 +4) >= (1)) ? (21 - 17 +4) : (1)) } { (((21 - 21 +4) >= (1)) ? (21 - 21 +4) : (1)) } { (((21 - 5 +4) >= (1)) ? (21 - 5 +4) : (1)) } { (((21 - 4 +4) >= (1)) ? (21 - 4 +4) : (1)) } { (((21 - 5 +4) >= (1)) ? (21 - 5 +4) : (1)) } { (((21 - 5 +4) >= (1)) ? (21 - 5 +4) : (1)) }
+    BRU_OPS`{Pd,nPd,Pcl} : { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 10 +4) >= (1)) ? (5 - 10 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 10 +4) >= (1)) ? (5 - 10 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 15 +4) >= (1)) ? (5 - 15 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 17 +4) >= (1)) ? (5 - 17 +4) : (1)) } { (((5 - 21 +4) >= (1)) ? (5 - 21 +4) : (1)) } { (((5 - 5 +4) >= (1)) ? (5 - 5 +4) : (1)) } { (((5 - 4 +4) >= (1)) ? (5 - 4 +4) : (1)) } { (((5 - 5 +4) >= (1)) ? (5 - 5 +4) : (1)) } { (((5 - 5 +4) >= (1)) ? (5 - 5 +4) : (1)) }
+    TEX_OPS`{Pd,nPd,Pcl} : { (((4 - 9 +4) >= (1)) ? (4 - 9 +4) : (1)) } { (((4 - 10 +4) >= (1)) ? (4 - 10 +4) : (1)) } { (((4 - 9 +4) >= (1)) ? (4 - 9 +4) : (1)) } { (((4 - 10 +4) >= (1)) ? (4 - 10 +4) : (1)) } { (((4 - 9 +4) >= (1)) ? (4 - 9 +4) : (1)) } { (((4 - 15 +4) >= (1)) ? (4 - 15 +4) : (1)) } { (((4 - 9 +4) >= (1)) ? (4 - 9 +4) : (1)) } { (((4 - 9 +4) >= (1)) ? (4 - 9 +4) : (1)) } { (((4 - 9 +4) >= (1)) ? (4 - 9 +4) : (1)) } { (((4 - 17 +4) >= (1)) ? (4 - 17 +4) : (1)) } { (((4 - 21 +4) >= (1)) ? (4 - 21 +4) : (1)) } { (((4 - 5 +4) >= (1)) ? (4 - 5 +4) : (1)) } { (((4 - 4 +4) >= (1)) ? (4 - 4 +4) : (1)) } { (((4 - 5 +4) >= (1)) ? (4 - 5 +4) : (1)) } { (((4 - 5 +4) >= (1)) ? (4 - 5 +4) : (1)) }
+    FE_OPS`{Pd,nPd,Pcl} : { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 10 +4) >= (1)) ? (5 - 10 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 10 +4) >= (1)) ? (5 - 10 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 15 +4) >= (1)) ? (5 - 15 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 17 +4) >= (1)) ? (5 - 17 +4) : (1)) } { (((5 - 21 +4) >= (1)) ? (5 - 21 +4) : (1)) } { (((5 - 5 +4) >= (1)) ? (5 - 5 +4) : (1)) } { (((5 - 4 +4) >= (1)) ? (5 - 4 +4) : (1)) } { (((5 - 5 +4) >= (1)) ? (5 - 5 +4) : (1)) } { (((5 - 5 +4) >= (1)) ? (5 - 5 +4) : (1)) }
+    BAR_OPS`{Pd,nPd,Pcl} : { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 10 +4) >= (1)) ? (5 - 10 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 10 +4) >= (1)) ? (5 - 10 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 15 +4) >= (1)) ? (5 - 15 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 9 +4) >= (1)) ? (5 - 9 +4) : (1)) } { (((5 - 17 +4) >= (1)) ? (5 - 17 +4) : (1)) } { (((5 - 21 +4) >= (1)) ? (5 - 21 +4) : (1)) } { (((5 - 5 +4) >= (1)) ? (5 - 5 +4) : (1)) } { (((5 - 4 +4) >= (1)) ? (5 - 4 +4) : (1)) } { (((5 - 5 +4) >= (1)) ? (5 - 5 +4) : (1)) } { (((5 - 5 +4) >= (1)) ? (5 - 5 +4) : (1)) }
+};
+HARD RESOURCE
+    CC(CC) = { CC } DEFAULT_ANTI=ORDERED_ZERO DEFAULT_OUTPUT=1;
+
+CONNECTOR NAMES
+    inputCC,dummyCC,writeCC,TestCC : CC;
+    PR_CC { CC } : CC;
+
+OPERATION SETS
+    SPECIAL_XMODE_OPS = OP_SHF + OP_IMNMX;
+    XMODE_OPS = ALL_OPS - (OP_P2R+SPECIAL_XMODE_OPS);
+
+CONNECTOR CONDITIONS
+    CC_NON_CONST = ((CCTest != 0) && (CCTest != 15)) _OR_ ((fcomp != 0) && (fcomp != 15));
+
+
+TABLE_TRUE(CC) : ALL_OPS[CC_NON_CONST]`{inputCC,dummyCC,TestCC}
+                                         XMODE_OPS[?xmode]`{PR_CC}
+                                         SPECIAL_XMODE_OPS[xmode > 1]`{PR_CC}
+                                         OP_P2R`{PR_CC} =
+{
+    FAU_OPS[?writeCC]`{writeCC} : {9 + 4}
+    FMAX_64_OPS[?writeCC]`{writeCC} : {10 + 4}
+    FMAX_32_OPS[?writeCC]`{writeCC} : {9 + 4}
+    FMALITE_64_OPS[?writeCC]`{writeCC} : {10 + 4}
+    FMALITE_32_OPS[?writeCC]`{writeCC} : {9 + 4}
+    SU_OPS[?writeCC]`{writeCC} : {15 + 4}
+    XLU_OPS[?writeCC]`{writeCC} : {9 + 4}
+    OP_R2P`{PR_CC} : {9 + 4}
+    FU_OPS[?writeCC]`{writeCC} : {9 + 4}
+    ADU_OPS[?writeCC]`{writeCC} : {17 + 4}
+    LSU_OPS[?writeCC]`{writeCC} : {21 + 4}
+    BRU_OPS[?writeCC]`{writeCC} : {5 + 4}
+    TEX_OPS[?writeCC]`{writeCC} : {4 + 4}
+    FE_OPS[?writeCC]`{writeCC} : {5 + 4}
+    BAR_OPS[?writeCC]`{writeCC} : {5 + 4}
+    OP_VOTE[vtgmode>=5]`{PR_CC} : {5 + 4}
+};
+
+
+TABLE_ANTI(CC) : ALL_OPS[?writeCC]`{writeCC}
+                                                     OP_R2P`{PR_CC}
+                                                     OP_VOTE[vtgmode>=5]`{PR_CC} =
+{
+    LSU_OPS[CC_NON_CONST]`{inputCC,dummyCC,TestCC} : 1
+    TEX_OPS[CC_NON_CONST]`{inputCC,dummyCC,TestCC} : 1
+};
+HARD RESOURCE
+    MEMORY DEFAULT_OUTPUT=ORDERED_ZERO DEFAULT_ANTI=0;
+
+CONNECTOR NAME
+    Mem : MEMORY;
+
+TABLE_TRUE(MEMORY) : LOAD_OPS`{Mem}
+                      CACHE_OPS`{Mem}
+                      OP_BAR`{Mem}=
+{
+    STORE_OPS`{Mem} : ORDERED_ZERO
+    CACHE_OPS`{Mem} : ORDERED_ZERO
+    OP_BAR`{Mem} : ORDERED_ZERO
+};
+HARD RESOURCE
+    MEMORY_INTERLOCK;
+
+CONNECTOR NAME
+    MemInterlock : MEMORY_INTERLOCK;
+
+CONNECTOR CONDITION
+    REORDER = ANNOTATED( "dilbertCheck" )
+           || ANNOTATED( "zlfCounter" )
+           || ANNOTATED( "firstResort_IFB" "_" "dilbertCheck" )
+           || ANNOTATED( "firstResort_IFB" "_" "zlfCounter" )
+           || ANNOTATED( "trans1" "_" "zlfCounter" )
+           || ANNOTATED( "trans4" "_" "zlfCounter" )
+           || ANNOTATED( "firstResort_IFB" "_" "cubeAlgo" "_" "zlfCounter" );
+
+
+OPERATION SETS
+    NONE = {};
+
+CONNECTOR SETS
+    MI_LDL = OP_LDL[!REORDER]`{MemInterlock};
+    MI_LDS = OP_LDS[!REORDER]`{MemInterlock} + OP_LDSLK[!REORDER]`{MemInterlock};
+    MI_LD = OP_LD[!REORDER]`{MemInterlock};
+    MI_STL = OP_STL[!REORDER]`{MemInterlock};
+    MI_STS = OP_STS[!REORDER]`{MemInterlock} + OP_STSCUL[!REORDER]`{MemInterlock};
+    MI_ST = OP_ST[!REORDER]`{MemInterlock};
+    MI_SULD = OP_SULDGA[!REORDER]`{MemInterlock};
+    MI_SUST = OP_SUSTGA[!REORDER]`{MemInterlock};
+    MI_ALD = OP_ALD[!REORDER]`{MemInterlock};
+    MI_AST = OP_AST[!REORDER]`{MemInterlock};
+    MI_ATOM = WIDE_ATOM_OPS[!REORDER]`{MemInterlock};
+    MI_MBAR_SG = OP_MEMBAR[!REORDER && (lvl > 0)]`{MemInterlock} ;
+    MI_MBAR_CTA = OP_MEMBAR[!REORDER && (lvl == 0)]`{MemInterlock} + OP_BAR[!REORDER && ((barmode == 0) || (barmode == 2) || (barmode == 4))]`{MemInterlock};
+    MI_DC_INV = OP_CCTL[!REORDER && (cache == 0) && ((cctlop == 4) || (cctlop == 5) || (cctlop == 6) || (cctlop == 7))]`{MemInterlock} +
+                OP_CCTLL[!REORDER && (cache == 0) && ((cctllop == 4) || (cctllop == 5) || (cctllop == 6) || (cctllop == 7))]`{MemInterlock} +
+                OP_CCTLS[!REORDER && (cctlop == 9)]`{MemInterlock};
+    MI_DC_PRE = OP_CCTL[!REORDER && (cache == 0) && ((cctlop == 1) || (cctlop == 2) || (cctlop == 3))]`{MemInterlock} +
+                OP_CCTLL[!REORDER && (cache == 0) && ((cctllop == 1) || (cctllop == 2) || (cctllop == 3))]`{MemInterlock};
+    MI_SETLMEM = OP_SETLMEMBASE[!REORDER]`{MemInterlock};
+    MI_GETLMEM = OP_GETLMEMBASE[!REORDER]`{MemInterlock};
+    MI_CRS = NONE`{MemInterlock};
+    MI_BPT_DRAIN = OP_BPT[!REORDER && (bpt == 5)]`{MemInterlock};
+
+
+    MI_MBAR = OP_MEMBAR[!REORDER]`{MemInterlock} + OP_BAR[!REORDER && ((barmode == 0) || (barmode == 2) || (barmode == 4))]`{MemInterlock};
+    MI_DC = OP_CCTL[!REORDER && (cache == 0) && (cctlop > 0)]`{MemInterlock} +
+            OP_CCTLL[!REORDER && (cache == 0) && (cctlop > 0)]`{MemInterlock} +
+            OP_CCTLS[!REORDER && (cctlop == 9)]`{MemInterlock};
+
+TABLE_OUTPUT(MEMORY_INTERLOCK) :
+                   MI_LDL
+                       MI_LDS
+                           MI_LD
+                               MI_STL
+                                   MI_STS
+                                       MI_ST
+                                           MI_SULD
+                                               MI_SUST
+                                                   MI_ALD
+                                                       MI_AST
+                                                           MI_ATOM
+                                                               MI_MBAR
+                                                                   MI_DC
+                                                                       MI_SETLMEM
+                                                                           MI_GETLMEM
+                                                                               MI_CRS
+                                                                                   MI_BPT_DRAIN =
+{
+    MI_LDL : - - - 15 - 15 - - - - - 15 15 15 - - 15
+    MI_LDS : - - - - 15 15 - - - - - 15 15 - - - 15
+    MI_LD : - - - 15 15 15 - 15 - - 15 15 15 15 - - 15
+    MI_STL : 15 - 15 15 - 15 - - - - - 15 15 15 - - 15
+    MI_STS : - 15 15 - 15 15 - - - - - 15 15 - - - 15
+    MI_ST : 15 15 15 15 15 15 15 15 - - 15 15 15 15 - - 15
+    MI_SULD : - - - - - 15 - 15 - - 15 15 15 15 - - 15
+    MI_SUST : - - 15 - - 15 15 15 - - 15 15 15 15 - - 15
+    MI_ALD : - - - - - - - - - 15 - - - - - - 15
+    MI_AST : - - - - - - - - 15 15 - - - - - - 15
+    MI_ATOM : - - 15 - - 15 15 15 - - 15 15 15 15 - - 15
+    MI_MBAR : 15 15 15 15 15 15 15 15 - - 15 15 15 15 - - 15
+    MI_DC : 15 15 15 15 15 15 15 15 - - 15 15 15 15 - 15 15
+    MI_SETLMEM : 15 - 15 15 - 15 15 15 - - 15 15 15 15 15 15 15
+    MI_GETLMEM : - - - - - - - - - - - - - 15 - - 15
+    MI_CRS : 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15
+    MI_BPT_DRAIN : - - - - - - - - - - - - - - - - 15
+};
+RESOURCE
+    CONTROL DEFAULT_OUTPUT=HARD(1) DEFAULT_ANTI=HARD(1);
+
+CONNECTOR NAME
+    Ctl : CONTROL;
+
+OPERATION SETS
+    CTL_OPS = (BRU_OPS+ADU_OPS) - OP_NOP;
+    SYNC_OPS = ALL_OPS - CTL_OPS;
+
+TABLE_OUTPUT(CONTROL) : CTL_OPS`{Ctl}
+                           SYNC_OPS[?sync]`{Ctl}=
+{
+   CTL_OPS`{Ctl} : 1
+   SYNC_OPS[?sync]`{Ctl} : 1
+};
+HARD RESOURCE
+    TEXBAR DEFAULT_ANTI=ORDERED_ZERO;
+
+CONNECTOR NAME
+    Texbar : TEXBAR;
+
+OPERATION SETS
+    NON_TEX_OPS = ALL_OPS - (OP_TEXDEPBAR + TEX_OPS);
+
+TABLE_TRUE(TEXBAR) : NON_TEX_OPS`{Texbar} =
+{
+    TEX_OPS`{Texbar} : 18
+    OP_TEXDEPBAR`{Texbar} : -
+};
+
+TABLE_OUTPUT(TEXBAR) : OP_TEXDEPBAR`{Texbar}
+                                TEX_OPS`{Texbar} =
+{
+    OP_TEXDEPBAR`{Texbar} : 1 1
+    TEX_OPS`{Texbar} : 1 1
+};
+RESOURCE
+    LMEMBASE DEFAULT_OUTPUT=HARD(1) DEFAULT_ANTI=HARD(1);
+
+CONNECTOR NAME
+    Lmembase : LMEMBASE;
+
+TABLE_TRUE(LMEMBASE) : OP_GETLMEMBASE`{Lmembase}
+                                LOAD_OPS`{Lmembase}
+                                STORE_OPS`{Lmembase} =
+{
+    OP_SETLMEMBASE`{Lmembase} : 1
+};
+RESOURCE
+    BARRIER DEFAULT_OUTPUT=HARD(1) DEFAULT_ANTI=HARD(1);
+
+CONNECTOR NAME
+    Bar : BARRIER;
+
+TABLE_TRUE(BARRIER) : BAR_RD_OPS`{Bar} =
+{ BAR_WR_OPS`{Bar} : 1 };
+RESOURCE
+    SHMEMLK DEFAULT_OUTPUT=HARD(1) DEFAULT_ANTI=HARD(1);
+
+CONNECTOR NAME
+    shmemlk : SHMEMLK;
+
+TABLE_TRUE(SHMEMLK) : SHMEMLK_RD_OPS`{shmemlk} =
+{ SHMEMLK_WR_OPS[?cctl]`{shmemlk} : 1 };
+RESOURCE
+    ISBE DEFAULT_OUTPUT=HARD(1) DEFAULT_ANTI=HARD(1);
+
+CONNECTOR NAME
+    isbe : ISBE;
+
+TABLE_TRUE(ISBE) : ISBE_RD_OPS`{isbe} =
+{ ISBE_WR_OPS`{isbe} : 1 };
+RESOURCE
+    BSTACK DEFAULT_OUTPUT=1 DEFAULT_ANTI=1;
+
+CONNECTOR NAME
+    bStack : BSTACK;
+
+OPERATION SET
+    BRST_OPS = (BRU_OPS+ADU_OPS) - OP_NOP;
+
+TABLE_TRUE(BSTACK) : BRST_OPS`{bStack}
+                              SYNC_OPS[?sync]`{bStack}=
+{
+   BRST_OPS`{bStack} : 1
+   SYNC_OPS[?sync]`{bStack} : 1
+};
+PIPELINE RESOURCE FAU_Occupancy : 1;
+PIPELINE RESOURCE FMAX_Occupancy : 1;
+PIPELINE RESOURCE FMALITE_Occupancy : 1;
+PIPELINE RESOURCE SU_Occupancy : 1;
+PIPELINE RESOURCE XLU_Occupancy : 1;
+PIPELINE RESOURCE FU_Occupancy : 1;
+PIPELINE RESOURCE ADU_Occupancy : 1;
+PIPELINE RESOURCE LSU_Occupancy : 1;
+PIPELINE RESOURCE BRU_Occupancy : 1;
+PIPELINE RESOURCE TEX_Occupancy : 1;
+PIPELINE RESOURCE FE_Occupancy : 1;
+PIPELINE RESOURCE BAR_Occupancy : 1;
+PIPELINE RESOURCE SHARED_Occupancy : 1;
+
+PIPELINE RESOURCE TEX_Buf_Occupancy : 4;
+
+
+
+OPERATION PIPELINE RESOURCES
+    FAU_OPS : FAU_Occupancy [1];
+    FMAX_64_OPS : FMAX_Occupancy [4];
+    FMAX_32_OPS : FMAX_Occupancy [4];
+    FMALITE_64_OPS : FMALITE_Occupancy [4];
+    FMALITE_32_OPS : FMALITE_Occupancy [4];
+    SU_OPS : SU_Occupancy [4];
+    XLU_OPS : XLU_Occupancy [4];
+    FU_OPS : FU_Occupancy [4];
+    ADU_OPS : ADU_Occupancy [4];
+    LSU_OPS : LSU_Occupancy [4];
+    BRU_OPS : BRU_Occupancy [1];
+    TEX_OPS : TEX_Occupancy [4];
+    FE_OPS : FE_Occupancy [4];
+    BAR_OPS : BAR_Occupancy [4];
+    SHARED_OPS : SHARED_Occupancy [1];
+
+    TEX_OPS : TEX_Buf_Occupancy [32];
