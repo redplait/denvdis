@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
     return 1;
   }
   // all md located in .data section
-  section *data;
+  section *data = nullptr;
   Elf_Half n = elf.sections.size();
   for ( Elf_Half i = 0; i < n; i++) {
     section *s = elf.sections[i];
