@@ -133,7 +133,6 @@ bool decrypt_part(section *d, int idx) {
     fprintf(stderr, "cannot create %s, error %d (%s)\n", fname.c_str(), errno, strerror(errno));
     return false;
   }
-  size_t curr = 0;
   decr_ctx ctx;
   ctx.wtf = mds[idx].init;
   ctx.seed = 0;
