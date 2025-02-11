@@ -1,9 +1,13 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <elfio/elfio.hpp>
 
 typedef  uint32_t _DWORD;
 typedef  unsigned char _BYTE;
+// sub-dir to store results
+const char *subdir = "data/";
 
 const _DWORD seeds[64] = {
  0x1E0D8064, 0x16EFF6E2, 0x3A29FF98, 0x0AD28CF5E, 0x0CEFC4584, 0x0ACE3AB65,
@@ -24,9 +28,9 @@ const _BYTE *salt = (const _BYTE *)seeds;
 // 0x4816 0 1 0xe9
 struct decr_ctx {
  _DWORD wtf;
- _DWORD seed;
- _DWORD res;
- _BYTE l;
+ _DWORD seed; // 4
+ _DWORD res;  // 8
+ _BYTE l;     // 12
 };
 
 _DWORD decrypt(decr_ctx *ctx, unsigned char *a2, int a3) {
@@ -53,6 +57,7 @@ _DWORD decrypt(decr_ctx *ctx, unsigned char *a2, int a3) {
       else
       {
         result = 4;
+        // very similar to srand, see https://github.com/insidegui/flux/blob/master/libc/stdlib/rand.c
         v3 = 1103515245 * ctx->wtf + 0x3039;
         ctx->wtf = v3;
       }
@@ -120,7 +125,8 @@ using namespace ELFIO;
 
 bool decrypt_part(section *d, int idx) {
   auto ptr = d->get_data() + mds[idx].off - d->get_address();
-  std::string fname = mds[idx].name;
+  std::string fname = subdir;
+  fname += mds[idx].name;
   fname += ".txt";
   FILE *fp = fopen(fname.c_str(), "w");
   if ( !fp ) return false;
@@ -165,6 +171,14 @@ int main(int argc, char **argv) {
     fprintf(stderr, "cannot find section .data in %s\n", def);
     return 2;
   }
+  // make subdir
+  if ( mkdir(subdir, 0744) ) {
+    if ( errno != EEXIST ) {
+      fprintf(stderr, "cannot create %s, error %d (%s)\n", subdir, errno, strerror(errno));
+      return 3;
+    }
+  }
+  // process machine descriptions in table mds
   for ( int idx = 0; mds[idx].off; ++idx )
     decrypt_part(data, idx);
 }
