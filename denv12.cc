@@ -93,7 +93,13 @@ struct one_md {
 const one_md mds[] = {
  // 72, 75 - B4A
  // 80, 86 - 8416
+ { 0x878100, 0x52D36, 0, 0x8416, "sm86_1" },
+ { 0x8713A0, 0x6D51, 1, 0x8416, "sm86_2" },
+ { 0x871360, 0x20, 2, 0x8416, "sm86_3" },
  // 89 - 1684
+ { 0x8D1D00, 0x575A0, 0, 0x1684, "sm89_1" },
+ { 0x8CAE80, 0x6E7E, 1, 0x1684, "sm89_2" },
+ { 0x8CAE40, 0x20, 2, 0x1684, "sm89_3" },
  // 90 - 3927
  { 0xA3A5E0, 0x6D365, 0, 0x3927, "sm90_1" },
  { 0xA31DE0, 0x87EE, 1, 0x3927, "sm90_2" },
@@ -139,11 +145,11 @@ bool decrypt_part(section *d, int idx) {
   ctx.l = ~l;
   memcpy(out, ptr, mds[idx].size);
   auto dres = decrypt(&ctx, out, mds[idx].size);
- printf("idx %d dres %X\n", idx, dres);
-  if ( out[0] & 0xf0 == 0xf0 ) {
-    printf("idx %d - lz4\n", idx);
+ // printf("idx %d dres %X\n", idx, dres);
+  if ( (out[0] & 0xf0) == 0xf0 ) {
     // lz4 decompress
     auto res = LZ4_decompress_safe((const char *)out, decompress_buf, mds[idx].size, sizeof(decompress_buf));
+  printf("idx %d - len %X lz4 %X\n", idx, mds[idx].size, res);
     if ( res )
       fwrite(decompress_buf, 1, res, fp);
     else {
