@@ -1,3 +1,9 @@
+a  sm10
+b  sm11
+c  sm12
+d  sm13
+14 sm20
+15 sm21
 1E sm30
 20 sm32
 23 sm35
