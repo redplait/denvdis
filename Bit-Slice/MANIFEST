@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+MANIFEST
+ppport.h
+README
+Slice.xs
+t/Bit-Slice.t
+lib/Bit/Slice.pm

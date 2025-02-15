@@ -1,0 +1,6 @@
+Revision history for Perl extension Bit::Slice.
+
+0.01  Fri Feb 14 20:48:43 2025
+	- original version; created by h2xs 1.23 with options
+		-cfn Bit::Slice
+
