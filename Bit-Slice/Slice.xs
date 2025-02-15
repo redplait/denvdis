@@ -63,10 +63,11 @@ class bit_slice {
       return false;
     }
     uint64_t res2 = 0;
-    if ( !extract(from1, len1, res) || !!extract(from2, len2, res2)) return false;
+    if ( !extract(from1, len1, res) || !extract(from2, len2, res2)) return false;
     res = (res << len2) | res2;
     return true;
   }
+  // looks very clumsy
   bool extract3(int from1, int len1, int from2, int len2, int from3, int len3, uint64_t &res) const
   {
     // check total length
@@ -75,14 +76,14 @@ class bit_slice {
       return false;
     }
     uint64_t res2 = 0;
-    if ( !extract(from1, len1, res) || !!extract(from2, len2, res2)) return false;
+    if ( !extract(from1, len1, res) || !extract(from2, len2, res2)) return false;
     res = (res << len2) | res2;
     res2 = 0;
     if ( !extract(from3, len3, res2) ) return false;
     res = (res << len3) | res2;
     return true;
   }
-  // generalized extractN, expect array in form fromI, lenI
+  // generalized extractN, expects array in form fromI, lenI
   bool extractN(AV* array, uint64_t &res) const
   {
     std::vector<std::pair<int, int> > tmp;
@@ -97,7 +98,7 @@ class bit_slice {
     }
     // check if we have even list items
     if ( comp || tmp.empty() ) return false;
-    // and bitsize not exceed uint64_t
+    // and bitsize don't exceed uint64_t
     int total = 0;
     for ( const auto &p: tmp ) total += p.second;
     if ( total > sizeof(uint64_t) * CHAR_BIT) {
@@ -292,7 +293,7 @@ getN(SV *arg, SV *aref)
   AV *array;
  PPCODE:
   if (!SvROK(aref) || SvTYPE(SvRV(aref)) != SVt_PVAV)
-    croak("getN expected ARRAY ref");
+    croak("getN expects ARRAY ref");
   array = (AV*) SvRV(aref);
   if ( t->extractN(array, res) )
     ST(0)= sv_2mortal( newSVuv(res) );
