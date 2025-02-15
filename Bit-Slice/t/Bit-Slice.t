@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 BEGIN { use_ok('Bit::Slice') };
 my @a = ( 1, 8, 0xff );
 my $bs = Bit::Slice->new( \@a );
@@ -23,6 +23,10 @@ my $r2 = $bs->get(4, 8);
 ok( $r2 == 0x8, "4:8" );
 my $r3 = $bs->get(4, 16);
 ok( $r3 == 0x80f, "4:16" );
+# extract N
+my @idx = ( 0, 1, 8, 8 );
+my $rN = $bs->getN(\@idx);
+ok( $rN = 0x18, 'getN');
 
 #########################
 

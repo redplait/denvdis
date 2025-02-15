@@ -38,7 +38,7 @@ class bit_slice {
   }
   bool test(int idx) const
   {
-    if ( idx > m_array.size() * CHAR_BIT ) return false;
+    if ( idx >= m_array.size() * CHAR_BIT ) return false;
     return m_array[BIT_CHAR(idx)] & BIT_IN_CHAR(idx);
   }
   bool extract(int from, int len, uint64_t &res) const
@@ -80,6 +80,37 @@ class bit_slice {
     res2 = 0;
     if ( !extract(from3, len3, res2) ) return false;
     res = (res << len3) | res2;
+    return true;
+  }
+  // generalized extractN, expect array in form fromI, lenI
+  bool extractN(AV* array, uint64_t &res) const
+  {
+    std::vector<std::pair<int, int> > tmp;
+    int old, comp = 0;
+    for ( int i = 0; i <= av_len(array); i++ ) {
+     SV** elem = av_fetch(array, i, 0);
+     if (elem != NULL) {
+       if ( !comp ) old = SvIV(*elem);
+       else tmp.push_back(std::make_pair(old, SvIV(*elem)));
+       comp ^= 1;
+     }
+    }
+    // check if we have even list items
+    if ( comp || tmp.empty() ) return false;
+    // and bitsize not exceed uint64_t
+    int total = 0;
+    for ( const auto &p: tmp ) total += p.second;
+    if ( total > sizeof(uint64_t) * CHAR_BIT) {
+      croak("lenN %d > sizeof(uint64_t)\n", total);
+      return false;
+    }
+    // extract bits
+    for ( int i = 0; i < tmp.size(); ++i ) {
+      uint64_t res2 = 0;
+      if ( !extract(tmp[i].first, tmp[i].second, res2) ) return false;
+      if ( !i ) res = res2;
+      else res = (res << tmp[i-1].second) | res2;
+    }
     return true;
   }
  protected:
@@ -248,6 +279,22 @@ get3(SV *arg, int from1, int len1, int from2, int len2, int from3, int len3)
   uint64_t res = 0;
  PPCODE:
   if ( t->extract3(from1, len1, from2, len2, from3, len3, res) )
+    ST(0)= sv_2mortal( newSVuv(res) );
+  else
+    ST(0) = &PL_sv_undef;
+  XSRETURN(1);
+
+void
+getN(SV *arg, SV *aref)
+ INIT:
+  struct bit_slice *t= get_magic(arg, 1, &bitslice_magic_vt);
+  uint64_t res = 0;
+  AV *array;
+ PPCODE:
+  if (!SvROK(aref) || SvTYPE(SvRV(aref)) != SVt_PVAV)
+    croak("getN expected ARRAY ref");
+  array = (AV*) SvRV(aref);
+  if ( t->extractN(array, res) )
     ST(0)= sv_2mortal( newSVuv(res) );
   else
     ST(0) = &PL_sv_undef;
