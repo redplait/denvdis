@@ -17,6 +17,8 @@ static const char *hexes = "0123456789abcdef";
 #endif
 
 #define BIT_CHAR(bit)         ((bit) / CHAR_BIT)
+/* position of bit within character */
+#define BIT_IN_CHAR(bit)      (1 << (CHAR_BIT - 1 - ((bit)  % CHAR_BIT)))
 
 class bit_slice {
  public:
@@ -33,6 +35,11 @@ class bit_slice {
       res.push_back( hexes[c >> 4] );
       res.push_back( hexes[c & 0xf] );
     }
+  }
+  bool test(int idx) const
+  {
+    if ( idx > m_array.size() * CHAR_BIT ) return false;
+    return m_array[BIT_CHAR(idx)] & BIT_IN_CHAR(idx);
   }
   bool extract(int from, int len, uint64_t &res) const
   {
@@ -197,6 +204,17 @@ to_str(SV *arg)
  PPCODE:
   t->to_str(res);
   ST(0)= sv_2mortal( newSVpv(res.c_str(), res.size()) );
+  XSRETURN(1);
+
+void
+test(SV *arg, int idx)
+ INIT:
+  struct bit_slice *t= get_magic(arg, 1, &bitslice_magic_vt);
+ PPCODE:
+  if ( t->test(idx) )
+    ST(0)= &PL_sv_yes;
+  else
+    ST(0) = &PL_sv_no;
   XSRETURN(1);
 
 void
