@@ -1,0 +1,155 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .u64 %rdv1) __cuda_sm20_rem_s64 (.reg .u64 %rda1, .reg .u64 %rda2)
+    {
+        .reg .pred %p<5>;
+        .reg .s32 %r<6>;
+        .reg .f32 %f<4>;
+        .reg .s64 %rd<38>;
+
+        mov.u64 %rd1, %rda1;
+        mov.u64 %rd2, %rda2;
+        neg.s64 %rd33, %rd1;
+        {
+            .reg .s32 lo;
+            mov.b64 {lo, %r1}, %rd1;
+        }
+        setp.lt.s32 %p1, %r1, 0;
+        selp.b64 %rd22, %rd33, %rd1, %p1;
+        {
+            .reg .s32 lo;
+            mov.b64 {lo, %r2}, %rd2;
+        }
+        setp.lt.s32 %p2, %r2, 0;
+        neg.s64 %rd34, %rd2;
+        selp.b64 %rd29, %rd34, %rd2, %p2;
+        cvt.rp.f32.u64 %f1, %rd29;
+        rcp.approx.ftz.f32 %f2, %f1;
+        mov.b32 %r4, %f2;
+        add.s32 %r5, %r4, 536870910;
+        mov.b32 %f3, %r5;
+        cvt.rzi.ftz.u64.f32 %rd10, %f3;
+        {
+            .reg .u32 r0, r1, r2, r3, alo, ahi, blo, bhi;
+            mov.b64 {alo,ahi}, %rd10;
+            mov.b64 {blo,bhi}, %rd29;
+            mul.lo.u32 r0, alo, blo;
+            mul.hi.u32 r1, alo, blo;
+            mad.lo.cc.u32 r1, alo, bhi, r1;
+            madc.hi.u32 r2, alo, bhi, 0;
+            mad.lo.cc.u32 r1, ahi, blo, r1;
+            madc.hi.cc.u32 r2, ahi, blo, r2;
+            madc.hi.u32 r3, ahi, bhi, 0;
+            mad.lo.cc.u32 r2, ahi, bhi, r2;
+            addc.u32 r3, r3, 0;
+            mov.b64 %rd3, {r0,r1};
+            mov.b64 %rd4, {r2,r3};
+        }
+        neg.s64 %rd9, %rd3;
+        {
+            .reg .u32 r0, r1, r2, r3, alo, ahi, blo, bhi, clo, chi;
+            mov.b64 {alo,ahi}, %rd10;
+            mov.b64 {blo,bhi}, %rd9;
+            mov.b64 {clo,chi}, %rd10;
+            mul.lo.u32 r0, alo, blo;
+            mul.hi.u32 r1, alo, blo;
+            mad.lo.cc.u32 r1, alo, bhi, r1;
+            madc.hi.cc.u32 r2, alo, bhi, clo;
+            madc.hi.u32 r3, ahi, bhi, chi;
+            mad.lo.cc.u32 r1, ahi, blo, r1;
+            madc.hi.cc.u32 r2, ahi, blo, r2;
+            addc.u32 r3, r3, 0;
+            mad.lo.cc.u32 r2, ahi, bhi, r2;
+            addc.u32 r3, r3, 0;
+            mov.b64 %rd7, {r2,r3};
+        }
+        {
+            .reg .u32 r0, r1, r2, r3, alo, ahi, blo, bhi;
+            mov.b64 {alo,ahi}, %rd7;
+            mov.b64 {blo,bhi}, %rd29;
+            mul.lo.u32 r0, alo, blo;
+            mul.hi.u32 r1, alo, blo;
+            mad.lo.cc.u32 r1, alo, bhi, r1;
+            madc.hi.u32 r2, alo, bhi, 0;
+            mad.lo.cc.u32 r1, ahi, blo, r1;
+            madc.hi.cc.u32 r2, ahi, blo, r2;
+            madc.hi.u32 r3, ahi, bhi, 0;
+            mad.lo.cc.u32 r2, ahi, bhi, r2;
+            addc.u32 r3, r3, 0;
+            mov.b64 %rd11, {r0,r1};
+            mov.b64 %rd12, {r2,r3};
+        }
+        neg.s64 %rd17, %rd11;
+        {
+            .reg .u32 r0, r1, r2, r3, alo, ahi, blo, bhi, clo, chi;
+            mov.b64 {alo,ahi}, %rd7;
+            mov.b64 {blo,bhi}, %rd17;
+            mov.b64 {clo,chi}, %rd7;
+            mul.lo.u32 r0, alo, blo;
+            mul.hi.u32 r1, alo, blo;
+            mad.lo.cc.u32 r1, alo, bhi, r1;
+            madc.hi.cc.u32 r2, alo, bhi, clo;
+            madc.hi.u32 r3, ahi, bhi, chi;
+            mad.lo.cc.u32 r1, ahi, blo, r1;
+            madc.hi.cc.u32 r2, ahi, blo, r2;
+            addc.u32 r3, r3, 0;
+            mad.lo.cc.u32 r2, ahi, bhi, r2;
+            addc.u32 r3, r3, 0;
+            mov.b64 %rd15, {r2,r3};
+        }
+        {
+            .reg .u32 r0, r1, r2, r3, alo, ahi, blo, bhi;
+            mov.b64 {alo,ahi}, %rd15;
+            mov.b64 {blo,bhi}, %rd22;
+            mul.lo.u32 r0, alo, blo;
+            mul.hi.u32 r1, alo, blo;
+            mad.lo.cc.u32 r1, alo, bhi, r1;
+            madc.hi.u32 r2, alo, bhi, 0;
+            mad.lo.cc.u32 r1, ahi, blo, r1;
+            madc.hi.cc.u32 r2, ahi, blo, r2;
+            madc.hi.u32 r3, ahi, bhi, 0;
+            mad.lo.cc.u32 r2, ahi, bhi, r2;
+            addc.u32 r3, r3, 0;
+            mov.b64 %rd19, {r0,r1};
+            mov.b64 %rd20, {r2,r3};
+        }
+        {
+            .reg .u32 r0, r1, r2, r3, alo, ahi, blo, bhi;
+            mov.b64 {alo,ahi}, %rd20;
+            mov.b64 {blo,bhi}, %rd29;
+            mul.lo.u32 r0, alo, blo;
+            mul.hi.u32 r1, alo, blo;
+            mad.lo.cc.u32 r1, alo, bhi, r1;
+            madc.hi.u32 r2, alo, bhi, 0;
+            mad.lo.cc.u32 r1, ahi, blo, r1;
+            madc.hi.cc.u32 r2, ahi, blo, r2;
+            madc.hi.u32 r3, ahi, bhi, 0;
+            mad.lo.cc.u32 r2, ahi, bhi, r2;
+            addc.u32 r3, r3, 0;
+            mov.b64 %rd23, {r0,r1};
+            mov.b64 %rd24, {r2,r3};
+        }
+        sub.s64 %rd31, %rd22, %rd23;
+        mov.u64 %rd28, %rd31;
+        mov.u64 %rd27, %rd20;
+        {
+            .reg .pred p0, p1;
+            setp.ge.u64 p0, %rd28, %rd29;
+            @p0 sub.u64 %rd28, %rd28, %rd29;
+            @p0 add.u64 %rd27, %rd27, 1;
+            setp.ge.u64 p0, %rd28, %rd29;
+            @p0 sub.u64 %rd28, %rd28, %rd29;
+            @p0 add.u64 %rd27, %rd27, 1;
+        }
+        {
+            .reg .s32 lo;
+            mov.b64 {lo, %r3}, %rd1;
+        }
+        setp.lt.s32 %p3, %r3, 0;
+        neg.s64 %rd35, %rd28;
+        selp.b64 %rd36, %rd35, %rd28, %p3;
+        setp.eq.s64 %p4, %rd2, 0;
+        selp.b64 %rd37, -1, %rd36, %p4;
+        mov.b64 %rdv1, %rd37;
+        ret;
+    }

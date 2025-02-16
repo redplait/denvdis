@@ -1,0 +1,154 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+.weak .func (.reg .b64 func_retval0) __cuda_sm20_div_f64_slowpath_v2 (.reg .b64 param_0, .reg .b64 param_1)
+{
+        .reg .pred %p<15>;
+        .reg .f32 %f<5>;
+        .reg .b32 %r<21>;
+        .reg .f64 %fd<61>;
+        .reg .b64 %rd<4>;
+
+
+        mov.f64 %fd11, param_0;
+        mov.f64 %fd12, param_1;
+        {
+        .reg .b32 %temp;
+        mov.b64 {%temp, %r4}, %fd12;
+        }
+        and.b32 %r5, %r4, 1073741824;
+        setp.lt.u32 %p1, %r5, 1073741824;
+        selp.b32 %r6, 1609564160, 535822336, %p1;
+        mov.u32 %r7, 0;
+        mov.b64 %fd1, {%r7, %r6};
+        {
+        .reg .b32 %temp;
+        mov.b64 {%temp, %r1}, %fd11;
+        }
+        and.b32 %r2, %r1, 2139095040;
+        setp.lt.u32 %p2, %r2, 1048576000;
+        selp.b32 %r8, 1609564160, 535822336, %p2;
+        mov.b64 %fd15, {%r7, %r8};
+        mul.f64 %fd14, %fd1, %fd12;
+        mul.f64 %fd16, %fd15, %fd11;
+
+        rcp.approx.ftz.f64 %fd13,%fd14;
+
+        {
+        .reg .b32 %temp;
+        mov.b64 {%r9, %temp}, %fd13;
+        }
+        {
+        .reg .b32 %temp;
+        mov.b64 {%temp, %r10}, %fd13;
+        }
+        or.b32 %r11, %r9, 1;
+        mov.b64 %fd17, {%r11, %r10};
+        neg.f64 %fd18, %fd14;
+        mov.f64 %fd19, 0d3FF0000000000000;
+        fma.rn.f64 %fd20, %fd18, %fd17, %fd19;
+        fma.rn.f64 %fd21, %fd20, %fd20, %fd20;
+        fma.rn.f64 %fd22, %fd21, %fd17, %fd17;
+        mul.f64 %fd23, %fd16, %fd22;
+        fma.rn.f64 %fd24, %fd18, %fd23, %fd16;
+        fma.rn.f64 %fd2, %fd24, %fd22, %fd23;
+        abs.f64 %fd25, %fd2;
+        setp.leu.f64 %p3, %fd25, 0d0000000000000000;
+        @%p3 bra BB0_3;
+        bra.uni BB0_1;
+
+BB0_3:
+        setp.eq.f64 %p12, %fd2, 0d0000000000000000;
+        @%p12 bra BB0_7;
+        bra.uni BB0_4;
+
+BB0_7:
+        mul.f64 %fd60, %fd11, %fd12;
+        bra.uni BB0_8;
+
+BB0_1:
+        setp.gt.u32 %p4, %r2, 1048575999;
+        selp.b32 %r12, 1609564160, 535822336, %p4;
+        mov.b64 %fd26, {%r7, %r12};
+        mul.f64 %fd27, %fd2, %fd1;
+        mul.f64 %fd28, %fd27, %fd26;
+        mul.f64 %fd29, %fd2, %fd26;
+        mul.f64 %fd30, %fd1, %fd29;
+        neg.f64 %fd31, %fd11;
+        fma.rn.f64 %fd32, %fd28, %fd12, %fd31;
+        fma.rn.f64 %fd33, %fd30, %fd12, %fd31;
+        abs.f64 %fd34, %fd32;
+        abs.f64 %fd35, %fd33;
+        setp.gt.f64 %p5, %fd34, %fd35;
+        selp.f64 %fd60, %fd30, %fd28, %p5;
+        {
+        .reg .b32 %temp;
+        mov.b64 {%temp, %r3}, %fd60;
+        }
+        mov.b32 %f1, %r3;
+        abs.f32 %f2, %f1;
+        setp.gtu.f32 %p6, %f2, 0f00100000;
+        @%p6 bra BB0_8;
+
+        {
+        .reg .b32 %temp;
+        mov.b64 {%r14, %temp}, %fd60;
+        }
+        and.b32 %r15, %r14, -2;
+        mov.b64 %fd36, {%r15, %r3};
+        or.b32 %r16, %r14, 1;
+        mov.b64 %fd37, {%r16, %r3};
+        mov.b32 %f3, %r1;
+        abs.f32 %f4, %f3;
+        setp.lt.f32 %p7, %f4, 0f04000000;
+        selp.b32 %r17, 1481637888, 1072693248, %p7;
+        mov.b64 %fd38, {%r7, %r17};
+        mul.f64 %fd39, %fd38, %fd12;
+        mul.f64 %fd40, %fd38, %fd11;
+        neg.f64 %fd41, %fd40;
+        fma.rn.f64 %fd42, %fd36, %fd39, %fd41;
+        fma.rn.f64 %fd43, %fd37, %fd39, %fd41;
+        abs.f64 %fd44, %fd42;
+        abs.f64 %fd45, %fd43;
+        setp.gt.f64 %p8, %fd44, %fd45;
+        selp.f64 %fd46, %fd37, %fd36, %p8;
+        {
+        .reg .b32 %temp;
+        mov.b64 {%r19, %temp}, %fd46;
+        }
+        and.b32 %r20, %r19, 1;
+        setp.eq.b32 %p9, %r20, 1;
+        not.pred %p10, %p9;
+        mov.b64 %rd1, %fd46;
+        add.s64 %rd2, %rd1, 1;
+        mov.b64 %fd47, %rd2;
+        add.s64 %rd3, %rd1, -1;
+        mov.b64 %fd48, %rd3;
+        selp.f64 %fd49, %fd46, %fd47, %p10;
+        selp.f64 %fd50, %fd48, %fd46, %p10;
+        fma.rn.f64 %fd51, %fd49, %fd39, %fd41;
+        fma.rn.f64 %fd52, %fd50, %fd39, %fd41;
+        abs.f64 %fd53, %fd51;
+        abs.f64 %fd54, %fd52;
+        setp.gt.f64 %p11, %fd53, %fd54;
+        selp.f64 %fd60, %fd50, %fd49, %p11;
+        bra.uni BB0_8;
+
+BB0_4:
+
+        rcp.approx.ftz.f64 %fd59,%fd12;
+
+        abs.f64 %fd57, %fd59;
+        setp.gt.f64 %p13, %fd57, 0d0000000000000000;
+        @%p13 bra BB0_6;
+
+        abs.f64 %fd58, %fd12;
+        setp.neu.f64 %p14, %fd58, 0d7FF0000000000000;
+        selp.f64 %fd59, %fd12, %fd59, %p14;
+
+BB0_6:
+        mul.f64 %fd60, %fd59, %fd11;
+
+BB0_8:
+        mov.f64 func_retval0, %fd60;
+        ret;
+}

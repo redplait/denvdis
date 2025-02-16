@@ -1,0 +1,115 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f32 %fv1) __cuda_sm3x_div_rn_ftz_f32_slowpath (.reg .f32 %fa1, .reg .f32 %fa2)
+    {
+    .reg .f32 %f<31>;
+    .reg .pred %p<18>;
+    .reg .s32 %r<35>;
+    mov.f32 %f1, %fa1;
+    mov.f32 %f2, %fa2;
+    mov.b32 %r1, %f1;
+    shr.u32 %r13, %r1, 23;
+    and.b32 %r2, %r13, 255;
+    add.s32 %r14, %r2, -1;
+    mov.b32 %r3, %f2;
+    shr.u32 %r15, %r3, 23;
+    and.b32 %r4, %r15, 255;
+    add.s32 %r16, %r4, -1;
+    setp.gt.u32 %p4, %r14, 253;
+    setp.gt.u32 %p5, %r16, 253;
+    or.pred %p6, %p4, %p5;
+    @!%p6 bra BB3_7;
+    mov.f32 %f27, %fa1;
+    abs.ftz.f32 %f3, %f27;
+    mov.u32 %r17, 2139095040;
+    mov.b32 %f4, %r17;
+    setp.gtu.ftz.f32 %p7, %f3, %f4;
+    @%p7 bra BB3_16;
+    mov.f32 %f30, %fa2;
+    abs.ftz.f32 %f5, %f30;
+    setp.gtu.ftz.f32 %p8, %f5, %f4;
+    @%p8 bra BB3_16;
+    mov.f32 %f26, %fa1;
+    setp.eq.ftz.f32 %p1, %f26, 0f00000000;
+    mov.f32 %f29, %fa2;
+    setp.eq.ftz.f32 %p2, %f29, 0f00000000;
+    and.pred %p9, %p1, %p2;
+    @%p9 bra BB3_15;
+    setp.eq.ftz.f32 %p3, %f3, %f4;
+    setp.eq.ftz.f32 %p10, %f5, %f4;
+    and.pred %p11, %p3, %p10;
+    @%p11 bra BB3_15;
+    or.pred %p13, %p10, %p1;
+    @%p13 bra BB3_14;
+    or.pred %p14, %p3, %p2;
+    @%p14 bra BB3_13;
+BB3_7:
+    add.s32 %r18, %r2, -127;
+    shl.b32 %r19, %r18, 23;
+    sub.s32 %r20, %r1, %r19;
+    mov.b32 %f6, %r20;
+    add.s32 %r21, %r4, -127;
+    shl.b32 %r22, %r21, 23;
+    sub.s32 %r23, %r3, %r22;
+    mov.b32 %f7, %r23;
+    rcp.approx.ftz.f32 %f8, %f7;
+    mov.f32 %f9, 0f3F800000;
+    neg.ftz.f32 %f10, %f7;
+    fma.rn.f32 %f11, %f10, %f8, %f9;
+    fma.rn.f32 %f12, %f8, %f11, %f8;
+    mov.f32 %f13, 0f00000000;
+    fma.rn.f32 %f14, %f6, %f12, %f13;
+    fma.rn.f32 %f15, %f10, %f14, %f6;
+    fma.rn.f32 %f16, %f15, %f12, %f14;
+    fma.rn.f32 %f17, %f10, %f16, %f6;
+    fma.rn.ftz.f32 %f18, %f17, %f12, %f16;
+    mov.b32 %r5, %f18;
+    shr.u32 %r24, %r5, 23;
+    and.b32 %r25, %r24, 255;
+    sub.s32 %r6, %r18, %r21;
+    add.s32 %r7, %r25, %r6;
+    add.s32 %r26, %r7, -1;
+    setp.lt.u32 %p15, %r26, 254;
+    @%p15 bra BB3_11;
+    setp.gt.s32 %p16, %r7, 254;
+    and.b32 %r8, %r5, -2147483648;
+    @%p16 bra BB3_10;
+    setp.lt.s32 %p17, %r7, 1;
+    selp.b32 %r34, %r8, %r5, %p17;
+    bra.uni BB3_12;
+BB3_10:
+    or.b32 %r34, %r8, 2139095040;
+    bra.uni BB3_12;
+BB3_11:
+    shl.b32 %r27, %r6, 23;
+    add.s32 %r34, %r5, %r27;
+BB3_12:
+    mov.b32 %f19, %r34;
+    mov.f32 %fv1, %f19;
+    ret;
+BB3_13:
+    xor.b32 %r28, %r3, %r1;
+    and.b32 %r29, %r28, -2147483648;
+    or.b32 %r30, %r29, 2139095040;
+    mov.b32 %f20, %r30;
+    mov.f32 %fv1, %f20;
+    ret;
+BB3_14:
+    xor.b32 %r31, %r3, %r1;
+    and.b32 %r32, %r31, -2147483648;
+    mov.b32 %f21, %r32;
+    mov.f32 %fv1, %f21;
+    ret;
+BB3_15:
+    mov.u32 %r33, -4194304;
+    mov.b32 %f22, %r33;
+    rsqrt.approx.ftz.f32 %f23, %f22;
+    mov.f32 %fv1, %f23;
+    ret;
+BB3_16:
+    mov.f32 %f25, %fa1;
+    mov.f32 %f28, %fa2;
+    add.ftz.f32 %f24, %f25, %f28;
+    mov.f32 %fv1, %f24;
+    ret;
+    }

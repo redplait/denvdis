@@ -1,0 +1,197 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_div_rz_f64 (.reg .f64 %fda1, .reg .f64 %fda2)
+    {
+    .reg .u32 %r<78>;
+    .reg .u64 %rd<11>;
+    .reg .f64 %fd<37>;
+    .reg .pred %p<17>;
+$LBB1___cuda_sm20_div_rz_f64_:
+    mov.f64 %fd1, %fda1;
+    mov.f64 %fd2, %fda2;
+    mov.b64 {%r1,%r2}, %fd1;
+    mov.b64 {%r3,%r4}, %fd1;
+    mov.s32 %r5, %r4;
+    mov.b64 {%r6,%r7}, %fd2;
+    mov.b64 {%r8,%r9}, %fd2;
+    mov.s32 %r10, %r9;
+    shl.b32 %r11, %r4, 1;
+    shr.u32 %r12, %r11, 21;
+    shl.b32 %r13, %r9, 1;
+    shr.u32 %r14, %r13, 21;
+    sub.s32 %r15, %r12, 1;
+    sub.s32 %r16, %r14, 1;
+    mov.u32 %r17, 2045;
+    set.gt.u32.u32 %r18, %r15, %r17;
+    neg.s32 %r19, %r18;
+    mov.u32 %r20, 2045;
+    set.gt.u32.u32 %r21, %r16, %r20;
+    neg.s32 %r22, %r21;
+    or.b32 %r23, %r19, %r22;
+    mov.u32 %r24, 0;
+    setp.eq.s32 %p1, %r23, %r24;
+    @%p1 bra $Lt_3_10242;
+    abs.f64 %fd3, %fd1;
+    mov.f64 %fd4, 0d7ff0000000000000;
+    setp.le.f64 %p2, %fd3, %fd4;
+    @%p2 bra $Lt_3_10498;
+    or.b32 %r25, %r4, 524288;
+    mov.b64 %fd5, {%r1,%r25};
+    bra.uni $LBB31___cuda_sm20_div_rz_f64_;
+$Lt_3_10498:
+    abs.f64 %fd6, %fd2;
+    mov.f64 %fd7, 0d7ff0000000000000;
+    setp.le.f64 %p3, %fd6, %fd7;
+    @%p3 bra $Lt_3_11010;
+    or.b32 %r26, %r9, 524288;
+    mov.b64 %fd5, {%r6,%r26};
+    bra.uni $LBB31___cuda_sm20_div_rz_f64_;
+$Lt_3_11010:
+    mov.f64 %fd8, 0d0000000000000000;
+    setp.eq.f64 %p4, %fd1, %fd8;
+    mov.f64 %fd9, 0d0000000000000000;
+    setp.eq.f64 %p5, %fd2, %fd9;
+    selp.s32 %r27, 1, 0, %p4;
+    selp.s32 %r28, 1, 0, %p5;
+    and.b32 %r29, %r27, %r28;
+    mov.u32 %r30, 0;
+    setp.ne.s32 %p6, %r29, %r30;
+    @%p6 bra $Lt_3_1282;
+    mov.f64 %fd10, 0d7ff0000000000000;
+    setp.eq.f64 %p7, %fd3, %fd10;
+    mov.f64 %fd11, 0d7ff0000000000000;
+    setp.eq.f64 %p8, %fd6, %fd11;
+    @!%p7 bra $Lt_3_15362;
+    @!%p8 bra $Lt_3_15362;
+$Lt_3_1282:
+    mov.s32 %r31, -524288;
+    mov.s32 %r32, 0;
+    mov.b64 %fd5, {%r32,%r31};
+    bra.uni $LBB31___cuda_sm20_div_rz_f64_;
+$Lt_3_15362:
+$Lt_3_1538:
+    selp.s32 %r33, 1, 0, %p8;
+    or.b32 %r34, %r33, %r27;
+    mov.u32 %r35, 0;
+    setp.eq.s32 %p9, %r34, %r35;
+    @%p9 bra $Lt_3_11522;
+    xor.b32 %r36, %r9, %r4;
+    and.b32 %r37, %r36, -2147483648;
+    mov.s32 %r38, 0;
+    mov.b64 %fd5, {%r38,%r37};
+    bra.uni $LBB31___cuda_sm20_div_rz_f64_;
+$Lt_3_11522:
+    selp.s32 %r39, 1, 0, %p7;
+    or.b32 %r40, %r39, %r28;
+    mov.u32 %r41, 0;
+    setp.eq.s32 %p10, %r40, %r41;
+    @%p10 bra $Lt_3_12034;
+    xor.b32 %r42, %r9, %r4;
+    and.b32 %r43, %r42, -2147483648;
+    or.b32 %r44, %r43, 2146435072;
+    mov.s32 %r45, 0;
+    mov.b64 %fd5, {%r45,%r44};
+    bra.uni $LBB31___cuda_sm20_div_rz_f64_;
+$Lt_3_12034:
+    mov.u32 %r46, 0;
+    setp.ge.s32 %p11, %r15, %r46;
+    @%p11 bra $Lt_3_12802;
+    mov.f64 %fd12, 0d4350000000000000;
+    mul.f64 %fd13, %fd1, %fd12;
+    mov.b64 {%r1,%r47}, %fd13;
+    mov.b64 {%r48,%r5}, %fd13;
+    mov.s32 %r49, -54;
+    bra.uni $Lt_3_12546;
+$Lt_3_12802:
+    mov.s32 %r49, 0;
+$Lt_3_12546:
+    mov.u32 %r50, 0;
+    setp.ge.s32 %p12, %r16, %r50;
+    @%p12 bra $Lt_3_9986;
+    mov.f64 %fd14, 0d4350000000000000;
+    mul.f64 %fd15, %fd2, %fd14;
+    mov.b64 {%r6,%r51}, %fd15;
+    mov.b64 {%r52,%r10}, %fd15;
+    add.s32 %r49, %r49, 54;
+    bra.uni $Lt_3_9986;
+$Lt_3_10242:
+    mov.s32 %r49, 0;
+$Lt_3_9986:
+    sub.s32 %r53, %r12, 1023;
+    shl.b32 %r54, %r53, 20;
+    sub.s32 %r5, %r5, %r54;
+    sub.s32 %r55, %r14, 1023;
+    shl.b32 %r56, %r55, 20;
+    sub.s32 %r10, %r10, %r56;
+    mov.b64 %fd16, {%r6,%r10};
+    mov.f64 %fd17, %fd16;
+    rcp.approx.ftz.f64 %fd18, %fd17;
+    mov.f64 %fd19, %fd18;
+    neg.f64 %fd20, %fd16;
+    mov.b64 %rd1, %fd19;
+    or.b64 %rd2, %rd1, 1;
+    mov.b64 %fd21, %rd2;
+    mov.f64 %fd22, 0d3ff0000000000000;
+    mad.rn.f64 %fd23, %fd20, %fd21, %fd22;
+    mad.rn.f64 %fd24, %fd23, %fd21, %fd21;
+    mul.f64 %fd25, %fd23, %fd23;
+    mad.rn.f64 %fd26, %fd25, %fd24, %fd24;
+    mov.f64 %fd27, 0d3ff0000000000000;
+    mad.rn.f64 %fd28, %fd20, %fd26, %fd27;
+    mad.rn.f64 %fd29, %fd28, %fd26, %fd26;
+    mov.b64 %fd30, {%r1,%r5};
+    mul.f64 %fd31, %fd30, %fd21;
+    mad.rn.f64 %fd32, %fd20, %fd31, %fd30;
+    mad.rn.f64 %fd33, %fd32, %fd26, %fd31;
+    mad.rn.f64 %fd34, %fd20, %fd33, %fd30;
+    mad.rz.f64 %fd35, %fd34, %fd29, %fd33;
+    mov.b64 {%r57,%r58}, %fd35;
+    shl.b32 %r59, %r58, 1;
+    shr.u32 %r60, %r59, 21;
+    sub.s32 %r61, %r12, %r14;
+    add.s32 %r62, %r61, %r60;
+    add.s32 %r63, %r62, %r49;
+    sub.u32 %r64, %r63, 1;
+    mov.u32 %r65, 2045;
+    setp.gt.u32 %p13, %r64, %r65;
+    @%p13 bra $Lt_3_13826;
+    sub.s32 %r66, %r63, %r60;
+    shl.b32 %r67, %r66, 20;
+    add.s32 %r68, %r58, %r67;
+    mov.b64 {%r69,%r70}, %fd35;
+    mov.b64 %fd35, {%r69,%r68};
+    bra.uni $Lt_3_13570;
+$Lt_3_13826:
+    sub.s32 %r71, %r63, 1023;
+    mov.u32 %r72, 1023;
+    setp.le.s32 %p14, %r71, %r72;
+    @%p14 bra $Lt_3_14338;
+    mov.s64 %rd3, 9218868437227405311;
+    bra.uni $Lt_3_14594;
+$Lt_3_14338:
+    mov.u32 %r73, -1076;
+    setp.ge.s32 %p15, %r71, %r73;
+    @%p15 bra $Lt_3_14850;
+    mov.s64 %rd3, 0;
+    bra.uni $Lt_3_14594;
+$Lt_3_14850:
+    mov.b64 %rd4, %fd35;
+    and.b64 %rd5, %rd4, 4503599627370495;
+    or.b64 %rd6, %rd5, 4503599627370496;
+    mov.s32 %r74, 1;
+    sub.s32 %r75, %r74, %r63;
+    shr.s64 %rd3, %rd6, %r75;
+$Lt_3_14594:
+$Lt_3_14082:
+    and.b32 %r76, %r58, -2147483648;
+    cvt.s64.s32 %rd7, %r76;
+    shl.b64 %rd8, %rd7, 32;
+    or.b64 %rd9, %rd3, %rd8;
+    mov.b64 %fd35, %rd9;
+$Lt_3_13570:
+    mov.f64 %fd5, %fd35;
+$LBB31___cuda_sm20_div_rz_f64_:
+    mov.f64 %fdv1, %fd5;
+    ret;
+$LDWend___cuda_sm20_div_rz_f64_:
+    }

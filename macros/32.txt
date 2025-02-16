@@ -1,0 +1,28 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f64 %d) __cuda_sm20_drsqrt_f64_v2 (.reg .f64 %a0)
+    {
+    .reg .pred %p<2>;
+    .reg .s32 %r<3>;
+    .reg .f64 %fd<16>;
+    .reg .b32 %temp;
+    mov.f64 %fd4, %a0;
+    rsqrt.approx.ftz.f64 %fd5, %fd4;
+    mul.rn.f64 %fd7, %fd5, %fd5;
+    neg.f64 %fd8, %fd7;
+    mov.f64 %fd9, 0d3FF0000000000000;
+    fma.rn.f64 %fd10, %fd4, %fd8, %fd9;
+    mov.f64 %fd11, 0d3FE0000000000000;
+    mov.f64 %fd12, 0d3FD8000000000000;
+    fma.rn.f64 %fd13, %fd12, %fd10, %fd11;
+    mul.rn.f64 %fd14, %fd10, %fd5;
+    fma.rn.f64 %fd15, %fd13, %fd14, %fd5;
+    mov.b64 {%temp, %r1}, %fd4;
+    add.s32 %r2, %r1, -1048576;
+    setp.lt.u32 %p1, %r2, 2145386496;
+    @%p1 bra $BB4_2;
+    call.uni (%fd15), __cuda_sm20_drsqrt_f64_slowpath_v2, (%fd4);
+$BB4_2:
+    mov.f64 %d, %fd15;
+    ret;
+    }

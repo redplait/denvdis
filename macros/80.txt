@@ -1,0 +1,33 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f32 %fv1) __cuda_sm3x_div_rn_noftz_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+    {
+    .reg .f32 %f<20>;
+    .reg .pred %p<2>;
+    .reg .s32 %r<2>;
+    mov.f32 %f1, %fa1;
+    mov.f32 %f2, %fa2;
+    _checkfp.divide.f32 %p1, %f1, %f2;
+    @%p1 bra BB2_2;
+    mov.f32 %f18, %fa2;
+    rcp.ftz.approx.f32 %f3,%f18;
+    neg.ftz.f32 %f5, %f18;
+    mov.f32 %f6, 0f3F800000;
+    fma.rn.f32 %f7, %f5, %f3, %f6;
+    fma.rn.f32 %f8, %f3, %f7, %f3;
+    mov.f32 %f9, 0f00000000;
+    mov.f32 %f17, %fa1;
+    fma.rn.f32 %f10, %f17, %f8, %f9;
+    fma.rn.f32 %f11, %f5, %f10, %f17;
+    fma.rn.f32 %f12, %f11, %f8, %f10;
+    fma.rn.f32 %f13, %f5, %f12, %f17;
+    fma.rn.f32 %f14, %f13, %f8, %f12;
+    mov.f32 %fv1, %f14;
+    ret;
+BB2_2:
+    mov.f32 %f16, %fa1;
+    mov.f32 %f19, %fa2;
+    call.uni (%f15), __cuda_sm3x_div_rn_noftz_f32_slowpath, (%f16, %f19);
+    mov.f32 %fv1, %f15;
+    ret;
+    }

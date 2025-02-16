@@ -1,0 +1,89 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_dsqrt_rn_f64_mediumpath_v1 (.reg .f64 %fda1, .reg .u32 %fda2, .reg .f64 %fda3, .reg .f64 %fda4, .reg .f64 %fda5)
+    {
+
+    .reg .pred %p<6>;
+    .reg .s32 %r<15>;
+    .reg .f64 %fd<34>;
+    .reg .s64 %rd<3>;
+    .reg .b32 %temp;
+
+    mov.f64 %fd7, %fda1;
+    mov.u32 %r2, %fda2;
+    mov.f64 %fd8, %fda3;
+    mov.f64 %fd9, %fda4;
+    mov.f64 %fd10, %fda5;
+    setp.lt.u32 %p1, %r2, -54525952;
+    @%p1 bra BB5_2;
+    bra.uni BB5_1;
+
+BB5_2:
+    setp.equ.f64 %p3, %fd7, 0d0000000000000000;
+    @%p3 bra BB5_7;
+
+    mov.b64 {%temp, %r1}, %fd7;
+    setp.lt.s32 %p4, %r1, 0;
+    @%p4 bra BB5_6;
+
+    setp.gt.s32 %p5, %r1, 2146435071;
+    @%p5 bra BB5_7;
+    bra.uni BB5_5;
+
+BB5_7:
+    add.f64 %fd33, %fd7, %fd7;
+    bra.uni BB5_8;
+
+BB5_1:
+    fma.rm.f64 %fd11, %fd8, %fd9, %fd10;
+    mov.b64 %rd1, %fd11;
+    add.s64 %rd2, %rd1, 1;
+    mov.b64 %fd12, %rd2;
+    neg.f64 %fd13, %fd11;
+    fma.rp.f64 %fd14, %fd13, %fd12, %fd7;
+    setp.gt.f64 %p2, %fd14, 0d0000000000000000;
+    selp.f64 %fd33, %fd12, %fd11, %p2;
+
+BB5_8:
+    mov.f64 %fdv1, %fd33;
+    ret;
+
+BB5_6:
+    mov.u32 %r13, -524288;
+    mov.u32 %r14, 0;
+    mov.b64 %fd33, {%r14, %r13};
+    bra.uni BB5_8;
+
+BB5_5:
+    mov.u32 %r3, 1183842304;
+    mov.u32 %r4, 0;
+    mov.b64 %fd17, {%r4, %r3};
+    mul.f64 %fd16, %fd17, %fd7;
+    rsqrt.approx.ftz.f64 %fd15, %fd16;
+    mov.b64 {%r5, %temp}, %fd15;
+    mov.b64 {%temp, %r6}, %fd15;
+    mov.b64 %fd18, {%r5, %r6};
+    mul.rn.f64 %fd19, %fd18, %fd18;
+    neg.f64 %fd20, %fd19;
+    mov.f64 %fd21, 0d3FF0000000000000;
+    fma.rn.f64 %fd22, %fd16, %fd20, %fd21;
+    mov.f64 %fd23, 0d3FE0000000000000;
+    mov.f64 %fd24, 0d3FD8000000000000;
+    fma.rn.f64 %fd25, %fd24, %fd22, %fd23;
+    mul.rn.f64 %fd26, %fd22, %fd18;
+    fma.rn.f64 %fd27, %fd25, %fd26, %fd18;
+    mul.rn.f64 %fd28, %fd16, %fd27;
+    mov.b64 {%r7, %temp}, %fd27;
+    mov.b64 {%temp, %r8}, %fd27;
+    add.s32 %r9, %r8, -1048576;
+    mov.b64 %fd29, {%r7, %r9};
+    neg.f64 %fd30, %fd28;
+    fma.rn.f64 %fd31, %fd28, %fd30, %fd16;
+    fma.rn.f64 %fd32, %fd31, %fd29, %fd28;
+    mov.b64 {%r10, %temp}, %fd32;
+    mov.b64 {%temp, %r11}, %fd32;
+    add.s32 %r12, %r11, -55574528;
+    mov.b64 %fd33, {%r10, %r12};
+    bra.uni BB5_8;
+
+    }

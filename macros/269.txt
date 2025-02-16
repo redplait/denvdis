@@ -1,0 +1,3 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .b32 dst) __cuda_sm70_votesync_ballot (.reg .b32 parg, .reg .b32 mask) { .reg .pred pp; .reg .b32 tmpdst; _warpsync mask; setp.eq.b32 pp, parg, 1; call (tmpdst), __cuda_sm70_votesync_aligned_ballot, (pp, mask); mov.b32 dst, tmpdst; }

@@ -1,0 +1,26 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .b64 res) __cuda_scalar_video_emulation_secondOp64 (.reg .b64 op1, .reg .b64 op2)
+    {
+        .IF "%{POSTOP}" == ".add"
+            .IF "%{TYPES0}" == ".s32"
+                add.s64 res, op1, op2;
+             .ELSE
+                add.u64 res, op1, op2;
+            .ENDIF
+        .ELIF "%{POSTOP}" == ".min"
+            .IF "%{TYPES0}" == ".s32"
+                min.s64 res, op1, op2;
+             .ELSE
+                min.u64 res, op1, op2;
+            .ENDIF
+        .ELIF "%{POSTOP}" == ".max"
+            .IF "%{TYPES0}" == ".s32"
+                max.s64 res, op1, op2;
+             .ELSE
+                max.u64 res, op1, op2;
+            .ENDIF
+        .ELSE
+             mov.b64 res, op1;
+        .ENDIF
+    }

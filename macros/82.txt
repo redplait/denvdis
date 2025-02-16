@@ -1,0 +1,31 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+.weak .func (.reg .b32 %dst) __cuda_sm62_dp2a (.reg .b32 %arg0, .reg .b32 %arg1, .reg .b32 %arg2, .reg .b32 %offset0, .reg .b32 %offset1)
+{
+    .reg .b32 a<2>;
+
+    bfe%{TYPE0} a0, %arg0, 0, 16;
+    bfe%{TYPE0} a1, %arg0, 16, 16;
+
+    .reg .b32 b<2>;
+
+    bfe%{TYPE1} b0, %arg1, %offset0, 8;
+    bfe%{TYPE1} b1, %arg1, %offset1, 8;
+
+    .reg .b32 p<2>;
+
+    mov.b32 %dst, %arg2;
+
+    .IF "%{TYPES}" == ".u32.u32"
+        mul.lo.u32 p0, a0, b0;
+        mul.lo.u32 p1, a1, b1;
+        add.u32 %dst, %dst, p0;
+        add.u32 %dst, %dst, p1;
+    .ELSE
+        mul.lo.s32 p0, a0, b0;
+        mul.lo.s32 p1, a1, b1;
+        add.s32 %dst, %dst, p0;
+        add.s32 %dst, %dst, p1;
+    .ENDIF
+    ret;
+}

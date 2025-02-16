@@ -1,0 +1,29 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+        .weak .func (.reg .u32 %d) __cuda_sm20_div_u16 (.reg .u32 %a0, .reg .u32 %a1)
+        {
+                .reg .u32 %r<11>;
+                .reg .f32 %f<7>;
+                .reg .pred %p<3>;
+
+                mov.u32 %r1, %a1;
+                mov.u32 %r2, %a0;
+                cvt.u16.u32 %r3, %r2;
+                cvt.rz.f32.u32 %f1, %r3;
+                cvt.u16.u32 %r4, %r1;
+                cvt.rn.f32.u32 %f2, %r4;
+                rcp.approx.f32 %f3, %f2;
+                mov.b32 %r5, %f3;
+                add.s32 %r6, %r5, 2;
+                mov.b32 %f4, %r6;
+                mul.rz.f32 %f5, %f1, %f4;
+                cvt.rzi.u32.f32 %r7, %f5;
+                cvt.u16.u32 %r8, %r7;
+                mov.u32 %r9, 0;
+                setp.ne.u32 %p1, %r1, %r9;
+        @%p1 bra LB_1;
+                not.b32 %r8, %r1;
+        LB_1:
+                mov.s32 %d, %r8;
+                ret;
+        }

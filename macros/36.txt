@@ -1,0 +1,106 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_dsqrt_ru_f64 (.reg .f64 %fda1)
+    {
+    .reg .u32 %r<41>;
+    .reg .f32 %f<4>;
+    .reg .f64 %fd<32>;
+    .reg .pred %p<7>;
+$LBB1___cuda_sm20_dsqrt_ru_f64_:
+    mov.f64 %fd1, %fda1;
+    mov.b64 {%r1,%r2}, %fd1;
+    mov.s32 %r3, %r2;
+    mov.b64 {%r4,%r5}, %fd1;
+    shl.b32 %r6, %r2, 1;
+    shr.u32 %r7, %r6, 21;
+    sub.s32 %r8, %r7, 1;
+    shr.u32 %r9, %r2, 31;
+    mov.s32 %r10, 0;
+    set.ne.u32.s32 %r11, %r9, %r10;
+    neg.s32 %r12, %r11;
+    mov.u32 %r13, 2045;
+    set.gt.u32.u32 %r14, %r8, %r13;
+    neg.s32 %r15, %r14;
+    or.b32 %r16, %r12, %r15;
+    mov.u32 %r17, 0;
+    setp.eq.s32 %p1, %r16, %r17;
+    @%p1 bra $Lt_1_4354;
+    mov.f64 %fd2, 0d0000000000000000;
+    setp.lt.f64 %p2, %fd1, %fd2;
+    @!%p2 bra $Lt_1_4610;
+    mov.s32 %r18, -524288;
+    mov.s32 %r19, 0;
+    mov.b64 %fd3, {%r19,%r18};
+    bra.uni $Lt_1_258;
+$Lt_1_4610:
+    mov.f64 %fd4, 0d0000000000000000;
+    setp.eq.f64 %p3, %fd1, %fd4;
+    @%p3 bra $Lt_1_1282;
+    abs.f64 %fd5, %fd1;
+    mov.f64 %fd6, 0d7ff0000000000000;
+    setp.eq.f64 %p4, %fd5, %fd6;
+    @!%p4 bra $Lt_1_1538;
+$Lt_1_1282:
+    mov.f64 %fd3, %fd1;
+    bra.uni $Lt_1_258;
+$Lt_1_1538:
+    mov.f64 %fd7, 0d7ff0000000000000;
+    setp.le.f64 %p5, %fd5, %fd7;
+    @%p5 bra $Lt_1_5122;
+    or.b32 %r20, %r2, 524288;
+    mov.b64 %fd3, {%r4,%r20};
+    bra.uni $Lt_1_258;
+$Lt_1_5122:
+    mov.f64 %fd8, 0d4350000000000000;
+    mul.f64 %fd9, %fd1, %fd8;
+    mov.b64 {%r21,%r3}, %fd9;
+    mov.b64 {%r4,%r22}, %fd9;
+    mov.s32 %r23, 54;
+    bra.uni $Lt_1_4098;
+$Lt_1_4354:
+    mov.s32 %r23, 0;
+$Lt_1_4098:
+    and.b32 %r24, %r8, -2;
+    sub.s32 %r25, %r24, 1022;
+    shl.b32 %r26, %r25, 20;
+    sub.s32 %r3, %r3, %r26;
+    mov.b64 %fd10, {%r4,%r3};
+    cvt.rn.f32.f64 %f1, %fd10;
+    sub.s32 %r27, %r3, 1048576;
+    mov.b64 %fd11, {%r4,%r27};
+    rsqrt.approx.ftz.f32 %f2, %f1;
+    cvt.f64.f32 %fd12, %f2;
+    mul.f64 %fd13, %fd12, %fd12;
+    neg.f64 %fd14, %fd13;
+    mov.f64 %fd15, 0d3fe0000000000000;
+    mad.rn.f64 %fd16, %fd14, %fd11, %fd15;
+    mad.rn.f64 %fd17, %fd16, %fd12, %fd12;
+    mul.f64 %fd18, %fd17, %fd10;
+    mul.f64 %fd19, %fd11, %fd17;
+    mov.b64 {%r4,%r28}, %fd17;
+    mov.b64 {%r29,%r30}, %fd17;
+    neg.f64 %fd20, %fd18;
+    mad.rn.f64 %fd21, %fd20, %fd18, %fd10;
+    sub.s32 %r31, %r30, 1048576;
+    mov.b64 %fd22, {%r4,%r31};
+    mad.rn.f64 %fd23, %fd21, %fd22, %fd18;
+    neg.f64 %fd24, %fd23;
+    mad.rn.f64 %fd25, %fd24, %fd23, %fd10;
+    neg.f64 %fd26, %fd19;
+    mov.f64 %fd27, 0d3fe0000000000000;
+    mad.rn.f64 %fd28, %fd26, %fd17, %fd27;
+    mad.rn.f64 %fd29, %fd28, %fd22, %fd22;
+    mad.rp.f64 %fd30, %fd25, %fd29, %fd23;
+    mov.b64 {%r32,%r33}, %fd30;
+    sub.s32 %r34, %r24, %r23;
+    sub.s32 %r35, %r34, 1022;
+    shl.b32 %r36, %r35, 19;
+    add.s32 %r37, %r33, %r36;
+    mov.b64 {%r38,%r39}, %fd30;
+    mov.b64 %fd30, {%r38,%r37};
+    mov.f64 %fd3, %fd30;
+$Lt_1_258:
+    mov.f64 %fdv1, %fd3;
+    ret;
+$LDWend___cuda_sm20_dsqrt_ru_f64_:
+    }

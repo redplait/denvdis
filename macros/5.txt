@@ -1,0 +1,13 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .b32 res) __cuda_scalar_video_emulation_optionalMerge32 (.reg .b32 op1, .reg .b32 op2)
+    {
+        .reg .b32 mergePermuteControl;
+
+       .IF "%{VIDEOSELECTOR01}" != ""
+            mov.b32 mergePermuteControl, %{VideoPermCtrlToSelect0};
+            prmt.b32 res, op1, op2, mergePermuteControl;
+       .ELSE
+            mov.b32 res, op1;
+       .ENDIF
+    }

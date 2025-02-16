@@ -1,0 +1,3 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_8 (.reg .b32 parg) { .reg .pred pp, pd; .reg .b32 prslt; setp.eq.b32 pp, parg, 1; _warpsync 0xffffffff; \barrier.red.and.pred pd, 8, pp; selp.b32 prslt, 1, 0, pd; mov.b32 dst, prslt; }

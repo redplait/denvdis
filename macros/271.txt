@@ -1,0 +1,8 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .b32 dst) __cuda_sm70_warpsync (.reg .b32 mask)
+    {
+        _warpsync mask;
+        mov.b32 dst, mask;
+        ret;
+    }

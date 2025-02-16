@@ -1,0 +1,3 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_b_col (.reg .u64 ptr, .reg .u32 ldm){ .reg .v4.b32 dst_0_3, dst_4_7; _warpsync 0xFFFFFFFF; call (ptr), __cuda_sm70_wmma_m8n32k16_load_b_col_update_ptr, (ptr, ldm); ld .v4.b32 dst_0_3, [ptr]; ld .v4.b32 dst_4_7, [ptr + 16]; st.param.v4.b32 [dst], dst_0_3; st.param.v4.b32 [dst + 16], dst_4_7;}

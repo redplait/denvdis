@@ -1,0 +1,39 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rd_ftz_f32 (.reg .f32 %fa1)
+    {
+        .reg .u32 %r<5>;
+        .reg .f32 %f<20>;
+        .reg .pred %p<3>;
+    $LDWbegin___cuda_sm20_sqrt_rd_ftz_f32_:
+        mov.f32 %f1, %fa1;
+        mov.f32 %f2, %f1;
+        mov.b32 %r1, %f2;
+        sub.u32 %r2, %r1, 218103808;
+        mov.u32 %r3, 1920991231;
+        setp.le.u32 %p1, %r2, %r3;
+        @%p1 bra $Lt_3_1026;
+        mov.f32 %f3, %f2;
+        call.uni (%f4), __cuda_sm20_sqrt_rd_ftz_f32_slowpath, (%f3);
+        mov.f32 %f5, %f4;
+        mov.f32 %f6, %f5;
+        bra.uni $LBB5___cuda_sm20_sqrt_rd_ftz_f32_;
+    $Lt_3_1026:
+        rsqrt.approx.ftz.f32 %f7, %f2;
+        mul.ftz.f32 %f8, %f7, %f2;
+        mov.f32 %f9, 0f3f000000;
+        mul.ftz.f32 %f10, %f7, %f9;
+        neg.ftz.f32 %f11, %f8;
+        mov.f32 %f12, 0f3f000000;
+        fma.rn.f32 %f13, %f11, %f10, %f12;
+        fma.rn.f32 %f14, %f8, %f13, %f8;
+        neg.ftz.f32 %f15, %f14;
+        fma.rn.f32 %f16, %f15, %f14, %f2;
+        fma.rm.f32 %f17, %f16, %f10, %f14;
+        mov.f32 %f6, %f17;
+    $LBB5___cuda_sm20_sqrt_rd_ftz_f32_:
+        mov.f32 %f18, %f6;
+        mov.f32 %fv1, %f18;
+        ret;
+    $LDWend___cuda_sm20_sqrt_rd_ftz_f32_:
+    }

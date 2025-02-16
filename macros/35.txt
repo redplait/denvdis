@@ -1,0 +1,43 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_dsqrt_rn_f64_v3 (.reg .f64 %fda1)
+    {
+
+    .reg .pred %p<2>;
+    .reg .s32 %r<9>;
+    .reg .f64 %fd<22>;
+    .reg .b32 %temp;
+
+    mov.f64 %fd7, %fda1;
+    mov.b64 {%temp, %r2}, %fd7;
+    add.s32 %r1, %r2, -55574528;
+    rsqrt.approx.ftz.f64 %fd8, %fd7;
+    mov.b64 {%r3, %temp}, %fd8;
+    mov.b64 {%temp, %r4}, %fd8;
+    or.b32 %r5, %r3, %r1;
+    mov.b64 %fd10, {%r5, %r4};
+    mul.rn.f64 %fd11, %fd10, %fd10;
+    neg.f64 %fd12, %fd11;
+    mov.f64 %fd13, 0d3FF0000000000000;
+    fma.rn.f64 %fd14, %fd7, %fd12, %fd13;
+    mov.f64 %fd15, 0d3FE0000000000000;
+    mov.f64 %fd16, 0d3FD8000000000000;
+    fma.rn.f64 %fd17, %fd16, %fd14, %fd15;
+    mul.rn.f64 %fd18, %fd14, %fd10;
+    fma.rn.f64 %fd19, %fd17, %fd18, %fd10;
+    mul.rn.f64 %fd1, %fd7, %fd19;
+    mov.b64 {%r6, %temp}, %fd19;
+    mov.b64 {%temp, %r7}, %fd19;
+    add.s32 %r8, %r7, -1048576;
+    mov.b64 %fd2, {%r6, %r8};
+    neg.f64 %fd20, %fd1;
+    fma.rn.f64 %fd3, %fd1, %fd20, %fd7;
+    fma.rn.f64 %fd21, %fd3, %fd2, %fd1;
+    setp.lt.u32 %p1, %r1, 2090860544;
+    @%p1 bra BB6_2;
+    call.uni (%fd21), __cuda_sm20_dsqrt_rn_f64_mediumpath_v1, (%fd7, %r1, %fd3, %fd2, %fd1);
+BB6_2:
+    mov.f64 %fdv1, %fd21;
+    ret;
+
+    }

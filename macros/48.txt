@@ -1,0 +1,33 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_ru_f32 (.reg .f32 %fa1)
+    {
+        .reg .u32 %r<6>;
+        .reg .f32 %f<13>;
+        .reg .pred %p<3>;
+    $LDWbegin___cuda_sm20_rcp_ru_f32_:
+        mov.f32 %f1, %fa1;
+        mov.f32 %f2, %f1;
+        mov.b32 %r1, %f2;
+        add.u32 %r2, %r1, 25165824;
+        and.b32 %r3, %r2, 2139095040;
+        mov.u32 %r4, 33554431;
+        setp.gt.u32 %p1, %r3, %r4;
+        @%p1 bra $Lt_13_1026;
+        mov.f32 %f3, %f2;
+        call.uni (%f4), __cuda_sm20_rcp_ru_f32_slowpath, (%f3);
+        mov.f32 %f5, %f4;
+        mov.f32 %f6, %f5;
+        bra.uni $LBB5___cuda_sm20_rcp_ru_f32_;
+    $Lt_13_1026:
+        rcp.approx.ftz.f32 %f7, %f2;
+        mov.f32 %f8, 0fbf800000;
+        fma.rp.f32 %f9, %f2, %f7, %f8;
+        neg.ftz.f32 %f10, %f9;
+        fma.rp.f32 %f6, %f7, %f10, %f7;
+    $LBB5___cuda_sm20_rcp_ru_f32_:
+        mov.f32 %f11, %f6;
+        mov.f32 %fv1, %f11;
+        ret;
+    $LDWend___cuda_sm20_rcp_ru_f32_:
+    }

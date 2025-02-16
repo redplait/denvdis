@@ -1,0 +1,17 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .u64 %rdv1) __cuda_sm20_bfe_u64_ (.reg .u64 %rda1, .reg .u32 %ra2, .reg .u32 %ra3)
+    {
+    .reg .u32 %r<4>;
+    .reg .u64 %rd<6>;
+$LBB1___cuda_sm20_bfe_u64_:
+    mov.s64 %rd1, %rda1;
+    mov.s32 %r1, %ra2;
+    mov.s32 %r2, %ra3;
+    shl.b64 %rd2, 1, %r2;
+    sub.u64 %rd3, %rd2, 1;
+    shr.u64 %rd4, %rd1, %r1;
+    and.b64 %rdv1, %rd3, %rd4;
+    ret;
+$LDWend___cuda_sm20_bfe_u64_:
+    }

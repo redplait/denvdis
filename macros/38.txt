@@ -1,0 +1,41 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_rcp_f64_v3 (.reg .f64 %a0)
+    {
+
+        .reg .pred %p<2>;
+        .reg .s32 %r<8>;
+        .reg .f32 %f<3>;
+        .reg .f64 %fd<16>;
+
+        mov.f64 %fd4, %a0;
+        mov.b64 {_, %r1}, %fd4;
+        add.s32 %r2, %r1, 3146754;
+        mov.b32 %f1, %r2;
+        rcp.approx.ftz.f64 %fd5,%fd4;
+        mov.b64 {%r3, _}, %fd5;
+        mov.b64 {_, %r4}, %fd5;
+        or.b32 %r5, %r3, %r2;
+        mov.b64 %fd7, {%r5, %r4};
+        neg.f64 %fd8, %fd4;
+        mov.f64 %fd9, 0d3FF0000000000000;
+        fma.rn.f64 %fd10, %fd8, %fd7, %fd9;
+        fma.rn.f64 %fd11, %fd10, %fd10, %fd10;
+        fma.rn.f64 %fd12, %fd11, %fd7, %fd7;
+        fma.rn.f64 %fd13, %fd8, %fd12, %fd9;
+        fma.rn.f64 %fd15, %fd13, %fd12, %fd12;
+        abs.f32 %f2, %f1;
+        setp.geu.f32 %p1, %f2, 0f00400402;
+        @%p1 bra BB6_2;
+
+        and.b32 %r6, %r1, 2147483647;
+        add.s32 %r7, %r6, -1048576;
+
+
+        call.uni (%fd15), __cuda_sm20_dblrcp_rn_slowpath_v3, ( %fd4, %r7);
+
+        BB6_2:
+            mov.f64 %fdv1, %fd15;
+        ret;
+
+    }

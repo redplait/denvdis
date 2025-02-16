@@ -1,0 +1,104 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_ru_f32_slowpath (.reg .f32 %fa1)
+    {
+        .reg .u32 %r<51>;
+        .reg .f32 %f<22>;
+        .reg .pred %p<7>;
+    $LDWbegin___cuda_sm20_rcp_ru_f32_slowpath_:
+        mov.f32 %f1, %fa1;
+        mov.f32 %f2, %f1;
+        mov.b32 %r1, %f2;
+        shl.b32 %r2, %r1, 1;
+        shr.u32 %r3, %r2, 24;
+        mov.u32 %r4, 0;
+        setp.ne.u32 %p1, %r3, %r4;
+        @%p1 bra $Lt_12_5634;
+        shl.b32 %r5, %r1, 1;
+        mov.u32 %r6, 4194304;
+        setp.gt.s32 %p2, %r5, %r6;
+        @%p2 bra $Lt_12_6146;
+        and.b32 %r7, %r1, -2147483648;
+        mov.s32 %r8, 0;
+        set.ne.u32.s32 %r9, %r5, %r8;
+        neg.s32 %r10, %r9;
+        mov.u32 %r11, 0;
+        set.ne.u32.u32 %r12, %r7, %r11;
+        neg.s32 %r13, %r12;
+        and.b32 %r14, %r10, %r13;
+        mov.u32 %r15, 0;
+        setp.eq.s32 %p3, %r14, %r15;
+        @%p3 bra $Lt_12_4354;
+        or.b32 %r16, %r7, 2139095039;
+        mov.b32 %f3, %r16;
+        bra.uni $LBB10___cuda_sm20_rcp_ru_f32_slowpath_;
+    $Lt_12_4354:
+        or.b32 %r17, %r7, 2139095040;
+        mov.b32 %f3, %r17;
+        bra.uni $LBB10___cuda_sm20_rcp_ru_f32_slowpath_;
+    $Lt_12_6146:
+        mov.f32 %f4, 0f5f800000;
+        mov.f32 %f5, 0f00000000;
+        fma.rn.f32 %f2, %f2, %f4, %f5;
+        rcp.approx.ftz.f32 %f6, %f2;
+        mov.f32 %f7, 0fbf800000;
+        fma.rn.f32 %f8, %f2, %f6, %f7;
+        neg.ftz.f32 %f9, %f8;
+        fma.rp.f32 %f10, %f6, %f9, %f6;
+        mov.f32 %f11, 0f5f800000;
+        mov.f32 %f12, 0f00000000;
+        fma.rn.f32 %f3, %f10, %f11, %f12;
+        bra.uni $LBB10___cuda_sm20_rcp_ru_f32_slowpath_;
+    $Lt_12_5634:
+        sub.u32 %r18, %r3, 253;
+        mov.u32 %r19, 1;
+        setp.gt.u32 %p4, %r18, %r19;
+        @%p4 bra $Lt_12_6658;
+        and.b32 %r20, %r1, 8388607;
+        or.b32 %r21, %r20, 1065353216;
+        mov.b32 %f13, %r21;
+        rcp.approx.ftz.f32 %f14, %f13;
+        mov.f32 %f15, 0fbf800000;
+        fma.rn.f32 %f16, %f13, %f14, %f15;
+        neg.ftz.f32 %f17, %f16;
+        fma.rm.f32 %f18, %f14, %f17, %f14;
+        mov.b32 %r22, %f18;
+        and.b32 %r23, %r22, 8388607;
+        or.b32 %r24, %r23, 8388608;
+        fma.rp.f32 %f19, %f14, %f17, %f14;
+        set.neu.ftz.u32.f32 %r25, %f18, %f19;
+        neg.s32 %r26, %r25;
+        and.b32 %r27, %r18, %r24;
+        or.b32 %r28, %r26, %r27;
+        shl.b32 %r29, 1, %r18;
+        and.b32 %r30, %r24, %r29;
+        shr.u32 %r31, %r30, %r18;
+        or.b32 %r32, %r28, %r31;
+        sub.s32 %r33, %r3, 252;
+        shr.u32 %r34, %r24, %r33;
+        and.b32 %r35, %r1, -2147483648;
+        add.u32 %r36, %r34, 1;
+        mov.u32 %r37, 0;
+        set.eq.u32.u32 %r38, %r35, %r37;
+        neg.s32 %r39, %r38;
+        mov.u32 %r40, 0;
+        set.ne.u32.u32 %r41, %r32, %r40;
+        neg.s32 %r42, %r41;
+        and.b32 %r43, %r39, %r42;
+        neg.s32 %r44, %r43;
+        slct.u32.s32 %r45, %r34, %r36, %r44;
+        shl.b32 %r46, %r45, 1;
+        mov.u32 %r47, 0;
+        setp.eq.u32 %p5, %r20, %r47;
+        selp.u32 %r48, %r46, %r45, %p5;
+        or.b32 %r49, %r48, %r35;
+        mov.b32 %f3, %r49;
+        bra.uni $LBB10___cuda_sm20_rcp_ru_f32_slowpath_;
+    $Lt_12_6658:
+        rcp.approx.ftz.f32 %f3, %f2;
+    $LBB10___cuda_sm20_rcp_ru_f32_slowpath_:
+        mov.f32 %f20, %f3;
+        mov.f32 %fv1, %f20;
+        ret;
+    $LDWend___cuda_sm20_rcp_ru_f32_slowpath_:
+    }

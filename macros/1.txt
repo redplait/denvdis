@@ -1,0 +1,29 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .b64 res) __cuda_scalar_video_emulation_operandExtractAndSignExtend01 (.reg .b32 op)
+    {
+        .reg .b32 permCtrl, temp32;
+
+        mov.b32 permCtrl, %{VideoPermCtrlToSelectAndRightShift1};
+        mov.b32 temp32, 0;
+
+        prmt.b32 op, op, temp32, permCtrl;
+
+        .IF "%{TYPES0}" == ".s32"
+            .IF "%{VIDEOSELECTOR11}" == ".b0" || "%{VIDEOSELECTOR11}" == ".b1" || "%{VIDEOSELECTOR11}" == ".b2" || "%{VIDEOSELECTOR11}" == ".b3"
+                cvt.s64.s8 res, op;
+            .ELIF "%{VIDEOSELECTOR11}" == ".h0" || "%{VIDEOSELECTOR11}" == ".h1"
+                cvt.s64.s16 res, op;
+            .ELSE
+                cvt.s64.s32 res, op;
+            .ENDIF
+        .ELSE
+            .IF "%{VIDEOSELECTOR11}" == ".b0" || "%{VIDEOSELECTOR11}" == ".b1" || "%{VIDEOSELECTOR11}" == ".b2" || "%{VIDEOSELECTOR11}" == ".b3"
+                cvt.s64.u8 res, op;
+            .ELIF "%{VIDEOSELECTOR11}" == ".h0" || "%{VIDEOSELECTOR11}" == ".h1"
+                cvt.s64.u16 res, op;
+            .ELSE
+                cvt.s64.u32 res, op;
+            .ENDIF
+        .ENDIF
+    }

@@ -1,0 +1,76 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_div_rn_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+    {
+        .reg .u32 %r<10>;
+        .reg .f32 %f<56>;
+        .reg .pred %p<3>;
+    $LDWbegin___cuda_sm20_div_rn_f32:
+        mov.f32 %f2, %fa1;
+        mov.f32 %f4, %fa2;
+        mov.f32 %f5, %f4;
+        rcp.ftz.approx.f32 %f6,%f5;
+        mov.f32 %f7, %f6;
+        mov.f32 %f8, %f4;
+        neg.f32 %f9, %f7;
+        mov.f32 %f10, %f9;
+        fma.ftz.rn.f32 %f11, %f8, %f10, 1.0;
+        mov.f32 %f12, %f11;
+        mov.f32 %f13, %f7;
+        mov.f32 %f14, %f12;
+        mov.f32 %f15, %f7;
+        fma.ftz.rn.f32 %f16, %f13, %f14, %f15;
+        mov.f32 %f17, %f16;
+        mov.b32 %r1, %f2;
+        and.b32 %r2, %r1, 8388607;
+        or.b32 %r3, %r2, 1065353216;
+        mov.b32 %f18, %r3;
+        mov.f32 %f19, %f18;
+        mov.f32 %f20, %f17;
+        fma.ftz.rn.f32 %f21, %f19, %f20, 0.0;
+        mov.f32 %f22, %f21;
+        neg.f32 %f23, %f4;
+        mov.f32 %f24, %f23;
+        mov.f32 %f25, %f22;
+        mov.f32 %f26, %f18;
+        fma.ftz.rn.f32 %f27, %f24, %f25, %f26;
+        mov.f32 %f28, %f27;
+        mov.f32 %f29, %f28;
+        mov.f32 %f30, %f17;
+        mov.f32 %f31, %f22;
+        fma.ftz.rn.f32 %f32, %f29, %f30, %f31;
+        mov.f32 %f33, %f32;
+        mov.f32 %f34, %f23;
+        mov.f32 %f35, %f33;
+        mov.f32 %f36, %f18;
+        fma.ftz.rn.f32 %f37, %f34, %f35, %f36;
+        mov.f32 %f38, %f37;
+        mov.f32 %f39, %f38;
+        mov.f32 %f40, %f17;
+        mov.f32 %f41, %f33;
+        fma.ftz.rn.f32 %f42, %f39, %f40, %f41;
+        mov.f32 %f43, %f42;
+        mov.f32 %f44, %f43;
+        and.b32 %r4, %r1, -8388608;
+        mov.b32 %f45, %r4;
+        mov.f32 %f46, %f45;
+        fma.ftz.rn.f32 %f47, %f44, %f46, 0.0;
+        mov.f32 %f48, %f47;
+        mov.b32 %r5, %f48;
+        and.b32 %r6, %r5, 2147483647;
+        sub.u32 %r7, %r6, 8388624;
+        mov.u32 %r8, 2130706415;
+        setp.gt.u32 %p1, %r7, %r8;
+        @%p1 bra $Lt_1_770;
+        mov.f32 %f49, %f48;
+        bra.uni $LBB14___cuda_sm20_div_rn_f32;
+    $Lt_1_770:
+        mov.f32 %f50, %f2;
+        mov.f32 %f51, %f4;
+        call.uni (%f52), __cuda_sm20_div_rn_noftz_f32_slowpath, (%f50, %f51);
+        mov.f32 %f49, %f52;
+    $LBB14___cuda_sm20_div_rn_f32:
+        mov.f32 %fv1, %f49;
+        ret;
+    $LDWend___cuda_sm20_div_rn_f32:
+    }

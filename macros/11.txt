@@ -1,0 +1,86 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_dblrcp_rn_slowpath_v3 (.reg .f64 %a0, .reg .b32 %a1)
+    {
+        .reg .pred %p<4>;
+        .reg .s32 %r<22>;
+        .reg .f64 %fd<36>;
+
+
+        mov.f64 %fd6, %a0;
+        mov.u32 %r5, %a1;
+        mov.b64 {_, %r1}, %fd6;
+        and.b32 %r2, %r1, 2147483647;
+        mov.b64 {%r3, _}, %fd6;
+        mov.f64 %fd7, 0d7FF0000000000000;
+        mov.b64 {_, %r4}, %fd7;
+        abs.f64 %fd8, %fd6;
+        setp.gtu.f64 %p1, %fd8, 0d7FF0000000000000;
+        @%p1 bra __cuda_rcp_dblrcp_slowpath_label_6;
+
+        add.s32 %r6, %r2, -1;
+        add.s32 %r7, %r4, -1;
+        setp.lt.u32 %p2, %r6, %r7;
+        @%p2 bra __cuda_rcp_dblrcp_slowpath_label_3;
+
+        xor.b32 %r8, %r4, %r1;
+        mov.u32 %r9, 0;
+        mov.b64 %fd35, {%r9, %r8};
+        bra.uni __cuda_rcp_dblrcp_slowpath_label_7;
+
+        __cuda_rcp_dblrcp_slowpath_label_3:
+            setp.lt.u32 %p3, %r2, 16777217;
+            @%p3 bra __cuda_rcp_dblrcp_slowpath_label_5;
+
+            add.s32 %r10, %r1, -1071644672;
+            mov.b64 %fd10, {%r3, %r10};
+            rcp.approx.ftz.f64 %fd9,%fd10;
+            mov.b64 {%r11, _}, %fd9;
+            mov.b64 {_, %r12}, %fd9;
+            or.b32 %r13, %r11, %r5;
+            mov.b64 %fd11, {%r13, %r12};
+            neg.f64 %fd12, %fd10;
+            mov.f64 %fd13, 0d3FF0000000000000;
+            fma.rn.f64 %fd14, %fd12, %fd11, %fd13;
+            fma.rn.f64 %fd15, %fd14, %fd14, %fd14;
+            fma.rn.f64 %fd16, %fd15, %fd11, %fd11;
+            fma.rn.f64 %fd17, %fd12, %fd16, %fd13;
+            fma.rn.f64 %fd18, %fd17, %fd16, %fd16;
+            mov.u32 %r14, 1048576;
+            mov.u32 %r15, 0;
+            mov.b64 %fd19, {%r15, %r14};
+            mul.rn.f64 %fd20, %fd18, %fd19;
+            neg.f64 %fd21, %fd6;
+            fma.rn.f64 %fd22, %fd21, %fd20, %fd13;
+            fma.rn.f64 %fd23, %fd22, %fd22, %fd22;
+            fma.rn.f64 %fd35, %fd23, %fd20, %fd20;
+            bra.uni __cuda_rcp_dblrcp_slowpath_label_7;
+
+        __cuda_rcp_dblrcp_slowpath_label_5:
+            mov.u32 %r16, 1183842304;
+            mov.u32 %r17, 0;
+            mov.b64 %fd26, {%r17, %r16};
+            mul.f64 %fd25, %fd26, %fd6;
+            rcp.approx.ftz.f64 %fd24, %fd25;
+            mov.b64 {%r18, _}, %fd24;
+            mov.b64 {_, %r19}, %fd24;
+            or.b32 %r20, %r18, %r5;
+            mov.b64 %fd27, {%r20, %r19};
+            neg.f64 %fd28, %fd25;
+            mov.f64 %fd29, 0d3FF0000000000000;
+            fma.rn.f64 %fd30, %fd28, %fd27, %fd29;
+            fma.rn.f64 %fd31, %fd30, %fd30, %fd30;
+            fma.rn.f64 %fd32, %fd31, %fd27, %fd27;
+            fma.rn.f64 %fd33, %fd28, %fd32, %fd29;
+            fma.rn.f64 %fd34, %fd33, %fd32, %fd32;
+            mul.f64 %fd35, %fd34, %fd26;
+            bra.uni __cuda_rcp_dblrcp_slowpath_label_7;
+
+        __cuda_rcp_dblrcp_slowpath_label_6:
+            or.b32 %r21, %r1, 524288;
+            mov.b64 %fd35, {%r3, %r21};
+
+        __cuda_rcp_dblrcp_slowpath_label_7:
+            mov.f64 %fdv1, %fd35;
+        ret;
+    }

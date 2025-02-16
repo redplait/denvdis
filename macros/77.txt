@@ -1,0 +1,57 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rz_ftz_f32_slowpath (.reg .f32 %fa1)
+    {
+        .reg .f32 %f<26>;
+        .reg .pred %p<6>;
+    $LDWbegin___cuda_sm20_sqrt_rz_ftz_f32_slowpath_:
+        mov.f32 %f1, %fa1;
+        mov.f32 %f2, %f1;
+        mov.f32 %f3, 0f00000000;
+        setp.eq.ftz.f32 %p1, %f2, %f3;
+        @!%p1 bra $Lt_6_3330;
+        mov.f32 %f4, 0f3f800000;
+        mul.rn.ftz.f32 %f5, %f2, %f4;
+        bra.uni $LBB10___cuda_sm20_sqrt_rz_ftz_f32_slowpath_;
+    $Lt_6_3330:
+        mov.f32 %f6, 0f00000000;
+        setp.lt.ftz.f32 %p2, %f2, %f6;
+        @!%p2 bra $Lt_6_3842;
+        mov.f32 %f5, 0f7fffffff;
+        bra.uni $LBB10___cuda_sm20_sqrt_rz_ftz_f32_slowpath_;
+    $Lt_6_3842:
+        abs.ftz.f32 %f7, %f2;
+        mov.f32 %f8, 0f7f800000;
+        setp.le.ftz.f32 %p3, %f7, %f8;
+        @%p3 bra $Lt_6_4354;
+        mov.f32 %f9, 0f3f800000;
+        add.ftz.f32 %f5, %f2, %f9;
+        bra.uni $LBB10___cuda_sm20_sqrt_rz_ftz_f32_slowpath_;
+    $Lt_6_4354:
+        mov.f32 %f10, 0f7f800000;
+        setp.eq.ftz.f32 %p4, %f7, %f10;
+        @!%p4 bra $Lt_6_4866;
+        mov.f32 %f5, %f2;
+        bra.uni $LBB10___cuda_sm20_sqrt_rz_ftz_f32_slowpath_;
+    $Lt_6_4866:
+        mov.f32 %f11, 0f5f800000;
+        mul.rn.ftz.f32 %f2, %f2, %f11;
+        rsqrt.approx.ftz.f32 %f12, %f2;
+        mul.ftz.f32 %f13, %f12, %f2;
+        mov.f32 %f14, 0f3f000000;
+        mul.ftz.f32 %f15, %f12, %f14;
+        neg.ftz.f32 %f16, %f13;
+        mov.f32 %f17, 0f3f000000;
+        fma.rn.f32 %f18, %f16, %f15, %f17;
+        fma.rn.f32 %f19, %f13, %f18, %f13;
+        neg.ftz.f32 %f20, %f19;
+        fma.rn.f32 %f21, %f20, %f19, %f2;
+        fma.rz.f32 %f22, %f21, %f15, %f19;
+        mov.f32 %f23, 0f2f800000;
+        mul.ftz.f32 %f5, %f22, %f23;
+    $LBB10___cuda_sm20_sqrt_rz_ftz_f32_slowpath_:
+        mov.f32 %f24, %f5;
+        mov.f32 %fv1, %f24;
+        ret;
+    $LDWend___cuda_sm20_sqrt_rz_ftz_f32_slowpath_:
+    }

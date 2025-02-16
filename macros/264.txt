@@ -1,0 +1,3 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .b64 dst64) __cuda_sm70_shflsync_idx_p (.reg .b32 arg0, .reg .b32 arg1, .reg .b32 arg2, .reg .b32 mask) { .reg .pred pd; .reg .b32 dst, prslt; _warpsync mask; \shfl.sync.idx.b32 dst|pd, arg0, arg1, arg2, mask; selp.b32 prslt, 1, 0, pd; mov.b64 dst64, {dst, prslt}; ret; }

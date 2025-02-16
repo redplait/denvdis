@@ -1,0 +1,35 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .b64 res) __cuda_scalar_video_emulation_saturate64 (.reg .b64 op)
+    {
+        .reg .b8 temp8;
+        .reg .b16 temp16;
+
+        .IF "%{SAT}" == ".sat"
+            .IF "%{VIDEOSELECTOR01}" == ".b0" || "%{VIDEOSELECTOR01}" == ".b1" || "%{VIDEOSELECTOR01}" == ".b2" || "%{VIDEOSELECTOR01}" == ".b3"
+                .IF "%{TYPES0}" == ".s32"
+                    cvt.s8.u64.sat temp8, op;
+                    cvt.u64.s8 res, temp8;
+                .ELSE
+                    cvt.u8.u64.sat temp8, op;
+                    cvt.u64.u8 res, temp8;
+                .ENDIF
+            .ELIF "%{VIDEOSELECTOR01}" == ".h0" || "%{VIDEOSELECTOR01}" == ".h1"
+                .IF "%{TYPES0}" == ".s32"
+                    cvt.s16.u64.sat temp16, op;
+                    cvt.u64.s16 res, temp16;
+                .ELSE
+                    cvt.u16.u64.sat temp16, op;
+                    cvt.u64.u16 res, temp16;
+                .ENDIF
+            .ELSE
+                .IF "%{TYPES0}" == ".s32"
+                    cvt.s32.s64.sat res, op;
+                .ELSE
+                    cvt.u64.s64.sat res, op;
+                .ENDIF
+            .ENDIF
+        .ELSE
+            mov.b64 res, op;
+        .ENDIF
+    }

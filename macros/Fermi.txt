@@ -1,0 +1,1423 @@
+
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+
+.IF "${GPU_ARCH}" .in "sm_20 sm_21 sm_22 sm_23 sm_30 sm_32 sm_35 sm_37 sm_50 sm_52 sm_53 sm_60 sm_61 sm_62 sm_70 sm_72 sm_73 sm_75 sm_82"
+
+.visible .func ( .reg .u32 ptr ) %alloca ( .reg .u32 size, .reg .u32 align )
+
+
+
+
+        .weak .func (.reg .s32 %d) __cuda_sm20_div_s16 (.reg .s32 %a0, .reg .s32 %a1)
+        
+        .weak .func (.reg .u32 %d) __cuda_sm20_div_u16 (.reg .u32 %a0, .reg .u32 %a1)
+        
+        .weak .func (.reg .s32 %d) __cuda_sm20_rem_s16 (.reg .s32 %a0, .reg .s32 %a1)
+        
+        .weak .func (.reg .u32 %d) __cuda_sm20_rem_u16 (.reg .u32 %a0, .reg .u32 %a1)
+        
+    .weak .func (.reg .u64 %rdv1) __cuda_sm20_div_u64 (.reg .u64 %rda1, .reg .u64 %rda2)
+    
+
+    .weak .func (.reg .u64 %rdv1) __cuda_sm20_div_s64 (.reg .u64 %rda1, .reg .u64 %rda2)
+    
+    .weak .func (.reg .u64 %rdv1) __cuda_sm20_rem_u64 (.reg .u64 %rda1, .reg .u64 %rda2)
+    
+    .weak .func (.reg .u64 %rdv1) __cuda_sm20_rem_s64 (.reg .u64 %rda1, .reg .u64 %rda2)
+    
+
+
+
+
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_div_rn_noftz_f32_slowpath (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_div_rn_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_div_rd_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+        .weak .func (.reg .f32 %fv1) __cuda_sm20_div_ru_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+        .weak .func (.reg .f32 %fv1) __cuda_sm20_div_rz_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_div_rn_ftz_f32_slowpath (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_div_rn_ftz_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_div_rd_ftz_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_div_ru_ftz_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_div_rz_ftz_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+
+
+
+    .weak .func (.reg .f32 %fv1) __cuda_sm3x_div_rn_noftz_f32_slowpath (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm3x_div_rn_noftz_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm3x_div_rn_ftz_f32_slowpath (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm3x_div_rn_ftz_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+    
+
+
+
+
+.weak .func (.reg .b64 func_retval0) __cuda_sm20_div_f64_slowpath_v2 (.reg .b64 param_0, .reg .b64 param_1)
+
+.weak .func (.reg .f64 %fdv1) __cuda_sm20_div_f64_v2 (.reg .f64 %fda1, .reg .f64 %fda2)
+
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_div_rz_f64 (.reg .f64 %fda1, .reg .f64 %fda2)
+    
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_div_ru_f64 (.reg .f64 %fda1, .reg .f64 %fda2)
+    
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_div_rd_f64 (.reg .f64 %fda1, .reg .f64 %fda2)
+    .MACRO membar;
+.ENDMACRO
+
+
+.MACRO cvt dst, arg0;
+.ENDMACRO
+
+
+.MACRO div.full dst, arg0, arg1;
+.ENDMACRO
+
+
+.MACRO div dst, arg0, arg1;
+.ENDMACRO
+
+
+.MACRO rem dst, arg0, arg1;
+.ENDMACRO
+
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rn_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rn_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rd_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rd_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_ru_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_ru_f32 (.reg .f32 %fa1)
+    
+
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rz_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rz_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rn_ftz_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rn_ftz_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rd_ftz_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rd_ftz_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_ru_ftz_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_ru_ftz_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rz_ftz_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_rcp_rz_ftz_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rn_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rn_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rd_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rd_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_ru_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_ru_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rz_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rz_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rn_ftz_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rn_ftz_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rd_ftz_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rd_ftz_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_ru_ftz_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_ru_ftz_f32 (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rz_ftz_f32_slowpath (.reg .f32 %fa1)
+    
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_sqrt_rz_ftz_f32 (.reg .f32 %fa1)
+    
+
+
+
+
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_dblrcp_rn_slowpath_v3 (.reg .f64 %a0, .reg .b32 %a1)
+    
+
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_rcp_f64_v3 (.reg .f64 %a0)
+    
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_rcp_rd_f64 (.reg .f64 %fda1)
+    
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_rcp_ru_f64 (.reg .f64 %fda1)
+    
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_rcp_rz_f64 (.reg .f64 %fda1)
+    
+.MACRO rcp dst, arg;
+.ENDMACRO
+
+
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_drsqrt_f64_slowpath_v2 (.reg .f64 %fda1)
+    
+    .weak .func (.reg .f64 %d) __cuda_sm20_drsqrt_f64_v2 (.reg .f64 %a0)
+    
+.MACRO rsqrt dst, arg;
+.ENDMACRO
+
+
+.MACRO ex2 dst, arg;
+.ENDMACRO
+
+
+.MACRO lg2 dst, arg;
+.ENDMACRO
+
+
+
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_dsqrt_rz_f64 (.reg .f64 %fda1)
+    
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_dsqrt_ru_f64 (.reg .f64 %fda1)
+    
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_dsqrt_rd_f64 (.reg .f64 %fda1)
+    
+
+
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_dsqrt_rn_f64_mediumpath_v1 (.reg .f64 %fda1, .reg .u32 %fda2, .reg .f64 %fda3, .reg .f64 %fda4, .reg .f64 %fda5)
+    
+    .weak .func (.reg .f64 %fdv1) __cuda_sm20_dsqrt_rn_f64_v3 (.reg .f64 %fda1)
+    
+.MACRO sqrt dst, arg;
+.ENDMACRO
+
+
+
+
+
+
+
+
+.MACRO sured.b surf, coords, atomArg;
+.ENDMACRO
+
+
+
+
+
+
+    .weak .func (.reg .u64 %rdv1) __cuda_sm20_bfe_u64_ (.reg .u64 %rda1, .reg .u32 %ra2, .reg .u32 %ra3)
+    
+    .weak .func (.reg .u64 %rdv1) __cuda_sm20_bfe_s64_ (.reg .u64 %rda1, .reg .u32 %ra2, .reg .u32 %ra3)
+    
+
+
+
+    .weak .func (.reg .b64 res) __cuda_scalar_video_emulation_operandExtractAndSignExtend01 (.reg .b32 op)
+    
+
+
+
+    .weak .func (.reg .b64 res) __cuda_scalar_video_emulation_operandExtractAndSignExtend12 (.reg .b32 op)
+    
+
+
+
+   .weak .func (.reg .b64 res) __cuda_scalar_video_emulation_operandExtractAndSignExtend11 (.reg .b32 op)
+    
+
+
+
+   .weak .func (.reg .b64 res) __cuda_scalar_video_emulation_operandExtractAndSignExtend22 (.reg .b32 op)
+    
+
+
+
+    .weak .func (.reg .b64 res) __cuda_scalar_video_emulation_secondOp64 (.reg .b64 op1, .reg .b64 op2)
+    
+
+
+
+
+    .weak .func (.reg .b32 res) __cuda_scalar_video_emulation_optionalMerge32 (.reg .b32 op1, .reg .b32 op2)
+    
+
+
+    .weak .func (.reg .b64 res) __cuda_scalar_video_emulation_saturate64 (.reg .b64 op)
+    
+    .weak .func (.reg .u64 %rdv1) __cuda_sm20_bfi_u64_ (.reg .u64 %rda1, .reg .u64 %rda2, .reg .u32 %ra3, .reg .u32 %ra4)
+    
+.MACRO bfind dst, src;
+.ENDMACRO
+
+
+.MACRO brev dst, src;
+.ENDMACRO
+
+
+.MACRO bfe dst, argA, argB, argC;
+.ENDMACRO
+
+
+.MACRO bfi dst, argA, argB, argC, argD;
+.ENDMACRO
+
+
+.MACRO clz dst, src;
+.ENDMACRO
+
+
+.MACRO popc dst, src;
+.ENDMACRO
+
+
+
+
+
+
+.MACRO testp dst, src;
+.ENDMACRO
+
+
+.MACRO copysign dst, arg0, arg1;
+.ENDMACRO
+
+
+.MACRO _ldldu dst0, dst1, arg0, arg1;
+.ENDMACRO
+
+.MACRO tex dst, arg0, arg1, arg2, arg3, arg4;
+.ENDMACRO
+
+
+.MACRO tex.base dst, arg0, arg1, arg2, arg3, arg4;
+.ENDMACRO
+
+
+.MACRO tex.level dst, arg0, arg1, arg2, arg3, arg4, arg5;
+.ENDMACRO
+
+
+.MACRO tex.grad dst, arg0, arg1, arg2, arg3, arg4, arg5, arg6;
+.ENDMACRO
+
+
+
+
+
+
+
+
+.MACRO vadd dest, arg0, arg1, arg2;
+.ENDMACRO
+
+
+.MACRO vsub dest, arg0, arg1, arg2;
+.ENDMACRO
+
+
+.MACRO vmin dest, arg0, arg1, arg2;
+.ENDMACRO
+
+
+.MACRO vmax dest, arg0, arg1, arg2;
+.ENDMACRO
+
+
+.MACRO vabsdiff dest, arg0, arg1, arg2;
+.ENDMACRO
+
+
+.MACRO vshl dest, arg0, arg1, arg2;
+.ENDMACRO
+
+
+.MACRO vshr dest, arg0, arg1, arg2;
+.ENDMACRO
+
+
+.MACRO vset dest, arg0, arg1, arg2;
+.ENDMACRO
+
+
+
+
+
+
+
+
+.MACRO vmad dest, arg0, arg1, arg2;
+.ENDMACRO
+
+    .MACRO vadd2 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vmax2 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vmin2 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vabsdiff2 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vset2 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vsub2 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vavrg2 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+    .MACRO vadd4 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vmin4 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vmax4 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vabsdiff4 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vset4 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vsub4 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+
+    .MACRO vavrg4 dst, arg0, arg1, arg2;
+    .ENDMACRO
+
+.weak .func (.reg .b32 %dst) __cuda_sm62_dp2a (.reg .b32 %arg0, .reg .b32 %arg1, .reg .b32 %arg2, .reg .b32 %offset0, .reg .b32 %offset1)
+
+.MACRO dp2a.lo dst, arg0, arg1, arg2;
+.ENDMACRO
+
+
+.MACRO dp2a.hi dst, arg0, arg1, arg2;
+.ENDMACRO
+
+
+.MACRO dp4a dst, arg0, arg1, arg2;
+.ENDMACRO
+
+    .weak .func (.reg .b32 dst) __cuda_sm70_warpsync (.reg .b32 mask)
+    
+.MACRO bar.warp mask;
+.ENDMACRO
+
+
+
+
+
+
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync (.reg .b32 arg0)
+    
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_count (.reg .b32 arg0, .reg .b32 cnt)
+        .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_0 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_1 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_2 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_3 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_4 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_5 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_6 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_7 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_8 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_9 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_10 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_11 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_12 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_13 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_14 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_15 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_0_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_1_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_2_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_3_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_4_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_5_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_6_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_7_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_8_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_9_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_10_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_11_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_12_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_13_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_14_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_sync_15_count (.reg .b32 cnt) 
+
+
+.MACRO barrier arg0, arg1;
+.ENDMACRO
+
+
+.MACRO bar arg0, arg1;
+.ENDMACRO
+
+
+
+
+
+
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive (.reg .b32 arg0)
+    
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_count (.reg .b32 arg0, .reg .b32 cnt)
+        .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_0 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_1 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_2 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_3 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_4 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_5 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_6 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_7 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_8 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_9 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_10 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_11 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_12 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_13 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_14 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_15 () 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_0_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_1_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_2_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_3_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_4_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_5_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_6_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_7_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_8_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_9_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_10_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_11_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_12_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_13_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_14_count (.reg .b32 cnt) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive_15_count (.reg .b32 cnt) 
+
+
+.MACRO barrier.arrive arg0, arg1;
+.ENDMACRO
+
+
+.MACRO bar.arrive arg0, arg1;
+.ENDMACRO
+
+
+
+
+
+
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc (.reg .b32 arg0, .reg .b32 parg)
+    
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_count (.reg .b32 arg0, .reg .b32 cnt, .reg .b32 parg)
+        .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_0 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_1 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_2 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_3 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_4 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_5 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_6 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_7 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_8 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_9 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_10 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_11 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_12 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_13 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_14 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_15 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_0_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_1_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_2_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_3_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_4_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_5_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_6_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_7_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_8_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_9_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_10_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_11_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_12_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_13_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_14_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_popc_15_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or (.reg .b32 arg0, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_count (.reg .b32 arg0, .reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and (.reg .b32 arg0, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_count (.reg .b32 arg0, .reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_0 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_1 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_2 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_3 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_4 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_5 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_6 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_7 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_8 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_9 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_10 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_11 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_12 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_13 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_14 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_15 (.reg .b32 parg) 
+
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_0 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_1 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_2 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_3 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_4 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_5 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_6 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_7 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_8 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_9 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_10 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_11 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_12 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_13 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_14 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_15 (.reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_0_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_1_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_2_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_3_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_4_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_5_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_6_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_7_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_8_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_9_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_10_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_11_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_12_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_13_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_14_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_or_15_count (.reg .b32 cnt, .reg .b32 parg) 
+
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_0_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_1_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_2_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_3_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_4_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_5_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_6_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_7_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_8_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_9_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_10_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_11_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_12_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_13_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_14_count (.reg .b32 cnt, .reg .b32 parg) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_red_and_15_count (.reg .b32 cnt, .reg .b32 parg) 
+
+
+.MACRO barrier.red arg0, arg1, arg2, arg3;
+.ENDMACRO
+
+
+.MACRO bar.red arg0, arg1, arg2, arg3;
+.ENDMACRO
+
+    .FORCE_INLINE .func (.reg .b32 activemask_warpwide) __cuda_sm70_query_activemask ()
+
+    .FORCE_INLINE .func (.reg .b32 activemask) __cuda_sm70_query_activemask_groupwise (.reg .b32 mask)
+
+ .FORCE_INLINE .func (.reg .b32 dst, .reg .b32 activemask) __cuda_sm70_votesync_ballot_groupwise (.reg .pred parg, .reg .b32 mask) 
+
+
+    .FORCE_INLINE .func (.reg .b32 dst) __cuda_sm70_votesync_aligned_ballot (.reg .pred parg, .reg .b32 mask)
+
+    .FORCE_INLINE .func (.reg .pred dst) __cuda_sm70_votesync_aligned_all (.reg .pred parg, .reg .b32 mask)
+
+    .FORCE_INLINE .func (.reg .pred dst) __cuda_sm70_votesync_aligned_any (.reg .pred parg, .reg .b32 mask)
+
+    .FORCE_INLINE .func (.reg .pred dst) __cuda_sm70_votesync_aligned_uni (.reg .pred parg, .reg .b32 mask)
+    .weak .func (.reg .b32 dst) __cuda_sm70_votesync_ballot (.reg .b32 parg, .reg .b32 mask) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_votesync_all (.reg .b32 parg, .reg .b32 mask) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_votesync_any (.reg .b32 parg, .reg .b32 mask) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_votesync_uni (.reg .b32 parg, .reg .b32 mask) 
+.MACRO vote dst, pp, mask;
+.ENDMACRO
+
+    .weak .func (.reg .b32 dst) __cuda_sm70_shflsync_up (.reg .b32 arg0, .reg .b32 arg1, .reg .b32 arg2, .reg .b32 mask) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_shflsync_down (.reg .b32 arg0, .reg .b32 arg1, .reg .b32 arg2, .reg .b32 mask) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_shflsync_bfly (.reg .b32 arg0, .reg .b32 arg1, .reg .b32 arg2, .reg .b32 mask) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_shflsync_idx (.reg .b32 arg0, .reg .b32 arg1, .reg .b32 arg2, .reg .b32 mask) 
+    .weak .func (.reg .b64 dst64) __cuda_sm70_shflsync_up_p (.reg .b32 arg0, .reg .b32 arg1, .reg .b32 arg2, .reg .b32 mask) 
+    .weak .func (.reg .b64 dst64) __cuda_sm70_shflsync_down_p (.reg .b32 arg0, .reg .b32 arg1, .reg .b32 arg2, .reg .b32 mask) 
+    .weak .func (.reg .b64 dst64) __cuda_sm70_shflsync_bfly_p (.reg .b32 arg0, .reg .b32 arg1, .reg .b32 arg2, .reg .b32 mask) 
+    .weak .func (.reg .b64 dst64) __cuda_sm70_shflsync_idx_p (.reg .b32 arg0, .reg .b32 arg1, .reg .b32 arg2, .reg .b32 mask) 
+
+
+
+.MACRO shfl dst, arg0, arg1, arg2, mask;
+.ENDMACRO
+
+    .FORCE_INLINE .func (.reg .b32 dst) __cuda_sm70_matchsync_aligned_all_b32 (.reg .b32 arg1, .reg .b32 mask)
+
+    .FORCE_INLINE .func (.reg .b32 dst) __cuda_sm70_matchsync_aligned_all_b64 (.reg .b64 arg1, .reg .b32 mask)
+
+    .FORCE_INLINE .func (.reg .b32 dst, .reg .pred predOut) __cuda_sm70_matchsync_aligned_all_b32_p (.reg .b32 arg1, .reg .b32 mask)
+
+    .FORCE_INLINE .func (.reg .b32 dst, .reg .pred predOut) __cuda_sm70_matchsync_aligned_all_b64_p (.reg .b64 arg1, .reg .b32 mask)
+
+    .FORCE_INLINE .func (.reg .b32 dst) __cuda_sm70_matchsync_aligned_any_b32 (.reg .b32 arg1, .reg .b32 mask)
+
+    .FORCE_INLINE .func (.reg .b32 dst) __cuda_sm70_matchsync_aligned_any_b64 (.reg .b64 arg1, .reg .b32 mask)
+    .weak .func (.reg .b32 dst) __cuda_sm70_matchsync_any_b32 (.reg .b32 arg1, .reg .b32 mask) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_matchsync_any_b64 (.reg .b64 arg1, .reg .b32 mask) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_matchsync_all_b32 (.reg .b32 arg1, .reg .b32 mask) 
+    .weak .func (.reg .b32 dst) __cuda_sm70_matchsync_all_b64 (.reg .b64 arg1, .reg .b32 mask) 
+    .weak .func (.reg .b64 dst) __cuda_sm70_matchsync_all_b32_p (.reg .b32 arg1, .reg .b32 mask) 
+    .weak .func (.reg .b64 dst) __cuda_sm70_matchsync_all_b64_p (.reg .b64 arg1, .reg .b32 mask) 
+
+
+.MACRO match dst, arg1, mask;
+.ENDMACRO
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_a_row_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_a_row_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_a_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_bit_wmma_m8n8k128_load_a_row_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_bit_wmma_m8n8k128_load_a_row_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_bit_wmma_m8n8k128_load_a_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_a_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_a_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_a_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_bit_wmma_m8n8k128_load_a_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_bit_wmma_m8n8k128_load_a_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_bit_wmma_m8n8k128_load_a_row (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_a_row_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_a_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_a_row_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_a_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_a_row_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_a_row_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m16n16k16_load_a_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m16n16k16_load_a_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0 , .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m16n16k16_load_a_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0 , .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_a_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0 , .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_a_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0 , .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_a_row (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_a_col_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_a_col_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_a_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_a_col_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_a_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_a_col_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m16n16k16_load_a_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m16n16k16_load_a_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m16n16k16_load_a_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0 , .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_a_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0 , .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_a_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0 , .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4 , .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_a_col (.reg .u64 ptr, .reg .u32 ldm)
+
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m16n16k16_load_a_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m16n16k16_load_a_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m32n8k16_load_a_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m32n8k16_load_a_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m8n32k16_load_a_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m8n32k16_load_a_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_a_row (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_a_row_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_a_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_a_row (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_a_row_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_a_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_a_row (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_a_row_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_a_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_a_col (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_a_col_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_a_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_a_col (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_a_col_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_a_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_a_col (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_a_col_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_a_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m16n16k16_load_a_row_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m16n16k16_load_a_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m16n16k16_load_a_row_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m32n8k16_load_a_row_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m32n8k16_load_a_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m32n8k16_load_a_row_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m8n32k16_load_a_row_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m8n32k16_load_a_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m8n32k16_load_a_row_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1) __cuda_sm72_Integer_wmma_m16n16k16_load_a_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1) __cuda_sm72_Integer_wmma_m16n16k16_load_a_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1) __cuda_sm72_Integer_wmma_m16n16k16_load_a_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3) __cuda_sm72_Integer_wmma_m32n8k16_load_a_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3) __cuda_sm72_Integer_wmma_m32n8k16_load_a_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3) __cuda_sm72_Integer_wmma_m32n8k16_load_a_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0 ) __cuda_sm72_Integer_wmma_m8n32k16_load_a_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0 ) __cuda_sm72_Integer_wmma_m8n32k16_load_a_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm72_Integer_wmma_m8n32k16_load_a_row_global (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m16n16k16_load_a_col_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m16n16k16_load_a_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m16n16k16_load_a_col_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m32n8k16_load_a_col_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m32n8k16_load_a_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m32n8k16_load_a_col_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m8n32k16_load_a_col_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m8n32k16_load_a_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m8n32k16_load_a_col_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1) __cuda_sm72_Integer_wmma_m16n16k16_load_a_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1) __cuda_sm72_Integer_wmma_m16n16k16_load_a_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1) __cuda_sm72_Integer_wmma_m16n16k16_load_a_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3) __cuda_sm72_Integer_wmma_m32n8k16_load_a_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3) __cuda_sm72_Integer_wmma_m32n8k16_load_a_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3) __cuda_sm72_Integer_wmma_m32n8k16_load_a_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0 ) __cuda_sm72_Integer_wmma_m8n32k16_load_a_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0 ) __cuda_sm72_Integer_wmma_m8n32k16_load_a_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm72_Integer_wmma_m8n32k16_load_a_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.MACRO wmma.load.a dst, addr, ldm;
+.ENDMACRO
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_b_row_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_b_row_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_b_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_b_row_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_b_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_b_row_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m16n16k16_load_b_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m16n16k16_load_b_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m16n16k16_load_b_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_b_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_b_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_b_row (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_b_col_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_b_col_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_load_b_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_b_col_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_b_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_load_b_col_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm7x_wmma_m16n16k16_load_b_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm7x_wmma_m16n16k16_load_b_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 , .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm7x_wmma_m16n16k16_load_b_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_b_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_b_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_m32n8k16_load_b_col (.reg .u64 ptr, .reg .u32 ldm)
+
+
+
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_b_col_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_b_col_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_b_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_b_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_b_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_sub_byte_wmma_m8n8k32_load_b_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_bit_wmma_m8n8k128_load_b_col_shared_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_bit_wmma_m8n8k128_load_b_col_global_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_bit_wmma_m8n8k128_load_b_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_bit_wmma_m8n8k128_load_b_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_bit_wmma_m8n8k128_load_b_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func ( .reg .b32 dst0) __cuda_sm7x_bit_wmma_m8n8k128_load_b_col (.reg .u64 ptr, .reg .u32 ldm)
+
+
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m16n16k16_load_b_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m16n16k16_load_b_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m32n8k16_load_b_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m32n8k16_load_b_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m8n32k16_load_b_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m8n32k16_load_b_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_b_col (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_b_col_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_b_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_b_col (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_b_col_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_b_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_b_col (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_b_col_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_b_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_b_row (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_b_row_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_b_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_b_row (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_b_row_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_b_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_b_row (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_b_row_global (.reg .u64 ptr, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_b_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.MACRO wmma.load.b dst, addr, ldm;
+.ENDMACRO
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m16n16k16_acc_f16_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_acc_f32_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_acc_f32_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_sub_byte_wmma_m8n8k32_acc_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_bit_wmma_m8n8k128_acc_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m16n16k16_acc_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m32n8k16_acc_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m8n32k16_acc_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm7x_wmma_m16n16k16_acc_f32_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm7x_wmma_m16n16k16_acc_f32_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm7x_wmma_m16n16k16_acc_f32_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m16n16k16_acc_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m16n16k16_acc_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m16n16k16_acc_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm7x_wmma_m32n8k16_acc_f32_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm7x_wmma_m32n8k16_acc_f32_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm7x_wmma_m32n8k16_acc_f32_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+
+
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m32n8k16_acc_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m32n8k16_acc_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m32n8k16_acc_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m8n32k16_acc_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m8n32k16_acc_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m8n32k16_acc_row_global (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_sub_byte_wmma_m8n8k32_acc_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_sub_byte_wmma_m8n8k32_acc_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_sub_byte_wmma_m8n8k32_acc_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_bit_wmma_m8n8k128_acc_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_bit_wmma_m8n8k128_acc_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_bit_wmma_m8n8k128_acc_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_sub_byte_wmma_m8n8k32_acc_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_bit_wmma_m8n8k128_acc_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_acc_f32_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_acc_f32_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m16n16k16_acc_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m32n8k16_acc_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm72_Integer_wmma_m8n32k16_acc_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm7x_wmma_m16n16k16_acc_f32_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm7x_wmma_m16n16k16_acc_f32_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm7x_wmma_m16n16k16_acc_f32_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m16n16k16_acc_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m16n16k16_acc_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m16n16k16_acc_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m8n32k16_acc_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m8n32k16_acc_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m8n32k16_acc_col_global (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7 ) __cuda_sm7x_wmma_m32n8k16_acc_f32_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm7x_wmma_m32n8k16_acc_f32_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm7x_wmma_m32n8k16_acc_f32_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m32n8k16_acc_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m32n8k16_acc_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 , .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6 , .reg .b32 dst7 ) __cuda_sm72_Integer_wmma_m32n8k16_acc_col_global (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_sub_byte_wmma_m8n8k32_acc_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_sub_byte_wmma_m8n8k32_acc_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_sub_byte_wmma_m8n8k32_acc_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_bit_wmma_m8n8k128_acc_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_bit_wmma_m8n8k128_acc_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0 , .reg .b32 dst1 ) __cuda_sm7x_bit_wmma_m8n8k128_acc_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m16n16k16_acc_f16_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_acc_f16_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_acc_f16_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m16n16k16_acc_f16_row (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m16n16k16_acc_f16_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m16n16k16_acc_f16_row_global (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m32n8k16_acc_f16_row_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m32n8k16_acc_f16_row_global (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m32n8k16_acc_f16_row (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m16n16k16_acc_f16_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm7x_wmma_m32n8k16_acc_f16_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m16n16k16_acc_f16_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m16n16k16_acc_f16_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m16n16k16_acc_f16_col_global (.reg .u64 ptr, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m32n8k16_acc_f16_col (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m32n8k16_acc_f16_col_shared (.reg .u64 ptr, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3 ) __cuda_sm7x_wmma_m32n8k16_acc_f16_col_global (.reg .u64 ptr, .reg .u32 ldm)
+
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m32n8k16_acc_f16_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m32n8k16_acc_f16_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m8n32k16_acc_f16_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m8n32k16_acc_f16_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m16n16k16_acc_f32_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m16n16k16_acc_f32_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m32n8k16_acc_f32_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m32n8k16_acc_f32_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m8n32k16_acc_f32_row_update_ptr (.reg .u64 base, .reg .u32 ldm)
+
+.FORCE_INLINE .func (.reg .u64 ptr) __cuda_sm70_wmma_m8n32k16_acc_f32_col_update_ptr (.reg .u64 base, .reg .u32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_c_row_f32 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_c_row_f32_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_c_row_f32_shared (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_c_row_f32 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_c_row_f32_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_c_row_f32_shared (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_c_row_f32 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_c_row_f32_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_c_row_f32_shared (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m16n16k16_load_c_row_f16 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m16n16k16_load_c_row_f16_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m16n16k16_load_c_row_f16_shared (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m8n32k16_load_c_row_f16 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m8n32k16_load_c_row_f16_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m8n32k16_load_c_row_f16_shared (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m32n8k16_load_c_row_f16 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m32n8k16_load_c_row_f16_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m32n8k16_load_c_row_f16_shared (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_c_col_f32 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_c_col_f32_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m16n16k16_load_c_col_f32_shared (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_c_col_f32 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_c_col_f32_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m8n32k16_load_c_col_f32_shared (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_c_col_f32 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_c_col_f32_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[8]) __cuda_sm70_wmma_m32n8k16_load_c_col_f32_shared (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m16n16k16_load_c_col_f16 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m16n16k16_load_c_col_f16_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m16n16k16_load_c_col_f16_shared (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m8n32k16_load_c_col_f16 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m8n32k16_load_c_col_f16_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m8n32k16_load_c_col_f16_shared (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m32n8k16_load_c_col_f16 (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m32n8k16_load_c_col_f16_global (.reg .b64 ptr, .reg .b32 ldm)
+.weak .func (.param .align 16 .b32 dst[4]) __cuda_sm70_wmma_m32n8k16_load_c_col_f16_shared (.reg .b64 ptr, .reg .b32 ldm)
+
+.MACRO wmma.load.c dst, addr, ldm;
+.ENDMACRO
+
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m16n16k16_store_d_row_s32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m16n16k16_store_d_row_s32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m16n16k16_store_d_row_s32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) .FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m32n8k16_store_d_row_s32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m32n8k16_store_d_row_s32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m32n8k16_store_d_row_s32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) .FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m16n16k16_store_d_col_s32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m16n16k16_store_d_col_s32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m16n16k16_store_d_col_s32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m32n8k16_store_d_col_s32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m32n8k16_store_d_col_s32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m32n8k16_store_d_col_s32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m8n32k16_store_d_row_s32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m8n32k16_store_d_row_s32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m8n32k16_store_d_row_s32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) .FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m8n32k16_store_d_col_s32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m8n32k16_store_d_col_s32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm72_Integer_wmma_m8n32k16_store_d_col_s32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_row_f32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_row_f32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_row_f32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) .FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_row_f32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_row_f32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_row_f32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) .FORCE_INLINE .func () __cuda_sm7x_sub_byte_wmma_m8n8k32_store_d_row_s32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+
+.FORCE_INLINE .func () __cuda_sm7x_sub_byte_wmma_m8n8k32_store_d_row_s32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+
+.FORCE_INLINE .func () __cuda_sm7x_sub_byte_wmma_m8n8k32_store_d_row_s32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+
+.FORCE_INLINE .func () __cuda_sm7x_bit_wmma_m8n8k128_store_d_row_s32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+
+.FORCE_INLINE .func () __cuda_sm7x_bit_wmma_m8n8k128_store_d_row_s32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+
+.FORCE_INLINE .func () __cuda_sm7x_bit_wmma_m8n8k128_store_d_row_s32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+.FORCE_INLINE .func () __cuda_sm7x_sub_byte_wmma_m8n8k32_store_d_col_s32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+
+.FORCE_INLINE .func () __cuda_sm7x_sub_byte_wmma_m8n8k32_store_d_col_s32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+
+.FORCE_INLINE .func () __cuda_sm7x_sub_byte_wmma_m8n8k32_store_d_col_s32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+
+.FORCE_INLINE .func () __cuda_sm7x_bit_wmma_m8n8k128_store_d_col_s32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+
+.FORCE_INLINE .func () __cuda_sm7x_bit_wmma_m8n8k128_store_d_col_s32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+
+.FORCE_INLINE .func () __cuda_sm7x_bit_wmma_m8n8k128_store_d_col_s32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1)
+
+
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_col_f32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_col_f32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_col_f32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_col_f32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_col_f32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_col_f32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7)
+
+
+
+.weak .func () __cuda_sm70_wmma_m16n16k16_store_d_row_f32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m16n16k16_store_d_row_f32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m16n16k16_store_d_row_f32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_row_f32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_row_f32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_row_f32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_row_f32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_row_f32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_row_f32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m16n16k16_store_d_col_f32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m16n16k16_store_d_col_f32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m16n16k16_store_d_col_f32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_col_f32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_col_f32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_col_f32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_col_f32 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_col_f32_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_col_f32_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3, .reg .b32 sreg4, .reg .b32 sreg5, .reg .b32 sreg6, .reg .b32 sreg7)
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_row_f16 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_row_f16_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_row_f16_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) .FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_col_f16 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_col_f16_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m16n16k16_store_d_col_f16_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) .FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_row_f16 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_row_f16_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_row_f16_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) .FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_col_f16 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_col_f16_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) 
+.FORCE_INLINE .func () __cuda_sm7x_wmma_m32n8k16_store_d_col_f16_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) .weak .func () __cuda_sm70_wmma_m16n16k16_store_d_row_f16 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m16n16k16_store_d_row_f16_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m16n16k16_store_d_row_f16_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_row_f16 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_row_f16_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_row_f16_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_row_f16 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_row_f16_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_row_f16_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m16n16k16_store_d_col_f16 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m16n16k16_store_d_col_f16_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m16n16k16_store_d_col_f16_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_col_f16 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_col_f16_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m8n32k16_store_d_col_f16_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_col_f16 (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_col_f16_global (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+.weak .func () __cuda_sm70_wmma_m32n8k16_store_d_col_f16_shared (.reg .b64 ptr, .reg .b32 ldm, .reg .b32 sreg0, .reg .b32 sreg1, .reg .b32 sreg2, .reg .b32 sreg3)
+
+.MACRO wmma.store.d addr, src, ldm;
+.ENDMACRO
+
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_row_col_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_row_col_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_row_row_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_row_row_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_col_row_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_col_row_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_col_col_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_col_col_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_row_col_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_row_col_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_row_row_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_row_row_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_col_row_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_col_row_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_col_col_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_col_col_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_row_col_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_row_col_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_row_row_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_row_row_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_col_row_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_col_row_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_col_col_f32_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_col_col_f32_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_row_col_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_row_col_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_row_row_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_row_row_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_col_row_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_col_row_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_col_col_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m16n16k16_mma_col_col_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_row_col_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_row_col_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_row_row_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_row_row_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_col_row_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_col_row_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_col_col_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m8n32k16_mma_col_col_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_row_col_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_row_col_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_row_row_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_row_row_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_col_row_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_col_row_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_col_col_f32_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[8]) __cuda_sm70_wmma_m32n8k16_mma_col_col_f32_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_row_col_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_row_col_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_row_row_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_row_row_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_col_row_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_col_row_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_col_col_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_col_col_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_row_col_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_row_col_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_row_row_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_row_row_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_col_row_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_col_row_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_col_col_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_col_col_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_row_col_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_row_col_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_row_row_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_row_row_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_col_row_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_col_row_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_col_col_f16_f16_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_col_col_f16_f16 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[4])
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3) __cuda_sm70_wmma_swizzle (.reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) 
+
+
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3) __cuda_sm70_wmma_downconvert_satfinite (.reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3) __cuda_sm70_wmma_downconvert (.reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3, .reg .b32 src4, .reg .b32 src5, .reg .b32 src6, .reg .b32 src7) 
+
+.FORCE_INLINE .func (.reg .b32 dst0, .reg .b32 dst1, .reg .b32 dst2, .reg .b32 dst3, .reg .b32 dst4, .reg .b32 dst5, .reg .b32 dst6, .reg .b32 dst7) __cuda_sm7x_wmma_upconvert (.reg .b32 src0, .reg .b32 src1, .reg .b32 src2, .reg .b32 src3) .weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_row_col_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_row_col_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_row_row_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_row_row_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_col_row_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_col_row_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_col_col_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m16n16k16_mma_col_col_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_row_col_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_row_col_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_row_row_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_row_row_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_col_row_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_col_row_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_col_col_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m8n32k16_mma_col_col_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_row_col_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_row_col_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_row_row_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_row_row_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_col_row_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_col_row_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_col_col_f16_f32_satfinite (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.weak .func (.param .align 16 .b32 d[4]) __cuda_sm70_wmma_m32n8k16_mma_col_col_f16_f32 (.param .align 16 .b32 a[8], .param .align 16 .b32 b[8], .param .align 16 .b32 c[8])
+.MACRO mma d, a, b, c;
+.ENDMACRO
+
+
+
+.MACRO wmma.mma d, a, b, c;
+.ENDMACRO
+
+.ENDIF

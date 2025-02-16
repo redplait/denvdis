@@ -1,0 +1,136 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .f32 %fv1) __cuda_sm20_div_ru_ftz_f32 (.reg .f32 %fa1, .reg .f32 %fa2)
+    {
+    .reg .u32 %r<54>;
+    .reg .f32 %f<23>;
+    .reg .pred %p<16>;
+$LBB1___cuda_sm20_div_ru_ftz_f32_:
+    mov.f32 %f1, %fa1;
+    mov.f32 %f2, %fa2;
+    mov.b32 %r1, %f1;
+    mov.b32 %r2, %f2;
+    shl.b32 %r3, %r1, 1;
+    shr.u32 %r4, %r3, 24;
+    shl.b32 %r5, %r2, 1;
+    shr.u32 %r6, %r5, 24;
+    sub.s32 %r7, %r4, 1;
+    mov.u32 %r8, 253;
+    set.gt.u32.u32 %r9, %r7, %r8;
+    neg.s32 %r10, %r9;
+    sub.s32 %r11, %r6, 1;
+    mov.u32 %r12, 253;
+    set.gt.u32.u32 %r13, %r11, %r12;
+    neg.s32 %r14, %r13;
+    or.b32 %r15, %r10, %r14;
+    mov.u32 %r16, 0;
+    setp.eq.s32 %p1, %r15, %r16;
+    @%p1 bra $Lt_2_8450;
+    abs.ftz.f32 %f3, %f1;
+    mov.f32 %f4, 0f7f800000;
+    setp.le.ftz.f32 %p2, %f3, %f4;
+    @!%p2 bra $Lt_2_258;
+    abs.ftz.f32 %f5, %f2;
+    mov.f32 %f6, 0f7f800000;
+    setp.le.ftz.f32 %p3, %f5, %f6;
+    @%p3 bra $Lt_2_514;
+$Lt_2_258:
+    add.ftz.f32 %fv1, %f1, %f2;
+    bra.uni $LBB20___cuda_sm20_div_ru_ftz_f32_;
+$Lt_2_514:
+    mov.f32 %f7, 0f00000000;
+    setp.eq.ftz.f32 %p4, %f1, %f7;
+    mov.f32 %f8, 0f00000000;
+    setp.eq.ftz.f32 %p5, %f2, %f8;
+    selp.s32 %r17, 1, 0, %p4;
+    selp.s32 %r18, 1, 0, %p5;
+    and.b32 %r19, %r17, %r18;
+    mov.u32 %r20, 0;
+    setp.ne.s32 %p6, %r19, %r20;
+    @%p6 bra $Lt_2_1026;
+    mov.f32 %f9, 0f7f800000;
+    setp.eq.ftz.f32 %p7, %f3, %f9;
+    mov.f32 %f10, 0f7f800000;
+    setp.eq.ftz.f32 %p8, %f5, %f10;
+    @!%p7 bra $Lt_2_11522;
+    @!%p8 bra $Lt_2_1282;
+$Lt_2_1026:
+    mov.f32 %f11, 0fffc00000;
+    rsqrt.approx.ftz.f32 %fv1, %f11;
+    bra.uni $LBB20___cuda_sm20_div_ru_ftz_f32_;
+$Lt_2_11522:
+$Lt_2_1282:
+    selp.s32 %r21, 1, 0, %p8;
+    or.b32 %r22, %r21, %r17;
+    mov.u32 %r23, 0;
+    setp.eq.s32 %p9, %r22, %r23;
+    @%p9 bra $Lt_2_8962;
+    xor.b32 %r24, %r1, %r2;
+    and.b32 %r25, %r24, -2147483648;
+    mov.b32 %fv1, %r25;
+    bra.uni $LBB20___cuda_sm20_div_ru_ftz_f32_;
+$Lt_2_8962:
+    selp.s32 %r26, 1, 0, %p7;
+    or.b32 %r27, %r26, %r18;
+    mov.u32 %r28, 0;
+    setp.eq.s32 %p10, %r27, %r28;
+    @%p10 bra $Lt_2_9730;
+    xor.b32 %r29, %r1, %r2;
+    and.b32 %r30, %r29, -2147483648;
+    or.b32 %r31, %r30, 2139095040;
+    mov.b32 %fv1, %r31;
+    bra.uni $LBB20___cuda_sm20_div_ru_ftz_f32_;
+$Lt_2_9730:
+$Lt_2_8450:
+    sub.s32 %r32, %r4, 127;
+    sub.s32 %r33, %r6, 127;
+    shl.b32 %r34, %r32, 23;
+    shl.b32 %r35, %r33, 23;
+    sub.u32 %r36, %r1, %r34;
+    sub.u32 %r37, %r2, %r35;
+    mov.b32 %f12, %r36;
+    mov.b32 %f13, %r37;
+    neg.ftz.f32 %f14, %f13;
+    rcp.approx.ftz.f32 %f15, %f13;
+    mov.f32 %f16, 0f00000000;
+    fma.rn.f32 %f17, %f12, %f15, %f16;
+    fma.rn.f32 %f18, %f14, %f17, %f12;
+    fma.rn.f32 %f19, %f18, %f15, %f17;
+    fma.rn.f32 %f20, %f14, %f19, %f12;
+    fma.rp.f32 %f21, %f20, %f15, %f19;
+    mov.b32 %r38, %f21;
+    shl.b32 %r39, %r38, 1;
+    shr.u32 %r40, %r39, 24;
+    sub.s32 %r41, %r4, %r6;
+    add.u32 %r42, %r41, %r40;
+    sub.u32 %r43, %r42, 1;
+    mov.u32 %r44, 253;
+    setp.gt.u32 %p11, %r43, %r44;
+    @%p11 bra $Lt_2_10242;
+    shl.b32 %r45, %r41, 23;
+    add.u32 %r38, %r38, %r45;
+    bra.uni $Lt_2_9986;
+$Lt_2_10242:
+    and.b32 %r46, %r38, -2147483648;
+    mov.u32 %r47, 254;
+    setp.le.s32 %p12, %r42, %r47;
+    @%p12 bra $Lt_2_10754;
+    mov.u32 %r48, 2139095040;
+    mov.u32 %r49, 2139095039;
+    mov.s32 %r50, 0;
+    setp.eq.s32 %p13, %r46, %r50;
+    selp.u32 %r38, %r48, %r49, %p13;
+    bra.uni $Lt_2_10498;
+$Lt_2_10754:
+    mov.u32 %r51, 0;
+    mov.s32 %r52, 0;
+    setp.le.s32 %p14, %r42, %r52;
+    selp.u32 %r38, %r51, %r38, %p14;
+$Lt_2_10498:
+    or.b32 %r38, %r46, %r38;
+$Lt_2_9986:
+    mov.b32 %fv1, %r38;
+$LBB20___cuda_sm20_div_ru_ftz_f32_:
+    ret;
+$LDWend___cuda_sm20_div_ru_ftz_f32_:
+    }

@@ -1,0 +1,9 @@
+        .version ${PTX_MAJOR_VERSION}.${PTX_MINOR_VERSION}
+        .target ${GPU_ARCH}
+    .weak .func (.reg .b32 dst) __cuda_sm70_barrier_arrive (.reg .b32 arg0)
+    {
+        _warpsync 0xffffffff;
+        \barrier.arrive arg0;
+        mov.b32 dst, 0;
+        ret;
+    }
