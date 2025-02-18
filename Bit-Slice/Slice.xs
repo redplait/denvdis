@@ -134,6 +134,22 @@ class bit_slice {
     }
     return true;
   }
+  // generalized is_zeroN, expects array in form fromI, lenI
+  bool is_zeroN(AV* array) const
+  {
+    int old, comp = 0;
+    for ( int i = 0; i <= av_len(array); i++ ) {
+     SV** elem = av_fetch(array, i, 0);
+     if (elem != NULL) {
+       if ( !comp ) old = SvIV(*elem);
+       else {
+         if ( !is_zero(old, SvIV(*elem)) ) return false;
+       }
+       comp ^= 1;
+     }
+    }
+    return true;
+  }
  protected:
   inline bool check_zero(unsigned char b, int &pos, int &len) const
   {
@@ -315,6 +331,21 @@ void isz3(SV *arg, int from1, int len1, int from2, int len2, int from3, int len3
   struct bit_slice *t= get_magic(arg, 1, &bitslice_magic_vt);
  PPCODE:
   if ( t->is_zero3(from1, len1, from2, len2, from3, len3) )
+    ST(0)= &PL_sv_yes;
+  else
+    ST(0) = &PL_sv_no;
+  XSRETURN(1);
+
+void iszN(SV *arg, SV *aref)
+ INIT:
+  struct bit_slice *t= get_magic(arg, 1, &bitslice_magic_vt);
+  uint64_t res = 0;
+  AV *array;
+ PPCODE:
+  if (!SvROK(aref) || SvTYPE(SvRV(aref)) != SVt_PVAV)
+    croak("iszN expects ARRAY ref");
+  array = (AV*) SvRV(aref);
+  if ( t->is_zeroN(array) )
     ST(0)= &PL_sv_yes;
   else
     ST(0) = &PL_sv_no;
