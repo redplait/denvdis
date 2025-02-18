@@ -41,10 +41,30 @@ class bit_slice {
     if ( idx >= m_array.size() * CHAR_BIT ) return false;
     return m_array[BIT_CHAR(idx)] & BIT_IN_CHAR(idx);
   }
+  bool is_zero(int from, int len) const
+  {
+    int pos = BIT_CHAR(from);
+    from -= pos * CHAR_BIT;
+    for ( int i = pos; i < m_array.size() && len; i++ )
+    {
+      if ( !check_zero(m_array[i], from, len) )
+        return false;
+    }
+    return true;
+  }
+  bool is_zero2(int from1, int len1, int from2, int len2) const
+  {
+    return is_zero(from1, len1) && is_zero(from2, len2);
+  }
+  bool is_zero3(int from1, int len1, int from2, int len2, int from3, int len3) const
+  {
+    return is_zero(from1, len1) && is_zero(from2, len2) && is_zero(from3, len3);
+  }
   bool extract(int from, int len, uint64_t &res) const
   {
     auto lim = m_array.size() * CHAR_BIT;
     if ( from + len > lim ) {
+      croak("len %d + > sizeof(uint64_t)\n", len);
     }
     int pos = BIT_CHAR(from);
     from -= pos * CHAR_BIT;
@@ -115,6 +135,26 @@ class bit_slice {
     return true;
   }
  protected:
+  inline bool check_zero(unsigned char b, int &pos, int &len) const
+  {
+    int f = pos & 0x7;
+    if ( !f ) {
+      if ( len >= CHAR_BIT ) {
+        // check whole byte
+        len -= CHAR_BIT;
+        return !b;
+      }
+      // some part of current byte and it is last
+      auto v = extractBits(b, f, len);
+      len = 0;
+      return !v;
+    }
+    int av = std::min(CHAR_BIT - f, len);
+    auto v = extractBits(b, f, av);
+    len -= av;
+    pos -= f;
+    return !v;
+  }
   inline int process(unsigned char b, int &pos, int &len, uint64_t &res) const
   {
     int f = pos & 0x7;
@@ -244,6 +284,37 @@ test(SV *arg, int idx)
   struct bit_slice *t= get_magic(arg, 1, &bitslice_magic_vt);
  PPCODE:
   if ( t->test(idx) )
+    ST(0)= &PL_sv_yes;
+  else
+    ST(0) = &PL_sv_no;
+  XSRETURN(1);
+
+void
+isz(SV *arg, int from, int len)
+ INIT:
+  struct bit_slice *t= get_magic(arg, 1, &bitslice_magic_vt);
+ PPCODE:
+  if ( t->is_zero(from, len) )
+    ST(0)= &PL_sv_yes;
+  else
+    ST(0) = &PL_sv_no;
+  XSRETURN(1);
+
+void isz2(SV *arg, int from1, int len1, int from2, int len2)
+ INIT:
+  struct bit_slice *t= get_magic(arg, 1, &bitslice_magic_vt);
+ PPCODE:
+  if ( t->is_zero2(from1, len1, from2, len2) )
+    ST(0)= &PL_sv_yes;
+  else
+    ST(0) = &PL_sv_no;
+  XSRETURN(1);
+
+void isz3(SV *arg, int from1, int len1, int from2, int len2, int from3, int len3)
+ INIT:
+  struct bit_slice *t= get_magic(arg, 1, &bitslice_magic_vt);
+ PPCODE:
+  if ( t->is_zero3(from1, len1, from2, len2, from3, len3) )
     ST(0)= &PL_sv_yes;
   else
     ST(0) = &PL_sv_no;

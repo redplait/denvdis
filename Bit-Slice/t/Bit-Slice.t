@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 9;
 BEGIN { use_ok('Bit::Slice') };
 my @a = ( 1, 8, 0xff );
 my $bs = Bit::Slice->new( \@a );
@@ -17,6 +17,7 @@ my $s = $bs->to_str();
 ok( $s eq '0108ff', 'to_str');
 my $r0 = $bs->get(1, 7);
 ok( $r0 == 0, "1:7");
+ok( $bs->isz(1,7), 'isz' );
 my $r1 = $bs->get(0, 5);
 ok( $r1 == 1 );
 my $r2 = $bs->get(4, 8);
