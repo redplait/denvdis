@@ -1,5 +1,5 @@
 #!perl -w
-# some nvdusasm enciding analysis
+# some nvdisasm encoding analysis
 use strict;
 use warnings;
 
@@ -13,6 +13,24 @@ my $g_size;
 # [2] - size of significant bits
 # [3] - list for decoding
 my(%g_mnames, %g_mmasks);
+
+sub dump_decode
+{
+  my $d = shift;
+  my $res = '';
+  my $first;
+  foreach ( @$d ) {
+    if ( defined $first ) {
+      $res .= sprintf("%d:%d ", $first, $_);
+      undef $first;
+    } else {
+      $first = $_;
+    }
+  }
+  chop $res;
+  $res;
+}
+
 
 sub parse_mask
 {
@@ -30,7 +48,7 @@ sub parse_mask
   }
   # check if we already have such mask
   if ( exists $g_mmasks{$v} ) {
-    printf("%s has the same mask as %s\n", $name, $g_mmasks{$v}->[0]);
+    printf("%s has the same mask as %s (%s)\n", $name, $g_mmasks{$v}->[0], dump_decode( $g_mmasks{$v}->[3] ));
     $g_mnames{$name} = $g_mmasks{$v};
     return 1;
   }
@@ -42,8 +60,28 @@ sub parse_mask
   if ( $cnt > 64 ) {
     printf("%s has too long value %d\n", $name, $cnt);
   }
+  # split for decoding
+  my @d;
+  my $idx = -1;
+  for ( my $i = 0; $i < $g_size; $i++ ) {
+    if ( $a[$i] ne 'x' ) {
+      if ( $idx != -1 ) {
+        push @d, $idx; # start index
+        push @d, $i - $idx; # length
+        $idx = -1;
+      }
+      next;
+    } else {
+      $idx = $i if ( $idx == -1 );
+    }
+  }
+  # last item
+  if ( -1 != $idx ) {
+    push @d, $idx; # start index
+    push @d, $g_size - $idx; # length
+  }
   # make new mask
-  my @res = ( $name, $v, $cnt );
+  my @res = ( $name, $v, $cnt, \@d );
   $g_mnames{$name} = $g_mmasks{$v} = \@res;
   1;
 }
@@ -91,7 +129,7 @@ while( $str = <$fh> ) {
 printf("%d %s\n", $state, $str);
   if ( $str =~ /CLASS\s+\"([^\"]+)\"/ ) {
     if ( $has_prev ) {
-      printf("%s %s %d\n", $cname, $op[0], $op[1]);
+      printf("%s %s %X\n", $cname, $op[0], $op[1]);
     }
     $has_prev = 1;
     $cname = $1;
