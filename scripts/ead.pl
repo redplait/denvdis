@@ -3,14 +3,18 @@
 use strict;
 use warnings;
 use Getopt::Std;
+use Data::Dumper;
 
 # options
-use vars qw/$opt_v/;
+use vars qw/$opt_v $opt_w/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] md.txt
+ Options:
+  -v - verbose
+  -w - dump warnings
 EOF
   exit(8);
 }
@@ -43,7 +47,6 @@ sub dump_decode
   $res;
 }
 
-
 sub parse_mask
 {
   my $str = shift;
@@ -59,7 +62,7 @@ sub parse_mask
     return 0;
   }
   # check if we already have such mask
-  if ( exists $g_mmasks{$v} ) {
+  if ( exists $g_mmasks{$v} && defined($opt_w) ) {
     printf("%s has the same mask as %s (%s)\n", $name, $g_mmasks{$v}->[0], dump_decode( $g_mmasks{$v}->[3] ));
     $g_mnames{$name} = $g_mmasks{$v};
     return 1;
@@ -69,7 +72,7 @@ sub parse_mask
   foreach ( @a ) {
     $cnt++ if ( $_ eq 'x' );
   }
-  if ( $cnt > 64 ) {
+  if ( $cnt > 64 && defined($opt_w) ) {
     printf("%s has too long value %d\n", $name, $cnt);
   }
   # split for decoding
@@ -112,7 +115,7 @@ my(%g_zero, %g_ops);
 
 sub insert_ins
 {
-  my($iname, $op) = @_;
+  my($cname, $op) = @_;
   # find longest nenc
   my $nmax = 0;
   my $nmask;
@@ -124,13 +127,62 @@ sub insert_ins
   }
   my $tree = \%g_ops;
   # compare to where to insert
-  if ( $nmax > $op ) {
-    if ( exists $g_zero{$nmask->[1]} ) {
-      $tree = $g_zero{$nmask->[1]};
-    } else {
-      $g_zero{$nmask->[1]} = ();
-      $tree = $g_zero{$nmask->[1]};
+  if ( $nmax > $op->[2]->[2] ) {
+    $g_zero{$nmask->[1]} = { } if ( !exists $g_zero{$nmask->[1]} );
+    $tree = $g_zero{$nmask->[1]};
+  }
+  # put class name to op
+  unshift @$op, $cname;
+  # insert with opcode mask
+  $tree->{ $op->[3]->[1] } = { } if ( !exists $tree->{ $op->[3]->[1] } );
+  my $mpail = $tree->{ $op->[3]->[1] };
+  # and then by opcode
+  if ( !exists $mpail->{ $op->[2] } ) {
+    $mpail->{ $op->[2] } = [ $op ];
+  } else {
+    # check if they have the same names
+    my $aref = $mpail->{ $op->[2] };
+    printf("duplicated ins %s (old %s) mask %s value %X\n", $op->[1], $aref->[0]->[1], $op->[3]->[1], $op->[2])
+      if ( $op->[1] ne $aref->[0]->[1] );
+    push @{ $aref }, $op;
+  }
+}
+
+sub dump_tree
+{
+  my($t, $level) = @_;
+  my $id = $level ? ' ' x $level : '';
+  foreach ( keys %{ $t } ) {
+    printf("%s%s %s\n", $id, $_, $g_mmasks{ $_ }->[0]);
+    # value is int
+    while( my($v, $ops) = each %{ $t->{$_} } ) {
+      printf("  %s %X", $id, $v);
+      # check size of ops array
+      my $ops_size = scalar @$ops;
+      if ( 1 == $ops_size ) {
+        printf(" %s\n", $ops->[0]->[1]);
+      } else {
+        # for duplicates dump also line & encodings
+        printf(" %d items:\n", $ops_size);
+        for( my $i = 0; $i < $ops_size; $i++ ) {
+          printf("    %s %s line %d:\n", $id, $ops->[$i]->[1], $ops->[$i]->[4]);
+          # dump encodings
+          foreach my $enc ( @{ $ops->[$i]->[5] } ) {
+            printf("      %s\n", $enc);
+          }
+        }
+      }
     }
+  }
+}
+
+sub dump_negtree
+{
+  my $t = shift;
+  foreach ( keys %{ $t } ) {
+    printf("%s %s\n", $_, $g_mmasks{ $_ }->[0]);
+# print Dumper($t->{$_});
+    dump_tree( $t->{$_}, 2 );
   }
 }
 
@@ -147,7 +199,7 @@ sub parse0b
 }
 
 ### main
-my $status = getopts("v");
+my $status = getopts("vw");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -167,16 +219,26 @@ $state = $line = 0;
 my($cname, $has_op, $op_line, @op, @enc, @nenc);
 # reset current instruction
 my $reset = sub {
+  $cname = '';
   $has_op = $op_line = 0;
   @op = @enc = @nenc = ();
 };
+# insert copy of current instruction
 my $ins_op = sub {
   printf("%s %s %X\n", $cname, $op[0], $op[1]) if ( defined $opt_v );
-  $op[3] = $op_line;
-  $op[4] = \@enc;
-  $op[5] = \@nenc;
-  insert_ins($cname, \@op);
+  if ( !scalar( @enc ) && !scalar( @nenc ) ) {
+    printf("%s %s has empty encoding\n", $cname, $op[0]);
+    return;
+  }
+  my @c = @op;
+  my @cenc = @enc;
+  my @cnenc = @nenc;
+  $c[3] = $op_line;
+  $c[4] = \@cenc;
+  $c[5] = \@cnenc;
+  insert_ins($cname, \@c);
 };
+
 while( $str = <$fh> ) {
   chomp $str;
   $line++;
@@ -244,7 +306,7 @@ while( $str = <$fh> ) {
     if ( $str =~ /^\s*(\S+)\s*=/ ) {
       if ( !exists $g_mnames{$1} ) {
         printf("encode mask %s not exists, line %d op %s\n", $1, $line, $op[0]);
-        $reset->();
+        # $reset->();
       } else {
         push(@enc, $str);
       }
@@ -254,3 +316,8 @@ while( $str = <$fh> ) {
 close $fh;
 # check last instr
 $ins_op->() if ( $has_op );
+
+# dump trees
+dump_negtree(\%g_zero);
+printf("--- opcodes tree\n");
+dump_tree(\%g_ops, 0);
