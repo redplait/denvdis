@@ -2,6 +2,18 @@
 # some nvdisasm encoding analysis
 use strict;
 use warnings;
+use Getopt::Std;
+
+# options
+use vars qw/$opt_v/;
+
+sub usage()
+{
+  print STDERR<<EOF;
+Usage: $0 [options] md.txt
+EOF
+  exit(8);
+}
 
 # ENCODING WIDTH
 my $g_size;
@@ -93,7 +105,34 @@ my(%g_zero, %g_ops);
 # [0] - class name
 # [1] - name
 # [2] - opcode
-# [3] - encoding list
+# [3] - opcode mask
+# [4] - line number
+# [5] - encoding list (not includes opcode mask)
+# [6] - !encoding list
+
+sub insert_ins
+{
+  my($iname, $op) = @_;
+  # find longest nenc
+  my $nmax = 0;
+  my $nmask;
+  foreach ( @{ $op->[5] } ) {
+    if ( $_->[2] > $nmax ) {
+      $nmask = $_;
+      $nmax = $_->[2];
+    }
+  }
+  my $tree = \%g_ops;
+  # compare to where to insert
+  if ( $nmax > $op ) {
+    if ( exists $g_zero{$nmask->[1]} ) {
+      $tree = $g_zero{$nmask->[1]};
+    } else {
+      $g_zero{$nmask->[1]} = ();
+      $tree = $g_zero{$nmask->[1]};
+    }
+  }
+}
 
 sub parse0b
 {
@@ -107,18 +146,40 @@ sub parse0b
   return $res;
 }
 
-# main
+### main
+my $status = getopts("v");
+usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
   exit(5);
 }
 
-my($fh, $state, $str);
+my($fh, $state, $str, $line);
 open($fh, '<', $ARGV[0]) or die("cannot open, error $!");
-$state = 0;
-my($cname, $has_prev, @op);
+$state = $line = 0;
+# op indexes
+# [0] - name
+# [1] - opcode
+# [2] - opcode mask
+# [3] - line no (for debugging)
+# [4] - ref to enc
+# [5] - ref to nenc
+my($cname, $has_op, $op_line, @op, @enc, @nenc);
+# reset current instruction
+my $reset = sub {
+  $has_op = $op_line = 0;
+  @op = @enc = @nenc = ();
+};
+my $ins_op = sub {
+  printf("%s %s %X\n", $cname, $op[0], $op[1]) if ( defined $opt_v );
+  $op[3] = $op_line;
+  $op[4] = \@enc;
+  $op[5] = \@nenc;
+  insert_ins($cname, \@op);
+};
 while( $str = <$fh> ) {
   chomp $str;
+  $line++;
   if ( !$state ) {
     if ( $str =~ /ENCODING\s+WIDTH\s+(\d+)\s*\;/ ) {
        $g_size = int($1);
@@ -126,12 +187,13 @@ while( $str = <$fh> ) {
     }
     next;
   }
-printf("%d %s\n", $state, $str);
+# printf("%d %s\n", $state, $str);
   if ( $str =~ /CLASS\s+\"([^\"]+)\"/ ) {
-    if ( $has_prev ) {
-      printf("%s %s %X\n", $cname, $op[0], $op[1]);
+    if ( $has_op ) {
+      $ins_op->(); $reset->();
     }
-    $has_prev = 1;
+    $has_op = 1;
+    $op_line = $line;
     $cname = $1;
     $state = 2;
     next;
@@ -153,9 +215,42 @@ printf("%d %s\n", $state, $str);
     $op[1] = $value;
   }
   # encoding
-  if ( $str =~ /ENCODING/ ) {
+  if ( $str =~ /^\s*ENCODING/ ) {
     $state = 4;
     next;
   }
+  # encodings
+  if ( 4 == $state ) {
+    if ( $str =~ /^\s*\!(\S+)\s*;/ ) {
+      # put ref from g_mnames into nenc
+      if ( !exists $g_mnames{$1} ) {
+        printf("%s not exists, line %d op %s\n", $1, $line, $op[0]);
+      } else {
+        push( @nenc, $g_mnames{$1} );
+      }
+      next;
+    }
+    # check for =Opcode
+    if ( $str =~ /^\s*(\S+)\s*=\s*Opcode/ ) {
+      if ( !exists $g_mnames{$1} ) {
+        printf("opcode mask %s not exists, line %d op %s\n", $1, $line, $op[0]);
+        $reset->();
+      } else {
+        $op[2] = $g_mnames{$1};
+      }
+      next;
+    }
+    # check and put to enc
+    if ( $str =~ /^\s*(\S+)\s*=/ ) {
+      if ( !exists $g_mnames{$1} ) {
+        printf("encode mask %s not exists, line %d op %s\n", $1, $line, $op[0]);
+        $reset->();
+      } else {
+        push(@enc, $str);
+      }
+    }
+  }
 }
 close $fh;
+# check last instr
+$ins_op->() if ( $has_op );
