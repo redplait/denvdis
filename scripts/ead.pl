@@ -6,13 +6,14 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_v $opt_w/;
+use vars qw/$opt_m $opt_v $opt_w/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] md.txt
  Options:
+  -m - generate masks
   -v - verbose
   -w - dump warnings
 EOF
@@ -100,6 +101,45 @@ sub parse_mask
   $g_mnames{$name} = $g_mmasks{$v} = \@res;
   1;
 }
+
+sub zero_mask
+{
+ my($a, $list) = @_;
+ for( my $i = 0; $i < scalar(@$list); $i += 2 ) {
+   my $base = $list->[$i];
+   for ( my $j = 0; $j < $list->[$i + 1]; $j++ ) {
+     $a->[$base + $j] = '0';
+   }
+ }
+}
+
+sub mask_value
+{
+  my($a, $v, $mask) = @_;
+  my $list = $mask->[3];
+  for( my $i = 0; $i < scalar(@$list); $i += 2 ) {
+   my $base = $list->[$i];
+   for ( my $j = 0; $j < $list->[$i + 1]; $j++ ) {
+     my $sym = $v & 1 ? '1' : '0';
+     $a->[$base + $j] = $sym;
+     $v >>= 1;
+   }
+ }
+}
+
+sub gen_inst_mask
+{
+  my $op = shift;
+  my @res = ('-') x $g_size;
+  foreach my $mask ( @{ $op->[6] } ) {
+    zero_mask(\@res, $mask->[3]);
+  }
+  # opcode
+  mask_value(\@res, $op->[2], $op->[3]);
+  # encodings
+  return join('', @res);
+}
+
 
 # opcodes divided into 2 group - first start with some zero mask (longest if there are > 1) and second with longest opcode
 # key is mask value is map of second type
@@ -198,8 +238,25 @@ sub parse0b
   return $res;
 }
 
+# mask map, key - mask string, value - instruction like in g_ops
+my(%g_masks);
+my $g_dups = 0;
+
+sub insert_mask
+{
+  my($cname, $op) = @_;
+  # put class name to op
+  unshift @$op, $cname;
+  my $mask = gen_inst_mask($op);
+  if ( exists $g_masks{$mask} ) {
+     $g_dups++;
+  } else {
+    $g_masks{$mask} = $op;
+  }
+}
+
 ### main
-my $status = getopts("vw");
+my $status = getopts("mvw");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -236,7 +293,11 @@ my $ins_op = sub {
   $c[3] = $op_line;
   $c[4] = \@cenc;
   $c[5] = \@cnenc;
-  insert_ins($cname, \@c);
+  if ( defined($opt_m) ) {
+    insert_mask($cname, \@c);
+   } else {
+    insert_ins($cname, \@c);
+   }
 };
 
 while( $str = <$fh> ) {
@@ -318,6 +379,14 @@ close $fh;
 $ins_op->() if ( $has_op );
 
 # dump trees
-dump_negtree(\%g_zero);
-printf("--- opcodes tree\n");
-dump_tree(\%g_ops, 0);
+if ( defined($opt_m) ) {
+# results
+#                sm3 sm4 sm5 sm57 sm75
+# !enc + opcode  205 258 273 275  548
+# total          279 261 321 363  681
+  printf("%d duplicates, total %d\n", $g_dups, scalar keys %g_masks);
+} else {
+  dump_negtree(\%g_zero);
+  printf("--- opcodes tree\n");
+  dump_tree(\%g_ops, 0);
+}
