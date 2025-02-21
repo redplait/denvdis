@@ -249,8 +249,9 @@ sub insert_mask
   unshift @$op, $cname;
   my $mask = gen_inst_mask($op);
   if ( exists $g_masks{$mask} ) {
-     $g_dups++;
-  } else {
+     # skip alternate classes
+     $g_dups++ if ( !$op->[7] );
+   } else {
     $g_masks{$mask} = $op;
   }
 }
@@ -273,11 +274,12 @@ $state = $line = 0;
 # [3] - line no (for debugging)
 # [4] - ref to enc
 # [5] - ref to nenc
-my($cname, $has_op, $op_line, @op, @enc, @nenc);
+# [6] - is alternate class
+my($cname, $has_op, $op_line, @op, @enc, @nenc, $alt);
 # reset current instruction
 my $reset = sub {
   $cname = '';
-  $has_op = $op_line = 0;
+  $alt = $has_op = $op_line = 0;
   @op = @enc = @nenc = ();
 };
 # insert copy of current instruction
@@ -293,13 +295,14 @@ my $ins_op = sub {
   $c[3] = $op_line;
   $c[4] = \@cenc;
   $c[5] = \@cnenc;
+  $c[6] = $alt;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
     insert_ins($cname, \@c);
    }
 };
-
+$reset->();
 while( $str = <$fh> ) {
   chomp $str;
   $line++;
@@ -311,13 +314,14 @@ while( $str = <$fh> ) {
     next;
   }
 # printf("%d %s\n", $state, $str);
-  if ( $str =~ /CLASS\s+\"([^\"]+)\"/ ) {
+  if ( $str =~ /(ALTERNATE\s+)?CLASS\s+\"([^\"]+)\"/ ) {
     if ( $has_op ) {
       $ins_op->(); $reset->();
     }
     $has_op = 1;
     $op_line = $line;
-    $cname = $1;
+    $cname = $2;
+    $alt = defined($1);
     $state = 2;
     next;
   }
@@ -381,9 +385,10 @@ $ins_op->() if ( $has_op );
 # dump trees
 if ( defined($opt_m) ) {
 # results
-#                sm3 sm4 sm5 sm57 sm75
-# !enc + opcode  205 258 273 275  548
-# total          279 261 321 363  681
+#                sm3 sm4 sm5 sm57 sm72 sm75
+# !enc + opcode  205 258 273 275  310  548
+# total          279 261 321 363  365  681
+# -alternate     135 183 200 194  135  241
   printf("%d duplicates, total %d\n", $g_dups, scalar keys %g_masks);
 } else {
   dump_negtree(\%g_zero);
