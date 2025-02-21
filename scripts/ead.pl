@@ -144,6 +144,9 @@ sub gen_inst_mask
     if ( $emask =~ /^\s*(\S+)\s*=\s*(\d+)/ ) {
       $altered++;
       mask_value(\@res, int($2), $g_mnames{$1});
+    } elsif ( $emask =~ /^\s*(\S+)\s*=\*\s*(\d+)/ ) {
+      $altered++;
+      mask_value(\@res, int($2), $g_mnames{$1});
     } else {
       push @new, $emask;
     }
@@ -401,9 +404,12 @@ if ( defined($opt_m) ) {
 # !enc + opcode  205 258 273 275  310  548
 # total          279 261 321 363  365  681
 # -alternate     135 183 200 194  135  241
-# witn encoded consts
+# witn encoded = const
 # total          330 310 374 411  433  807
 # duplicated     113 160 171 173   74  128
+# with encoded =* const - I don't know what this means
+# total          330 310 374 415  538 1010
+# duplicated     113 160 171 173   60   96
   printf("%d duplicates, total %d\n", $g_dups, scalar keys %g_masks);
 } else {
   dump_negtree(\%g_zero);
