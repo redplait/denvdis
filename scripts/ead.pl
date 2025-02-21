@@ -6,13 +6,14 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_m $opt_v $opt_w/;
+use vars qw/$opt_a $opt_m $opt_v $opt_w/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] md.txt
  Options:
+ - a - add alternates
   -m - generate masks
   -v - verbose
   -w - dump warnings
@@ -257,6 +258,24 @@ sub parse0b
 my(%g_masks);
 my $g_dups = 0;
 
+sub dump_dup_masks
+{
+  while( my($v, $ops) = each %g_masks ) {
+    my $size = scalar @$ops;
+    next if ( 1 == $size );
+    printf("%s: %d items\n", $v, $size);
+    # dump duplicated instructions
+    foreach my $op ( @$ops ) {
+      printf("  %s line %d\n", $op->[1], $op->[4]);
+      # dump encodings
+      foreach my $enc ( @{ $op->[5] } ) {
+        printf("    %s\n", $enc);
+      }
+    }
+  }
+}
+
+
 sub insert_mask
 {
   my($cname, $op) = @_;
@@ -266,13 +285,17 @@ sub insert_mask
   if ( exists $g_masks{$mask} ) {
      # skip alternate classes
      $g_dups++ if ( !$op->[7] );
+     if ( !$op->[7] || defined($opt_a) ) {
+       my $ops = $g_masks{$mask};
+       push @$ops, $op;
+     }
    } else {
-    $g_masks{$mask} = $op;
+    $g_masks{$mask} = [ $op ];
   }
 }
 
 ### main
-my $status = getopts("mvw");
+my $status = getopts("amvw");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -400,7 +423,7 @@ $ins_op->() if ( $has_op );
 # dump trees
 if ( defined($opt_m) ) {
 # results
-#                sm3 sm4 sm5 sm57 sm72 sm75
+#                sm3 sm4 sm5 sm57 sm72 sm75 sm100 sm101 sm120
 # !enc + opcode  205 258 273 275  310  548
 # total          279 261 321 363  365  681
 # -alternate     135 183 200 194  135  241
@@ -408,8 +431,9 @@ if ( defined($opt_m) ) {
 # total          330 310 374 411  433  807
 # duplicated     113 160 171 173   74  128
 # with encoded =* const - I don't know what this means
-# total          330 310 374 415  538 1010
-# duplicated     113 160 171 173   60   96
+# total          330 310 374 415  538 1010    992   927  1016
+# duplicated     113 160 171 173   60   96    141   129   156
+  dump_dup_masks();
   printf("%d duplicates, total %d\n", $g_dups, scalar keys %g_masks);
 } else {
   dump_negtree(\%g_zero);
