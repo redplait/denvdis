@@ -257,6 +257,7 @@ sub parse0b
 # mask map, key - mask string, value - instruction like in g_ops
 my(%g_masks);
 my $g_dups = 0;
+my $g_diff_names = 0;
 
 sub dump_dup_masks
 {
@@ -265,8 +266,13 @@ sub dump_dup_masks
     next if ( 1 == $size );
     printf("%s: %d items\n", $v, $size);
     # dump duplicated instructions
+    my $name1 = $ops->[0]->[1];
     foreach my $op ( @$ops ) {
-      printf("  %s line %d\n", $op->[1], $op->[4]);
+      if ( $name1 ne $op->[1] ) {
+        printf(" !!%s line %d %s\n", $op->[1], $op->[4], $op->[8]);
+      } else {
+        printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
+      }
       # dump encodings
       foreach my $enc ( @{ $op->[5] } ) {
         printf("    %s\n", $enc);
@@ -286,6 +292,7 @@ sub insert_mask
      # skip alternate classes
      $g_dups++ if ( !$op->[7] );
      if ( !$op->[7] || defined($opt_a) ) {
+       $g_diff_names++ if ( $op->[1] ne $g_masks{$mask}->[0]->[1] );
        my $ops = $g_masks{$mask};
        push @$ops, $op;
      }
@@ -313,10 +320,11 @@ $state = $line = 0;
 # [4] - ref to enc
 # [5] - ref to nenc
 # [6] - is alternate class
-my($cname, $has_op, $op_line, @op, @enc, @nenc, $alt);
+# [7] - format string
+my($cname, $has_op, $op_line, @op, @enc, @nenc, $alt, $format);
 # reset current instruction
 my $reset = sub {
-  $cname = '';
+  $format = $cname = '';
   $alt = $has_op = $op_line = 0;
   @op = @enc = @nenc = ();
 };
@@ -334,6 +342,7 @@ my $ins_op = sub {
   $c[4] = \@cenc;
   $c[5] = \@cnenc;
   $c[6] = $alt;
+  $c[7] = $format;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
@@ -365,6 +374,22 @@ while( $str = <$fh> ) {
   }
   if ( $state == 1 ) {
     parse_mask($str); next;
+  }
+  # parse format
+  if ( $state == 2 && $str =~ /FORMAT\s+(?:PREDICATE\s+)?.*Opcode\s*?(.*)$/ ) {
+    $format = $1;
+    $state = 6 if ( $str !~ /;\s*$/ );
+    next;
+  }
+  if ( 6 == $state ) {
+    if ( $str !~ /FORMAT\s+(?:PREDICATE\s+)?.*Opcode/ && $str =~ /^\s*(.* \/.*)$/ ) {
+      $format .= ' ' . $1;
+    }
+    $state = 2 if ( $str =~ /;\s*$/ );
+  }
+  if ( 6 == $state && $str =~ /CONDITIONS/ ) {
+    $state = 2;
+    next;
   }
   if ( $state == 2 && $str =~ /OPCODES/ ) {
     $state = 3;
@@ -434,7 +459,7 @@ if ( defined($opt_m) ) {
 # total          330 310 374 415  538 1010    992   927  1016
 # duplicated     113 160 171 173   60   96    141   129   156
   dump_dup_masks();
-  printf("%d duplicates, total %d\n", $g_dups, scalar keys %g_masks);
+  printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
 } else {
   dump_negtree(\%g_zero);
   printf("--- opcodes tree\n");
