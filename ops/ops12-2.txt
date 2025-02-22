@@ -1,0 +1,270 @@
+000U	mad.fused.hi	I32
+000U	madc.fused.hi	I32
+00	tanh	F16
+00	tanh	F32
+00	tanh	H32
+00	ex2	F16
+00	ex2	H32
+uQC	p2r	B32
+uQCu	p2r	B32
+QuC	r2p	B32
+0MU	ld	F
+0MU	ld	I[8|16|32|64]
+0MU	ld	B[8|16|32|64]
+M0U	st	F
+M0U	st	I[8|16|32|64]
+M0U	st	B[8|16|32|64]
+M	cachepolicy	
+01	cvt	F16F32
+011	cvt	H32F32
+x1	cvt	E16F32
+d11	cvt	E32F32
+0x	cvt	F32E16
+hhhhdC	mma	F16F16F16F16
+dhhddC	mma	F32F16F16F32
+dddddC	mma	F32F32
+sddsdC	mma	I32I8I8I32
+sddsdC	mma	I32I32
+hhhh	_mma	F16F16
+fhhh	_mma	F32F16
+fhhf	_mma	F32F32
+VVVV	_mma	F16F32
+ssss	_mma	I8I8
+sdds	_mma	
+sdds	_mma	I32I32
+0123	_mma	F64F64F64F64
+hhhhdC	_mma	F16F16F16F16
+dhhddC	_mma	F32F16F16F32
+dddddC	_mma	F32F32
+sddsdC	_mma	I32I8I8I32
+sddsdC	_mma	I32I32
+sdds	_mma	I32I8I8I32
+sdds	_mma	I32I32
+hddh	_mma	F16Q8Q8F16
+fddf	_mma	F32Q8Q8F32
+hddhdC	_mma	F16Q8Q8F16
+fddfdC	_mma	F32Q8Q8F32
+hUUh	_mma.warpgroup	F16F16F16F16
+fUUf	_mma.warpgroup	F32F16F16F32
+hUhh	_mma.warpgroup	F16F16F16F16
+fUhf	_mma.warpgroup	F32F16F16F32
+hhUh	_mma.warpgroup	F16F16F16F16
+fhUf	_mma.warpgroup	F32F16F16F32
+hUUhP	_mma.warpgroup	F16F16F16F16
+fUUfP	_mma.warpgroup	F32F16F16F32
+hUhhP	_mma.warpgroup	F16F16F16F16
+fUhfP	_mma.warpgroup	F32F16F16F32
+hhUhP	_mma.warpgroup	F16F16F16F16
+fhUfP	_mma.warpgroup	F32F16F16F32
+hUUhu	_mma.warpgroup	F16F16F16F16
+fUUfu	_mma.warpgroup	F32F16F16F32
+hUhhu	_mma.warpgroup	F16F16F16F16
+fUhfu	_mma.warpgroup	F32F16F16F32
+hhUhu	_mma.warpgroup	F16F16F16F16
+fhUfu	_mma.warpgroup	F32F16F16F32
+	_warpgroup.arrive	
+	_warpgroup.commit_batch	
+	_warpgroup.wait	
+u	_warpgroup.wait	
+fUUf	_mma.warpgroup	F32E16E16F32
+fUdf	_mma.warpgroup	F32E16E16F32
+fdUf	_mma.warpgroup	F32E16E16F32
+fUUf	_mma.warpgroup	F32T32T32F32
+fUdf	_mma.warpgroup	F32T32T32F32
+fdUf	_mma.warpgroup	F32T32T32F32
+fUUfP	_mma.warpgroup	F32E16E16F32
+fUdfP	_mma.warpgroup	F32E16E16F32
+fdUfP	_mma.warpgroup	F32E16E16F32
+fUUfP	_mma.warpgroup	F32T32T32F32
+fUdfP	_mma.warpgroup	F32T32T32F32
+fdUfP	_mma.warpgroup	F32T32T32F32
+fUUfu	_mma.warpgroup	F32E16E16F32
+fUdfu	_mma.warpgroup	F32E16E16F32
+fdUfu	_mma.warpgroup	F32E16E16F32
+fUUfu	_mma.warpgroup	F32T32T32F32
+fUdfu	_mma.warpgroup	F32T32T32F32
+fdUfu	_mma.warpgroup	F32T32T32F32
+hUUhdC	_mma.warpgroup	F16F16F16F16
+fUUfdC	_mma.warpgroup	F32F16F16F32
+hUhhdC	_mma.warpgroup	F16F16F16F16
+fUhfdC	_mma.warpgroup	F32F16F16F32
+hhUhdC	_mma.warpgroup	F16F16F16F16
+fhUfdC	_mma.warpgroup	F32F16F16F32
+hUUhdCP	_mma.warpgroup	F16F16F16F16
+fUUfdCP	_mma.warpgroup	F32F16F16F32
+hUhhdCP	_mma.warpgroup	F16F16F16F16
+fUhfdCP	_mma.warpgroup	F32F16F16F32
+hhUhdCP	_mma.warpgroup	F16F16F16F16
+fhUfdCP	_mma.warpgroup	F32F16F16F32
+hUUhdCu	_mma.warpgroup	F16F16F16F16
+fUUfdCu	_mma.warpgroup	F32F16F16F32
+hUhhdCu	_mma.warpgroup	F16F16F16F16
+fUhfdCu	_mma.warpgroup	F32F16F16F32
+hhUhdCu	_mma.warpgroup	F16F16F16F16
+fhUfdCu	_mma.warpgroup	F32F16F16F32
+fUUfdC	_mma.warpgroup	F32E16E16F32
+fUdfdC	_mma.warpgroup	F32E16E16F32
+fdUfdC	_mma.warpgroup	F32E16E16F32
+fUUfdC	_mma.warpgroup	F32T32T32F32
+fUdfdC	_mma.warpgroup	F32T32T32F32
+fdUfdC	_mma.warpgroup	F32T32T32F32
+fUUfdCP	_mma.warpgroup	F32E16E16F32
+fUdfdCP	_mma.warpgroup	F32E16E16F32
+fdUfdCP	_mma.warpgroup	F32E16E16F32
+fUUfdCP	_mma.warpgroup	F32T32T32F32
+fUdfdCP	_mma.warpgroup	F32T32T32F32
+fdUfdCP	_mma.warpgroup	F32T32T32F32
+fUUfdCu	_mma.warpgroup	F32E16E16F32
+fUdfdCu	_mma.warpgroup	F32E16E16F32
+fdUfdCu	_mma.warpgroup	F32E16E16F32
+fUUfdCu	_mma.warpgroup	F32T32T32F32
+fUdfdCu	_mma.warpgroup	F32T32T32F32
+fdUfdCu	_mma.warpgroup	F32T32T32F32
+hUUh	_mma.warpgroup	F16Q8Q8F16
+fUUf	_mma.warpgroup	F32Q8Q8F32
+hUhh	_mma.warpgroup	F16Q8Q8F16
+fUhf	_mma.warpgroup	F32Q8Q8F32
+hhUh	_mma.warpgroup	F16Q8Q8F16
+fhUf	_mma.warpgroup	F32Q8Q8F32
+hUUhP	_mma.warpgroup	F16Q8Q8F16
+fUUfP	_mma.warpgroup	F32Q8Q8F32
+hUhhP	_mma.warpgroup	F16Q8Q8F16
+fUhfP	_mma.warpgroup	F32Q8Q8F32
+hhUhP	_mma.warpgroup	F16Q8Q8F16
+fhUfP	_mma.warpgroup	F32Q8Q8F32
+hUUhu	_mma.warpgroup	F16Q8Q8F16
+fUUfu	_mma.warpgroup	F32Q8Q8F32
+hUhhu	_mma.warpgroup	F16Q8Q8F16
+fUhfu	_mma.warpgroup	F32Q8Q8F32
+hhUhu	_mma.warpgroup	F16Q8Q8F16
+fhUfu	_mma.warpgroup	F32Q8Q8F32
+hUUhd	_mma.warpgroup	F16Q8Q8F16
+fUUfd	_mma.warpgroup	F32Q8Q8F32
+hUhhd	_mma.warpgroup	F16Q8Q8F16
+fUhfd	_mma.warpgroup	F32Q8Q8F32
+hhUhd	_mma.warpgroup	F16Q8Q8F16
+fhUfd	_mma.warpgroup	F32Q8Q8F32
+hUUhdP	_mma.warpgroup	F16Q8Q8F16
+fUUfdP	_mma.warpgroup	F32Q8Q8F32
+hUhhdP	_mma.warpgroup	F16Q8Q8F16
+fUhfdP	_mma.warpgroup	F32Q8Q8F32
+hhUhdP	_mma.warpgroup	F16Q8Q8F16
+fhUfdP	_mma.warpgroup	F32Q8Q8F32
+hUUhdu	_mma.warpgroup	F16Q8Q8F16
+fUUfdu	_mma.warpgroup	F32Q8Q8F32
+hUhhdu	_mma.warpgroup	F16Q8Q8F16
+fUhfdu	_mma.warpgroup	F32Q8Q8F32
+hhUhdu	_mma.warpgroup	F16Q8Q8F16
+fhUfdu	_mma.warpgroup	F32Q8Q8F32
+sUUs	_mma.warpgroup	I32I8I8I32
+sUds	_mma.warpgroup	I32I8I8I32
+sdUs	_mma.warpgroup	I32I8I8I32
+sUUsP	_mma.warpgroup	I32I8I8I32
+sUdsP	_mma.warpgroup	I32I8I8I32
+sdUsP	_mma.warpgroup	I32I8I8I32
+sUUsu	_mma.warpgroup	I32I8I8I32
+sUdsu	_mma.warpgroup	I32I8I8I32
+sdUsu	_mma.warpgroup	I32I8I8I32
+sUUsd	_mma.warpgroup	I32I8I8I32
+sUdsd	_mma.warpgroup	I32I8I8I32
+sdUsd	_mma.warpgroup	I32I8I8I32
+sUUsdP	_mma.warpgroup	I32I8I8I32
+sUdsdP	_mma.warpgroup	I32I8I8I32
+sdUsdP	_mma.warpgroup	I32I8I8I32
+sUUsdu	_mma.warpgroup	I32I8I8I32
+sUdsdu	_mma.warpgroup	I32I8I8I32
+sdUsdu	_mma.warpgroup	I32I8I8I32
+sUUs	_mma.warpgroup	I32B1B1I32
+sUds	_mma.warpgroup	I32B1B1I32
+sdUs	_mma.warpgroup	I32B1B1I32
+sUUsP	_mma.warpgroup	I32B1B1I32
+sUdsP	_mma.warpgroup	I32B1B1I32
+sdUsP	_mma.warpgroup	I32B1B1I32
+sUUsu	_mma.warpgroup	I32B1B1I32
+sUdsu	_mma.warpgroup	I32B1B1I32
+sdUsu	_mma.warpgroup	I32B1B1I32
+MMsM	cp.async.bulk.tensor	
+MMsMx	cp.async.bulk.tensor	
+MMsMx	cp.async.bulk.tensor	
+MMsMxx	cp.async.bulk.tensor	
+MsM	cp.async.bulk.tensor	
+MsM	cp.reduce.async.bulk.tensor	
+MMsMU	cp.async.bulk.tensor	
+MMsMxU	cp.async.bulk.tensor	
+MMsMxU	cp.async.bulk.tensor	
+MMsMxxU	cp.async.bulk.tensor	
+MsMU	cp.async.bulk.tensor	
+MsMU	cp.reduce.async.bulk.tensor	
+MMuMx	cp.async.bulk	
+MMuMxU	cp.async.bulk	
+MMuM	cp.async.bulk	
+MMuMU	cp.async.bulk	
+MMu	cp.async.bulk	
+MMuU	cp.async.bulk	
+MMuM	cp.reduce.async.bulk	I[32|64]
+MMuM	cp.reduce.async.bulk	B[32|64]
+MMu	cp.reduce.async.bulk	I[32|64]
+MMu	cp.reduce.async.bulk	B[32|64]
+MMu	cp.reduce.async.bulk	F[32|64]
+MMuU	cp.reduce.async.bulk	I[32|64]
+MMuU	cp.reduce.async.bulk	B[32|64]
+MMuU	cp.reduce.async.bulk	F[32|64]
+MMu	cp.reduce.async.bulk	F16
+MMu	cp.reduce.async.bulk	E16
+MMuU	cp.reduce.async.bulk	F16
+MMuU	cp.reduce.async.bulk	E16
+	cp.async.bulk.commit_group	
+C	cp.async.bulk.wait_group	
+MuU	cp.async.bulk.prefetch	
+Mu	cp.async.bulk.prefetch	
+MsxU	cp.async.bulk.prefetch.tensor	
+Msx	cp.async.bulk.prefetch.tensor	
+MsU	cp.async.bulk.prefetch.tensor	
+Ms	cp.async.bulk.prefetch.tensor	
+M0M	st.async	I[32|64]
+M0M	st.async	B[32|64]
+M0M	st.async	F[32|64]
+M0M	red.async	I[32|64]
+M0M	red.async	B[32|64]
+MMCuU	cp.async	
+MMCU	cp.async	
+dM	_ldsm	B[8|16]
+dM	_ldsm	I8I4
+dM	_ldsm	I4I2
+dM	_ldsm	
+dd	_movm	B16
+ed	_movm	I8I4
+ed	_movm	I4I2
+uuVVVu	scatter	B8B8
+uuVVVu	scatter	B8B4
+uuVVVu	scatter	B[8|16]B8
+uuVVVu	scatter	B[8|16]B4
+uuCCCu	spmetadata	B[8|16]B4
+uuCCCu	spmetadata	B[8|16]B8
+uuuuC	gather	B[4|8|16]B[2|4|8]
+uuuCCu	genmetadata	F16B[2|4|8]
+uuuCCu	genmetadata	E16B[2|4|8]
+uuuCCu	genmetadata	I[4|8]B[2|4|8]
+0M0U	atom	H32
+0M0U	atom	F16
+0M0U	atom	F32
+0M0U	atom	F64
+0M0U	atom	I[32|64]
+0M0U	atom	B[32|64]
+M0U	red	H32
+M0U	red	F16
+M0U	red	F32
+M0U	red	F64
+M0U	red	I[32|64]
+M0U	red	B[32|64]
+Mu	mbarrier.expect_tx	B64
+Mu	mbarrier.tx	B64
+UMu	mbarrier.arrive.expect_tx	B64
+UMu	mbarrier.arrive_drop.expect_tx	B64
+PC	setmaxreg.try_alloc	I32
+C	setmaxreg.alloc	I32
+C	setmaxreg.dealloc	I32
+C	setsmemsize	I32
+	setsmemsize.flush	I32
+	setsmemsize.flush	I32
+uu	elect.one	

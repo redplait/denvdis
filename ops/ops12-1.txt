@@ -1,0 +1,1671 @@
+00	tanh	F16
+00	tanh	F16
+00	tanh	F32
+00	tanh	H32
+00	ex2	H32
+00	ex2	F16
+00	ex2	H32
+01	cvt	H32
+011	cvt	F16F32
+011	cvt	H32F32
+x1	cvt	H32F32
+d11	cvt	E16F32
+d11	cvt	E32F32
+0x	cvt	E32F32
+hhhhdC	cvt	F32E16
+hhhhdC	mma	F16F16F16F16
+dhhddC	mma	F16F16F16F16
+dddddC	mma	F32F16F16F32
+dddddC	mma	F32F32
+sddsdC	mma	F32F32
+sddsdC	mma	I32I8I8I32
+sddsdC	mma	I32I32
+hhhh	_mma	I32I32
+fhhh	_mma	F16F16
+fhhh	_mma	F32F16
+fhhf	_mma	F32F16
+VVVV	_mma	F32F32
+VVVV	_mma	F16F32
+ssss	_mma	F16F32
+sdds	_mma	I8I8
+sdds	_mma	
+sdds	_mma	
+0123	_mma	I32I32
+0123	_mma	F64F64F64F64
+hhhhdC	_mma	F64F64F64F64
+dhhddC	_mma	F16F16F16F16
+dhhddC	_mma	F32F16F16F32
+dddddC	_mma	F32F16F16F32
+sddsdC	_mma	F32F32
+sddsdC	_mma	I32I8I8I32
+sddsdC	_mma	I32I8I8I32
+sdds	_mma	I32I32
+sdds	_mma	I32I8I8I32
+sdds	_mma	I32I8I8I32
+hddh	_mma	I32I32
+hddh	_mma	F16Q8Q8F16
+fddf	_mma	F16Q8Q8F16
+hddhdC	_mma	F32Q8Q8F32
+hddhdC	_mma	F16Q8Q8F16
+fddfdC	_mma	F16Q8Q8F16
+hUUh	_mma	F32Q8Q8F32
+hUUh	_mma.warpgroup	F16F16F16F16
+fUUf	_mma.warpgroup	F16F16F16F16
+hUhh	_mma.warpgroup	F32F16F16F32
+hUhh	_mma.warpgroup	F16F16F16F16
+fUhf	_mma.warpgroup	F16F16F16F16
+hhUh	_mma.warpgroup	F32F16F16F32
+hhUh	_mma.warpgroup	F16F16F16F16
+fhUf	_mma.warpgroup	F16F16F16F16
+hUUhP	_mma.warpgroup	F32F16F16F32
+hUUhP	_mma.warpgroup	F16F16F16F16
+fUUfP	_mma.warpgroup	F16F16F16F16
+hUhhP	_mma.warpgroup	F32F16F16F32
+hUhhP	_mma.warpgroup	F16F16F16F16
+fUhfP	_mma.warpgroup	F16F16F16F16
+hhUhP	_mma.warpgroup	F32F16F16F32
+hhUhP	_mma.warpgroup	F16F16F16F16
+fhUfP	_mma.warpgroup	F16F16F16F16
+hUUhu	_mma.warpgroup	F32F16F16F32
+hUUhu	_mma.warpgroup	F16F16F16F16
+fUUfu	_mma.warpgroup	F16F16F16F16
+hUhhu	_mma.warpgroup	F32F16F16F32
+hUhhu	_mma.warpgroup	F16F16F16F16
+fUhfu	_mma.warpgroup	F16F16F16F16
+hhUhu	_mma.warpgroup	F32F16F16F32
+hhUhu	_mma.warpgroup	F16F16F16F16
+fhUfu	_mma.warpgroup	F16F16F16F16
+	_mma.warpgroup	F32F16F16F32
+	_warpgroup.arrive	
+fUUf	_mma.warpgroup	
+fUdf	_mma.warpgroup	F32E16E16F32
+fUdf	_mma.warpgroup	F32E16E16F32
+fdUf	_mma.warpgroup	F32E16E16F32
+fUUf	_mma.warpgroup	F32E16E16F32
+fUUf	_mma.warpgroup	F32T32T32F32
+fUdf	_mma.warpgroup	F32T32T32F32
+fdUf	_mma.warpgroup	F32T32T32F32
+fdUf	_mma.warpgroup	F32T32T32F32
+fUUfP	_mma.warpgroup	F32T32T32F32
+fUdfP	_mma.warpgroup	F32E16E16F32
+fUdfP	_mma.warpgroup	F32E16E16F32
+fdUfP	_mma.warpgroup	F32E16E16F32
+fUUfP	_mma.warpgroup	F32E16E16F32
+fUUfP	_mma.warpgroup	F32T32T32F32
+fUdfP	_mma.warpgroup	F32T32T32F32
+fdUfP	_mma.warpgroup	F32T32T32F32
+fdUfP	_mma.warpgroup	F32T32T32F32
+fUUfu	_mma.warpgroup	F32T32T32F32
+fUdfu	_mma.warpgroup	F32E16E16F32
+fUdfu	_mma.warpgroup	F32E16E16F32
+fdUfu	_mma.warpgroup	F32E16E16F32
+fUUfu	_mma.warpgroup	F32E16E16F32
+fUUfu	_mma.warpgroup	F32T32T32F32
+fUdfu	_mma.warpgroup	F32T32T32F32
+fdUfu	_mma.warpgroup	F32T32T32F32
+fdUfu	_mma.warpgroup	F32T32T32F32
+hUUhdC	_mma.warpgroup	F32T32T32F32
+fUUfdC	_mma.warpgroup	F16F16F16F16
+fUUfdC	_mma.warpgroup	F32F16F16F32
+hUhhdC	_mma.warpgroup	F32F16F16F32
+fUhfdC	_mma.warpgroup	F16F16F16F16
+fUhfdC	_mma.warpgroup	F32F16F16F32
+hhUhdC	_mma.warpgroup	F32F16F16F32
+fhUfdC	_mma.warpgroup	F16F16F16F16
+fhUfdC	_mma.warpgroup	F32F16F16F32
+hUUhdCP	_mma.warpgroup	F32F16F16F32
+fUUfdCP	_mma.warpgroup	F16F16F16F16
+fUUfdCP	_mma.warpgroup	F32F16F16F32
+hUhhdCP	_mma.warpgroup	F32F16F16F32
+fUhfdCP	_mma.warpgroup	F16F16F16F16
+fUhfdCP	_mma.warpgroup	F32F16F16F32
+hhUhdCP	_mma.warpgroup	F32F16F16F32
+fhUfdCP	_mma.warpgroup	F16F16F16F16
+fhUfdCP	_mma.warpgroup	F32F16F16F32
+hUUhdCu	_mma.warpgroup	F32F16F16F32
+fUUfdCu	_mma.warpgroup	F16F16F16F16
+fUUfdCu	_mma.warpgroup	F32F16F16F32
+hUhhdCu	_mma.warpgroup	F32F16F16F32
+fUhfdCu	_mma.warpgroup	F16F16F16F16
+fUhfdCu	_mma.warpgroup	F32F16F16F32
+hhUhdCu	_mma.warpgroup	F32F16F16F32
+fhUfdCu	_mma.warpgroup	F16F16F16F16
+fhUfdCu	_mma.warpgroup	F32F16F16F32
+fUUfdC	_mma.warpgroup	F32F16F16F32
+fUdfdC	_mma.warpgroup	F32E16E16F32
+fUdfdC	_mma.warpgroup	F32E16E16F32
+fdUfdC	_mma.warpgroup	F32E16E16F32
+fUUfdC	_mma.warpgroup	F32E16E16F32
+fUUfdC	_mma.warpgroup	F32T32T32F32
+fUdfdC	_mma.warpgroup	F32T32T32F32
+fdUfdC	_mma.warpgroup	F32T32T32F32
+fdUfdC	_mma.warpgroup	F32T32T32F32
+fUUfdCP	_mma.warpgroup	F32T32T32F32
+fUdfdCP	_mma.warpgroup	F32E16E16F32
+fUdfdCP	_mma.warpgroup	F32E16E16F32
+fdUfdCP	_mma.warpgroup	F32E16E16F32
+fUUfdCP	_mma.warpgroup	F32E16E16F32
+fUUfdCP	_mma.warpgroup	F32T32T32F32
+fUdfdCP	_mma.warpgroup	F32T32T32F32
+fdUfdCP	_mma.warpgroup	F32T32T32F32
+fdUfdCP	_mma.warpgroup	F32T32T32F32
+fUUfdCu	_mma.warpgroup	F32T32T32F32
+fUdfdCu	_mma.warpgroup	F32E16E16F32
+fUdfdCu	_mma.warpgroup	F32E16E16F32
+fdUfdCu	_mma.warpgroup	F32E16E16F32
+fUUfdCu	_mma.warpgroup	F32E16E16F32
+fUUfdCu	_mma.warpgroup	F32T32T32F32
+fUdfdCu	_mma.warpgroup	F32T32T32F32
+fdUfdCu	_mma.warpgroup	F32T32T32F32
+fdUfdCu	_mma.warpgroup	F32T32T32F32
+hUUh	_mma.warpgroup	F32T32T32F32
+fUUf	_mma.warpgroup	F16Q8Q8F16
+fUUf	_mma.warpgroup	F32Q8Q8F32
+hUhh	_mma.warpgroup	F32Q8Q8F32
+fUhf	_mma.warpgroup	F16Q8Q8F16
+fUhf	_mma.warpgroup	F32Q8Q8F32
+hhUh	_mma.warpgroup	F32Q8Q8F32
+fhUf	_mma.warpgroup	F16Q8Q8F16
+fhUf	_mma.warpgroup	F32Q8Q8F32
+hUUhP	_mma.warpgroup	F32Q8Q8F32
+fUUfP	_mma.warpgroup	F16Q8Q8F16
+fUUfP	_mma.warpgroup	F32Q8Q8F32
+hUhhP	_mma.warpgroup	F32Q8Q8F32
+fUhfP	_mma.warpgroup	F16Q8Q8F16
+fUhfP	_mma.warpgroup	F32Q8Q8F32
+hhUhP	_mma.warpgroup	F32Q8Q8F32
+fhUfP	_mma.warpgroup	F16Q8Q8F16
+fhUfP	_mma.warpgroup	F32Q8Q8F32
+hUUhu	_mma.warpgroup	F32Q8Q8F32
+fUUfu	_mma.warpgroup	F16Q8Q8F16
+fUUfu	_mma.warpgroup	F32Q8Q8F32
+hUhhu	_mma.warpgroup	F32Q8Q8F32
+fUhfu	_mma.warpgroup	F16Q8Q8F16
+fUhfu	_mma.warpgroup	F32Q8Q8F32
+hhUhu	_mma.warpgroup	F32Q8Q8F32
+fhUfu	_mma.warpgroup	F16Q8Q8F16
+fhUfu	_mma.warpgroup	F32Q8Q8F32
+hUUhd	_mma.warpgroup	F32Q8Q8F32
+fUUfd	_mma.warpgroup	F16Q8Q8F16
+fUUfd	_mma.warpgroup	F32Q8Q8F32
+hUhhd	_mma.warpgroup	F32Q8Q8F32
+fUhfd	_mma.warpgroup	F16Q8Q8F16
+fUhfd	_mma.warpgroup	F32Q8Q8F32
+hhUhd	_mma.warpgroup	F32Q8Q8F32
+fhUfd	_mma.warpgroup	F16Q8Q8F16
+fhUfd	_mma.warpgroup	F32Q8Q8F32
+hUUhdP	_mma.warpgroup	F32Q8Q8F32
+fUUfdP	_mma.warpgroup	F16Q8Q8F16
+fUUfdP	_mma.warpgroup	F32Q8Q8F32
+hUhhdP	_mma.warpgroup	F32Q8Q8F32
+fUhfdP	_mma.warpgroup	F16Q8Q8F16
+fUhfdP	_mma.warpgroup	F32Q8Q8F32
+hhUhdP	_mma.warpgroup	F32Q8Q8F32
+fhUfdP	_mma.warpgroup	F16Q8Q8F16
+fhUfdP	_mma.warpgroup	F32Q8Q8F32
+hUUhdu	_mma.warpgroup	F32Q8Q8F32
+fUUfdu	_mma.warpgroup	F16Q8Q8F16
+fUUfdu	_mma.warpgroup	F32Q8Q8F32
+hUhhdu	_mma.warpgroup	F32Q8Q8F32
+fUhfdu	_mma.warpgroup	F16Q8Q8F16
+fUhfdu	_mma.warpgroup	F32Q8Q8F32
+hhUhdu	_mma.warpgroup	F32Q8Q8F32
+fhUfdu	_mma.warpgroup	F16Q8Q8F16
+fhUfdu	_mma.warpgroup	F32Q8Q8F32
+sUUs	_mma.warpgroup	F32Q8Q8F32
+sUds	_mma.warpgroup	I32I8I8I32
+sUds	_mma.warpgroup	I32I8I8I32
+sdUs	_mma.warpgroup	I32I8I8I32
+sUUsP	_mma.warpgroup	I32I8I8I32
+sUUsP	_mma.warpgroup	I32I8I8I32
+sUdsP	_mma.warpgroup	I32I8I8I32
+sdUsP	_mma.warpgroup	I32I8I8I32
+sdUsP	_mma.warpgroup	I32I8I8I32
+sUUsu	_mma.warpgroup	I32I8I8I32
+sUdsu	_mma.warpgroup	I32I8I8I32
+sUdsu	_mma.warpgroup	I32I8I8I32
+sdUsu	_mma.warpgroup	I32I8I8I32
+sUUsd	_mma.warpgroup	I32I8I8I32
+sUUsd	_mma.warpgroup	I32I8I8I32
+sUdsd	_mma.warpgroup	I32I8I8I32
+sdUsd	_mma.warpgroup	I32I8I8I32
+sdUsd	_mma.warpgroup	I32I8I8I32
+sUUsdP	_mma.warpgroup	I32I8I8I32
+sUdsdP	_mma.warpgroup	I32I8I8I32
+sUdsdP	_mma.warpgroup	I32I8I8I32
+sdUsdP	_mma.warpgroup	I32I8I8I32
+sUUsdu	_mma.warpgroup	I32I8I8I32
+sUUsdu	_mma.warpgroup	I32I8I8I32
+sUdsdu	_mma.warpgroup	I32I8I8I32
+sdUsdu	_mma.warpgroup	I32I8I8I32
+sdUsdu	_mma.warpgroup	I32I8I8I32
+sUUs	_mma.warpgroup	I32I8I8I32
+sUds	_mma.warpgroup	I32B1B1I32
+sUds	_mma.warpgroup	I32B1B1I32
+sdUs	_mma.warpgroup	I32B1B1I32
+sUUsP	_mma.warpgroup	I32B1B1I32
+sUUsP	_mma.warpgroup	I32B1B1I32
+sUdsP	_mma.warpgroup	I32B1B1I32
+sdUsP	_mma.warpgroup	I32B1B1I32
+sdUsP	_mma.warpgroup	I32B1B1I32
+sUUsu	_mma.warpgroup	I32B1B1I32
+sUdsu	_mma.warpgroup	I32B1B1I32
+sUdsu	_mma.warpgroup	I32B1B1I32
+sdUsu	_mma.warpgroup	I32B1B1I32
+MMsM	_mma.warpgroup	I32B1B1I32
+MMsM	cp.async.bulk.tensor	
+MMsMx	cp.async.bulk.tensor	
+MsM	cp.async.bulk.tensor	
+MsM	cp.async.bulk.tensor	
+MsM	cp.reduce.async.bulk.tensor	
+MMsMU	cp.reduce.async.bulk.tensor	
+MMsMU	cp.async.bulk.tensor	
+MMsMxU	cp.async.bulk.tensor	
+MsMU	cp.async.bulk.tensor	
+MsMU	cp.async.bulk.tensor	
+MsMU	cp.reduce.async.bulk.tensor	
+MMuM	cp.reduce.async.bulk.tensor	
+MMuM	cp.async.bulk	
+MMuMU	cp.async.bulk	
+MMu	cp.async.bulk	
+MMu	cp.async.bulk	
+MMuU	cp.async.bulk	
+MMuM	cp.async.bulk	
+MMuM	cp.reduce.async.bulk	I[32|64]
+MMuM	cp.reduce.async.bulk	I[32|64]
+MMu	cp.reduce.async.bulk	B[32|64]
+MMu	cp.reduce.async.bulk	I[32|64]
+MMu	cp.reduce.async.bulk	I[32|64]
+MMu	cp.reduce.async.bulk	B[32|64]
+MMu	cp.reduce.async.bulk	F[32|64]
+MMuU	cp.reduce.async.bulk	F[32|64]
+MMuU	cp.reduce.async.bulk	I[32|64]
+MMuU	cp.reduce.async.bulk	B[32|64]
+MMuU	cp.reduce.async.bulk	B[32|64]
+MMu	cp.reduce.async.bulk	F[32|64]
+MMu	cp.reduce.async.bulk	F16
+MMu	cp.reduce.async.bulk	F16
+MMuU	cp.reduce.async.bulk	E16
+MMuU	cp.reduce.async.bulk	F16
+MMuU	cp.reduce.async.bulk	F16
+	cp.reduce.async.bulk	E16
+	cp.async.bulk.commit_group	
+MuU	cp.async.bulk.prefetch	
+Mu	cp.async.bulk.prefetch	
+Mu	cp.async.bulk.prefetch	
+MsxU	cp.async.bulk.prefetch.tensor	
+Msx	cp.async.bulk.prefetch.tensor	
+Msx	cp.async.bulk.prefetch.tensor	
+MsU	cp.async.bulk.prefetch.tensor	
+Ms	cp.async.bulk.prefetch.tensor	
+Ms	cp.async.bulk.prefetch.tensor	
+M0M	st.async	
+M0M	st.async	I[32|64]
+M0M	st.async	B[32|64]
+M0M	st.async	B[32|64]
+M0M	st.async	F[32|64]
+M0M	red.async	I[32|64]
+M0M	red.async	I[32|64]
+dM	red.async	B[32|64]
+dM	_ldsm	B[8|16]
+dM	_ldsm	B[8|16]
+dM	_ldsm	I8I4
+dM	_ldsm	I4I2
+dM	_ldsm	I4I2
+dd	_ldsm	
+dd	_movm	B16
+ed	_movm	B16
+ed	_movm	I8I4
+ed	_movm	I4I2
+Mu	mbarrier.expect_tx	I4I2
+UMu	mbarrier.expect_tx	B64
+UMu	mbarrier.arrive.expect_tx	B64
+UMu	mbarrier.arrive_drop.expect_tx	B64
+P0	mbarrier.arrive_drop.expect_tx	B64
+P0	testp	F[32|64]
+000	copysign	F[32|64]
+000	copysign	F[32|64]
+000	add	F16
+000	sub	F16
+000	sub	F16
+000	add	H32
+000	sub	H32
+000	sub	H32
+000	add	F32
+000	sub	F32
+000	sub	F32
+000	add	F64
+000	sub	F64
+000	sub	F64
+000	add	I
+000	addc	I
+000	addc	I
+000	sub	I
+000	subc	I
+xxx	subc	I
+xxx	add	E16
+xxx	sub	E16
+ddd	sub	E16
+ddd	add	E32
+ddd	sub	E32
+000	sub	E32
+000	add	N32
+000	add	N32
+000	add	H64
+000	sub	H64
+010	add	H64
+010	add	F32F16
+010	sub	F32F16
+0x0	add	F32F16
+0x0	add	F32E16
+0x0	sub	F32E16
+000	mul	F32E16
+000	mul	F16
+000	mul	H32
+000	mul	H32
+000	mul	F32
+000	mul	F64
+000	mul.wide	F64
+000	mul.wide	I[16|32]
+000	mul.lo	I
+000	mul.hi	I
+000	mul.hi	I
+000	mul24.lo	I32
+000	mul24.hi	I32
+xxx	mul24.hi	I32
+xxx	mul	E16
+ddd	mul	E16
+000	mul	E32
+000	mul	H64
+0000	mad	H64
+0000	mad	F32
+0000	mad	F64
+0000	mad.wide	F64
+0000	mad.wide	I[16|32]
+0000	mad.lo	I
+0000	madc.lo	I
+0000	madc.lo	I
+0000	mad.hi	I
+0000	madc.hi	I
+0000	madc.hi	I
+0000	mad24.lo	I32
+0000	mad24.hi	I32
+0000	mad24.hi	I32
+0000	fma	F16
+0000	fma	F16
+0000	fma	H32
+0000	fma	F32
+0000	fma	F32
+xxxx	fma	F64
+xxxx	fma	E16
+dddd	fma	E16
+0000	fma	E32
+0000	fma	H64
+0110	fma	H64
+0xx0	fma	F32F16
+0xx0	fma	F32E16
+0000	sad	F32E16
+000	sad	I
+000	div	F32
+000	div	F32
+000	div	F64
+000	div	I
+000	rem	I
+000	rem	I
+000	div.full	F32
+00	rcp	F32
+00	rcp	F32
+00	sqrt	F32
+00	rcp	F32
+00	rcp	F64
+00	sqrt	F64
+00	rsqrt	F64
+00	rsqrt	F32
+00	rsqrt	F64
+00	sin	F64
+00	sin	F32
+00	cos	F32
+00	lg2	F32
+xx	lg2	F32
+xx	tanh	E16
+dd	tanh	E16
+00	tanh	E32
+00	ex2	F32
+xx	ex2	F32
+dd	ex2	E16
+dd	ex2	E32
+00	abs	E32
+00	abs	F16
+00	abs	H32
+xx	abs	H32
+dd	abs	E16
+dd	abs	E32
+00	abs	E32
+00	abs	F32
+00	abs	F64
+00	abs	F64
+00	abs	I
+00	neg	F16
+00	neg	F16
+xx	neg	H32
+xx	neg	E16
+dd	neg	E16
+00	neg	E32
+00	neg	F32
+00	neg	F32
+00	neg	F64
+00	neg	I
+000	min	I
+000	min	F16
+000	max	F16
+000	min	F16
+000	min	H32
+000	max	H32
+xxx	min	H32
+xxx	min	E16
+xxx	max	E16
+ddd	min	E16
+ddd	min	E32
+ddd	max	E32
+000	min	E32
+000	min	F32
+000	max	F32
+000	min	F32
+000	min	F64
+000	max	F64
+000	min	F64
+000	min	I
+000	max	I
+000	min	I
+000	min	N32
+000	max	N32
+u0	popc	N32
+u0	popc	B[32|64]
+u0	clz	B[32|64]
+u0	bfind	B[32|64]
+00	bfind	I[32|64]
+00	brev	B[32|64]
+00uu	bfe	B[32|64]
+000uu	bfe	I[32|64]
+000uu	bfi	B[32|64]
+0000	prmt	B[32|64]
+0000	prmt	B32
+0000	shfl	B32
+0000u	shfl	B32
+uuu	shfl	B32
+uuu	bmsk	B32
+00u	szext	B32
+011	szext	I32
+011	set	F16F16
+011	set	F16F16
+011	set	I16F16
+011	set	I32F16
+011	set	I32F16
+011P	set	I32H32
+011P	set	I16F16
+011P	set	I16F16
+011P	set	I32F16
+011P	set	I32H32
+011	set	I32H32
+011	set	F16F32
+011	set	F16F64
+011	set	F16F64
+011	set	F16I
+011	set	F16B
+011	set	F16B
+011	set	H32H32
+011	set	F32F32
+011	set	F32F32
+011	set	F32F64
+011	set	F32I
+011	set	F32I
+011	set	F32B
+011	set	I32F32
+011	set	I32F32
+011	set	I32F64
+011	set	I32I
+011	set	I32I
+011P	set	I32B
+011P	set	F16F16
+011P	set	F16F16
+011P	set	F16F32
+011P	set	F16F64
+011P	set	F16F64
+011P	set	F16I
+011P	set	F16B
+011P	set	F16B
+011P	set	H32H32
+011P	set	F32F32
+011P	set	F32F32
+011P	set	F32F64
+011P	set	F32I
+011P	set	F32I
+011P	set	F32B
+011P	set	I32F32
+011P	set	I32F32
+011P	set	I32F64
+011P	set	I32I
+011P	set	I32I
+xxx	set	I32B
+xxx	set	E16E16
+xxxP	set	E16E16
+x11	set	E16E16
+x11	set	E16F16
+x11P	set	E16F16
+x11	set	E16F16
+x11	set	E16F32
+x11P	set	E16F32
+x11	set	E16F32
+x11	set	E16F64
+x11P	set	E16F64
+x11	set	E16F64
+x11	set	E16I
+x11P	set	E16I
+x11	set	E16I
+x11	set	E16B
+x11P	set	E16B
+0xx	set	E16B
+0xx	set	I16E16
+0xxP	set	I16E16
+0xx	set	I16E16
+0xx	set	I32E16
+0xxP	set	I32E16
+0dd	set	I32E16
+0dd	set	I32E32
+0ddP	set	I32E32
+ddd	set	I32E32
+ddd	set	E32E32
+dddP	set	E32E32
+P00	set	E32E32
+P00	setp	F16
+P00	setp	F16
+P00	setp	H32
+P00	setp	F32
+P00	setp	F32
+P00	setp	F64
+P00	setp	I
+P00	setp	I
+P00P	setp	B
+P00P	setp	F16
+P00P	setp	F16
+P00P	setp	H32
+P00P	setp	F32
+P00P	setp	F32
+P00P	setp	F64
+P00P	setp	I
+P00P	setp	I
+Pxx	setp	B
+Pxx	setp	E16
+PxxP	setp	E16
+Pdd	setp	E16
+Pdd	setp	E32
+PddP	setp	E32
+000P	setp	E32
+000P	selp	F
+000P	selp	F
+000P	selp	I
+000P	selp	B
+0001	slct	B
+0001	slct	FF32
+0001	slct	IF32
+0001	slct	IF32
+0001	slct	BF32
+0001	slct	FI32
+0001	slct	FI32
+0001	slct	II32
+0001	slct	BI32
+000	and	BI32
+000	and	B
+000	or	B
+000	xor	B
+000	xor	B
+000	and	P
+000	or	P
+000	or	P
+000	xor	P
+00	not	P
+00	not	B
+00	cnot	B
+00	not	B
+00u	not	P
+00u	shr	I
+00u	shl	I
+00u	shl	B
+00u	shr	B
+000u	shf.l	B
+000u	shf.l	B32
+000u	shf.r	B32
+0000C	lop3	B32
+0000CP	lop3	B32
+0000CP	lop3	B32
+0000	fns	B32
+u01u	fns	B32
+u01u	dp4a	I32I32
+u01u	dp2a	I32I32
+u01u	dp2a	I32I32
+u01u	dp2a.hi	I32I32
+u01u	dp2a.lo	I32I32
+00	dp2a.lo	I32I32
+00	mov	F
+00	mov	F
+00	mov	I
+00	mov	B
+00	mov	B
+00	mov	P
+00	mov	B128
+0M	ld	B128
+0M	ld	F
+0M	ld	I[8|16|32|64]
+0M	ld	I[8|16|32|64]
+0M	ld	B[8|16|32|64]
+0M	ld	B128
+0M	ld	B128
+0MU	ld	B128
+0MU	ld	B128
+0M	ldu	B128
+0M	ldu	B128
+0M	ld	F
+0M	ld	F
+0M	ld	I[8|16|32|64]
+0M	ld	B[8|16|32|64]
+0MU	ld	B[8|16|32|64]
+0MU	ld	F
+0MU	ld	I[8|16|32|64]
+0MU	ld	I[8|16|32|64]
+0M	ld	B[8|16|32|64]
+0M	ldu	F
+0M	ldu	F
+0M	ldu	I[8|16|32|64]
+0M	ldu	B[8|16|32|64]
+01MM	_ldldu	B[8|16|32|64]
+M0	_ldldu	B[8|16|32|64|128]B[8|16|32|64|128]
+M0	st	F
+M0	st	F
+M0	st	I[8|16|32|64]
+M0	st	B[8|16|32|64]
+M0	st	B[8|16|32|64]
+M0U	st	B128
+M0U	st	B128
+M0U	st	B128
+M0U	st	F
+M0U	st	I[8|16|32|64]
+M0U	st	I[8|16|32|64]
+MUC	st	B[8|16|32|64]
+MUC	st.bulk	
+M	prefetch	
+M	prefetch	
+M	prefetchu	
+MC	applypriority	
+U	applypriority	
+U	createpolicy.fractional	B64
+Uf	createpolicy.fractional	B64
+UMuu	createpolicy.fractional	B64
+UMuu	createpolicy.range	B64
+UU	createpolicy.cvt	B64
+Uuu	createpolicy.cvt	B64
+Uuu	_createpolicy.fractional	B64
+Uuuu	_createpolicy.range	B64
+MC	_createpolicy.range	B64
+MC	discard	
+Pu	isspacep	
+PU	isspacep	
+PU	isspacep	
+00	cvta	
+00	cvta	I[32|64]
+00	cvta.to	I[32|64]
+00u	mapa	I[32|64]
+u0	mapa	I[32|64]
+u0	getctarank	I[32|64]
+M	cctl	I[32|64]
+M	cctl	
+M	cctlu	
+	cctl	
+	cctl	F[16|32|64]F[16|32|64]
+01	cvt	F[16|32|64]F[16|32|64]
+01	cvt	F[16|32|64]I[8|16|32|64]
+01	cvt	I[8|16|32|64]F[16|32|64]
+01	cvt	I[8|16|32|64]F[16|32|64]
+c11	cvt	I[8|16|32|64]I[8|16|32|64]
+c11	cvt	Q16F32
+c1	cvt	Q16F32
+0c	cvt	Q16H32
+0c	cvt	H32Q16
+d1	cvt	H32Q16
+1112	cvt	T32F32
+1112	cvt.pack	I8I32B32
+111	cvt.pack	I8I32B32
+1112	cvt.pack	I16I32
+1112	cvt.pack	I[2|4]I32B32
+xx	cvt	I[2|4]I32B32
+0x	cvt	E16E16
+0x	cvt	F[16|64]E16
+x1	cvt	F[16|64]E16
+x1	cvt	E16F[16|64]
+x1	cvt	E16I[8|16|32|64]
+0x	cvt	E16I[8|16|32|64]
+b11	cvt	I[8|16|32|64]E16
+b11	cvt	R8F32
+0b	cvt	R8F32
+d1	cvt	H32R8
+d1	cvt	E32Q16
+0d	cvt	E32Q16
+011d	cvt	Q16E32
+011d	cvt	H32F32
+d11d	cvt	H32F32
+dfd	cvt	E32F32
+dfd	cvt	Q32F32
+cfd	cvt	Q32F32
+0M	cvt	R16F32
+0M	multimem.ld_reduce	I[32|64]
+0M	multimem.ld_reduce	I[32|64]
+0M	multimem.ld_reduce	B[32|64]
+0M	multimem.ld_reduce	F[32|64]
+0M	multimem.ld_reduce	F[32|64]
+0M	multimem.ld_reduce	H32
+0M	multimem.ld_reduce	E[16|32]
+0M	multimem.ld_reduce	E[16|32]
+0M	multimem.ld_reduce	F16
+0M	multimem.ld_reduce	Q[8|16|32]
+M0	multimem.st	Q[8|16|32]
+M0	multimem.st	I[32|64]
+M0	multimem.st	B[32|64]
+M0	multimem.st	B[32|64]
+M0	multimem.st	F[16|32|64]
+M0	multimem.st	H32
+M0	multimem.st	H32
+M0	multimem.st	E[16|32]
+M0	multimem.st	Q[8|16|32]
+M0	multimem.red	Q[8|16|32]
+M0	multimem.red	I[32|64]
+M0	multimem.red	B[32|64]
+M0	multimem.red	B[32|64]
+M0	multimem.red	F[16|32|64]
+M0	multimem.red	H32
+M0	multimem.red	H32
+hhhh	multimem.red	E[16|32]
+hhhh	mma	F16F16F16F16
+fhhh	mma	F16F16F16F16
+fhhf	mma	F32F16F16F16
+fhhf	mma	F32F16F16F32
+VVVV	mma	F32F16F16F32
+sdds	mma	F16F16F16F32
+sdds	mma	I32I32
+sdds	mma	I32I32
+sdds	mma	I32I8I8I32
+sdds	mma	I32I32
+0123	mma	I32I32
+dddd	mma	F64F64F64F64
+dddd	mma	F32F32
+fddf	mma	F32F32
+hddh	mma	F32Q8Q8F32
+hddh	mma	F16Q8Q8F16
+fddfdC	mma	F16Q8Q8F16
+hddh	mma	F32Q8Q8F32
+hddh	mma	F16R4Q8F16
+fddf	mma	F16R4Q8F16
+hddh	mma	F32R4Q8F32
+hddh	mma	F16Q8R4F16
+fddf	mma	F16Q8R4F16
+hddh	mma	F32Q8R4F32
+hddh	mma	F16R4R4F16
+fddf	mma	F16R4R4F16
+hddhdC	mma	F32R4R4F32
+hddhdC	mma	F16R4Q8F16
+fddfdC	mma	F16R4Q8F16
+hddhdC	mma	F32R4Q8F32
+hddhdC	mma	F16Q8R4F16
+fddfdC	mma	F16Q8R4F16
+hddhdC	mma	F32Q8R4F32
+hddhdC	mma	F16R4R4F16
+fddfdC	mma	F16R4R4F16
+hddhdC	mma	F32R4R4F32
+hddhdC	mma	F16Q8Q8F16
+fddfdxdx	mma	F16Q8Q8F16
+fddfdCdxdx	mma	F32R4R4F32Q8
+fddfdCdxdx	mma	F32R4R4F32Q8
+fddfdxdx	mma	F32R4R4F32Q8
+fddfdxdx	mma	F32Q8Q8F32Q8
+fddfdxdx	mma	F32R4Q8F32Q8
+fddfdxdx	mma	F32R4Q8F32Q8
+fddfdxdx	mma	F32Q8R4F32Q8
+fddfdxdx	mma	F32R4R4F32Q8
+fddfdCdxdx	mma	F32R4R4F32Q8
+fddfdCdxdx	mma	F32Q8Q8F32Q8
+fddfdCdxdx	mma	F32R4Q8F32Q8
+fddfdCdxdx	mma	F32R4Q8F32Q8
+fddfdCdxdx	mma	F32Q8R4F32Q8
+fddfdCdxdx	mma	F32R4R4F32Q8
+hhhh	wmma.mma	F32R4R4F32Q8
+fhhh	wmma.mma	F16F16
+fhhh	wmma.mma	F32F16
+fhhf	wmma.mma	F32F16
+hhhf	wmma.mma	F32F32
+hhhf	wmma.mma	F16F32
+hM	wmma.load.a	F16F32
+hMu	wmma.load.a	F16
+hMu	wmma.load.a	F16
+hM	wmma.load.b	F16
+hMu	wmma.load.b	F16
+hMu	wmma.load.b	F16
+hM	wmma.load.c	F16
+hMu	wmma.load.c	F16
+hMu	wmma.load.c	F16
+fM	wmma.load.c	F16
+fMu	wmma.load.c	F32
+fMu	wmma.load.c	F32
+VV	wmma.load.a	F32
+VVV	wmma.load.a	F32
+VVV	wmma.load.a	F32
+VV	wmma.load.b	F32
+VVV	wmma.load.b	F32
+VVV	wmma.load.b	F32
+Mh	wmma.store.d	F32
+Mhu	wmma.store.d	F16
+Mhu	wmma.store.d	F16
+Mf	wmma.store.d	F16
+Mfu	wmma.store.d	F32
+Mfu	wmma.store.d	F32
+sM	wmma.load.a	F32
+sMu	wmma.load.a	
+sMu	wmma.load.a	
+sM	wmma.load.b	
+sMu	wmma.load.b	
+sMu	wmma.load.b	
+ssss	wmma.mma	
+ssss	wmma.mma	I32B1B1I32
+ssss	wmma.mma	I32I4I4I32
+ssss	wmma.mma	I32I4I4I32
+sM	wmma.mma	I32I8I8I32
+sM	wmma.load.a	I8
+sMu	wmma.load.a	I8
+sM	wmma.load.a	I8
+sM	wmma.load.b	I8
+sMu	wmma.load.b	I8
+sM	wmma.load.b	I8
+sM	wmma.load.c	I32
+sMu	wmma.load.c	I32
+Ms	wmma.load.c	I32
+Ms	wmma.store.d	I32
+Msu	wmma.store.d	I32
+0M	wmma.store.d	I32
+0M	wmma.load.a	F64
+0Mu	wmma.load.a	F64
+0M	wmma.load.a	F64
+0M	wmma.load.b	F64
+0Mu	wmma.load.b	F64
+0M	wmma.load.b	F64
+0M	wmma.load.c	F64
+0Mu	wmma.load.c	F64
+M0	wmma.load.c	F64
+M0	wmma.store.d	F64
+M0u	wmma.store.d	F64
+0123	wmma.store.d	F64
+0123	wmma.mma	F64F64F64F64
+dM	wmma.load.a	F64F64F64F64
+dMu	wmma.load.a	
+dMu	wmma.load.a	
+dM	wmma.load.b	
+dMu	wmma.load.b	
+dMu	wmma.load.b	
+dddd	wmma.mma	
+dddd	wmma.mma	F32E16E16F32
+dddd	wmma.mma	F32T32T32F32
+hddh	_mma	F32T32T32F32
+fddf	_mma	F16R4Q8F16
+fddf	_mma	F32R4Q8F32
+hddh	_mma	F32R4Q8F32
+fddf	_mma	F16Q8R4F16
+fddf	_mma	F32Q8R4F32
+hddh	_mma	F32Q8R4F32
+fddf	_mma	F16R4R4F16
+fddf	_mma	F32R4R4F32
+hddhdC	_mma	F32R4R4F32
+fddfdC	_mma	F16R4Q8F16
+fddfdC	_mma	F32R4Q8F32
+hddhdC	_mma	F32R4Q8F32
+fddfdC	_mma	F16Q8R4F16
+fddfdC	_mma	F32Q8R4F32
+hddhdC	_mma	F32Q8R4F32
+fddfdC	_mma	F16R4R4F16
+fddfdC	_mma	F32R4R4F32
+fddfdxdx	_mma	F32R4R4F32
+fddfdCdxdx	_mma	F32R4R4F32Q8
+fddfdCdxdx	_mma	F32R4R4F32Q8
+fddfdxdx	_mma	F32R4R4F32Q8
+fddfdxdx	_mma	F32Q8Q8F32Q8
+fddfdxdx	_mma	F32R4Q8F32Q8
+fddfdxdx	_mma	F32R4Q8F32Q8
+fddfdxdx	_mma	F32Q8R4F32Q8
+fddfdxdx	_mma	F32R4R4F32Q8
+fddfdCdxdx	_mma	F32R4R4F32Q8
+fddfdCdxdx	_mma	F32Q8Q8F32Q8
+fddfdCdxdx	_mma	F32R4Q8F32Q8
+fddfdCdxdx	_mma	F32R4Q8F32Q8
+fddfdCdxdx	_mma	F32Q8R4F32Q8
+fddfdCdxdx	_mma	F32R4R4F32Q8
+hUUPCCCC	wgmma.mma_async	F32R4R4F32Q8
+hhUPCCC	wgmma.mma_async	F16F16F16
+hhUPCCC	wgmma.mma_async	F16F16F16
+fUUPCCCC	wgmma.mma_async	F16F16F16
+fhUPCCC	wgmma.mma_async	F32F16F16
+fhUPCCC	wgmma.mma_async	F32F16F16
+fUUPCCCC	wgmma.mma_async	F32F16F16
+fdUPCCC	wgmma.mma_async	F32E16E16
+fdUPCCC	wgmma.mma_async	F32E16E16
+fUUPCC	wgmma.mma_async	F32E16E16
+fdUPCC	wgmma.mma_async	F32T32T32
+fdUPCC	wgmma.mma_async	F32T32T32
+hUUPCC	wgmma.mma_async	F32T32T32
+hdUPCC	wgmma.mma_async	F16Q8Q8
+hdUPCC	wgmma.mma_async	F16Q8Q8
+fUUPCC	wgmma.mma_async	F16Q8Q8
+fdUPCC	wgmma.mma_async	F32Q8Q8
+fdUPCC	wgmma.mma_async	F32Q8Q8
+sUUP	wgmma.mma_async	F32Q8Q8
+sdUP	wgmma.mma_async	I32I8I8
+sdUP	wgmma.mma_async	I32I8I8
+sUUP	wgmma.mma_async	I32I8I8
+sdUP	wgmma.mma_async	I32B1B1
+sdUP	wgmma.mma_async	I32B1B1
+hUUdCPCCCC	wgmma.mma_async	I32B1B1
+hhUdCPCCC	wgmma.mma_async	F16F16F16
+hhUdCPCCC	wgmma.mma_async	F16F16F16
+fUUdCPCCCC	wgmma.mma_async	F16F16F16
+fhUdCPCCC	wgmma.mma_async	F32F16F16
+fhUdCPCCC	wgmma.mma_async	F32F16F16
+fUUdCPCCCC	wgmma.mma_async	F32F16F16
+fdUdCPCCC	wgmma.mma_async	F32E16E16
+fdUdCPCCC	wgmma.mma_async	F32E16E16
+fUUdCPCC	wgmma.mma_async	F32E16E16
+fdUdCPCC	wgmma.mma_async	F32T32T32
+fdUdCPCC	wgmma.mma_async	F32T32T32
+hUUdCPCC	wgmma.mma_async	F32T32T32
+hdUdCPCC	wgmma.mma_async	F16Q8Q8
+hdUdCPCC	wgmma.mma_async	F16Q8Q8
+fUUdCPCC	wgmma.mma_async	F16Q8Q8
+fdUdCPCC	wgmma.mma_async	F32Q8Q8
+fdUdCPCC	wgmma.mma_async	F32Q8Q8
+sUUdCP	wgmma.mma_async	F32Q8Q8
+sdUdCP	wgmma.mma_async	I32I8I8
+sdUdCP	wgmma.mma_async	I32I8I8
+	wgmma.fence	I32I8I8
+	wgmma.fence	
+Mu	tcgen05.alloc	
+uu	tcgen05.alloc	B32
+uu	tcgen05.dealloc	B32
+	tcgen05.relinquish_alloc_permit	B32
+d	tcgen05.relinquish_alloc_permit	
+duC	_tcgen05.guardrails.is_current_warp_valid_owner	
+du	_tcgen05.guardrails.is_current_warp_valid_owner	
+du	_tcgen05.guardrails.are_columns_allocated	
+duu	_tcgen05.guardrails.are_columns_allocated	
+du	_tcgen05.guardrails.are_columns_allocated	
+du	_tcgen05.guardrails.in_physical_bounds	
+duu	_tcgen05.guardrails.in_physical_bounds	
+du	_tcgen05.guardrails.in_physical_bounds	
+du	_tcgen05.guardrails.allocation_granularity	
+duuC	_tcgen05.guardrails.datapath_alignment	
+M	_tcgen05.guardrails.datapath_alignment	
+M	tcgen05.commit	B64
+Mx	tcgen05.commit	B64
+M	tcgen05.commit	B64
+M	tcgen05.shift	
+MU	tcgen05.cp	
+	tcgen05.cp	
+	tcgen05.fence	B32
+dMC	tcgen05.ld	B32
+Md	tcgen05.ld	B32
+Md	tcgen05.st	B32
+MCd	tcgen05.st	B32
+MUUuP	tcgen05.st	B32
+MUUuP	tcgen05.mma	
+MUUMuP	tcgen05.mma	
+MUUudP	tcgen05.mma	
+MUUudP	tcgen05.mma	
+MUUuPC	tcgen05.mma	
+MUUMudP	tcgen05.mma	
+MUUMudP	tcgen05.mma	
+MUUMuPC	tcgen05.mma	
+MUUudPC	tcgen05.mma	
+MUUudPC	tcgen05.mma	
+MUUMudPC	tcgen05.mma	
+MMUuP	tcgen05.mma	
+MMUuP	tcgen05.mma	
+MMUMuP	tcgen05.mma	
+MMUudP	tcgen05.mma	
+MMUudP	tcgen05.mma	
+MMUuPC	tcgen05.mma	
+MMUMudP	tcgen05.mma	
+MMUMudP	tcgen05.mma	
+MMUMuPC	tcgen05.mma	
+MMUudPC	tcgen05.mma	
+MMUudPC	tcgen05.mma	
+MMUMudPC	tcgen05.mma	
+MUUuMMP	tcgen05.mma	
+MUUuMMP	tcgen05.mma	
+MUUMuMMP	tcgen05.mma	
+MMUuMMP	tcgen05.mma	
+MMUuMMP	tcgen05.mma	
+MMUMuMMP	tcgen05.mma	
+MUUuP	tcgen05.mma	
+MUUuP	tcgen05.mma.ws	
+MUUuPU	tcgen05.mma.ws	
+MUUMuP	tcgen05.mma.ws	
+MUUMuP	tcgen05.mma.ws	
+MUUMuPU	tcgen05.mma.ws	
+MMUuP	tcgen05.mma.ws	
+MMUuP	tcgen05.mma.ws	
+MMUuPU	tcgen05.mma.ws	
+MMUMuP	tcgen05.mma.ws	
+MMUMuP	tcgen05.mma.ws	
+MMUMuPU	tcgen05.mma.ws	
+MMsMx	tcgen05.mma.ws	
+MMsMx	cp.async.bulk.tensor	
+MMsMxx	cp.async.bulk.tensor	
+MMsMxU	cp.async.bulk.tensor	
+MMsMxU	cp.async.bulk.tensor	
+MMsMxxU	cp.async.bulk.tensor	
+MMuMx	cp.async.bulk.tensor	
+MMuMx	cp.async.bulk	
+MMuMxU	cp.async.bulk	
+MMux	cp.async.bulk	
+MMux	cp.async.bulk	
+MMuUx	cp.async.bulk	
+M0	cp.async.bulk	
+M0	tensormap.replace	B[32|64]
+MC0	tensormap.replace	B[32|64]
+M0	tensormap.replace	B[32|64]
+M0	st.async	I[8|16|32|64]
+M0	st.async	I[8|16|32|64]
+M0	st.async	B[8|16|32|64]
+M0	st.async	F[32|64]
+M0	red.async	F[32|64]
+M0	red.async	I[32|64]
+M0	red.async	B[32|64]
+MMCu	cp.async	B[32|64]
+MMC	cp.async	
+MMC	cp.async	
+MMCP	cp.async	
+	cp.async	
+	cp.async.wait_all	
+M	cp.async.mbarrier.arrive	
+MMCuU	cp.async.mbarrier.arrive	B64
+MMCuU	cp.async	
+MMCU	cp.async	
+MMCPU	cp.async	
+MMCPU	cp.async	
+0	stacksave	
+0	stacksave	I[32|64]
+0	stackrestore	I[32|64]
+00	alloca	I[32|64]
+00C	alloca	I[32|64]
+00C	alloca	I[32|64]
+dM	ldmatrix	I[32|64]
+dM	ldmatrix	B[8|16]
+dM	ldmatrix	
+dd	movmatrix	
+Md	movmatrix	B16
+Md	stmatrix	B[8|16]
+0i1	tex	B[8|16]
+0i1	tex	F32F32
+0i1	tex	F32I32
+0i1	tex	F32I32
+0i1	tex	I32F32
+0i1	tex	I32I32
+0i1s	tex	I32I32
+0i1s	tex	F32F32
+0i1s	tex	F32I32
+0i1s	tex	F32I32
+0i1s	tex	I32F32
+0i1s	tex	I32I32
+0i1sl	tex	I32I32
+0i1sl	tex	F32F32
+0i1sl	tex	I32F32
+0i1l	tex	I32F32
+0i1l	tex	F32F32
+0i1l	tex	I32F32
+0i1	tex	I32F32
+0i1	tex	F16F32
+0i1	tex	F16I32
+0i1	tex	F16I32
+0i1	tex	H32F32
+0i1	tex	H32I32
+0i1s	tex	H32I32
+0i1s	tex	F16F32
+0i1s	tex	F16I32
+0i1s	tex	F16I32
+0i1s	tex	H32F32
+0i1s	tex	H32I32
+0i1sl	tex	H32I32
+0i1sl	tex	F16F32
+0i1sl	tex	H32F32
+0i1l	tex	H32F32
+0i1l	tex	F16F32
+0i1l	tex	H32F32
+0ii1	tex	H32F32
+0ii1	tex	F32F32
+0ii1	tex	F32I32
+0ii1	tex	F32I32
+0ii1	tex	I32F32
+0ii1	tex	I32I32
+0ii1s	tex	I32I32
+0ii1s	tex	F32F32
+0ii1s	tex	F32I32
+0ii1s	tex	F32I32
+0ii1s	tex	I32F32
+0ii1s	tex	I32I32
+0ii1sl	tex	I32I32
+0ii1sl	tex	F32F32
+0ii1sl	tex	I32F32
+0ii1l	tex	I32F32
+0ii1l	tex	F32F32
+0ii1l	tex	I32F32
+0ii1	tex	I32F32
+0ii1	tex	F16F32
+0ii1	tex	F16I32
+0ii1	tex	F16I32
+0ii1	tex	H32F32
+0ii1	tex	H32I32
+0ii1s	tex	H32I32
+0ii1s	tex	F16F32
+0ii1s	tex	F16I32
+0ii1s	tex	F16I32
+0ii1s	tex	H32F32
+0ii1s	tex	H32I32
+0ii1sl	tex	H32I32
+0ii1sl	tex	F16F32
+0ii1sl	tex	H32F32
+0ii1l	tex	H32F32
+0ii1l	tex	F16F32
+0ii1l	tex	H32F32
+0i1	tex.base	H32F32
+0i1	tex.base	F32F32
+0i1	tex.base	F32I32
+0i1	tex.base	F32I32
+0i1	tex.base	I32F32
+0i1	tex.base	I32I32
+0i1s	tex.base	I32I32
+0i1s	tex.base	F32F32
+0i1s	tex.base	F32I32
+0i1s	tex.base	F32I32
+0i1s	tex.base	I32F32
+0i1s	tex.base	I32I32
+0i1sl	tex.base	I32I32
+0i1sl	tex.base	F32F32
+0i1sl	tex.base	I32F32
+0i1l	tex.base	I32F32
+0i1l	tex.base	F32F32
+0i1l	tex.base	I32F32
+0i1	tex.base	I32F32
+0i1	tex.base	F16F32
+0i1	tex.base	F16I32
+0i1	tex.base	F16I32
+0i1	tex.base	H32F32
+0i1	tex.base	H32I32
+0i1s	tex.base	H32I32
+0i1s	tex.base	F16F32
+0i1s	tex.base	F16I32
+0i1s	tex.base	F16I32
+0i1s	tex.base	H32F32
+0i1s	tex.base	H32I32
+0i1sl	tex.base	H32I32
+0i1sl	tex.base	F16F32
+0i1sl	tex.base	H32F32
+0i1l	tex.base	H32F32
+0i1l	tex.base	F16F32
+0i1l	tex.base	H32F32
+0ii1	tex.base	H32F32
+0ii1	tex.base	F32F32
+0ii1	tex.base	F32I32
+0ii1	tex.base	F32I32
+0ii1	tex.base	I32F32
+0ii1	tex.base	I32I32
+0ii1s	tex.base	I32I32
+0ii1s	tex.base	F32F32
+0ii1s	tex.base	F32I32
+0ii1s	tex.base	F32I32
+0ii1s	tex.base	I32F32
+0ii1s	tex.base	I32I32
+0ii1sl	tex.base	I32I32
+0ii1sl	tex.base	F32F32
+0ii1sl	tex.base	I32F32
+0ii1l	tex.base	I32F32
+0ii1l	tex.base	F32F32
+0ii1l	tex.base	I32F32
+0ii1	tex.base	I32F32
+0ii1	tex.base	F16F32
+0ii1	tex.base	F16I32
+0ii1	tex.base	F16I32
+0ii1	tex.base	H32F32
+0ii1	tex.base	H32I32
+0ii1s	tex.base	H32I32
+0ii1s	tex.base	F16F32
+0ii1s	tex.base	F16I32
+0ii1s	tex.base	F16I32
+0ii1s	tex.base	H32F32
+0ii1s	tex.base	H32I32
+0ii1sl	tex.base	H32I32
+0ii1sl	tex.base	F16F32
+0ii1sl	tex.base	H32F32
+0ii1l	tex.base	H32F32
+0ii1l	tex.base	F16F32
+0ii1l	tex.base	H32F32
+0i11	tex.level	H32F32
+0i11	tex.level	F32F32
+0i11	tex.level	F32I32
+0i11	tex.level	F32I32
+0i11	tex.level	I32F32
+0i11	tex.level	I32I32
+0i11s	tex.level	I32I32
+0i11s	tex.level	F32F32
+0i11s	tex.level	F32I32
+0i11s	tex.level	F32I32
+0i11s	tex.level	I32F32
+0i11s	tex.level	I32I32
+0i11sl	tex.level	I32I32
+0i11sl	tex.level	F32F32
+0i11sl	tex.level	I32F32
+0i11l	tex.level	I32F32
+0i11l	tex.level	F32F32
+0i11l	tex.level	I32F32
+0i11	tex.level	I32F32
+0i11	tex.level	F16F32
+0i11	tex.level	F16I32
+0i11	tex.level	F16I32
+0i11	tex.level	H32F32
+0i11	tex.level	H32I32
+0i11s	tex.level	H32I32
+0i11s	tex.level	F16F32
+0i11s	tex.level	F16I32
+0i11s	tex.level	F16I32
+0i11s	tex.level	H32F32
+0i11s	tex.level	H32I32
+0i11sl	tex.level	H32I32
+0i11sl	tex.level	F16F32
+0i11sl	tex.level	H32F32
+0i11l	tex.level	H32F32
+0i11l	tex.level	F16F32
+0i11l	tex.level	H32F32
+0ii11	tex.level	H32F32
+0ii11	tex.level	F32F32
+0ii11	tex.level	F32I32
+0ii11	tex.level	F32I32
+0ii11	tex.level	I32F32
+0ii11	tex.level	I32I32
+0ii11s	tex.level	I32I32
+0ii11s	tex.level	F32F32
+0ii11s	tex.level	F32I32
+0ii11s	tex.level	F32I32
+0ii11s	tex.level	I32F32
+0ii11s	tex.level	I32I32
+0ii11sl	tex.level	I32I32
+0ii11sl	tex.level	F32F32
+0ii11sl	tex.level	I32F32
+0ii11l	tex.level	I32F32
+0ii11l	tex.level	F32F32
+0ii11l	tex.level	I32F32
+0ii11	tex.level	I32F32
+0ii11	tex.level	F16F32
+0ii11	tex.level	F16I32
+0ii11	tex.level	F16I32
+0ii11	tex.level	H32F32
+0ii11	tex.level	H32I32
+0ii11s	tex.level	H32I32
+0ii11s	tex.level	F16F32
+0ii11s	tex.level	F16I32
+0ii11s	tex.level	F16I32
+0ii11s	tex.level	H32F32
+0ii11s	tex.level	H32I32
+0ii11sl	tex.level	H32I32
+0ii11sl	tex.level	F16F32
+0ii11sl	tex.level	H32F32
+0ii11l	tex.level	H32F32
+0ii11l	tex.level	F16F32
+0ii11l	tex.level	H32F32
+0i1ff	tex.grad	H32F32
+0i1ff	tex.grad	F32F32
+0i1ff	tex.grad	F32I32
+0i1ff	tex.grad	F32I32
+0i1ff	tex.grad	I32F32
+0i1ff	tex.grad	I32I32
+0i1ffs	tex.grad	I32I32
+0i1ffs	tex.grad	F32F32
+0i1ffs	tex.grad	F32I32
+0i1ffs	tex.grad	F32I32
+0i1ffs	tex.grad	I32F32
+0i1ffs	tex.grad	I32I32
+0i1ffl	tex.grad	I32I32
+0i1ffl	tex.grad	F32F32
+0i1ffl	tex.grad	I32F32
+0i1ffsl	tex.grad	I32F32
+0i1ffsl	tex.grad	F32F32
+0i1ffsl	tex.grad	I32F32
+0i1ff	tex.grad	I32F32
+0i1ff	tex.grad	F16F32
+0i1ff	tex.grad	F16I32
+0i1ff	tex.grad	F16I32
+0i1ff	tex.grad	H32F32
+0i1ff	tex.grad	H32I32
+0i1ffs	tex.grad	H32I32
+0i1ffs	tex.grad	F16F32
+0i1ffs	tex.grad	F16I32
+0i1ffs	tex.grad	F16I32
+0i1ffs	tex.grad	H32F32
+0i1ffs	tex.grad	H32I32
+0i1ffl	tex.grad	H32I32
+0i1ffl	tex.grad	F16F32
+0i1ffl	tex.grad	H32F32
+0i1ffsl	tex.grad	H32F32
+0i1ffsl	tex.grad	F16F32
+0i1ffsl	tex.grad	H32F32
+0ii1ff	tex.grad	H32F32
+0ii1ff	tex.grad	F32F32
+0ii1ff	tex.grad	F32I32
+0ii1ff	tex.grad	F32I32
+0ii1ff	tex.grad	I32F32
+0ii1ff	tex.grad	I32I32
+0ii1ffs	tex.grad	I32I32
+0ii1ffs	tex.grad	F32F32
+0ii1ffs	tex.grad	F32I32
+0ii1ffs	tex.grad	F32I32
+0ii1ffs	tex.grad	I32F32
+0ii1ffs	tex.grad	I32I32
+0ii1ffl	tex.grad	I32I32
+0ii1ffl	tex.grad	F32F32
+0ii1ffl	tex.grad	I32F32
+0ii1ffsl	tex.grad	I32F32
+0ii1ffsl	tex.grad	F32F32
+0ii1ffsl	tex.grad	I32F32
+0ii1ff	tex.grad	I32F32
+0ii1ff	tex.grad	F16F32
+0ii1ff	tex.grad	F16I32
+0ii1ff	tex.grad	F16I32
+0ii1ff	tex.grad	H32F32
+0ii1ff	tex.grad	H32I32
+0ii1ffs	tex.grad	H32I32
+0ii1ffs	tex.grad	F16F32
+0ii1ffs	tex.grad	F16I32
+0ii1ffs	tex.grad	F16I32
+0ii1ffs	tex.grad	H32F32
+0ii1ffs	tex.grad	H32I32
+0ii1ffl	tex.grad	H32I32
+0ii1ffl	tex.grad	F16F32
+0ii1ffl	tex.grad	H32F32
+0ii1ffsl	tex.grad	H32F32
+0ii1ffsl	tex.grad	F16F32
+0ii1ffsl	tex.grad	H32F32
+PU	istypep	H32F32
+0i1	istypep	O
+0i1	tld4	I32F32
+0i1	tld4	I32F32
+0ii1	tld4	F32F32
+0ii1	tld4	I32F32
+0ii1	tld4	I32F32
+0i1s	tld4	F32F32
+0i1s	tld4	I32F32
+0i1s	tld4	I32F32
+0ii1s	tld4	F32F32
+0ii1s	tld4	I32F32
+0ii1s	tld4	I32F32
+0i1l	tld4	F32F32
+0i1l	tld4	I32F32
+0i1l	tld4	I32F32
+0ii1l	tld4	F32F32
+0ii1l	tld4	I32F32
+0ii1l	tld4	I32F32
+0i1sl	tld4	F32F32
+0i1sl	tld4	I32F32
+0i1sl	tld4	I32F32
+0ii1sl	tld4	F32F32
+0ii1sl	tld4	I32F32
+0ii1sl	tld4	I32F32
+0i	tld4	F32F32
+0i	txq	B32
+0is	txq.level	B32
+0i	txq.level	B32
+0i	suq	B32
+0is	suld.b	B32
+is0	suld.b	B[8|16|32|64]
+is0	sust.b	B[8|16|32|64]
+is0	sust.p	B[8|16|32|64]
+is0	sust.p	B32
+is0	sured.b	B32
+is0	sured.b	B32
+is0	sured.b	I[32|64]
+is0	sured.p	B32
+is0	sured.p	B32
+Uis	sured.p	B64
+Uis	_sulea.b	B[8|16|32|64]
+Uis	_sulea.p	B[8|16|32|64]
+Pis	_sulea.p	
+Pis	_sulea.b	B[8|16|32|64]
+Pis	_sulea.p	B[8|16|32|64]
+P00	_sulea.p	
+P00	_checkfp.divide	F32
+u	_warpsync	F32
+T	_warpsync	
+T	bra	
+	griddepcontrol	
+Tu	griddepcontrol	
+uS	brx.idx	
+T	brx.idx	
+T	_gen_proto	
+T	_jcall	
+T	_jcall	
+T	call	
+TA	call	
+AT	call	
+AT	call	
+ATA	call	
+TS	call	
+TS	call	
+TAS	call	
+ATS	call	
+ATS	call	
+ATAS	call	
+	call	
+	ret	
+uu	bar	
+u	bar	
+u	barrier	
+uu	barrier	
+u	barrier	
+u	bar.arrive	
+uu	bar.arrive	
+uu	bar.arrive	
+uu	barrier.arrive	
+u	barrier.arrive	
+u	barrier.arrive	
+u	bar.warp	
+0uP	bar.red	
+0uuP	bar.red	I32
+0uuP	bar.red	I32
+0uP	bar.red	I32
+0uuP	bar.red	P
+0uuP	bar.red	P
+0uP	barrier.red	P
+0uuP	barrier.red	I32
+0uuP	barrier.red	I32
+0uP	barrier.red	I32
+0uuP	barrier.red	P
+0uuP	barrier.red	P
+u	bar.cta	P
+uu	bar.cta	
+uu	bar.cta	
+u	barrier.cta	
+uu	barrier.cta	
+uu	barrier.cta	
+u	bar.cta.arrive	
+uu	bar.cta.arrive	
+uu	bar.cta.arrive	
+uu	barrier.cta.arrive	
+u	barrier.cta.arrive	
+u	barrier.cta.arrive	
+0uP	bar.cta.red	
+0uuP	bar.cta.red	I32
+0uuP	bar.cta.red	I32
+0uP	bar.cta.red	I32
+0uuP	bar.cta.red	P
+0uuP	bar.cta.red	P
+0uP	barrier.cta.red	P
+0uuP	barrier.cta.red	I32
+0uuP	barrier.cta.red	I32
+0uP	barrier.cta.red	I32
+0uuP	barrier.cta.red	P
+0uuP	barrier.cta.red	P
+	barrier.cluster.arrive	P
+	barrier.cluster.arrive	
+	membar.proxy	
+MMC	membar.proxy	
+0M0	atom	
+0M0	atom	F32
+0M0	atom	H32
+0M0	atom	H32
+0M0	atom	F64
+0M0	atom	I[32|64]
+0M0	atom	I[32|64]
+0M00	atom	B[32|64]
+0M00	atom	B[32|64]
+0M0	atom	B[32|64]
+0M00	atom	B128
+0M00	atom	B128
+0M0U	atom	B128
+0M0	atom	B128
+0M0	atom	F16
+0M00	atom	F16
+0M0U	atom	B16
+0M0U	atom	H32
+0M0U	atom	H32
+0M0U	atom	F16
+0M0U	atom	F32
+0M0U	atom	F32
+0M0U	atom	F64
+0M0U	atom	I[32|64]
+0M0U	atom	I[32|64]
+xMx	atom	B[32|64]
+xMx	atom	E16
+dMd	atom	E16
+xMxU	atom	E32
+xMxU	atom	E16
+dMdU	atom	E16
+M0	atom	E32
+M0	red	F32
+M0	red	F32
+M0	red	H32
+M0	red	F64
+M0	red	F64
+M0	red	I[32|64]
+M0	red	B[32|64]
+M0	red	B[32|64]
+M0U	red	F16
+M0U	red	H32
+M0U	red	H32
+M0U	red	F16
+M0U	red	F32
+M0U	red	F32
+M0U	red	F64
+M0U	red	I[32|64]
+M0U	red	I[32|64]
+Mx	red	B[32|64]
+Mx	red	E16
+Md	red	E16
+MxU	red	E32
+MxU	red	E16
+MdU	red	E16
+u0	red	E32
+u0	_match	B[32|64]
+u0u	match	B[32|64]
+00	match	B[32|64]
+00	vote	P
+0P	vote	P
+00u	vote	B32
+00u	vote	P
+0Pu	vote	P
+uuu	vote	B32
+uuu	redux	B32
+uuu	redux	B32
+00u	redux	I32
+00u	redux	F32
+0	activemask	F32
+Mu	activemask	B32
+Mu	mbarrier.init	B64
+M	mbarrier.inval	B64
+UM	mbarrier.inval	B64
+UM	mbarrier.arrive	B64
+UMs	mbarrier.arrive	B64
+PMU	mbarrier.arrive	B64
+PMU	mbarrier.test_wait	B64
+UM	mbarrier.arrive_drop	B64
+UMs	mbarrier.arrive_drop	B64
+UMs	mbarrier.arrive_drop	B64
+uU	mbarrier.pending_count	B64
+PMu	mbarrier.pending_count	B64
+PMu	mbarrier.test_wait.parity	B64
+PMU	mbarrier.try_wait	B64
+PMu	mbarrier.try_wait	B64
+PMu	mbarrier.try_wait.parity	B64
+PMUu	mbarrier.try_wait	B64
+PMuu	mbarrier.try_wait	B64
+PMuu	mbarrier.try_wait.parity	B64
+Mu	mbarrier.complete_tx	B64
+C	mbarrier.complete_tx	B64
+C	setmaxnreg.inc	I32
+C	setmaxnreg.dec	I32
+uu	setmaxnreg.dec	I32
+uu	elect	
+	trap	
+	trap	
+C	pmevent.mask	
+u	pmevent.mask	
+u	nanosleep	I32
+MM	clusterlaunchcontrol.try_cancel.async	I32
+P1	clusterlaunchcontrol.try_cancel.async	B128
+P1	clusterlaunchcontrol.query_cancel	PB128
+01	clusterlaunchcontrol.query_cancel	PB128
+012	clusterlaunchcontrol.query_cancel	B32B128
+012	vadd	I32I32I32
+012	vsub	I32I32I32
+012	vsub	I32I32I32
+012	vabsdiff	I32I32I32
+012	vmin	I32I32I32
+012	vmin	I32I32I32
+012	vmax	I32I32I32
+0120	vadd	I32I32I32
+0120	vadd	I32I32I32
+0120	vsub	I32I32I32
+0120	vabsdiff	I32I32I32
+0120	vabsdiff	I32I32I32
+0120	vmin	I32I32I32
+0120	vmax	I32I32I32
+012	vmax	I32I32I32
+012	vshl	I32I32I32
+012	vshr	I32I32I32
+0120	vshr	I32I32I32
+0120	vshl	I32I32I32
+0120	vshr	I32I32I32
+0120	vshr	I32I32I32
+0120	vmad	I32I32I32
+u01	vset	I32I32I32
+u01u	vset	I32I32
+u01u	vset	I32I32
+0120	vadd2	I32I32
+0120	vadd2	I32I32I32
+0120	vsub2	I32I32I32
+0120	vavrg2	I32I32I32
+0120	vavrg2	I32I32I32
+0120	vabsdiff2	I32I32I32
+0120	vmin2	I32I32I32
+0120	vmin2	I32I32I32
+0120	vmax2	I32I32I32
+u01u	vset2	I32I32I32
+0120	vset2	I32I32
+0120	vadd4	I32I32I32
+0120	vsub4	I32I32I32
+0120	vsub4	I32I32I32
+0120	vavrg4	I32I32I32
+0120	vabsdiff4	I32I32I32
+0120	vabsdiff4	I32I32I32
+0120	vmin4	I32I32I32
+0120	vmax4	I32I32I32
+u01u	vmax4	I32I32I32
+u01u	vset4	I32I32
