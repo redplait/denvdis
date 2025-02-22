@@ -21,6 +21,55 @@ EOF
   exit(8);
 }
 
+# some hardcoded tabs
+my %fmz = (
+ nofmz => 0,
+ noFTZ => 0,
+ FTZ => 1,
+ FMZ => 2,
+ INVALIDFMZ3 => 3
+);
+
+my %pmode = (
+ IDX => 0,
+ F4E => 1,
+ B4E => 2,
+ RC8 => 3,
+ ECL => 4,
+ ECR => 5,
+ RC16 => 6,
+ INVALID7 => 7
+);
+
+my %hilo = (
+ LO => 0,
+ HI => 1
+);
+
+my %cwmode = (
+ C => 0,
+ W => 1
+);
+my %bval = (
+ BM => 0,
+ BF => 1
+);
+my %store_cache = (
+ WB => 0,
+ CG =>1,
+ CS => 2,
+ WT => 3
+);
+
+my %Tabs = (
+ FMZ => \%fmz,
+ PMode => \%pmode,
+ HILO => \%hilo,
+ CWMode => \%cwmode,
+ BVal => \%bval,
+ StoreCacheOp => \%store_cache
+);
+
 # ENCODING WIDTH
 my $g_size;
 
@@ -142,7 +191,11 @@ sub gen_inst_mask
   my @new;
   my $altered = 0;
   foreach my $emask ( @{ $op->[5] } ) {
-    if ( $emask =~ /^\s*(\S+)\s*=\s*(\d+)/ ) {
+    if ( $emask =~ /^\s*(\S+)\s*=\s*0b(\S+)/ ) { # enc = 0bxxx
+      my $mask = $g_mnames{$1};
+      mask_value(\@res, parse0b($2), $mask);
+      $altered++;
+    } elsif ( $emask =~ /^\s*(\S+)\s*=\s*(\d+)/ ) {
       $altered++;
       mask_value(\@res, int($2), $g_mnames{$1});
     } elsif ( $emask =~ /^\s*(\S+)\s*=\*\s*(\d+)/ ) {
@@ -153,9 +206,29 @@ sub gen_inst_mask
     }
   }
   $op->[5] = \@new if $altered;
+  # check /Group(Value):alias in format
+  while ( $op->[8] =~ /\/(\S+)\(\"?([^\"\)]+)\"?\)\:(\S+)/g ) {
+    if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
+      my $value = $Tabs{$1}->{$2};
+      my $what = check_enc($op->[5], $1, $3);
+      mask_value(\@res, $value, $what) if defined($what);
+    }
+  }
   return join('', @res);
 }
 
+sub check_enc
+{
+  my($e, $name, $alias) = @_;
+  for my $enc ( @$e ) {
+    if ( $enc =~ /^\s*(\S+)\s*=\s*(\S+)\s*;/ ) {
+      if ( $2 eq $name or $2 eq $alias ) {
+         return $g_mnames{$1};
+      }
+    }
+  }
+  return undef;
+}
 
 # opcodes divided into 2 group - first start with some zero mask (longest if there are > 1) and second with longest opcode
 # key is mask value is map of second type
@@ -168,7 +241,8 @@ my(%g_zero, %g_ops);
 # [4] - line number
 # [5] - encoding list (not includes opcode mask)
 # [6] - !encoding list
-
+# [7] - is alternate class
+# [8] - format string
 sub insert_ins
 {
   my($cname, $op) = @_;
@@ -458,6 +532,9 @@ if ( defined($opt_m) ) {
 # with encoded =* const - I don't know what this means
 # total          330 310 374 415  538 1010    992   927  1016
 # duplicated     113 160 171 173   60   96    141   129   156
+# FMZ & PMode + enc = 0bxxx
+# toal           330 354
+# duplicated     113 119
   dump_dup_masks();
   printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
 } else {
