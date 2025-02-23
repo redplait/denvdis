@@ -191,14 +191,14 @@ sub gen_inst_mask
   my @new;
   my $altered = 0;
   foreach my $emask ( @{ $op->[5] } ) {
-    if ( $emask =~ /^\s*(\S+)\s*=\s*0b(\S+)/ ) { # enc = 0bxxx
+    if ( $emask =~ /^(\S+)\s*=\s*0b(\S+)/ ) { # enc = 0bxxx
       my $mask = $g_mnames{$1};
       mask_value(\@res, parse0b($2), $mask);
       $altered++;
-    } elsif ( $emask =~ /^\s*(\S+)\s*=\s*(\d+)/ ) {
+    } elsif ( $emask =~ /^(\S+)\s*=\s*(\d+)/ ) {
       $altered++;
       mask_value(\@res, int($2), $g_mnames{$1});
-    } elsif ( $emask =~ /^\s*(\S+)\s*=\*\s*(\d+)/ ) {
+    } elsif ( $emask =~ /^(\S+)\s*=\*\s*(\d+)/ ) {
       $altered++;
       mask_value(\@res, int($2), $g_mnames{$1});
     } else {
@@ -233,6 +233,7 @@ sub check_enc
 # opcodes divided into 2 group - first start with some zero mask (longest if there are > 1) and second with longest opcode
 # key is mask value is map of second type
 my(%g_zero, %g_ops);
+my $g_diff_names = 0;
 # format hash where key is opcode, value - array where
 # [0] - class name
 # [1] - name
@@ -272,8 +273,10 @@ sub insert_ins
   } else {
     # check if they have the same names
     my $aref = $mpail->{ $op->[2] };
-    printf("duplicated ins %s (old %s) mask %s value %X\n", $op->[1], $aref->[0]->[1], $op->[3]->[1], $op->[2])
-      if ( $op->[1] ne $aref->[0]->[1] );
+    if ( $op->[1] ne $aref->[0]->[1] ) {
+      printf("duplicated ins %s (old %s) mask %s value %X\n", $op->[1], $aref->[0]->[1], $op->[3]->[1], $op->[2]);
+      $g_diff_names++;
+    }
     push @{ $aref }, $op;
   }
 }
@@ -331,7 +334,6 @@ sub parse0b
 # mask map, key - mask string, value - instruction like in g_ops
 my(%g_masks);
 my $g_dups = 0;
-my $g_diff_names = 0;
 
 sub dump_dup_masks
 {
@@ -395,12 +397,13 @@ $state = $line = 0;
 # [5] - ref to nenc
 # [6] - is alternate class
 # [7] - format string
-my($cname, $has_op, $op_line, @op, @enc, @nenc, $alt, $format);
+# [8] - ref to tabs
+my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, $alt, $format);
 # reset current instruction
 my $reset = sub {
   $format = $cname = '';
   $alt = $has_op = $op_line = 0;
-  @op = @enc = @nenc = ();
+  @op = @enc = @nenc = @tabs = ();
 };
 # insert copy of current instruction
 my $ins_op = sub {
@@ -412,11 +415,13 @@ my $ins_op = sub {
   my @c = @op;
   my @cenc = @enc;
   my @cnenc = @nenc;
+  my @ctabs = @tabs;
   $c[3] = $op_line;
   $c[4] = \@cenc;
   $c[5] = \@cnenc;
   $c[6] = $alt;
   $c[7] = $format;
+  $c[8] = \@ctabs;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
@@ -485,34 +490,48 @@ while( $str = <$fh> ) {
   }
   # encodings
   if ( 4 == $state ) {
-    if ( $str =~ /^\s*\!(\S+)\s*;/ ) {
-      # put ref from g_mnames into nenc
-      if ( !exists $g_mnames{$1} ) {
-        printf("%s not exists, line %d op %s\n", $1, $line, $op[0]);
-      } else {
-        push( @nenc, $g_mnames{$1} );
+    for my $s ( split /;/, $str ) {
+      # trim leading spaces
+      $s =~ s/^\s+//g;
+      if ( $s =~ /^\!(\S+)\s*/ ) {
+        # put ref from g_mnames into nenc
+        if ( !exists $g_mnames{$1} ) {
+          printf("%s not exists, line %d op %s\n", $1, $line, $op[0]);
+        } else {
+          push( @nenc, $g_mnames{$1} );
+        }
+        next;
       }
-      next;
-    }
-    # check for =Opcode
-    if ( $str =~ /^\s*(\S+)\s*=\s*Opcode/ ) {
-      if ( !exists $g_mnames{$1} ) {
-        printf("opcode mask %s not exists, line %d op %s\n", $1, $line, $op[0]);
-        $reset->();
-      } else {
-        $op[2] = $g_mnames{$1};
+      # check for =Opcode
+      if ( $s =~ /^(\S+)\s*=\s*Opcode/ ) {
+        if ( !exists $g_mnames{$1} ) {
+          printf("opcode mask %s not exists, line %d op %s\n", $1, $line, $op[0]);
+          $reset->();
+        } else {
+          $op[2] = $g_mnames{$1};
+        }
+        next;
       }
-      next;
-    }
-    # check and put to enc
-    if ( $str =~ /^\s*(\S+)\s*=/ ) {
-      if ( !exists $g_mnames{$1} ) {
-        printf("encode mask %s not exists, line %d op %s\n", $1, $line, $op[0]);
-        # $reset->();
-      } else {
-        push(@enc, $str);
+      # check for mask = `something
+      if ( $s =~ /^(\S+)\s*=\s*\`/ ) {
+        if ( !exists $g_mnames{$1} ) {
+          printf("quoted encode mask %s not exists, line %d op %s\n", $1, $line, $op[0]);
+          # $reset->();
+        } else {
+          push(@tabs, $s);
+        }
       }
-    }
+      # check remaining in g_mnames and put to enc
+      if ( $s =~ /^(\S+)\s*=/ ) {
+        if ( !exists $g_mnames{$1} ) {
+          printf("encode mask %s not exists, line %d op %s\n", $1, $line, $op[0]);
+          # $reset->();
+        } else {
+          push(@enc, $s);
+        }
+      }
+    } # for all ; separated encodings
+    next;
   }
 }
 close $fh;
@@ -541,4 +560,5 @@ if ( defined($opt_m) ) {
   dump_negtree(\%g_zero);
   printf("--- opcodes tree\n");
   dump_tree(\%g_ops, 0);
+  printf("%d different names\n", $g_diff_names);
 }
