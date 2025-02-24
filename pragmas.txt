@@ -1,0 +1,14 @@
+abi_param_reg
+call_abi_param_reg
+call_retaddr_reg
+call_retaddr_reg_before_param_reg
+call_retaddr_reg<U>
+call_scratch_regs<B>
+call_scratch_regs<R>
+local_maxnreg
+noPointerTrunc
+nounroll
+retaddr_reg
+retaddr_reg<U>
+scratch_regs<B>
+scratch_regs<R>
