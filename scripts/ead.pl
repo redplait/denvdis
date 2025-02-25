@@ -48,8 +48,19 @@ my %hilo = (
 );
 my %b1b0 = (
  H0 => 0,
- H1 => 2
+ H1 => 2,
+ B0 => 0,
+ B1 => 1,
+ B2 => 2,
+ B3 => 3
 );
+my %b3b0 = (
+ B0 => 0,
+ B1 => 1,
+ B2 => 2,
+ B3 => 3
+);
+
 my %cwmode = (
  C => 0,
  W => 1
@@ -76,6 +87,7 @@ my %Tabs = (
  CWMode => \%cwmode,
  BVal => \%bval,
  B1B0 => \%b1b0,
+ B3B0 => \%b3b0,
  REUSE => \%reuse,
  StoreCacheOp => \%store_cache
 );
@@ -242,16 +254,46 @@ sub gen_inst_mask
         mask_value(\@res, $g_rz, $g_mnames{$1});
         next;
       }
+      # check enums
+      my $mask = $g_mnames{$1};
+      if ( $v =~ /^(\S+)@(\w+)/ ) {
+        if ( !exists $g_enums{$1} ) {
+          printf("cannot find quoted enum %s for %s line %d: %s\n", $1, $op->[1], $op->[4], $q);
+          next;
+        }
+        my $tab = $g_enums{$1};
+        if ( !exists $tab->{$2} ) {
+          printf("cannot find quoted enum %s in %s for %s line %d: %s\n", $2, $1, $op->[1], $op->[4], $q);
+          next;
+        }
+        mask_value(\@res, $tab->{$2}, $mask);
+      }
     }
   }
   # check /Group(Value):alias in format
-  while ( $op->[8] =~ /\/(\S+)\(\"?([^\"\)]+)\"?\)\:(\S+)/g ) {
+  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?\)\:(\w+)/g ) {
     if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
       my $value = $Tabs{$1}->{$2};
       my $what = check_enc($op->[5], $1, $3);
       if ( defined($what) ) {
         mask_value(\@res, $value, $what);
       }
+      next;
+    }
+    # check in enums
+    if ( !exists $g_enums{$1} ) {
+      printf("cannot find /enum %s for %s line %d\n", $1, $op->[1], $op->[4]);
+      next;
+    }
+    my $tab = $g_enums{$1};
+    if ( !exists $tab->{$2} ) {
+      printf("cannot find /enum %s in %s for %s line %d\n", $2, $1, $op->[1], $op->[4]);
+      next;
+    }
+    my $value = $tab->{$2};
+    my $what = check_enc($op->[5], $1, $3);
+    if ( defined($what) ) {
+      mask_value(\@res, $value, $what);
     }
   }
   return join('', @res);
@@ -441,9 +483,52 @@ $state = $line = 0;
 # [7] - format string
 # [8] - ref to tabs
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, $alt, $format);
+
 # enum state
 my($curr_enum, $eref);
+# 0 - don't parse, 1 - expect start of enum, 2 - continue with next line
 my $estate = 0;
+my $reset_enum = sub {
+  $curr_enum = 0;
+};
+my $parse_pair = sub {
+  my $s = shift;
+  $s =~ s/\;\s*$//;
+  $s =~ s/^\s+//;
+  $s =~ s/\s+$//;
+  return 0 if ( $s eq '' );
+  # simplest case - just some enum
+  if ( $s =~ /^\"?([\w\.]+)\"?$/ ) {
+    $eref->{$1} = ++$curr_enum;
+    return 1;
+  }
+  # enum = 0b
+  if ( $s =~ /^\"?([\w\.]+)\"?\s*=\s*0b(\w+)\s*$/ ) {
+    my $name = $1;
+    $curr_enum = parse0b($2);
+    $eref->{$1} = $curr_enum++;
+    return 1;
+  }
+  # enum = number
+  if ( $s =~ /^\"?([\w\.]+)\"?\s*=\s*(\d+)\s*$/ ) {
+    $curr_enum = int($2);
+    $eref->{$1} = $curr_enum++;
+    return 1;
+  }
+ printf("bad enum %s on line %d\n", $s, $line);
+ 0;
+};
+my $parse_enum = sub {
+  my $s = shift;
+  my $n = 0;
+  foreach my $pat ( split /\s*,\s*/, $s ) {
+    $n++;
+    $parse_pair->($pat);
+  }
+  # if it's last like something;
+  $parse_pair->($s) if ( !$n );
+};
+
 # reset current instruction
 my $reset = sub {
   $format = $cname = '';
@@ -473,7 +558,7 @@ my $ins_op = sub {
     insert_ins($cname, \@c);
    }
 };
-$reset->();
+$reset->(); $reset_enum->();
 while( $str = <$fh> ) {
   chomp $str;
   $line++;
@@ -488,6 +573,10 @@ while( $str = <$fh> ) {
       $estate = 0;
       next;
     }
+    if ( $str =~ /^\s*REGISTERS/ ) {
+      $estate = 1;
+      next;
+    }
     if ( $str =~ /^\s*ZeroRegister .*\"?RZ\"?\s*=\s*(\d+)\s*;/ )
     {
       $estate = 1;
@@ -496,6 +585,36 @@ while( $str = <$fh> ) {
     }
     $estate = 1 if ( !$estate && $str =~ /^\s*SpecialRegister / );
     next if ( !$estate );
+# printf("e%d %s\n", $estate, $str);
+    # 1 - new enum
+    if ( 1 == $estate ) {
+      if ( $str =~ /^\s*(\w+)\s*$/ ) {
+        my %tmp;
+        $eref = $g_enums{$1} = \%tmp;
+        $estate = 2;
+        next;
+      }
+      next if ( $str =~ /^\s*(\w+)\s*=/ );
+      if ( $str =~ /^\s*(\w+)\s+(.*)\s*;?/ ) {
+        my %tmp;
+        $eref = $g_enums{$1} = \%tmp;
+        $parse_enum->($2);
+        if ( $str =~ /\;\s*$/ ) {
+          $reset_enum->();
+        } else {
+          $estate = 2;
+        }
+        next;
+      }
+    }
+    if ( 2 == $estate ) {
+      if ( $str =~ /^\s*(.*)\;\s*$/ ) {
+       $parse_enum->($1);
+       $reset_enum->(); $estate = 1;
+      } else {
+       $parse_enum->($str);
+      }
+    }
     next;
   }
 # printf("%d %s\n", $state, $str);
@@ -614,18 +733,21 @@ if ( defined($opt_m) ) {
 # !enc + opcode  205 258 273 275  310  548
 # total          279 261 321 363  365  681
 # -alternate     135 183 200 194  135  241
-# with encoded = const
+#  with encoded = const
 # total          330 310 374 411  433  807
 # duplicated     113 160 171 173   74  128
-# with encoded =* const - I don't know what this means
+#  with encoded =* const - I don't know what this means
 # total          330 310 374 415  538 1010    992   927  1016
 # duplicated     113 160 171 173   60   96    141   129   156
-# FMZ & PMode + enc = 0bxxx
+#  FMZ & PMode + enc = 0bxxx
 # total          330 354
 # duplicated     113 119
-# `Register@RZ, different names 0
-# total          334 358 378 414 538 1010     992    927 1016
-# duplicated     113 117 169 176  60   96     141    129  156
+#  `Register@RZ, different names 0
+# total          334 358 378 414  538 1010    992   927  1016
+# duplicated     113 117 169 176   60   96    141   129   156
+#  with enums
+# total          334 358 373 409  521  993    967   902   998
+# duplicated     113 117 174 181   74  120    170   158   183
   dump_dup_masks();
   printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
 } else {
