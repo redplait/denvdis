@@ -45,7 +45,10 @@ my %hilo = (
  LO => 0,
  HI => 1
 );
-
+my %b1b0 = (
+ H0 => 0,
+ H1 => 2
+);
 my %cwmode = (
  C => 0,
  W => 1
@@ -60,6 +63,10 @@ my %store_cache = (
  CS => 2,
  WT => 3
 );
+my %reuse = (
+ noreuse => 0,
+ reuse => 1
+);
 
 my %Tabs = (
  FMZ => \%fmz,
@@ -67,6 +74,8 @@ my %Tabs = (
  HILO => \%hilo,
  CWMode => \%cwmode,
  BVal => \%bval,
+ B1B0 => \%b1b0,
+ REUSE => \%reuse,
  StoreCacheOp => \%store_cache
 );
 
@@ -206,12 +215,17 @@ sub gen_inst_mask
     }
   }
   $op->[5] = \@new if $altered;
+  # enc = `const - in op->[9]
+  foreach my $q ( @{ $op->[9] } ) {
+  }
   # check /Group(Value):alias in format
   while ( $op->[8] =~ /\/(\S+)\(\"?([^\"\)]+)\"?\)\:(\S+)/g ) {
     if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
       my $value = $Tabs{$1}->{$2};
       my $what = check_enc($op->[5], $1, $3);
-      mask_value(\@res, $value, $what) if defined($what);
+      if ( defined($what) ) {
+        mask_value(\@res, $value, $what);
+      }
     }
   }
   return join('', @res);
@@ -220,8 +234,10 @@ sub gen_inst_mask
 sub check_enc
 {
   my($e, $name, $alias) = @_;
+  $alias =~ s/\}\s*$//;
+# printf("check_enc %s %s\n", $name, $alias);
   for my $enc ( @$e ) {
-    if ( $enc =~ /^\s*(\S+)\s*=\s*(\S+)\s*;/ ) {
+    if ( $enc =~ /^\s*(\S+)\s*=\s*(\S+)\s*/ ) {
       if ( $2 eq $name or $2 eq $alias ) {
          return $g_mnames{$1};
       }
@@ -461,10 +477,16 @@ while( $str = <$fh> ) {
     next;
   }
   if ( 6 == $state ) {
-    if ( $str !~ /FORMAT\s+(?:PREDICATE\s+)?.*Opcode/ && $str =~ /^\s*(.* \/.*)$/ ) {
-      $format .= ' ' . $1;
+    if ( $str !~ /FORMAT\s+(?:PREDICATE\s+)?.*Opcode/ ) {
+      # grab /something()
+      if (  $str =~ /^\s*(.*\/\w.*)$/ ) {
+        $format .= ' ' . $1;
+      } elsif ( $str =~ /^\s*(.*\(\d+\).*)\s*$/ ) {
+        $format .= ' ' . $1;
+      }
     }
     $state = 2 if ( $str =~ /;\s*$/ );
+    next;
   }
   if ( 6 == $state && $str =~ /CONDITIONS/ ) {
     $state = 2;
@@ -520,6 +542,7 @@ while( $str = <$fh> ) {
         } else {
           push(@tabs, $s);
         }
+        next;
       }
       # check remaining in g_mnames and put to enc
       if ( $s =~ /^(\S+)\s*=/ ) {
@@ -529,6 +552,7 @@ while( $str = <$fh> ) {
         } else {
           push(@enc, $s);
         }
+        next;
       }
     } # for all ; separated encodings
     next;
