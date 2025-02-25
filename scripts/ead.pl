@@ -6,7 +6,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_m $opt_v $opt_w/;
+use vars qw/$opt_a $opt_e $opt_m $opt_v $opt_w/;
 
 sub usage()
 {
@@ -14,6 +14,7 @@ sub usage()
 Usage: $0 [options] md.txt
  Options:
  - a - add alternates
+  -e - dump enums
   -m - generate masks
   -v - verbose
   -w - dump warnings
@@ -78,6 +79,24 @@ my %Tabs = (
  REUSE => \%reuse,
  StoreCacheOp => \%store_cache
 );
+
+# global enums hash map - like Tabs but readed dynamically
+my %g_enums;
+my $g_rz = 0;
+
+sub dump_enums
+{
+  printf("-- Enums\n");
+  foreach my $e_name ( sort keys %g_enums ) {
+    my $enum = $g_enums{$e_name};
+    next if ( !scalar keys %$enum );
+    printf("%s:\n", $e_name);
+    while( my($n, $v) = each %$enum ) {
+      printf("  %s\t%d\n", $n, $v);
+    }
+    printf("\n");
+  }
+}
 
 # ENCODING WIDTH
 my $g_size;
@@ -217,6 +236,13 @@ sub gen_inst_mask
   $op->[5] = \@new if $altered;
   # enc = `const - in op->[9]
   foreach my $q ( @{ $op->[9] } ) {
+    if ( $q =~ /^(\S+)\s*=\s*\`(\S+)/ ) {
+      my $v = $2;
+      if ( $v eq 'Register@RZ' ) {
+        mask_value(\@res, $g_rz, $g_mnames{$1});
+        next;
+      }
+    }
   }
   # check /Group(Value):alias in format
   while ( $op->[8] =~ /\/(\S+)\(\"?([^\"\)]+)\"?\)\:(\S+)/g ) {
@@ -394,7 +420,7 @@ sub insert_mask
 }
 
 ### main
-my $status = getopts("amvw");
+my $status = getopts("aemvw");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -415,6 +441,9 @@ $state = $line = 0;
 # [7] - format string
 # [8] - ref to tabs
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, $alt, $format);
+# enum state
+my($curr_enum, $eref);
+my $estate = 0;
 # reset current instruction
 my $reset = sub {
   $format = $cname = '';
@@ -452,7 +481,21 @@ while( $str = <$fh> ) {
     if ( $str =~ /ENCODING\s+WIDTH\s+(\d+)\s*\;/ ) {
        $g_size = int($1);
        $state = 1;
+       next;
     }
+    # check enums
+    if ( $str =~ /^\s*TABLES/ ) {
+      $estate = 0;
+      next;
+    }
+    if ( $str =~ /^\s*ZeroRegister .*\"?RZ\"?\s*=\s*(\d+)\s*;/ )
+    {
+      $estate = 1;
+      $g_rz = int($1);
+      next;
+    }
+    $estate = 1 if ( !$estate && $str =~ /^\s*SpecialRegister / );
+    next if ( !$estate );
     next;
   }
 # printf("%d %s\n", $state, $str);
@@ -562,6 +605,8 @@ close $fh;
 # check last instr
 $ins_op->() if ( $has_op );
 
+dump_enums() if ( defined($opt_e) );
+
 # dump trees
 if ( defined($opt_m) ) {
 # results
@@ -569,15 +614,18 @@ if ( defined($opt_m) ) {
 # !enc + opcode  205 258 273 275  310  548
 # total          279 261 321 363  365  681
 # -alternate     135 183 200 194  135  241
-# witn encoded = const
+# with encoded = const
 # total          330 310 374 411  433  807
 # duplicated     113 160 171 173   74  128
 # with encoded =* const - I don't know what this means
 # total          330 310 374 415  538 1010    992   927  1016
 # duplicated     113 160 171 173   60   96    141   129   156
 # FMZ & PMode + enc = 0bxxx
-# toal           330 354
+# total          330 354
 # duplicated     113 119
+# `Register@RZ, different names 0
+# total          334 358 378 414 538 1010     992    927 1016
+# duplicated     113 117 169 176  60   96     141    129  156
   dump_dup_masks();
   printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
 } else {
