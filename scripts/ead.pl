@@ -296,6 +296,11 @@ sub gen_inst_mask
       mask_value(\@res, $value, $what);
     }
   }
+  # and again check for ZeroRegister(RZ) in format - in worst case just assign it yet one more time
+  if ( $op->[8] =~ /\bZeroRegister\(\"?RZ\"?\)\:(\w+)/ ) {
+    my $what = check_enc($op->[5], $1, $1);
+    mask_value(\@res, $g_rz, $what) if ( defined $what );
+  }
   return join('', @res);
 }
 
@@ -748,6 +753,9 @@ if ( defined($opt_m) ) {
 #  with enums
 # total          340 364 369 405  535 1024   1007   935  1054
 # duplicated     107 111 178 185   56   83    133   128   147
+#  additional check for ZeroRegister(RZ)
+# total          359 383 393 430  570 1064   1036   964  1083
+# duplicated      90  92 154 160   34   58    107   102   121
   dump_dup_masks();
   printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
 } else {
