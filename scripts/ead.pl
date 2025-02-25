@@ -270,12 +270,15 @@ sub gen_inst_mask
       }
     }
   }
+  my @pos;
   # check /Group(Value):alias in format
-  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?\)\:(\w+)/g ) {
+  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?\)\:(\w+)/pg ) {
     if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
       my $value = $Tabs{$1}->{$2};
       my $what = check_enc($op->[5], $1, $3);
       if ( defined($what) ) {
+        my $p = pos($op->[8]);
+        push @pos, [ $p - length(${^MATCH}), $p ];
         mask_value(\@res, $value, $what);
       }
       next;
@@ -293,13 +296,26 @@ sub gen_inst_mask
     my $value = $tab->{$2};
     my $what = check_enc($op->[5], $1, $3);
     if ( defined($what) ) {
+      my $p = pos($op->[8]);
+      push @pos, [ $p - length(${^MATCH}), $p ];
       mask_value(\@res, $value, $what);
     }
+  }
+  # remove used formats and put new string at index 10
+  if ( scalar @pos ) {
+   my $cp = $op->[8];
+   my @p = reverse @pos;
+   foreach (@p) {
+     substr($cp, $_->[0], $_->[1] - $_->[0], '');
+   }
+   $op->[10] = $cp;
   }
   # and again check for ZeroRegister(RZ) in format - in worst case just assign it yet one more time
   if ( $op->[8] =~ /\bZeroRegister\(\"?RZ\"?\)\:(\w+)/ ) {
     my $what = check_enc($op->[5], $1, $1);
-    mask_value(\@res, $g_rz, $what) if ( defined $what );
+    if ( defined $what ) {
+      mask_value(\@res, $g_rz, $what);
+    }
   }
   return join('', @res);
 }
@@ -333,6 +349,7 @@ my $g_diff_names = 0;
 # [6] - !encoding list
 # [7] - is alternate class
 # [8] - format string
+# [10] - string with unused formats
 sub insert_ins
 {
   my($cname, $op) = @_;
@@ -438,6 +455,7 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
+      printf("   Unused %s\n", $op->[10]) if defined($op->[10]);
       # dump encodings
       foreach my $enc ( @{ $op->[5] } ) {
         printf("    %s\n", $enc);
