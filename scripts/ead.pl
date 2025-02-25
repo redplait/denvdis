@@ -305,7 +305,7 @@ sub check_enc
   $alias =~ s/\}\s*$//;
 # printf("check_enc %s %s\n", $name, $alias);
   for my $enc ( @$e ) {
-    if ( $enc =~ /^\s*(\S+)\s*=\s*(\S+)\s*/ ) {
+    if ( $enc =~ /^\s*(\S+)\s*=\s*\*?\s*(\S+)\s*/ ) {
       if ( $2 eq $name or $2 eq $alias ) {
          return $g_mnames{$1};
       }
@@ -499,7 +499,7 @@ my $parse_pair = sub {
   return 0 if ( $s eq '' );
   # simplest case - just some enum
   if ( $s =~ /^\"?([\w\.]+)\"?$/ ) {
-    $eref->{$1} = ++$curr_enum;
+    $eref->{$1} = $curr_enum++;
     return 1;
   }
   # enum = 0b
@@ -746,8 +746,8 @@ if ( defined($opt_m) ) {
 # total          334 358 378 414  538 1010    992   927  1016
 # duplicated     113 117 169 176   60   96    141   129   156
 #  with enums
-# total          334 358 373 409  521  993    967   902   998
-# duplicated     113 117 174 181   74  120    170   158   183
+# total          340 364 369 405  535 1024   1007   935  1054
+# duplicated     107 111 178 185   56   83    133   128   147
   dump_dup_masks();
   printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
 } else {
