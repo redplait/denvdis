@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use Getopt::Std;
+use Carp;
 use Data::Dumper;
 
 # options
@@ -204,6 +205,44 @@ sub zero_mask
  }
 }
 
+# for tests only
+sub cmp_mask
+{
+  my($m, $c) = @_;
+  if ( length($c) != $g_size ) {
+    carp("length of second string must be $g_size");
+    return 0;
+  }
+  for ( my $i = 0; $i < $g_size; $i++ ) {
+    my $l = substr($m, $i, 1);
+    if ( $l eq '0' ) {
+      return 0 if ( substr($c, $i, 1) ne '0' );
+    } elsif ( $l eq '1' ) {
+      return 0 if ( substr($c, $i, 1) ne '1' );
+    }
+  }
+  1;
+}
+
+# the same cmp_mask but second argument is arrey to ref
+sub cmp_maska
+{
+  my($m, $a) = @_;
+  if ( scalar(@$a) != $g_size ) {
+    carp("length of array must be $g_size");
+    return 0;
+  }
+  for ( my $i = 0; $i < $g_size; $i++ ) {
+    my $l = substr($m, $i, 1);
+    if ( $l eq '0' ) {
+      return 0 if ( $a->[$i] ne '0' );
+    } elsif ( $l eq '1' ) {
+      return 0 if ( $a->[$i] ne '1' );
+    }
+  }
+  1;
+}
+
 # args: a - ref to result array, v - int value, mask - ref to value in g_mnames
 sub mask_value
 {
@@ -223,13 +262,18 @@ sub mask_value
 sub fill_mask
 {
   my($a, $l, $mask) = @_;
+  my $res = 0;
   my $list = $mask->[3];
   for( my $i = 0; $i < scalar(@$list); $i += 2 ) {
    my $base = $list->[$i];
    for ( my $j = 0; $j < $list->[$i + 1]; $j++ ) {
-     $a->[$base + $j] = $l if ( '-' eq $a->[$base + $j] );
+     if ( '-' eq $a->[$base + $j] ) {
+       $a->[$base + $j] = $l;
+       $res++;
+     }
    }
  }
+ return $res;
 }
 
 
@@ -239,31 +283,65 @@ my %g_letters = (
  RegC => 'c',
  Dest => 'D',
  Pred => 'p',
+ SrcPred => '$',
  aSelect => 's',
  bSelect => 'S',
+ VComp => 'V',
+ OEWaitOnSb => 'W',
+ usched_info => 'u',
 );
 
+# args: mask_name, format_name
+sub get_letter
+{
+  my($m, $f) = @_;
+  return $g_letters{$m} if ( exists $g_letters{$m} );
+  return $g_letters{$f} if ( exists $g_letters{$f} );
+  return 'I' if ( $m =~ /Imm/ );
+  return 'I' if ( $f =~ /Imm/ );
+  return 'V' if ( $m =~ /^VComp/ );
+  return 'a' if ( $m =~ /_Ra$/ );
+  return 'a' if ( $m =~ /_Ra_offset$/ ); # 72
+  return 'c' if ( $m =~ /_Rc$/ );
+  return 'b' if ( $m =~ /_Rb$/ );
+  return 'd' if ( $m =~ /_Rd$/ );
+  return 'p' if ( $m =~ /_Pg$/ );
+  return 'f' if ( $m =~ /_srcfmt$/ );
+  return 'F' if ( $m =~ /_dstfmt$/ );
+  return 'o' if ( $m =~ /_opex$/ );
+ return undef;
+}
+
+# args: ref to op, string mask, optional array ref of missed masks
+# return ref to array
+sub get_filled_maska
+{
+  my($op, $str, $missed) = @_;
+  my @a = split //, $str;
+  my @x;
+  foreach my $emask ( @{ $op->[5] } ) {
+   if ( $emask =~ /(\w+)\s*=\*?\s*(\w+)/ ) {
+       my $l = get_letter($1, $2);
+       if ( defined $l ) {
+         fill_mask(\@a, $l, $g_mnames{$1});
+         next;
+       }
+    }
+    push @x, $g_mnames{$1} if ( $emask =~ /(\S+)\s*=/ );
+  }
+  foreach ( @x ) {
+    my $filled = fill_mask(\@a, 'x', $_);
+    push @$missed, $_ if ( $filled && defined($missed) );
+  }
+  return \@a;
+}
+
 # args: ref to op, string mask
+# return string
 sub get_filled_mask
 {
-  my($op, $str) = @_;
-  my @a = split //, $str;
-  foreach my $emask ( @{ $op->[5] } ) {
-   if ( $emask =~ /(\S+)\s*=\*?\s*(\S)/ ) {
-     if ( exists $g_letters{$1} ) {
-       fill_mask(\@a, $g_letters{$1}, $g_mnames{$1});
-       next;
-     }
-     my $n1 = $1;
-     my $n2 = $2;
-     if ( $n1 =~ /Imm/ || $n2 =~ /Imm/ ) {
-       fill_mask(\@a, 'I', $g_mnames{$n1});
-       next;
-     }
-     fill_mask(\@a, 'x', $g_mnames{$n1});
-   }
-  }
-  return join('', @a);
+  my $a = get_filled_maska(@_);
+  return join('', @$a);
 }
 
 sub gen_inst_mask
@@ -498,7 +576,15 @@ sub dump_dup_masks
     # dump duplicated instructions
     my $name1 = $ops->[0]->[1];
     foreach my $op ( @$ops ) {
-      printf("%s\n", get_filled_mask($op, $v)) if defined($opt_f);
+      if ( defined($opt_f) ) {
+        my @x;
+        printf("%s\n", get_filled_mask($op, $v, \@x));
+        if ( scalar @x ) {
+          printf("X:");
+          printf(" %s", $_->[0]) for @x;
+          printf("\n");
+        }
+      }
       if ( $name1 ne $op->[1] ) {
         printf(" !!%s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       } else {
