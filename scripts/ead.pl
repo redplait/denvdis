@@ -6,7 +6,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_e $opt_m $opt_v $opt_w/;
+use vars qw/$opt_a $opt_e $opt_f $opt_m $opt_v $opt_w/;
 
 sub usage()
 {
@@ -15,6 +15,7 @@ Usage: $0 [options] md.txt
  Options:
  - a - add alternates
   -e - dump enums
+  -f - dump fully filled masks
   -m - generate masks
   -v - verbose
   -w - dump warnings
@@ -218,6 +219,53 @@ sub mask_value
  }
 }
 
+# arg: a - ref to result array, l - letter, mask - ref to value in g_mnames
+sub fill_mask
+{
+  my($a, $l, $mask) = @_;
+  my $list = $mask->[3];
+  for( my $i = 0; $i < scalar(@$list); $i += 2 ) {
+   my $base = $list->[$i];
+   for ( my $j = 0; $j < $list->[$i + 1]; $j++ ) {
+     $a->[$base + $j] = $l if ( '-' eq $a->[$base + $j] );
+   }
+ }
+}
+
+
+my %g_letters = (
+ RegA => 'a',
+ RegB => 'b',
+ RegC => 'c',
+ Dest => 'D',
+ Pred => 'p',
+ aSelect => 's',
+ bSelect => 'S',
+);
+
+# args: ref to op, string mask
+sub get_filled_mask
+{
+  my($op, $str) = @_;
+  my @a = split //, $str;
+  foreach my $emask ( @{ $op->[5] } ) {
+   if ( $emask =~ /(\S+)\s*=\*?\s*(\S)/ ) {
+     if ( exists $g_letters{$1} ) {
+       fill_mask(\@a, $g_letters{$1}, $g_mnames{$1});
+       next;
+     }
+     my $n1 = $1;
+     my $n2 = $2;
+     if ( $n1 =~ /Imm/ || $n2 =~ /Imm/ ) {
+       fill_mask(\@a, 'I', $g_mnames{$n1});
+       next;
+     }
+     fill_mask(\@a, 'x', $g_mnames{$n1});
+   }
+  }
+  return join('', @a);
+}
+
 sub gen_inst_mask
 {
   my $op = shift;
@@ -271,8 +319,8 @@ sub gen_inst_mask
     }
   }
   my @pos;
-  # check /Group(Value):alias in format
-  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?\)\:(\w+)/pg ) {
+  # check /Group(Value):alias in format - Value can contain /PRINT suffix
+  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(?:\/PRINT)?\)\:(\w+)/pg ) {
     if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
       my $value = $Tabs{$1}->{$2};
       my $what = check_enc($op->[5], $1, $3);
@@ -450,6 +498,7 @@ sub dump_dup_masks
     # dump duplicated instructions
     my $name1 = $ops->[0]->[1];
     foreach my $op ( @$ops ) {
+      printf("%s\n", get_filled_mask($op, $v)) if defined($opt_f);
       if ( $name1 ne $op->[1] ) {
         printf(" !!%s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       } else {
@@ -485,7 +534,7 @@ sub insert_mask
 }
 
 ### main
-my $status = getopts("aemvw");
+my $status = getopts("aefmvw");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -774,6 +823,9 @@ if ( defined($opt_m) ) {
 #  additional check for ZeroRegister(RZ)
 # total          359 383 393 430  570 1064   1036   964  1083
 # duplicated      90  92 154 160   34   58    107   102   121
+#  /PRINT suffix - in 5x
+# total          359 383 396 433  570  1064
+# duplicated      90  92 151 157   34    58
   dump_dup_masks();
   printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
 } else {
