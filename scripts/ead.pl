@@ -424,6 +424,25 @@ sub parse_bitset
   0;
 }
 
+# remove used encodes
+# args: op, ref to hash with encoders to exclude
+sub remove_encs
+{
+  my($op, $hr) = @_;
+  my @new;
+  my $altered = 0;
+  foreach my $emask ( @{ $op->[5] } ) {
+    if ( $emask =~ /^(\w+)\s*=/ ) {
+      if ( exists $hr->{$1} ) {
+        $altered++;
+        next;
+      }
+    }
+    push @new, $emask;
+  }
+  $op->[5] = \@new if $altered;
+}
+
 sub gen_inst_mask
 {
   my $op = shift;
@@ -434,33 +453,36 @@ sub gen_inst_mask
   # opcode
   mask_value(\@res, $op->[2], $op->[3]);
   # encodings
-  my @new;
-  my $altered = 0;
+  my %rem;
   foreach my $emask ( @{ $op->[5] } ) {
-    if ( $emask =~ /^(\S+)\s*=\s*0b(\S+)/ ) { # enc = 0bxxx
+    if ( $emask =~ /^(\w+)\s*=\s*0b(\S+)/ ) { # enc = 0bxxx
       my $mask = $g_mnames{$1};
+      $rem{$1} = $emask;
       mask_value(\@res, parse0b($2), $mask);
-      $altered++;
     } elsif ( $emask =~ /^(\S+)\s*=\s*(\d+)/ ) {
-      $altered++;
+      $rem{$1} = $emask;
       mask_value(\@res, int($2), $g_mnames{$1});
     } elsif ( $emask =~ /^(\S+)\s*=\*\s*(\d+)/ ) {
-      $altered++;
+      $rem{$1} = $emask;
       mask_value(\@res, int($2), $g_mnames{$1});
-    } else {
-      push @new, $emask;
     }
   }
-  $op->[5] = \@new if $altered;
+  remove_encs($op, \%rem);
+  %rem = ();
   # enc = `const - in op->[9]
   foreach my $q ( @{ $op->[9] } ) {
-    if ( $q =~ /^(\S+)\s*=\s*\`(\S+)/ ) {
+    if ( $q =~ /^(\w+)\s*=\s*\`(\S+)/ ) {
       my $v = $2;
       if ( $v eq 'Register@RZ' ) {
+        $rem{$1} = $q;
         mask_value(\@res, $g_rz, $g_mnames{$1});
         next;
       }
       # check enums
+      if ( !exists $g_mnames{$1} ) {
+        printf("mask %s not exists in %s line %d\n", $1, $op->[1], $op->[4]);
+        next;
+      }
       my $mask = $g_mnames{$1};
       if ( $v =~ /^(\S+)@(\w+)/ ) {
         if ( !exists $g_enums{$1} ) {
@@ -472,6 +494,7 @@ sub gen_inst_mask
           printf("cannot find quoted enum %s in %s for %s line %d: %s\n", $2, $1, , $q);
           next;
         }
+        $rem{$mask->[0]} = $q;
         mask_value(\@res, $tab->{$2}, $mask);
       }
     }
@@ -497,17 +520,19 @@ sub gen_inst_mask
        $size, $what->[0], $ms, $op->[1], $op->[4]);
       next;
     }
+    $rem{$what->[0]} = 1;
     my $p = pos($op->[8]);
     push @pos, [ $p - length(${^MATCH}), $p ];
     mask_value(\@res, $v, $what);
   }
   # check /Group(Value):alias in format - Value can contain /PRINT suffix
-  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(?:\/PRINT)?\)\:(\w+)/pg ) {
+  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(\/PRINT)?\)\:(\w+)/pg ) {
     if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
       my $value = $Tabs{$1}->{$2};
-      my $what = check_enc($op->[5], $1, $3);
+      my $what = check_enc($op->[5], $1, $4);
       if ( defined($what) ) {
         my $p = pos($op->[8]);
+        $rem{$what->[0]} = 1 if ( !defined($3) );
         push @pos, [ $p - length(${^MATCH}), $p ];
         mask_value(\@res, $value, $what);
       }
@@ -524,8 +549,9 @@ sub gen_inst_mask
       next;
     }
     my $value = $tab->{$2};
-    my $what = check_enc($op->[5], $1, $3);
+    my $what = check_enc($op->[5], $1, $4);
     if ( defined($what) ) {
+      $rem{$what->[0]} = 1;
       my $p = pos($op->[8]);
       push @pos, [ $p - length(${^MATCH}), $p ];
       mask_value(\@res, $value, $what);
@@ -535,6 +561,7 @@ sub gen_inst_mask
   while ( $op->[8] =~ /\bZeroRegister\(\"?RZ\"?\)\:(\w+)/pg ) {
     my $what = check_enc($op->[5], $1, $1);
     if ( defined $what ) {
+      $rem{$what->[0]} = 1;
       my $p = pos($op->[8]);
       push @pos, [ $p - length(${^MATCH}), $p ];
       mask_value(\@res, $g_rz, $what);
@@ -553,6 +580,7 @@ sub gen_inst_mask
    $cp =~ s/\$\(\s*\)\$//g;
    $op->[10] = $cp;
   }
+  remove_encs($op, \%rem) if ( scalar keys %rem );
   return join('', @res);
 }
 
@@ -703,7 +731,8 @@ sub make_test
 
 sub dump_dup_masks
 {
-  while( my($v, $ops) = each %g_masks ) {
+  foreach my $v ( sort { $a cmp $b } keys %g_masks ) {
+    my $ops = $g_masks{$v};
     my $size = scalar @$ops;
     if ( 1 == $size ) {
       printf("%s: %s line %d\n", $v, $ops->[0]->[1], $ops->[0]->[4]);
