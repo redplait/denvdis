@@ -7,7 +7,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_e $opt_f $opt_m $opt_v $opt_w/;
+use vars qw/$opt_a $opt_e $opt_f $opt_m $opt_r $opt_T $opt_v $opt_w/;
 
 sub usage()
 {
@@ -18,6 +18,8 @@ Usage: $0 [options] md.txt
   -e - dump enums
   -f - dump fully filled masks
   -m - generate masks
+  -r - fill in reverse order
+  -T - test bytes
   -v - verbose
   -w - dump warnings
 EOF
@@ -25,14 +27,6 @@ EOF
 }
 
 # some hardcoded tabs
-my %fmz = (
- nofmz => 0,
- noFTZ => 0,
- FTZ => 1,
- FMZ => 2,
- INVALIDFMZ3 => 3
-);
-
 my %pmode = (
  IDX => 0,
  F4E => 1,
@@ -62,7 +56,6 @@ my %b3b0 = (
  B2 => 2,
  B3 => 3
 );
-
 my %cwmode = (
  C => 0,
  W => 1
@@ -83,7 +76,6 @@ my %reuse = (
 );
 
 my %Tabs = (
- FMZ => \%fmz,
  PMode => \%pmode,
  HILO => \%hilo,
  CWMode => \%cwmode,
@@ -122,6 +114,17 @@ my $g_size;
 # [2] - size of significant bits
 # [3] - list for decoding
 my(%g_mnames, %g_mmasks);
+
+sub mask_len
+{
+  my $op = shift;
+  my $res = 0;
+  my $list = $op->[3];
+  for ( my $i = 0; $i < scalar @$list; $i += 2 ) {
+    $res = $list->[$i+1];
+  }
+  return $res;
+}
 
 sub dump_decode
 {
@@ -248,14 +251,68 @@ sub mask_value
 {
   my($a, $v, $mask) = @_;
   my $list = $mask->[3];
-  for( my $i = 0; $i < scalar(@$list); $i += 2 ) {
-   my $base = $list->[$i];
-   for ( my $j = 0; $j < $list->[$i + 1]; $j++ ) {
+  if ( defined $opt_r ) {
+   # from right to left, least bit will be right
+   for ( my $i = scalar(@$list) - 1; $i > 0; $i -= 2 ) {
+    my $base = $list->[$i-1] + $list->[$i] - 1;
+    for ( my $j = 0; $j < $list->[$i]; $j++ ) {
+     my $sym = $v & 1 ? '1' : '0';
+     $a->[$base - $j] = $sym;
+     $v >>= 1;
+    }
+   }
+  } else {
+   # from left to right, least bit will be left
+   for( my $i = 0; $i < scalar(@$list); $i += 2 ) {
+    my $base = $list->[$i];
+    for ( my $j = 0; $j < $list->[$i + 1]; $j++ ) {
      my $sym = $v & 1 ? '1' : '0';
      $a->[$base + $j] = $sym;
      $v >>= 1;
    }
+  }
  }
+}
+
+# args: a - ref to array, mask - ref to value in g_mnames
+sub extact_value
+{
+  my($a, $mask) = @_;
+}
+sub conv2a
+{
+  my $s = shift;
+  my @res;
+  my $idx = 0;
+  while ( $s =~ /([0-9a-f]{2})/ig ) {
+    push @res, hex($1);
+    $idx++;
+  }
+  my $len = $g_size / 8;
+  carp("bad test string, length must be $len") if ( $len != $idx );
+  my @p;
+  if ( $len == 8 ) {
+    @p = reverse(@res);
+  } elsif ( $len == 11 ) {
+    @p = reverse splice(@res, 0, 8);
+    push @p, @res;
+  } elsif ( $len == 16 ) {
+    @p = reverse splice(@res, 8);
+    push(@p, reverse splice(@res));
+  } else {
+    carp("unknown size $len");
+    return undef;
+  }
+  if ( defined $opt_v ) {
+    printf("%2.2X      ", $_) for @p; printf("\n"); }
+  @res = ();
+  # make bit array
+  foreach my $v (@p) {
+   for ( $idx = 7; $idx >= 0; $idx-- ) {
+     push @res, ($v & (1 << $idx)) ? '1' : '0';
+   }
+  }
+  return \@res;
 }
 
 # arg: a - ref to result array, l - letter, mask - ref to value in g_mnames
@@ -344,6 +401,29 @@ sub get_filled_mask
   return join('', @$a);
 }
 
+# parse args to BITSET
+# return (is_ok, size, value)
+sub parse_bitset
+{
+  my $s = shift;
+  return 0 if ( $s !~ /(\d+)\/(\w+)/ );
+  my $size = int($1);
+  my $vs = $2;
+  # hex value
+  if ( $vs =~ /0x([0-9a-f]+)/i ) {
+    return ( 1, $size, hex($1) );
+  }
+  # 0b value
+  if ( $vs =~ /0b(\w+)/ ) {
+    return ( 1, $size, parse0b($1) );
+  }
+  # some decimal number
+  if ( $vs =~ /(\d+)/ ) {
+    return ( 1, $size, int($1) );
+  }
+  0;
+}
+
 sub gen_inst_mask
 {
   my $op = shift;
@@ -389,7 +469,7 @@ sub gen_inst_mask
         }
         my $tab = $g_enums{$1};
         if ( !exists $tab->{$2} ) {
-          printf("cannot find quoted enum %s in %s for %s line %d: %s\n", $2, $1, $op->[1], $op->[4], $q);
+          printf("cannot find quoted enum %s in %s for %s line %d: %s\n", $2, $1, , $q);
           next;
         }
         mask_value(\@res, $tab->{$2}, $mask);
@@ -397,6 +477,30 @@ sub gen_inst_mask
     }
   }
   my @pos;
+  # check BITSET(size/value):mask
+  while( $op->[8] =~ /(?:\'\&\'.*)\s*BITSET\(([^\)]+)\)\:(\w+)/pg ) {
+    my $mask = $2;
+    my($ok, $size, $v) = parse_bitset($1);
+    if ( !$ok ) {
+      printf("bad BITSET args %s for %s line %d\n", $1, $op->[1], $op->[4]);
+      next;
+    }
+    # check that mask exists and has size $size
+    my $what = check_enc($op->[5], $mask, $mask);
+    if ( !defined($what) ) {
+      printf("bad BITSET mask %s for %s line %d\n", $mask, $op->[1], $op->[4]);
+      next;
+    }
+    my $ms = mask_len($what);
+    if ( $ms != $size ) {
+      printf("BITSET size is %X but size of %s is %X for %s line %d\n", 
+       $size, $what->[0], $ms, $op->[1], $op->[4]);
+      next;
+    }
+    my $p = pos($op->[8]);
+    push @pos, [ $p - length(${^MATCH}), $p ];
+    mask_value(\@res, $v, $what);
+  }
   # check /Group(Value):alias in format - Value can contain /PRINT suffix
   while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(?:\/PRINT)?\)\:(\w+)/pg ) {
     if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
@@ -427,25 +531,32 @@ sub gen_inst_mask
       mask_value(\@res, $value, $what);
     }
   }
+  # and again check for ZeroRegister(RZ) in format - in worst case just assign it yet one more time
+  while ( $op->[8] =~ /\bZeroRegister\(\"?RZ\"?\)\:(\w+)/pg ) {
+    my $what = check_enc($op->[5], $1, $1);
+    if ( defined $what ) {
+      my $p = pos($op->[8]);
+      push @pos, [ $p - length(${^MATCH}), $p ];
+      mask_value(\@res, $g_rz, $what);
+    }
+  }
   # remove used formats and put new string at index 10
   if ( scalar @pos ) {
    my $cp = $op->[8];
-   my @p = reverse @pos;
-   foreach (@p) {
+   # sort in back order by offsets
+   foreach ( sort { $b->[1] <=> $a->[0] } @pos ) {
      substr($cp, $_->[0], $_->[1] - $_->[0], '');
    }
+   # remove empty {}
+   $cp =~ s/\{\s*\}//g;
+   # and $( )$
+   $cp =~ s/\$\(\s*\)\$//g;
    $op->[10] = $cp;
-  }
-  # and again check for ZeroRegister(RZ) in format - in worst case just assign it yet one more time
-  if ( $op->[8] =~ /\bZeroRegister\(\"?RZ\"?\)\:(\w+)/ ) {
-    my $what = check_enc($op->[5], $1, $1);
-    if ( defined $what ) {
-      mask_value(\@res, $g_rz, $what);
-    }
   }
   return join('', @res);
 }
 
+# return ref to mask from g_mnames by name or alias from list of encoders
 sub check_enc
 {
   my($e, $name, $alias) = @_;
@@ -567,11 +678,37 @@ sub parse0b
 my(%g_masks);
 my $g_dups = 0;
 
+sub make_test
+{
+  my $fn = shift;
+  my($str, $fh, $b);
+  open($fh, '<', $fn) or die("cannot open $fn, error $!");
+  while($str = <$fh> ) {
+    chomp $str;
+    next if ( $str eq '' );
+    $b = conv2a($str);
+    printf("%s:\n", join '', @$b);
+    # try to find in all masks - very slow
+    foreach my $m ( keys %g_masks ) {
+      if ( cmp_maska($m, $b) ) {
+        printf("%s - ", $m);
+        my $ops = $g_masks{$m};
+        printf("%s %d items\n", $ops->[0]->[1], scalar(@$ops));
+        # extract all masks values
+      }
+    }
+  }
+  close $fh;
+}
+
 sub dump_dup_masks
 {
   while( my($v, $ops) = each %g_masks ) {
     my $size = scalar @$ops;
-    next if ( 1 == $size );
+    if ( 1 == $size ) {
+      printf("%s: %s line %d\n", $v, $ops->[0]->[1], $ops->[0]->[4]);
+      next;
+    }
     printf("%s: %d items\n", $v, $size);
     # dump duplicated instructions
     my $name1 = $ops->[0]->[1];
@@ -620,7 +757,7 @@ sub insert_mask
 }
 
 ### main
-my $status = getopts("aefmvw");
+my $status = getopts("aefmrvwT:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -912,8 +1049,12 @@ if ( defined($opt_m) ) {
 #  /PRINT suffix - in 5x
 # total          359 383 396 433  570  1064
 # duplicated      90  92 151 157   34    58
-  dump_dup_masks();
-  printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
+  if ( defined $opt_T ) {
+    make_test($opt_T);
+  } else {
+    dump_dup_masks();
+    printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
+  }
 } else {
   dump_negtree(\%g_zero);
   printf("--- opcodes tree\n");
