@@ -279,6 +279,86 @@ sub extact_value
 {
   my($a, $mask) = @_;
 }
+
+sub bit_array
+{
+  my $p = shift;
+  my @res;
+  foreach my $v (@$p) {
+   for ( my $idx = 7; $idx >= 0; $idx-- ) {
+     push @res, ($v & (1 << $idx)) ? '1' : '0';
+   }
+  }
+  return \@res;
+}
+
+sub bit_array_rev
+{
+  my $p = shift;
+  my @res;
+  foreach my $v (reverse @$p) {
+   for ( my $idx = 7; $idx >= 0; $idx-- ) {
+     push @res, ($v & (1 << $idx)) ? '1' : '0';
+   }
+  }
+  return \@res;
+}
+
+# encoding for 88bit is pure madness
+# first 64 bit is common for next 3 64bit instructions and actually contains 3 17bit usched infos
+sub martian88
+{
+  my $fp = shift;
+  my $idx = 0;
+  my $v;
+  # lea     eax, [r9+r9*4] - eax = r9 * 5
+  # lea     ecx, [r9+rax*4] - ecx = r9 * 21
+  # mov     eax, 1FFFFFh - 17bit mask
+  my @offsets = ( 0, 21, 42 );
+  sub {
+    my $str;
+    my $i;
+    if ( !$idx ) {
+      return undef unless ( defined($str = <$fp>) );
+      my @a;
+      while ( $str =~ /([0-9a-f]{2})/ig ) {
+       push @a, hex($1);
+       $i++;
+      }
+      if ( 8 != $i ) {
+        carp("bad control word, len %d", $i);
+        return undef;
+      }
+      if ( defined $opt_v ) { printf("%2.2X ", $_) for @a; }
+      $v = bit_array_rev(\@a);
+      printf("\n%s\n", join '', @$v) if ( defined $opt_v );
+    }
+    return undef unless ( defined($str = <$fp>) );
+    my @l;
+    $i = 0;
+    while ( $str =~ /([0-9a-f]{2})/ig ) {
+      push @l, hex($1);
+      $i++;
+    }
+    if ( 8 != $i ) {
+      carp("bad word, len %d", $i);
+        return undef;
+     }
+    # result array has 88 - 64 - 21 = 3 leading 0
+    my @res = ('0') x 3;
+    # now add lower 21 bit from v
+    push @res, splice( @$v, 1 + 21 * (2 - $idx), 21);
+    $idx = 0 if ( 3 == ++$idx );
+    my $body = bit_array_rev(\@l);
+    push @res, @$body;
+    if ( defined $opt_v ) {
+      printf("   U                    ");
+      printf("%2.2X      ", $_) for reverse @l; printf("\n");
+    }
+    return \@res;
+  };
+}
+
 sub conv2a
 {
   my $s = shift;
@@ -293,9 +373,6 @@ sub conv2a
   my @p;
   if ( $len == 8 ) {
     @p = reverse(@res);
-  } elsif ( $len == 11 ) {
-    @p = reverse splice(@res, 0, 8);
-    push @p, @res;
   } elsif ( $len == 16 ) {
     @p = reverse splice(@res, 8);
     push(@p, reverse splice(@res));
@@ -305,15 +382,19 @@ sub conv2a
   }
   if ( defined $opt_v ) {
     printf("%2.2X      ", $_) for @p; printf("\n"); }
-  @res = ();
-  # make bit array
-  foreach my $v (@p) {
-   for ( $idx = 7; $idx >= 0; $idx-- ) {
-     push @res, ($v & (1 << $idx)) ? '1' : '0';
-   }
-  }
-  return \@res;
+  return bit_array(\@p);
 }
+
+sub conv
+{
+  my $fp = shift;
+  sub {
+    my $str;
+    return undef unless ( defined($str = <$fp>) );
+    return conv2a($str);
+  }
+}
+
 
 # arg: a - ref to result array, l - letter, mask - ref to value in g_mnames
 sub fill_mask
@@ -467,8 +548,10 @@ sub gen_inst_mask
       mask_value(\@res, int($2), $g_mnames{$1});
     }
   }
-  remove_encs($op, \%rem);
-  %rem = ();
+  if ( scalar keys %rem ) {
+    remove_encs($op, \%rem);
+    %rem = ();
+  }
   # enc = `const - in op->[9]
   foreach my $q ( @{ $op->[9] } ) {
     if ( $q =~ /^(\w+)\s*=\s*\`(\S+)/ ) {
@@ -578,7 +661,7 @@ sub gen_inst_mask
    $cp =~ s/\{\s*\}//g;
    # and $( )$
    $cp =~ s/\$\(\s*\)\$//g;
-   $op->[10] = $cp;
+   $op->[11] = $cp;
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
   return join('', @res);
@@ -614,7 +697,7 @@ my $g_diff_names = 0;
 # [6] - !encoding list
 # [7] - is alternate class
 # [8] - format string
-# [10] - string with unused formats
+# [11] - string with unused formats
 sub insert_ins
 {
   my($cname, $op) = @_;
@@ -709,12 +792,10 @@ my $g_dups = 0;
 sub make_test
 {
   my $fn = shift;
-  my($str, $fh, $b);
+  my($fh, $b);
   open($fh, '<', $fn) or die("cannot open $fn, error $!");
-  while($str = <$fh> ) {
-    chomp $str;
-    next if ( $str eq '' );
-    $b = conv2a($str);
+  my $cf = ($g_size == 88) ? martian88($fh) : conv($fh);
+  while( defined($b = $cf->()) ) {
     printf("%s:\n", join '', @$b);
     # try to find in all masks - very slow
     foreach my $m ( keys %g_masks ) {
@@ -756,10 +837,12 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
-      printf("   Unused %s\n", $op->[10]) if defined($op->[10]);
+      printf("   Unused %s\n", $op->[11]) if defined($op->[11]);
       # dump encodings
-      foreach my $enc ( @{ $op->[5] } ) {
-        printf("    %s\n", $enc);
+      printf("    %s\n", $_) for @{ $op->[5] };
+      # dump constant banks
+      if ( defined $op->[10] ) {
+       printf("    %s\n", $_) for @{ $op->[10] };
       }
     }
   }
@@ -806,7 +889,8 @@ $state = $line = 0;
 # [6] - is alternate class
 # [7] - format string
 # [8] - ref to tabs
-my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, $alt, $format);
+# [9] - list with const banks 
+my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, $alt, $format);
 
 # enum state
 my($curr_enum, $eref);
@@ -857,7 +941,7 @@ my $parse_enum = sub {
 my $reset = sub {
   $format = $cname = '';
   $alt = $has_op = $op_line = 0;
-  @op = @enc = @nenc = @tabs = ();
+  @op = @enc = @nenc = @tabs = @cb = ();
 };
 # insert copy of current instruction
 my $ins_op = sub {
@@ -870,12 +954,14 @@ my $ins_op = sub {
   my @cenc = @enc;
   my @cnenc = @nenc;
   my @ctabs = @tabs;
+  my @ccb = @cb;
   $c[3] = $op_line;
   $c[4] = \@cenc;
   $c[5] = \@cnenc;
   $c[6] = $alt;
   $c[7] = $format;
   $c[8] = \@ctabs;
+  $c[9] = scalar(@cb) ? \@ccb : undef;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
@@ -1001,6 +1087,19 @@ while( $str = <$fh> ) {
     for my $s ( split /;/, $str ) {
       # trim leading spaces
       $s =~ s/^\s+//g;
+      if ( $s =~ /^(\w+)\s*,\s*(\w+)\s*=\s*ConstBankAddress/ ) {
+        # check that both mask exist
+        if ( !exists $g_mnames{$1} ) {
+          printf("first bank enc %s not exists, line %d op %s\n", $1, $line, $op[0]);
+          next;
+        }
+        if ( !exists $g_mnames{$2} ) {
+          printf("second bank enc %s not exists, line %d op %s\n", $2, $line, $op[0]);
+          next;
+        }
+        push( @cb, $s );
+        next;
+      }
       if ( $s =~ /^\!(\S+)\s*/ ) {
         # put ref from g_mnames into nenc
         if ( !exists $g_mnames{$1} ) {
