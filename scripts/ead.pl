@@ -982,6 +982,35 @@ my $parse_pair = sub {
     $eref->{$1} = $curr_enum++;
     return 1;
   }
+  # enum $1 (from $2 ...to $3)
+  if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\.\.(\d+)\)\s*$/ ) {
+    my $name = $1;
+    my $from = int($2);
+    my $to = int($3);
+    for ( my $i = $from; $i <= $to; $i++ ) {
+      my $ename = $name . $i;
+      $eref->{$1} = $curr_enum++;
+    }
+    return 1;
+  }
+  # enum $1 (from $2 ...to $3) = (index_from $4 .. index_to $5) - real madness
+  if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\.\.(\d+)\)\s*=\s*\((\d+)\.\.(\d+)\)\s*$/ ) {
+    my $name = $1;
+    my $from = int($2);
+    my $to = int($3);
+    my $ifrom = int($4);
+    my $ito = int($5);
+    if ( $to - $from != $ito - $ifrom ) {
+      printf("bad intevals %d-%d and %d-%d\n", $from, $to, $ifrom, $ito);
+      return 0;
+    }
+    $curr_enum = $ifrom;
+    for ( my $i = $from; $i <= $to; $i++ ) {
+      my $ename = $name . $i;
+      $eref->{$1} = $curr_enum++;
+    }
+    return 1;
+  }
  printf("bad enum %s on line %d\n", $s, $line);
  0;
 };
