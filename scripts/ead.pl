@@ -603,12 +603,12 @@ sub gen_inst_mask
       my $mask = $g_mnames{$1};
       if ( $v =~ /^(\S+)@(\w+)/ ) {
         if ( !exists $g_enums{$1} ) {
-          printf("cannot find quoted enum %s for %s line %d: %s\n", $1, $op->[1], $op->[4], $q);
+          printf("cannot find quoted enum %s for %s line %d: %s\n", $1, , $q);
           next;
         }
         my $tab = $g_enums{$1};
         if ( !exists $tab->{$2} ) {
-          printf("cannot find quoted enum %s in %s for %s line %d: %s\n", $2, $1, , $q);
+          printf("cannot find quoted enum %s in %s for %s line %d: %s\n", $2, $1, $op->[1], $op->[4], $q);
           next;
         }
         $rem{$mask->[0]} = $q;
@@ -708,7 +708,7 @@ sub check_enc
   $alias =~ s/\}\s*$//;
 # printf("check_enc %s %s\n", $name, $alias);
   for my $enc ( @$e ) {
-    if ( $enc =~ /^\s*(\S+)\s*=\s*\*?\s*(\S+)\s*/ ) {
+    if ( $enc =~ /^(\S+)\s*=\s*\*?\s*(\S+)\s*/ ) {
       if ( $2 eq $name or $2 eq $alias ) {
          return $g_mnames{$1};
       }
@@ -840,6 +840,21 @@ sub dump_values
     }
    }
   }
+  # dump const bank
+  if ( defined $op->[10] ) {
+    my $cb = $op->[10];
+    printf(" -- const bank %s\n", $cb->[0]);
+    my $cb_len = scalar @$cb;
+    for ( my $i = 1; $i < $cb_len; $i++ ) {
+     my $mask = $g_mnames{$cb->[$i]};
+     my $v = extract_value($a, $mask);
+     if ( defined($v) ) {
+       printf("   %s(", $mask->[0]);
+       if ( $v ) { printf("%X)\n", $v); }
+       else { printf("0)\n"); }
+    }
+   }
+  }
 }
 
 sub make_test
@@ -948,7 +963,7 @@ $state = $line = 0;
 # [6] - is alternate class
 # [7] - format string
 # [8] - ref to tabs
-# [9] - list with const banks 
+# [9] - list with const banks, [ right, enc1, enc2, ... ] 
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, $alt, $format);
 
 # enum state
@@ -1175,17 +1190,24 @@ while( $str = <$fh> ) {
     for my $s ( split /;/, $str ) {
       # trim leading spaces
       $s =~ s/^\s+//g;
-      if ( $s =~ /^(\w+)\s*,\s*(\w+)\s*=\s*ConstBankAddress/ ) {
-        # check that both mask exist
-        if ( !exists $g_mnames{$1} ) {
-          printf("first bank enc %s not exists, line %d op %s\n", $1, $line, $op[0]);
+      # constbank 1 - encoding list, 2 - remainder
+      if ( $s =~ /^(.*)\s*=\s*ConstBankAddress(.*)\s*$/ ) {
+        if ( scalar @cb ) {
+          printf("duplicated ConstBankAddress for %s on line %d\n", $op[0], $line);
           next;
         }
-        if ( !exists $g_mnames{$2} ) {
-          printf("second bank enc %s not exists, line %d op %s\n", $2, $line, $op[0]);
-          next;
+        push @cb, $2;
+        my $cbenc = $1;
+        foreach my $em ( split /\s*,\s*/, $cbenc ) {
+          # check if encode mask exist
+          $em =~ s/\s+//g;
+          if ( !exists $g_mnames{$em} ) {
+            printf("bank enc %s not exists, line %d op %s\n", $em, $line, $op[0]);
+            @cb = ();
+            next;
+          }
+          push @cb, $em;
         }
-        push( @cb, $s );
         next;
       }
       if ( $s =~ /^\!(\S+)\s*/ ) {
