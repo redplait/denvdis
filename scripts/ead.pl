@@ -275,9 +275,43 @@ sub mask_value
 }
 
 # args: a - ref to array, mask - ref to value in g_mnames
-sub extact_value
+sub extract_value
 {
   my($a, $mask) = @_;
+  my $list = $mask->[3];
+  my $name = $mask->[0];
+  my $res = 0;
+  my $idx = 0;
+  if ( defined $opt_r ) {
+    # from right to left, least bit will be right
+   for ( my $i = scalar(@$list) - 1; $i > 0; $i -= 2 ) {
+     my $base = $list->[$i-1] + $list->[$i] - 1;
+     for ( my $j = 0; $j < $list->[$i]; $j++, $idx++ ) {
+      if ( $a->[$base - $j] eq '1' ) {
+        if ( $idx > 63 ) {
+          carp("too big index $idx in mask $name");
+          return undef;
+        }
+        $res |= 1 << $idx;
+      }
+    }
+   }
+  } else {
+   # from left to right, least bit will be left
+   for( my $i = 0; $i < scalar(@$list); $i += 2 ) {
+     my $base = $list->[$i];
+     for ( my $j = 0; $j < $list->[$i + 1]; $j++ ) {
+       if ( [$base + $j] eq '1' ) {
+        if ( $idx > 63 ) {
+          carp("too big index $idx in mask $name");
+          return undef;
+        }
+        $res |= 1 << $idx;
+       }
+     }
+   }
+  }
+  $res;
 }
 
 sub bit_array
@@ -697,6 +731,7 @@ my $g_diff_names = 0;
 # [6] - !encoding list
 # [7] - is alternate class
 # [8] - format string
+# [10] - const bank list
 # [11] - string with unused formats
 sub insert_ins
 {
@@ -789,6 +824,24 @@ sub parse0b
 my(%g_masks);
 my $g_dups = 0;
 
+# args - ref to array, ref to found instruction
+sub dump_values
+{
+  my($a, $op) = @_;
+  my $enc = $op->[5];
+  foreach my $m ( @$enc ) {
+    if ( $m =~ /^(\w+)/ ) {
+     my $mask = $g_mnames{$1};
+     my $v = extract_value($a, $mask);
+     if ( defined($v) ) {
+       printf("   %s(", $mask->[0]);
+       if ( $v ) { printf("%X)\n", $v); }
+       else { printf("0)\n"); }
+    }
+   }
+  }
+}
+
 sub make_test
 {
   my $fn = shift;
@@ -796,16 +849,22 @@ sub make_test
   open($fh, '<', $fn) or die("cannot open $fn, error $!");
   my $cf = ($g_size == 88) ? martian88($fh) : conv($fh);
   while( defined($b = $cf->()) ) {
-    printf("%s:\n", join '', @$b);
+    printf("%s:", join '', @$b);
     # try to find in all masks - very slow
+    my $found = 0;
     foreach my $m ( keys %g_masks ) {
       if ( cmp_maska($m, $b) ) {
+        printf("\n") if ( !$found );
         printf("%s - ", $m);
         my $ops = $g_masks{$m};
         printf("%s %d items\n", $ops->[0]->[1], scalar(@$ops));
         # extract all masks values
+        dump_values($b, $ops->[0]);
+        $found++;
+        # last; # find first mask
       }
     }
+    printf(" NOTFound\n") if ( !$found );
   }
   close $fh;
 }
