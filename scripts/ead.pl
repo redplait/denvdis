@@ -704,7 +704,7 @@ sub gen_inst_mask
   # end of enc = `const loop
   my @pos;
   # check BITSET(size/value):mask
-  while( $op->[8] =~ /(?:\'\&\'.*)\s*BITSET\(([^\)]+)\)\:(\w+)/pg ) {
+  while( $op->[8] =~ /(?:\'\&\'.*)\s*BITSET\(([^\)]+)\)\:([\w\.]+)/pg ) {
     my $mask = $2;
     my($ok, $size, $v) = parse_bitset($1);
     if ( !$ok ) {
@@ -719,7 +719,7 @@ sub gen_inst_mask
     }
     my $ms = mask_len($what);
     if ( $ms != $size ) {
-      printf("BITSET size is %X but size of %s is %X for %s line %d\n", 
+      printf("BITSET size is %X but size of %s is %X for %s line %d\n",
        $size, $what->[0], $ms, $op->[1], $op->[4]);
       next;
     }
@@ -729,7 +729,7 @@ sub gen_inst_mask
     mask_value(\@res, $v, $what);
   }
   # check /enum:alias where enc =* alias
-  while( $op->[8] =~ /\/([^\(\)\"\s]+)\:(\w+)/pg ) {
+  while( $op->[8] =~ /\/([^\(\)\"\s]+)\:([\w\.]+)/pg ) {
     my $alias = $2;
     my $what;
     my $v = is_single_enum($1);
@@ -741,7 +741,7 @@ sub gen_inst_mask
     }
   }
   # check /Group(Value):alias in format - Value can contain /PRINT suffix
-  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(\/PRINT)?\)\:(\w+)/pg ) {
+  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(\/PRINT)?\)\:([\w\.]+)/pg ) {
       if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
         my $value = $Tabs{$1}->{$2};
         my $what = defined($opt_c) ? check_enc($op->[5], $1, $4) : check_enc_ask($op->[5], $4);
@@ -776,7 +776,7 @@ sub gen_inst_mask
       }
   }
   # and again check for ZeroRegister(RZ) in format - in worst case just assign it yet one more time
-  while ( $op->[8] =~ /\bZeroRegister\(\"?RZ\"?\)\:(\w+)/pg ) {
+  while ( $op->[8] =~ /\bZeroRegister\(\"?RZ\"?\)\:([\w\.]+)/pg ) {
     my $what = check_enc($op->[5], $1, $1);
     if ( defined $what ) {
       $rem{$what->[0]} = 1;
@@ -1125,7 +1125,7 @@ my $parse_pair = sub {
     $eref->{$1} = $curr_enum++;
     return 1;
   }
-  # enum $1 (from $2 ...to $3)
+  # enum $1 (from $2 .. to $3)
   if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\.\.(\d+)\)\s*$/ ) {
     my $name = $1;
     my $from = int($2);
@@ -1136,7 +1136,7 @@ my $parse_pair = sub {
     }
     return 1;
   }
-  # enum $1 (from $2 ...to $3) = (index_from $4 .. index_to $5) - real madness
+  # enum $1 (from $2 .. to $3) = (index_from $4 .. index_to $5) - real madness
   if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\.\.(\d+)\)\s*=\s*\((\d+)\.\.(\d+)\)\s*$/ ) {
     my $name = $1;
     my $from = int($2);
@@ -1259,14 +1259,14 @@ while( $str = <$fh> ) {
 # printf("e%d %s\n", $estate, $str);
     # 1 - new enum
     if ( 1 == $estate ) {
-      if ( $str =~ /^\s*(\w+)\s*$/ ) {
+      if ( $str =~ /^\s*([\w\.]+)\s*$/ ) {
         my %tmp;
         $eref = $g_enums{$1} = \%tmp;
         $estate = 2;
         next;
       }
       next if ( $str =~ /^\s*(\w+)\s*=/ );
-      if ( $str =~ /^\s*(\w+)\s+(.*)\s*;?/ ) {
+      if ( $str =~ /^\s*([\w\.]+)\s+(.*)\s*;?/ ) {
         my %tmp;
         $eref = $g_enums{$1} = \%tmp;
         $parse_enum->($2);
@@ -1452,6 +1452,9 @@ if ( defined($opt_m) ) {
 #  apply single enums where enc =* alias
 # total          365 389 420 460  599  1102  1110  1013  1157
 # duplicated      84  86 127 128   10    26    28    28    35
+#  enum can contains '.'
+# total          365 389 420 460  602  1107  1113  1036  1160
+# duplicated      84  86 127 128    7    21    25    25    32
   if ( defined $opt_T ) {
     make_test($opt_T);
   } else {
