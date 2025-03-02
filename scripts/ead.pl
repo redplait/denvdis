@@ -117,6 +117,16 @@ sub is_single_enum
   $k->{$keys[0]};
 }
 
+# in parallel universe we could make reverse hash value->name
+sub enum_by_value
+{
+  my($hr, $val) = @_;
+  while( my($n, $v) = each %$hr ) {
+    return $n if ( $v == $val );
+  }
+  undef;
+}
+
 # global tables hash map, key is name of table, value is another hash map { value -> [ literals list ] }
 my %g_tabs;
 
@@ -798,7 +808,7 @@ sub gen_inst_mask
    $cp =~ s/\{\s*\}//g;
    # and $( )$
    $cp =~ s/\$\(\s*\)\$//g;
-   $op->[11] = $cp;
+   $op->[12] = $cp;
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
   return join('', @res);
@@ -852,7 +862,8 @@ my $g_diff_names = 0;
 # [7] - is alternate class
 # [8] - format string
 # [10] - const bank list
-# [11] - string with unused formats
+# [11] - hash with alias -> enum ref
+# [12] - string with unused formats
 sub insert_ins
 {
   my($cname, $op) = @_;
@@ -946,9 +957,17 @@ my $g_dups = 0;
 
 sub dump_plain_value
 {
-  my($v, $mask) = @_;
+  my($v, $mask, $mae) = @_;
   if ( defined($v) ) {
     printf("   %s(", $mask->[0]);
+    if ( exists $mae->{$mask->[0]} ) {
+      my $e = $mae->{$mask->[0]};
+      my $s = enum_by_value($e, $v);
+      if ( defined $s ) {
+        printf("%X) %s\n", $v,$s);
+        return;
+      }
+    }
     if ( $v ) { printf("%X)\n", $v); }
     else { printf("0)\n"); }
   }
@@ -978,11 +997,11 @@ sub dump_values
           printf("   %s value %X does not exists in table %s\n", $mask->[0], $v, $2);
         }
       } else {
-        dump_plain_value(extract_value($a, $mask), $mask);
+        dump_plain_value(extract_value($a, $mask), $mask, $op->[11]);
       }
     } elsif ( $m =~ /^(\w+)/ ) {
      my $mask = $g_mnames{$1};
-     dump_plain_value(extract_value($a, $mask), $mask);
+     dump_plain_value(extract_value($a, $mask), $mask, $op->[11]);
    }
   }
   # dump const bank
@@ -992,8 +1011,7 @@ sub dump_values
     my $cb_len = scalar @$cb;
     for ( my $i = 1; $i < $cb_len; $i++ ) {
      my $mask = $g_mnames{$cb->[$i]};
-     dump_plain_value(extract_value($a, $mask), $mask);
-     my $v = extract_value($a, $mask);
+     dump_plain_value(extract_value($a, $mask), $mask, $op->[11]);
    }
   }
 }
@@ -1052,7 +1070,7 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
-      printf("   Unused %s\n", $op->[11]) if defined($op->[11]);
+      printf("   Unused %s\n", $op->[12]) if defined($op->[12]);
       # dump encodings
       printf("    %s\n", $_) for @{ $op->[5] };
       # dump constant banks
@@ -1105,7 +1123,8 @@ $state = $line = 0;
 # [7] - format string
 # [8] - ref to tabs
 # [9] - list with const banks, [ right, enc1, enc2, ... ] 
-my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, $alt, $format);
+# [10] - hashmap encoding -> enum
+my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, %ae, $alt, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
 # tref is ref to hash with table content
@@ -1149,7 +1168,7 @@ my $parse_pair = sub {
     return 1;
   }
   # enum $1 (from $2 .. to $3)
-  if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\.\.(\d+)\)\s*$/ ) {
+  if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\s*\.\.\s*(\d+)\)\s*$/ ) {
     my $name = $1;
     my $from = int($2);
     my $to = int($3);
@@ -1160,7 +1179,7 @@ my $parse_pair = sub {
     return 1;
   }
   # enum $1 (from $2 .. to $3) = (index_from $4 .. index_to $5) - real madness
-  if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\.\.(\d+)\)\s*=\s*\((\d+)\.\.(\d+)\)\s*$/ ) {
+  if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\s*\.\.\s*(\d+)\)\s*=\s*\((\d+)\s*\.\.\s*(\d+)\)\s*$/ ) {
     my $name = $1;
     my $from = int($2);
     my $to = int($3);
@@ -1196,6 +1215,7 @@ my $reset = sub {
   $format = $cname = '';
   $alt = $has_op = $op_line = 0;
   @op = @enc = @nenc = @tabs = @cb = ();
+  %ae = ();
 };
 # insert copy of current instruction
 my $ins_op = sub {
@@ -1209,6 +1229,12 @@ my $ins_op = sub {
   my @cnenc = @nenc;
   my @ctabs = @tabs;
   my @ccb = @cb;
+  # fill pairs encoding -> ref to enum
+  my %mae;
+  while( my($a, $e) = each %ae ) {
+    my $what = check_enc(\@enc, $a, $a);
+    $mae{$what->[0]} = $e if ( defined($what) );
+  }
   $c[3] = $op_line;
   $c[4] = \@cenc;
   $c[5] = \@cnenc;
@@ -1216,6 +1242,7 @@ my $ins_op = sub {
   $c[7] = $format;
   $c[8] = \@ctabs;
   $c[9] = scalar(@cb) ? \@ccb : undef;
+  $c[10] = \%mae;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
@@ -1275,7 +1302,6 @@ while( $str = <$fh> ) {
     {
       $estate = 1;
       $g_rz = int($1);
-      next;
     }
     $estate = 1 if ( !$estate && $str =~ /^\s*SpecialRegister / );
     next if ( !$estate );
@@ -1334,6 +1360,14 @@ while( $str = <$fh> ) {
   }
   if ( 6 == $state ) {
     if ( $str !~ /FORMAT\s+(?:PREDICATE\s+)?.*Opcode/ ) {
+      # grab enum:alias into %ae
+      while( $str =~ /\b\/?([\w\.]+)(?:\([^\)]+\))?\:([\w\.]+)/g ) {
+        if ( exists $g_enums{$1} ) {
+          $ae{$2} = $g_enums{$1};
+        } elsif ( $1 ne 'BITSET' && $1 ne 'UImm' && $1 ne 'F64Imm' && $1 ne 'F16Imm' && $1 ne 'F32Imm' ) {
+          printf("enum %s does not exists, line %d\n", $1, $line);
+        }
+      }
       # grab /something()
       if (  $str =~ /^\s*(.*\/\w.*)$/ ) {
         $format .= ' ' . $1;
