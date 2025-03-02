@@ -962,7 +962,7 @@ sub dump_plain_value
     printf("   %s(", $mask->[0]);
     if ( exists $mae->{$mask->[0]} ) {
       my $e = $mae->{$mask->[0]};
-      my $s = enum_by_value($e, $v);
+      my $s = enum_by_value($g_enums{$e->[0]}, $v);
       if ( defined $s ) {
         printf("%X) %s\n", $v,$s);
         return;
@@ -1071,6 +1071,15 @@ sub dump_dup_masks
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
       printf("   Unused %s\n", $op->[12]) if defined($op->[12]);
+      # dump mask to enum mapping
+      if ( defined $op->[11] ) {
+        printf('mask2enum:');
+        my $m2e = $op->[11];
+        while( my($m, $e) = each %$m2e ) {
+          printf(" %s->%s", $m, $e->[0]);
+        }
+        printf("\n");
+      }
       # dump encodings
       printf("    %s\n", $_) for @{ $op->[5] };
       # dump constant banks
@@ -1224,17 +1233,18 @@ my $ins_op = sub {
     printf("%s %s has empty encoding\n", $cname, $op[0]);
     return;
   }
-  my @c = @op;
-  my @cenc = @enc;
-  my @cnenc = @nenc;
-  my @ctabs = @tabs;
-  my @ccb = @cb;
-  # fill pairs encoding -> ref to enum
+  # fill pairs encoding -> [ enum, optional? ]
   my %mae;
   while( my($a, $e) = each %ae ) {
     my $what = check_enc(\@enc, $a, $a);
     $mae{$what->[0]} = $e if ( defined($what) );
   }
+  # make new instruction
+  my @c = @op;
+  my @cenc = @enc;
+  my @cnenc = @nenc;
+  my @ctabs = @tabs;
+  my @ccb = @cb;
   $c[3] = $op_line;
   $c[4] = \@cenc;
   $c[5] = \@cnenc;
@@ -1248,6 +1258,16 @@ my $ins_op = sub {
    } else {
     insert_ins($cname, \@c);
    }
+};
+my $cons_ae = sub {
+  my $s = shift;
+  while( $s =~ /(\/?)([\w\.]+)(?:\([^\)]+\))?\:([\w\.]+)/g ) {
+    if ( exists $g_enums{$2} ) {
+      $ae{$3} = [ $2, defined($1) ];
+    } elsif ( $2 ne 'BITSET' && $2 ne 'UImm' && $2 ne 'SImm' && $2 ne 'F64Imm' && $2 ne 'F16Imm' && $2 ne 'F32Imm' ) {
+       printf("enum %s does not exists, line %d\n", $2, $line);
+    }
+  }
 };
 $reset->(); $reset_enum->(); $reset_tab->();
 while( $str = <$fh> ) {
@@ -1355,27 +1375,23 @@ while( $str = <$fh> ) {
   # parse format
   if ( $state == 2 && $str =~ /FORMAT\s+(?:PREDICATE\s+)?.*Opcode\s*?(.*)$/ ) {
     $format = $1;
+    $cons_ae->($1);
     $state = 6 if ( $str !~ /;\s*$/ );
     next;
   }
   if ( 6 == $state ) {
     if ( $str !~ /FORMAT\s+(?:PREDICATE\s+)?.*Opcode/ ) {
-      # grab enum:alias into %ae
-      while( $str =~ /\b\/?([\w\.]+)(?:\([^\)]+\))?\:([\w\.]+)/g ) {
-        if ( exists $g_enums{$1} ) {
-          $ae{$2} = $g_enums{$1};
-        } elsif ( $1 ne 'BITSET' && $1 ne 'UImm' && $1 ne 'F64Imm' && $1 ne 'F16Imm' && $1 ne 'F32Imm' ) {
-          printf("enum %s does not exists, line %d\n", $1, $line);
-        }
-      }
+      $str =~ s/\s*$//;
+      # grab /? $1 enum $2:alias $3 into %ae
+      $cons_ae->($str);
       # grab /something()
       if (  $str =~ /^\s*(.*\/\w.*)$/ ) {
         $format .= ' ' . $1;
-      } elsif ( $str =~ /^\s*(.*\(\d+\).*)\s*$/ ) {
+      } elsif ( $str =~ /^\s*(.*\(\d+\).*)$/ ) {
         $format .= ' ' . $1;
       }
     }
-    $state = 2 if ( $str =~ /;\s*$/ );
+    $state = 2 if ( $str =~ /;$/ );
     next;
   }
   if ( 6 == $state && $str =~ /CONDITIONS/ ) {
