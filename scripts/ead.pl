@@ -7,18 +7,20 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_e $opt_f $opt_m $opt_r $opt_T $opt_v $opt_w/;
+use vars qw/$opt_a $opt_c $opt_e $opt_f $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] md.txt
  Options:
- - a - add alternates
+  -a - add alternates
+  -c - use format constant to form mask
   -e - dump enums
   -f - dump fully filled masks
   -m - generate masks
   -r - fill in reverse order
+  -t - dunp tables
   -T - test bytes
   -v - verbose
   -w - dump warnings
@@ -101,6 +103,79 @@ sub dump_enums
       printf("  %s\t%d\n", $n, $v);
     }
     printf("\n");
+  }
+}
+
+# global tables hash map, key is name of table, value is another hash map { value -> [ literals list ] }
+my %g_tabs;
+
+sub dump_tabs
+{
+  printf("-- Tables\n");
+  foreach my $t_name ( sort keys %g_tabs ) {
+    my $th = $g_tabs{$t_name};
+    next if ( !scalar keys %$th );
+    printf("%s:\n", $t_name);
+    while( my($v, $lr) = each %$th ) {
+      printf("  %d\t", $v);
+      if ( 'ARRAY' eq ref $lr ) {
+        printf("%s\n", join(" ", @$lr));
+      } else {
+        printf("%s\n", $lr);
+      }
+    }
+    printf("\n");
+  }
+}
+
+# args: string to parse, line number for diagnostic msg
+sub parse_tab_value
+{
+  my($s, $line) = @_;
+  return parse0b($1) if ( $s =~ /^0b(\w+)/ );
+  return hex($1)     if ( $s =~ /^0x(\w+)/i );
+  return int($1)     if ( $s =~ /^(\d+)/ );
+  # check enum@value
+  if ( $s =~ /(\w+)@\"?(\w+)\"?\s*$/ ) {
+   return $g_enums{$1}->{$2} if ( exists $g_enums{$1} );
+   printf("unknown enum %s for table key, line %d\n", $1, $line);
+   return undef;
+  }
+  printf("unknown table value %d, line %d\n", $s, $line);
+  undef;
+}
+
+sub parse_tab_key
+{
+  my($s, $line) = @_;
+  # check in enums
+  if ( $s =~ /(\w+)@\"?(\w+)\"?\s*$/ ) {
+    return $2 if ( exists $g_enums{$1} );
+    printf("unknown enum %s for table key, line %d\n", $1, $line) if ( defined $opt_v );
+    return $2;
+  }
+  $s =~ s/\'//g;
+  return $s;
+}
+
+sub parse_tab_keys
+{
+  my($s, $line) = @_;
+  # remove trailing spaces
+  $s =~ s/\s+$//;
+  if ( $s =~ /\s+/ ) {
+    # this is compond key - must return ref to array
+    my @res;
+    foreach my $v ( split /\s+/, $s ) {
+      my $next = parse_tab_key($v, $line);
+      return undef if ( !defined $next );
+      push @res, $next;
+    }
+    return undef if ( !scalar @res );
+    return \@res;
+  } else {
+    # just some literal
+    return parse_tab_key($s, $line);
   }
 }
 
@@ -642,36 +717,38 @@ sub gen_inst_mask
     push @pos, [ $p - length(${^MATCH}), $p ];
     mask_value(\@res, $v, $what);
   }
-  # check /Group(Value):alias in format - Value can contain /PRINT suffix
-  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(\/PRINT)?\)\:(\w+)/pg ) {
-    if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
-      my $value = $Tabs{$1}->{$2};
+  if ( defined $opt_c ) {
+    # check /Group(Value):alias in format - Value can contain /PRINT suffix
+    while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(\/PRINT)?\)\:(\w+)/pg ) {
+      if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
+        my $value = $Tabs{$1}->{$2};
+        my $what = check_enc($op->[5], $1, $4);
+        if ( defined($what) ) {
+          my $p = pos($op->[8]);
+          $rem{$what->[0]} = 1 if ( !defined($3) );
+          push @pos, [ $p - length(${^MATCH}), $p ];
+          mask_value(\@res, $value, $what);
+        }
+        next;
+      }
+      # check in enums
+      if ( !exists $g_enums{$1} ) {
+        printf("cannot find /enum %s for %s line %d\n", $1, $op->[1], $op->[4]);
+        next;
+      }
+      my $tab = $g_enums{$1};
+      if ( !exists $tab->{$2} ) {
+        printf("cannot find /enum %s in %s for %s line %d\n", $2, $1, $op->[1], $op->[4]);
+        next;
+      }
+      my $value = $tab->{$2};
       my $what = check_enc($op->[5], $1, $4);
       if ( defined($what) ) {
+        $rem{$what->[0]} = 1;
         my $p = pos($op->[8]);
-        $rem{$what->[0]} = 1 if ( !defined($3) );
         push @pos, [ $p - length(${^MATCH}), $p ];
         mask_value(\@res, $value, $what);
       }
-      next;
-    }
-    # check in enums
-    if ( !exists $g_enums{$1} ) {
-      printf("cannot find /enum %s for %s line %d\n", $1, $op->[1], $op->[4]);
-      next;
-    }
-    my $tab = $g_enums{$1};
-    if ( !exists $tab->{$2} ) {
-      printf("cannot find /enum %s in %s for %s line %d\n", $2, $1, $op->[1], $op->[4]);
-      next;
-    }
-    my $value = $tab->{$2};
-    my $what = check_enc($op->[5], $1, $4);
-    if ( defined($what) ) {
-      $rem{$what->[0]} = 1;
-      my $p = pos($op->[8]);
-      push @pos, [ $p - length(${^MATCH}), $p ];
-      mask_value(\@res, $value, $what);
     }
   }
   # and again check for ZeroRegister(RZ) in format - in worst case just assign it yet one more time
@@ -943,7 +1020,7 @@ sub insert_mask
 }
 
 ### main
-my $status = getopts("aefmrvwT:");
+my $status = getopts("acefmrtvwT:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -966,10 +1043,20 @@ $state = $line = 0;
 # [9] - list with const banks, [ right, enc1, enc2, ... ] 
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, $alt, $format);
 
+# table state - estate 3 when we expect table name, 4 - when next string with content
+# tref is ref to hash with table content
+my($curr_tab, $tref);
+
 # enum state
 my($curr_enum, $eref);
 # 0 - don't parse, 1 - expect start of enum, 2 - continue with next line
 my $estate = 0;
+
+my $reset_tab = sub {
+  $g_tabs{$curr_tab} = $tref if ( defined $tref );
+  undef $tref;
+};
+
 my $reset_enum = sub {
   $curr_enum = 0;
 };
@@ -1071,7 +1158,7 @@ my $ins_op = sub {
     insert_ins($cname, \@c);
    }
 };
-$reset->(); $reset_enum->();
+$reset->(); $reset_enum->(); $reset_tab->();
 while( $str = <$fh> ) {
   chomp $str;
   $line++;
@@ -1081,11 +1168,41 @@ while( $str = <$fh> ) {
        $state = 1;
        next;
     }
-    # check enums
-    if ( $str =~ /^\s*TABLES/ ) {
+    # check tables
+    if ( $str =~ /^\s*OPERATION\s+PROPERTIES/ ) {
       $estate = 0;
       next;
     }
+    if ( $str =~ /^\s*TABLES\s*$/ ) {
+      $estate = 3;
+      next;
+    }
+# printf("e%d %s\n", $estate, $str);
+    if ( $estate == 3 ) {
+     $str =~ s/\s+//g;
+     next if ( $str eq '' );
+     $curr_tab = $str;
+     $estate = 4;
+     next;
+    }
+    if ( $estate == 4 ) {
+      if ( $str =~ /^\s*(.*)\-\>\s*(.*)\s*$/ ) {
+       # values in $1, key $2
+       my $key = $2;
+       my $kv;
+       my $v = parse_tab_keys($1, $line);
+       if ( defined($v) && defined($kv = parse_tab_value($key, $line)) ) {
+         if ( defined $tref ) { $tref->{$kv} = $v; }
+         else { $tref = { $kv => $v }; }
+       }
+      }
+      if ( $str =~ /\;\s*$/ ) {
+        $reset_tab->();
+        $estate = 3;
+        next;
+      }
+    }
+    # check enums
     if ( $str =~ /^\s*REGISTERS/ ) {
       $estate = 1;
       next;
@@ -1257,7 +1374,8 @@ close $fh;
 # check last instr
 $ins_op->() if ( $has_op );
 
-dump_enums() if ( defined($opt_e) );
+dump_enums() if ( defined $opt_e );
+dump_tabs() if ( defined $opt_t );
 
 # dump trees
 if ( defined($opt_m) ) {
