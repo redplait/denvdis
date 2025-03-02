@@ -645,16 +645,16 @@ sub gen_inst_mask
   # encodings
   my %rem;
   foreach my $emask ( @{ $op->[5] } ) {
-    if ( $emask =~ /^(\w+)\s*=\s*0b(\S+)/ ) { # enc = 0bxxx
+    if ( $emask =~ /^(\w+)\s*=\*?\s*0b(\S+)/ ) { # enc =*? 0bxxx
       my $mask = $g_mnames{$1};
       $rem{$1} = $emask;
       mask_value(\@res, parse0b($2), $mask);
-    } elsif ( $emask =~ /^(\S+)\s*=\s*(\d+)/ ) {
+    } elsif ( $emask =~ /^(\w+)\s*=\*?\s*(\d+)/ ) {
       $rem{$1} = $emask;
       mask_value(\@res, int($2), $g_mnames{$1});
-    } elsif ( $emask =~ /^(\S+)\s*=\*\s*(\d+)/ ) {
+    } elsif ( $emask =~ /^(\w+)\s*=\*?\s*0x(\w+)/i ) {
       $rem{$1} = $emask;
-      mask_value(\@res, int($2), $g_mnames{$1});
+      mask_value(\@res, hex($2), $g_mnames{$1});
     }
   }
   if ( scalar keys %rem ) {
@@ -717,14 +717,14 @@ sub gen_inst_mask
     push @pos, [ $p - length(${^MATCH}), $p ];
     mask_value(\@res, $v, $what);
   }
-  if ( defined $opt_c ) {
-    # check /Group(Value):alias in format - Value can contain /PRINT suffix
-    while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(\/PRINT)?\)\:(\w+)/pg ) {
+  # check /Group(Value):alias in format - Value can contain /PRINT suffix
+  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(\/PRINT)?\)\:(\w+)/pg ) {
       if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
         my $value = $Tabs{$1}->{$2};
-        my $what = check_enc($op->[5], $1, $4);
+        my $what = defined($opt_c) ? check_enc($op->[5], $1, $4) : check_enc_ask($op->[5], $4);
         if ( defined($what) ) {
           my $p = pos($op->[8]);
+          # remove if no /PRINT prefix
           $rem{$what->[0]} = 1 if ( !defined($3) );
           push @pos, [ $p - length(${^MATCH}), $p ];
           mask_value(\@res, $value, $what);
@@ -742,14 +742,14 @@ sub gen_inst_mask
         next;
       }
       my $value = $tab->{$2};
-      my $what = check_enc($op->[5], $1, $4);
+      my $what = defined($opt_c) ? check_enc($op->[5], $1, $4) : check_enc_ask($op->[5], $4);
+# if ( $op->[1] eq 'F2F' ) { printf("HER %s %s %s\n", $1, $2, $4); }
       if ( defined($what) ) {
         $rem{$what->[0]} = 1;
         my $p = pos($op->[8]);
         push @pos, [ $p - length(${^MATCH}), $p ];
         mask_value(\@res, $value, $what);
       }
-    }
   }
   # and again check for ZeroRegister(RZ) in format - in worst case just assign it yet one more time
   while ( $op->[8] =~ /\bZeroRegister\(\"?RZ\"?\)\:(\w+)/pg ) {
@@ -778,6 +778,23 @@ sub gen_inst_mask
   return join('', @res);
 }
 
+# return ref to mask if encoding has form mask=*alias
+sub check_enc_ask
+{
+  my($e, $alias) = @_;
+  $alias =~ s/\}\s*$//;
+  $alias =~ s/\s*$//;
+  for my $enc ( @$e ) {
+    if ( $enc =~ /^(\S+)\s*=\s*\*\s*(\S+)$/ ) {
+      if ( $2 eq $alias ) {
+        return $g_mnames{$1} if exists $g_mnames{$1};
+        return undef;
+      }
+    }
+  }
+  undef;
+}
+
 # return ref to mask from g_mnames by name or alias from list of encoders
 sub check_enc
 {
@@ -791,7 +808,7 @@ sub check_enc
       }
     }
   }
-  return undef;
+  undef;
 }
 
 # opcodes divided into 2 group - first start with some zero mask (longest if there are > 1) and second with longest opcode
@@ -1387,7 +1404,7 @@ if ( defined($opt_m) ) {
 #  with encoded = const
 # total          330 310 374 411  433  807
 # duplicated     113 160 171 173   74  128
-#  with encoded =* const - I don't know what this means
+#  with encoded =* const
 # total          330 310 374 415  538 1010    992   927  1016
 # duplicated     113 160 171 173   60   96    141   129   156
 #  FMZ & PMode + enc = 0bxxx
@@ -1405,6 +1422,9 @@ if ( defined($opt_m) ) {
 #  /PRINT suffix - in 5x
 # total          359 383 396 433  570  1064
 # duplicated      90  92 151 157   34    58
+#  without -c option
+# total          359 383 405 446  581  1063  1050   978  1099
+# duplicated      90  92 142 144   26    52    96    91   108
   if ( defined $opt_T ) {
     make_test($opt_T);
   } else {
