@@ -7,7 +7,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_c $opt_e $opt_f $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w/;
+use vars qw/$opt_a $opt_b $opt_c $opt_e $opt_f $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w/;
 
 sub usage()
 {
@@ -15,6 +15,7 @@ sub usage()
 Usage: $0 [options] md.txt
  Options:
   -a - add alternates
+  -b - apply bitsets
   -c - use format constant to form mask
   -e - dump enums
   -f - dump fully filled masks
@@ -703,6 +704,7 @@ sub gen_inst_mask
   }
   # end of enc = `const loop
   my @pos;
+  if ( defined $opt_b ) {
   # check BITSET(size/value):mask
   while( $op->[8] =~ /(?:\'\&\'.*)\s*BITSET\(([^\)]+)\)\:([\w\.]+)/pg ) {
     my $mask = $2;
@@ -727,7 +729,7 @@ sub gen_inst_mask
     my $p = pos($op->[8]);
     push @pos, [ $p - length(${^MATCH}), $p ];
     mask_value(\@res, $v, $what);
-  }
+  } }
   # check /enum:alias where enc =* alias
   while( $op->[8] =~ /\/([^\(\)\"\s]+)\:([\w\.]+)/pg ) {
     my $alias = $2;
@@ -942,20 +944,45 @@ sub parse0b
 my(%g_masks);
 my $g_dups = 0;
 
+sub dump_plain_value
+{
+  my($v, $mask) = @_;
+  if ( defined($v) ) {
+    printf("   %s(", $mask->[0]);
+    if ( $v ) { printf("%X)\n", $v); }
+    else { printf("0)\n"); }
+  }
+}
+
 # args - ref to array, ref to found instruction
 sub dump_values
 {
   my($a, $op) = @_;
   my $enc = $op->[5];
   foreach my $m ( @$enc ) {
-    if ( $m =~ /^(\w+)/ ) {
+    # mask $1 = table $2 (args) $3
+    if ( $m =~ /^(\w+)\s*=\s*(\S+)\(([^\)]+)\)/ ) {
+      my $mask = $g_mnames{$1};
+      my $v;
+      if ( exists($g_tabs{$2}) && defined($v = extract_value($a, $mask)) ) {
+        my $tab = $g_tabs{$2};
+        if ( exists $tab->{$v} ) {
+          my $row = $tab->{$v};
+          printf("   %s(%X) %s = ", $mask->[0], $v, $3);
+          if ( 'ARRAY' eq ref $row ) {
+            printf("%s\n", join ",", @$row);
+          } else {
+            printf("%s\n", $row);
+          }
+        } else {
+          printf("   %s value %X does not exists in table %s\n", $mask->[0], $v, $2);
+        }
+      } else {
+        dump_plain_value(extract_value($a, $mask), $mask);
+      }
+    } elsif ( $m =~ /^(\w+)/ ) {
      my $mask = $g_mnames{$1};
-     my $v = extract_value($a, $mask);
-     if ( defined($v) ) {
-       printf("   %s(", $mask->[0]);
-       if ( $v ) { printf("%X)\n", $v); }
-       else { printf("0)\n"); }
-    }
+     dump_plain_value(extract_value($a, $mask), $mask);
    }
   }
   # dump const bank
@@ -965,12 +992,8 @@ sub dump_values
     my $cb_len = scalar @$cb;
     for ( my $i = 1; $i < $cb_len; $i++ ) {
      my $mask = $g_mnames{$cb->[$i]};
+     dump_plain_value(extract_value($a, $mask), $mask);
      my $v = extract_value($a, $mask);
-     if ( defined($v) ) {
-       printf("   %s(", $mask->[0]);
-       if ( $v ) { printf("%X)\n", $v); }
-       else { printf("0)\n"); }
-    }
    }
   }
 }
@@ -1061,7 +1084,7 @@ sub insert_mask
 }
 
 ### main
-my $status = getopts("acefmrtvwT:");
+my $status = getopts("abcefmrtvwT:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
