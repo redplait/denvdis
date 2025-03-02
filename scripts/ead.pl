@@ -106,6 +106,16 @@ sub dump_enums
   }
 }
 
+sub is_single_enum
+{
+  my $name = shift;
+  return undef if ( !exists $g_enums{$name} );
+  my $k = $g_enums{$name};
+  my @keys = keys %$k;
+  return undef if ( 1 != scalar @keys );
+  $k->{$keys[0]};
+}
+
 # global tables hash map, key is name of table, value is another hash map { value -> [ literals list ] }
 my %g_tabs;
 
@@ -691,6 +701,7 @@ sub gen_inst_mask
       }
     }
   }
+  # end of enc = `const loop
   my @pos;
   # check BITSET(size/value):mask
   while( $op->[8] =~ /(?:\'\&\'.*)\s*BITSET\(([^\)]+)\)\:(\w+)/pg ) {
@@ -716,6 +727,18 @@ sub gen_inst_mask
     my $p = pos($op->[8]);
     push @pos, [ $p - length(${^MATCH}), $p ];
     mask_value(\@res, $v, $what);
+  }
+  # check /enum:alias where enc =* alias
+  while( $op->[8] =~ /\/([^\(\)\"\s]+)\:(\w+)/pg ) {
+    my $alias = $2;
+    my $what;
+    my $v = is_single_enum($1);
+    if ( defined($v) && defined($what = check_enc_ask($op->[5], $2)) ) {
+       $rem{$what->[0]} = 1;
+       my $p = pos($op->[8]);
+       push @pos, [ $p - length(${^MATCH}), $p ];
+       mask_value(\@res, $v, $what);
+    }
   }
   # check /Group(Value):alias in format - Value can contain /PRINT suffix
   while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(\/PRINT)?\)\:(\w+)/pg ) {
@@ -745,7 +768,8 @@ sub gen_inst_mask
       my $what = defined($opt_c) ? check_enc($op->[5], $1, $4) : check_enc_ask($op->[5], $4);
 # if ( $op->[1] eq 'F2F' ) { printf("HER %s %s %s\n", $1, $2, $4); }
       if ( defined($what) ) {
-        $rem{$what->[0]} = 1;
+        # remove if no /PRINT prefix
+        $rem{$what->[0]} = 1 if ( !defined($3) );
         my $p = pos($op->[8]);
         push @pos, [ $p - length(${^MATCH}), $p ];
         mask_value(\@res, $value, $what);
@@ -1425,6 +1449,9 @@ if ( defined($opt_m) ) {
 #  without -c option
 # total          359 383 405 446  581  1063  1050   978  1099
 # duplicated      90  92 142 144   26    52    96    91   108
+#  apply single enums where enc =* alias
+# total          365 389 420 460  599  1102  1110  1013  1157
+# duplicated      84  86 127 128   10    26    28    28    35
   if ( defined $opt_T ) {
     make_test($opt_T);
   } else {
