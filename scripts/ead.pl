@@ -143,6 +143,7 @@ sub merge_enum
     return 0;
   }
   my $em = $g_enums{$name};
+  keys %$em;
   while( my($n, $v) = each %$em ) {
     $er->{$n} //= $v;
   }
@@ -154,8 +155,9 @@ sub merge_enum
 sub enum_by_value
 {
   my($hr, $val) = @_;
+  keys %$hr;
   while( my($n, $v) = each %$hr ) {
-    return $n if ( $v == $val );
+    return $n if ( $val == $v );
   }
   undef;
 }
@@ -1100,7 +1102,7 @@ sub dump_values
   my $enc = $op->[5];
   foreach my $m ( @$enc ) {
     # mask $1 = table $2 (args) $3
-    if ( $m =~ /^(\w+)\s*=\s*(\S+)\(([^\)]+)\)/ ) {
+    if ( $m =~ /^(\w+)\s*=\*?\s*(\S+)\(([^\)]+)\)/ ) {
       my $mask = $g_mnames{$1};
       my $v;
       if ( exists($g_tabs{$2}) && defined($v = extract_value($a, $mask)) ) {
@@ -1294,31 +1296,31 @@ my $parse_pair = sub {
     return 1;
   }
   # enum = 0b
-  if ( $s =~ /^\"?([\w\.]+)\"?\s*=\s*0b(\w+)\s*$/ ) {
+  if ( $s =~ /^\"?([\w\.]+)\"?\s*=\s*0b(\w+)$/ ) {
     my $name = $1;
     $curr_enum = parse0b($2);
     $eref->{$1} = $curr_enum++;
     return 1;
   }
   # enum = number
-  if ( $s =~ /^\"?([\w\.]+)\"?\s*=\s*(\d+)\s*$/ ) {
+  if ( $s =~ /^\"?([\w\.]+)\"?\s*=\s*(\d+)$/ ) {
     $curr_enum = int($2);
     $eref->{$1} = $curr_enum++;
     return 1;
   }
   # enum $1 (from $2 .. to $3)
-  if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\s*\.\.\s*(\d+)\)\s*$/ ) {
+  if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\s*\.\.\s*(\d+)\)$/ ) {
     my $name = $1;
     my $from = int($2);
     my $to = int($3);
     for ( my $i = $from; $i <= $to; $i++ ) {
       my $ename = $name . $i;
-      $eref->{$1} = $curr_enum++;
+      $eref->{$ename} = $curr_enum++;
     }
     return 1;
   }
   # enum $1 (from $2 .. to $3) = (index_from $4 .. index_to $5) - real madness
-  if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\s*\.\.\s*(\d+)\)\s*=\s*\((\d+)\s*\.\.\s*(\d+)\)\s*$/ ) {
+  if ( $s =~ /^\"?([\w\.]+)\"?\s*\((\d+)\s*\.\.\s*(\d+)\)\s*=\s*\((\d+)\s*\.\.\s*(\d+)\)$/ ) {
     my $name = $1;
     my $from = int($2);
     my $to = int($3);
@@ -1331,7 +1333,7 @@ my $parse_pair = sub {
     $curr_enum = $ifrom;
     for ( my $i = $from; $i <= $to; $i++ ) {
       my $ename = $name . $i;
-      $eref->{$1} = $curr_enum++;
+      $eref->{$ename} = $curr_enum++;
     }
     return 1;
   }
@@ -1676,6 +1678,9 @@ if ( defined($opt_m) ) {
 #  -F option
 # total          365 389 422 464  602  1110  1118  1041  1165
 # duplicated      84  86 125 124    7    19    20    20    27
+#  compound enums
+# total          367 393 435 476  602  1110  1118  1041  1165
+# duplicated      82  82 112 112    7    19    20    20    27
   if ( defined $opt_T ) {
     make_test($opt_T);
   } else {
