@@ -786,7 +786,7 @@ sub gen_inst_mask
     }
   }
   # check /Group(Value):alias in format - Value can contain /PRINT suffix
-  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)]+)\"?(\/PRINT)?\)\:([\w\.]+)/pg ) {
+  while ( $op->[8] =~ /\/(\w+)\(\"?([^\"\)\/)]+)\"?(\/PRINT)?\)\:([\w\.]+)/pg ) {
       if ( exists $Tabs{$1} && exists $Tabs{$1}->{$2} ) {
         my $value = $Tabs{$1}->{$2};
         my $what = defined($opt_c) ? check_enc($op->[5], $1, $4) : check_enc_ask($op->[5], $4);
@@ -852,12 +852,12 @@ sub gen_inst_mask
 # printf("%s line %d\n", $op->[1], $op->[4]);
 # printf("%s\n", join('', @res));
   foreach my $emask ( @{ $op->[5] } ) {
-    next if ( $emask !~ /^(\w+)\s*=(\*?)/ ); # wtf? bad encoding?
+    next if ( $emask !~ /^(\w+)\s*=\*/ ); # wtf? bad encoding?
     next if ( !exists $mae->{$1} ); # skip encoding without enum
     # now we have 2 cases
     my $must_be = $mae->{$1};
     my $what = $g_mnames{$1};
-    if ( $2 ne '' && defined $must_be->[2] ) {
+    if ( defined $must_be->[2] ) {
     # 1) enc =*? enum(value) - need mask_value and remove from encodings
 # printf("enc %s enum(%s) %s\n", $1, $must_be->[0], $must_be->[2]);
       my $v = get_enc_enum($op, $1, $must_be->[0], $must_be->[2]);
@@ -899,6 +899,17 @@ sub gen_inst_mask
   return join('', @res);
 }
 
+sub dump_filters
+{
+  my $op = shift;
+  return if ( !defined $op->[12] );
+  printf("filters:\n");
+  my $flist = $op->[12];
+  foreach my $f ( @$flist ) {
+    printf("  %s %s %s\n", $f->[0]->[0], $f->[1], $f->[3]);
+  }
+}
+
 # args: mask array, instruction
 sub filter_ins
 {
@@ -913,7 +924,7 @@ sub filter_ins
     my $v = extract_value($a, $f->[0]);
     next if ( !defined $v );
     if ( 'e' eq $f->[1] ) {
-#      return 0 if ( !defined enum_by_value($f->[2], $v) );
+      return 0 if ( !defined enum_by_value($f->[2], $v) );
     } else {
       my $tr = $f->[2];
      return 0 if ( !exists $tr->{$v} );
@@ -1142,6 +1153,7 @@ sub make_test
         printf("\n") if ( !$found );
         printf("%s - ", $m);
         printf("%s %d items\n", $ops->[0]->[1], scalar(@$ops));
+        dump_filters($ops->[0]);
         # extract all masks values
         dump_mask2enum($ops->[0]);
         dump_values($b, $ops->[0]);
@@ -1354,7 +1366,7 @@ my $ins_op = sub {
   # fill pairs encoding -> [ enum, optional? ]
   my %mae;
   while( my($a, $e) = each %ae ) {
-    my $what = check_enc(\@enc, $a, $a);
+    my $what = check_enc(\@enc, $e->[0], $a);
     $mae{$what->[0]} = $e if ( defined($what) );
   }
   # make new instruction
@@ -1381,10 +1393,11 @@ my $ins_op = sub {
 # parse format in form /? $1 enum $2 optional value $3 alias $4
 my $cons_ae = sub {
   my $s = shift;
-  while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)]+)\"\))?\:([\w\.]+)/g ) {
+  # $1 - /? $2 - enum
+  while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\/\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)/g ) {
     if ( exists $g_enums{$2} ) {
       $ae{$4} = [ $2, defined($1), defined($3) ? $3 : undef ];
-    } elsif ( $2 ne 'BITSET' && $2 ne 'UImm' && $2 ne 'SImm' && $2 ne 'F64Imm' && $2 ne 'F16Imm' && $2 ne 'F32Imm' ) {
+    } elsif ( $2 ne 'BITSET' && $2 ne 'UImm' && $2 ne 'SImm' && $2 ne 'SSImm' && $2 ne 'F64Imm' && $2 ne 'F16Imm' && $2 ne 'F32Imm' ) {
        printf("enum %s does not exists, line %d\n", $2, $line);
     }
   }
