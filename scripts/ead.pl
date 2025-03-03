@@ -7,7 +7,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_c $opt_e $opt_f $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w/;
+use vars qw/$opt_a $opt_b $opt_c $opt_e $opt_f $opt_F $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w/;
 
 sub usage()
 {
@@ -19,6 +19,7 @@ Usage: $0 [options] md.txt
   -c - use format constant to form mask
   -e - dump enums
   -f - dump fully filled masks
+  -F - filter by enums
   -m - generate masks
   -r - fill in reverse order
   -t - dunp tables
@@ -115,6 +116,22 @@ sub is_single_enum
   my @keys = keys %$k;
   return undef if ( 1 != scalar @keys );
   $k->{$keys[0]};
+}
+
+# args: instruction, current mask, enum, value
+sub get_enc_enum
+{
+  my($op, $mask, $e, $vname) = @_;
+  if ( !exists $g_enums{$e} ) {
+    printf("not existing enum %s for mask %s, op %s line %d\n", $e, $mask, $op->[1], $op->[4]);
+    return undef;
+  }
+  my $er = $g_enums{$e};
+  if ( !exists $er->{$vname} ) {
+    printf("not existing value %s in enum %s for mask %s, op %s line %d\n", $vname, $e, $mask, $op->[1], $op->[4]);
+    return undef;
+  }
+  $er->{$vname};
 }
 
 # in parallel universe we could make reverse hash value->name
@@ -684,7 +701,7 @@ sub gen_inst_mask
   }
   # enc = `const - in op->[9]
   foreach my $q ( @{ $op->[9] } ) {
-    if ( $q =~ /^(\w+)\s*=\s*\`(\S+)/ ) {
+    if ( $q =~ /^(\w+)\s*=\*?\s*\`(\S+)/ ) {
       my $v = $2;
       if ( $v eq 'Register@RZ' ) {
         $rem{$1} = $q;
@@ -808,10 +825,84 @@ sub gen_inst_mask
    $cp =~ s/\{\s*\}//g;
    # and $( )$
    $cp =~ s/\$\(\s*\)\$//g;
-   $op->[12] = $cp;
+   $op->[13] = $cp;
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
+  # process remained encodings
+  if ( defined $opt_F ) {
+    %rem = ();
+    my $patched = 0;
+    my $mae = $op->[11];
+# printf("%s line %d\n", $op->[1], $op->[4]);
+# printf("%s\n", join('', @res));
+  foreach my $emask ( @{ $op->[5] } ) {
+    next if ( $emask !~ /^(\w+)\s*=(\*?)/ ); # wtf? bad encoding?
+    next if ( !exists $mae->{$1} ); # skip encoding without enum
+    # now we have 4 cases
+    my $must_be = $mae->{$1};
+    my $what = $g_mnames{$1};
+    if ( $2 ne '' ) {
+    # 1) enc =* enum
+      if ( !defined $must_be->[2] ) {
+        my $v = is_single_enum($must_be->[0]);
+        if ( defined($v) ) {
+# printf("enc %s *single enum %s\n", $1, $must_be->[0]);
+          $rem{$what->[0]} = 1;
+          mask_value(\@res, $v, $what);
+          $patched++;
+        } else {
+# printf("enc %s *enum %s\n", $1, $must_be->[0]);
+         # put this enum into filter at ->[12]
+         if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, $g_enums{$must_be->[0]} ]; }
+         else { $op->[12] = [ [ $what, $g_enums{$must_be->[0]} ] ]; }
+        }
+      } else {
+# printf("enc %s *enum(%s) %s\n", $1, $must_be->[0], $must_be->[2]);
+    # 2) enc =* enum(value) - need mask_value and remove from encodings
+        my $v = get_enc_enum($op, $1, $must_be->[0], $must_be->[2]);
+        if ( defined $v ) {
+          $rem{$what->[0]} = 1;
+          mask_value(\@res, $v, $what);
+          $patched++;
+        }
+      }
+    } else {
+    # 3) enc = enum
+      if ( !defined $must_be->[2] ) {
+        if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, $g_enums{$must_be->[0]} ]; }
+        else { $op->[12] = [ [ $what, $g_enums{$must_be->[0]} ] ]; }
+      } else {
+    # 4) enc = enum(value)
+        my $v = get_enc_enum($op, $1, $must_be->[0], $must_be->[2]);
+        if ( defined $v ) {
+          if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, $v ]; }
+          else { $op->[12] = [ [ $what, $v ] ]; }
+        }
+      }
+    }
+  }
+  remove_encs($op, \%rem) if ( scalar keys %rem );
+# printf("%s %d patched\n", join('', @res), $patched) if ( $patched );
+  }
   return join('', @res);
+}
+
+# args: mask array, instruction
+sub filter_ins
+{
+  my($a, $op) = @_;
+  return 1 if ( !defined $op->[12] );
+  my $flist = $op->[12];
+  foreach my $f ( @$flist ) {
+    my $v = extract_value($a, $f->[0]);
+    next if ( !defined $v );
+    if ( 'HASH' eq $f->[1] ) {
+      return 0 if ( !defined enum_by_value($f->[1], $v) );
+    } else {
+      return 0 if ( $v != $f->[1] );
+    }
+  }
+  1;
 }
 
 # return ref to mask if encoding has form mask=*alias
@@ -863,7 +954,8 @@ my $g_diff_names = 0;
 # [8] - format string
 # [10] - const bank list
 # [11] - hash with alias -> enum ref
-# [12] - string with unused formats
+# [12] - list of filters for this instruction
+# [13] - string with unused formats
 sub insert_ins
 {
   my($cname, $op) = @_;
@@ -1028,9 +1120,10 @@ sub make_test
     my $found = 0;
     foreach my $m ( keys %g_masks ) {
       if ( cmp_maska($m, $b) ) {
+        my $ops = $g_masks{$m};
+        next if ( !filter_ins($b, $ops->[0]) );
         printf("\n") if ( !$found );
         printf("%s - ", $m);
-        my $ops = $g_masks{$m};
         printf("%s %d items\n", $ops->[0]->[1], scalar(@$ops));
         # extract all masks values
         dump_values($b, $ops->[0]);
@@ -1070,13 +1163,14 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
-      printf("   Unused %s\n", $op->[12]) if defined($op->[12]);
+      printf("   Unused %s\n", $op->[13]) if defined($op->[13]);
       # dump mask to enum mapping
       if ( defined $op->[11] ) {
         printf('mask2enum:');
         my $m2e = $op->[11];
         while( my($m, $e) = each %$m2e ) {
-          printf(" %s->%s", $m, $e->[0]);
+          if ( defined $e->[2] ) { printf(" %s->%s(%s)", $m, $e->[0], $e->[2]); }
+          else { printf(" %s->%s", $m, $e->[0]); }
         }
         printf("\n");
       }
@@ -1111,7 +1205,7 @@ sub insert_mask
 }
 
 ### main
-my $status = getopts("abcefmrtvwT:");
+my $status = getopts("abcefFmrtvwT:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -1133,6 +1227,7 @@ $state = $line = 0;
 # [8] - ref to tabs
 # [9] - list with const banks, [ right, enc1, enc2, ... ] 
 # [10] - hashmap encoding -> enum
+# [11] - list of filters for this instruction
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, %ae, $alt, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
@@ -1253,17 +1348,19 @@ my $ins_op = sub {
   $c[8] = \@ctabs;
   $c[9] = scalar(@cb) ? \@ccb : undef;
   $c[10] = \%mae;
+  $c[11] = undef;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
     insert_ins($cname, \@c);
    }
 };
+# parse format in form /? $1 enum $2 optional value $3 alias $4
 my $cons_ae = sub {
   my $s = shift;
-  while( $s =~ /(\/?)([\w\.]+)(?:\([^\)]+\))?\:([\w\.]+)/g ) {
+  while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)]+)\"\))?\:([\w\.]+)/g ) {
     if ( exists $g_enums{$2} ) {
-      $ae{$3} = [ $2, defined($1) ];
+      $ae{$4} = [ $2, defined($1), defined($3) ? $3 : undef ];
     } elsif ( $2 ne 'BITSET' && $2 ne 'UImm' && $2 ne 'SImm' && $2 ne 'F64Imm' && $2 ne 'F16Imm' && $2 ne 'F32Imm' ) {
        printf("enum %s does not exists, line %d\n", $2, $line);
     }
@@ -1528,6 +1625,9 @@ if ( defined($opt_m) ) {
 #  enum can contains '.'
 # total          365 389 420 460  602  1107  1113  1036  1160
 # duplicated      84  86 127 128    7    21    25    25    32
+#  -F option
+# total          365 389 422 464  602  1110  1118  1041  1165
+# duplicated      84  86 125 124    7    19    20    20    27
   if ( defined $opt_T ) {
     make_test($opt_T);
   } else {
