@@ -134,7 +134,23 @@ sub get_enc_enum
   $er->{$vname};
 }
 
+# args: ref to currently constructed enum, name of enum, line
+sub merge_enum
+{
+  my($er, $name, $line) = @_;
+  if ( !exists $g_enums{$name} ) {
+    printf("unknown enum %s to merge on line %d\n", $name, $line);
+    return 0;
+  }
+  my $em = $g_enums{$name};
+  while( my($n, $v) = each %$em ) {
+    $er->{$n} //= $v;
+  }
+  return 1;
+}
+
 # in parallel universe we could make reverse hash value->name
+# args: ref to enum hashmap, value to find
 sub enum_by_value
 {
   my($hr, $val) = @_;
@@ -838,51 +854,47 @@ sub gen_inst_mask
   foreach my $emask ( @{ $op->[5] } ) {
     next if ( $emask !~ /^(\w+)\s*=(\*?)/ ); # wtf? bad encoding?
     next if ( !exists $mae->{$1} ); # skip encoding without enum
-    # now we have 4 cases
+    # now we have 2 cases
     my $must_be = $mae->{$1};
     my $what = $g_mnames{$1};
-    if ( $2 ne '' ) {
-    # 1) enc =* enum
-      if ( !defined $must_be->[2] ) {
-        my $v = is_single_enum($must_be->[0]);
-        if ( defined($v) ) {
-# printf("enc %s *single enum %s\n", $1, $must_be->[0]);
-          $rem{$what->[0]} = 1;
-          mask_value(\@res, $v, $what);
-          $patched++;
-        } else {
-# printf("enc %s *enum %s\n", $1, $must_be->[0]);
-         # put this enum into filter at ->[12]
-         if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, $g_enums{$must_be->[0]} ]; }
-         else { $op->[12] = [ [ $what, $g_enums{$must_be->[0]} ] ]; }
-        }
-      } else {
-# printf("enc %s *enum(%s) %s\n", $1, $must_be->[0], $must_be->[2]);
-    # 2) enc =* enum(value) - need mask_value and remove from encodings
-        my $v = get_enc_enum($op, $1, $must_be->[0], $must_be->[2]);
-        if ( defined $v ) {
-          $rem{$what->[0]} = 1;
-          mask_value(\@res, $v, $what);
-          $patched++;
-        }
+    if ( $2 ne '' && defined $must_be->[2] ) {
+    # 1) enc =*? enum(value) - need mask_value and remove from encodings
+# printf("enc %s enum(%s) %s\n", $1, $must_be->[0], $must_be->[2]);
+      my $v = get_enc_enum($op, $1, $must_be->[0], $must_be->[2]);
+      if ( defined $v ) {
+        $rem{$what->[0]} = 1;
+        mask_value(\@res, $v, $what);
+        $patched++;
       }
     } else {
-    # 3) enc = enum
-      if ( !defined $must_be->[2] ) {
-        if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, $g_enums{$must_be->[0]} ]; }
-        else { $op->[12] = [ [ $what, $g_enums{$must_be->[0]} ] ]; }
-      } else {
-    # 4) enc = enum(value)
-        my $v = get_enc_enum($op, $1, $must_be->[0], $must_be->[2]);
-        if ( defined $v ) {
-          if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, $v ]; }
-          else { $op->[12] = [ [ $what, $v ] ]; }
+    # 2) enc = enum
+      my $v = is_single_enum($must_be->[0]);
+      if ( defined($v) ) {
+# printf("enc %s single enum %s\n", $1, $must_be->[0]);
+         $rem{$what->[0]} = 1;
+         mask_value(\@res, $v, $what);
+         $patched++;
+        } else {
+# printf("enc %s enum %s\n", $1, $must_be->[0]);
+         # put this enum into filter at ->[12]
+         if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, 'e', $g_enums{$must_be->[0]}, $must_be->[0] ]; }
+         else { $op->[12] = [ [ $what, 'e', $g_enums{$must_be->[0]}, $must_be->[0] ] ]; }
         }
-      }
     }
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
 # printf("%s %d patched\n", join('', @res), $patched) if ( $patched );
+  }
+  # and add tables
+  foreach my $tmask ( @{ $op->[5] } ) {
+    # mask $1 = table $2
+    if ( $tmask =~ /^(\w+)\s*=\s*(\S+)\((?:[^\)]+)\)/ ) {
+      my $what = $g_mnames{$1};
+      if ( exists($g_tabs{$2}) ) {
+         if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, 't', $g_tabs{$2}, $2 ]; }
+         else { $op->[12] = [ [ $what, 't', $g_tabs{$2}, $2 ] ]; }
+      }
+    }
   }
   return join('', @res);
 }
@@ -892,14 +904,19 @@ sub filter_ins
 {
   my($a, $op) = @_;
   return 1 if ( !defined $op->[12] );
+  # format of op->[12] elements is array where indexes
+  # 0 - mask
+  # 1 - letter 'e' for enums, 't' for tables
+  # 2 - ref to enum/letter
   my $flist = $op->[12];
   foreach my $f ( @$flist ) {
     my $v = extract_value($a, $f->[0]);
     next if ( !defined $v );
-    if ( 'HASH' eq $f->[1] ) {
-      return 0 if ( !defined enum_by_value($f->[1], $v) );
+    if ( 'e' eq $f->[1] ) {
+#      return 0 if ( !defined enum_by_value($f->[2], $v) );
     } else {
-      return 0 if ( $v != $f->[1] );
+      my $tr = $f->[2];
+     return 0 if ( !exists $tr->{$v} );
     }
   }
   1;
@@ -1126,6 +1143,7 @@ sub make_test
         printf("%s - ", $m);
         printf("%s %d items\n", $ops->[0]->[1], scalar(@$ops));
         # extract all masks values
+        dump_mask2enum($ops->[0]);
         dump_values($b, $ops->[0]);
         $found++;
         # last; # find first mask
@@ -1134,6 +1152,19 @@ sub make_test
     printf(" NOTFound\n") if ( !$found );
   }
   close $fh;
+}
+
+sub dump_mask2enum
+{
+  my $op = shift;
+  return if ( !defined $op->[11] );
+  printf('mask2enum:');
+  my $m2e = $op->[11];
+  while( my($m, $e) = each %$m2e ) {
+    if ( defined $e->[2] ) { printf(" %s->%s(%s)", $m, $e->[0], $e->[2]); }
+    else { printf(" %s->%s", $m, $e->[0]); }
+  }
+  printf("\n");
 }
 
 sub dump_dup_masks
@@ -1165,15 +1196,7 @@ sub dump_dup_masks
       }
       printf("   Unused %s\n", $op->[13]) if defined($op->[13]);
       # dump mask to enum mapping
-      if ( defined $op->[11] ) {
-        printf('mask2enum:');
-        my $m2e = $op->[11];
-        while( my($m, $e) = each %$m2e ) {
-          if ( defined $e->[2] ) { printf(" %s->%s(%s)", $m, $e->[0], $e->[2]); }
-          else { printf(" %s->%s", $m, $e->[0]); }
-        }
-        printf("\n");
-      }
+      dump_mask2enum($op);
       # dump encodings
       printf("    %s\n", $_) for @{ $op->[5] };
       # dump constant banks
@@ -1422,21 +1445,33 @@ while( $str = <$fh> ) {
     }
     $estate = 1 if ( !$estate && $str =~ /^\s*SpecialRegister / );
     next if ( !$estate );
-# printf("e%d %s\n", $estate, $str);
+#printf("e%d %s\n", $estate, $str);
     # 1 - new enum
     if ( 1 == $estate ) {
-      if ( $str =~ /^\s*([\w\.]+)\s*$/ ) {
+      $str =~ s/^\s*//; $str =~ s/\s*$//;
+      if ( $str =~ /^([\w\.]+)\s*$/ ) {
         my %tmp;
         $eref = $g_enums{$1} = \%tmp;
         $estate = 2;
         next;
       }
-      next if ( $str =~ /^\s*(\w+)\s*=/ );
-      if ( $str =~ /^\s*([\w\.]+)\s+(.*)\s*;?/ ) {
+      # compound enum like name = e1 + ...;
+      if ( $str =~ /^(\w+)\s*=(.*);$/ ) {
+        my %tmp;
+        $eref = $g_enums{$1} = \%tmp;
+        $str = $2;
+        foreach my $cname ( split /\s*\+\s*/, $str ) {
+          $cname =~ s/^\s*//;
+          merge_enum($eref, $cname, $line);
+        }
+        $reset_enum->();
+        next;
+      }
+      if ( $str =~ /^([\w\.]+)\s+(.*)\s*;?/ ) {
         my %tmp;
         $eref = $g_enums{$1} = \%tmp;
         $parse_enum->($2);
-        if ( $str =~ /\;\s*$/ ) {
+        if ( $str =~ /\;$/ ) {
           $reset_enum->();
         } else {
           $estate = 2;
