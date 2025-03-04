@@ -921,7 +921,7 @@ printf("enc %s enum(%s) %s in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1])
 }
 
 # args: list of encoders, instr name, instr line, hash name => [ enum ]
-# return ref to hash encoder_name => [ [ enum1 ] ... or undef ]
+# return ref to hash encoder_name => [ [ enum_name, ref2enum ] ... or undef ]
 sub add_tenums
 {
   my($enc, $opname, $line, $er) = @_;
@@ -935,14 +935,19 @@ sub add_tenums
       my $cnt = 0;
       foreach my $em ( split /\s*,\s*/, $3 ) {
         if ( exists $er->{$em} ) {
-         push @ar, $er->{$em}; $cnt++;
+         my $er = $er->{$em};
+         push @ar, [ $er->[0], $g_enums{$er->[0]} ]; $cnt++;
         } else { push @ar, undef; }
       }
       next if !$cnt;
       $res{$ename} = \@ar;
     }
   }
-  return 0 != scalar keys %res ? \%res : undef;
+  if ( 0 != scalar keys %res ) {
+# printf("has te for %s line %d\n", $opname, $line);
+    return \%res;
+  }
+  undef;
 }
 
 sub dump_tenums
@@ -1172,7 +1177,21 @@ sub dump_values
           my $row = $tab->{$v};
           printf("   %s(%X) %s = ", $mask->[0], $v, $3);
           if ( 'ARRAY' eq ref $row ) {
-            printf("%s\n", join ",", @$row);
+            my $te = $op->[13];
+            if ( defined($te) && exists $te->{$1} ) {
+              my $res = '';
+              my $ae = $te->{$1};
+              for ( my $i = 0; $i < scalar @$row; $i++ ) {
+                if ( !defined $ae->[$i] ) { $res .= $row->[$i]; } else {
+                  $res .= $ae->[$i]->[0] . '(' . $row->[$i] . ')';
+                  my $v = enum_by_value($ae->[$i]->[1], $row->[$i]);
+                  $res .= $v if defined $v;
+                }
+                $res .= ',';
+              }
+              chop $res;
+              printf("%s\n", $res);
+            } else { printf("%s\n", join ",", @$row); }
           } else {
             printf("%s\n", $row);
           }
@@ -1219,6 +1238,7 @@ sub make_test
         dump_filters($ops->[0]);
         # extract all masks values
         dump_mask2enum($ops->[0]);
+        dump_tenums($ops->[0]->[13]) if defined($ops->[0]->[13]);
         dump_values($b, $ops->[0]);
         $found++;
         # last; # find first mask
