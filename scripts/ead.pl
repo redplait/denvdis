@@ -358,6 +358,13 @@ sub cmp_mask
   1;
 }
 
+# calc count of meaning bits
+sub calc_mean_bits
+{
+  my $m = shift;
+  scalar grep { $_ ne '-' } @$m;
+}
+
 # the same cmp_mask but second argument is arrey to ref
 sub cmp_maska
 {
@@ -861,13 +868,23 @@ sub gen_inst_mask
     my $what = $g_mnames{$1};
     if ( defined $must_be->[2] ) {
     # 1) enc =*? enum(value) - need mask_value and remove from encodings
-# printf("enc %s enum(%s) %s\n", $1, $must_be->[0], $must_be->[2]);
-      my $v = get_enc_enum($op, $1, $must_be->[0], $must_be->[2]);
-      if ( defined $v ) {
-        $rem{$what->[0]} = 1;
-        mask_value(\@res, $v, $what);
-        $patched++;
-      }
+printf("enc %s enum(%s) %s in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1]);
+#f      my $v = get_enc_enum($op, $1, $must_be->[0], $must_be->[2]);
+#f      if ( defined $v ) {
+#f        $rem{$what->[0]} = 1;
+#f        mask_value(\@res, $v, $what);
+#f        $patched++;
+#f      }
+      my $v = is_single_enum($must_be->[0]);
+      if ( defined($v) ) {
+         $rem{$what->[0]} = 1;
+         mask_value(\@res, $v, $what);
+         $patched++;
+        } else {
+         # put this enum into filter at ->[12]
+         if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, 'e', $g_enums{$must_be->[0]}, $must_be->[0] ]; }
+         else { $op->[12] = [ [ $what, 'e', $g_enums{$must_be->[0]}, $must_be->[0] ] ]; }
+        }
     } else {
     # 2) enc = enum
       my $v = is_single_enum($must_be->[0]);
@@ -890,11 +907,13 @@ sub gen_inst_mask
   # and add tables
   foreach my $tmask ( @{ $op->[5] } ) {
     # mask $1 = table $2
-    if ( $tmask =~ /^(\w+)\s*=\s*(\S+)\((?:[^\)]+)\)/ ) {
+    if ( $tmask =~ /^(\w+)\s*=\*?\s*(\S+)\((?:[^\)]+)\)/ ) {
       my $what = $g_mnames{$1};
       if ( exists($g_tabs{$2}) ) {
          if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, 't', $g_tabs{$2}, $2 ]; }
          else { $op->[12] = [ [ $what, 't', $g_tabs{$2}, $2 ] ]; }
+      } else {
+        printf("%s at line %d - table %s does not exist for %s\n", $op->[1], $op->[4], $2, $1);
       }
     }
   }
@@ -929,7 +948,7 @@ sub filter_ins
       return 0 if ( !defined enum_by_value($f->[2], $v) );
     } else {
       my $tr = $f->[2];
-     return 0 if ( !exists $tr->{$v} );
+      return 0 if ( !exists $tr->{$v} );
     }
   }
   1;
@@ -1154,7 +1173,7 @@ sub make_test
         next if ( !filter_ins($b, $ops->[0]) );
         printf("\n") if ( !$found );
         printf("%s - ", $m);
-        printf("%s %d items\n", $ops->[0]->[1], scalar(@$ops));
+        printf("%s %d line %d items\n", $ops->[0]->[1], $ops->[0]->[4], scalar(@$ops));
         dump_filters($ops->[0]);
         # extract all masks values
         dump_mask2enum($ops->[0]);
@@ -1174,7 +1193,10 @@ sub dump_mask2enum
   return if ( !defined $op->[11] );
   printf('mask2enum:');
   my $m2e = $op->[11];
-  while( my($m, $e) = each %$m2e ) {
+  # for diffing dump mask->enum in sorted order
+  # while( my($m, $e) = each %$m2e ) {
+  foreach my $m ( sort keys %$m2e ) {
+    my $e = $m2e->{$m};
     if ( defined $e->[2] ) { printf(" %s->%s(%s)", $m, $e->[0], $e->[2]); }
     else { printf(" %s->%s", $m, $e->[0]); }
   }
@@ -1220,7 +1242,6 @@ sub dump_dup_masks
     }
   }
 }
-
 
 sub insert_mask
 {
@@ -1383,7 +1404,7 @@ my $ins_op = sub {
   $c[6] = $alt;
   $c[7] = $format;
   $c[8] = \@ctabs;
-  $c[9] = scalar(@cb) ? \@ccb : undef;
+  $c[9] = scalar(@cb) ? \@ccb : undef; # constant bank
   $c[10] = \%mae;
   $c[11] = undef;
   if ( defined($opt_m) ) {
@@ -1520,9 +1541,10 @@ while( $str = <$fh> ) {
     parse_mask($str); next;
   }
   # parse format
-  if ( $state == 2 && $str =~ /FORMAT\s+(?:PREDICATE\s+)?.*Opcode\s*?(.*)$/ ) {
-    $format = $1;
+  if ( $state == 2 && $str =~ /FORMAT\s+(?:PREDICATE\s+)?(.*)Opcode\s*?(.*)$/ ) {
+    $format = $2;
     $cons_ae->($1);
+    $cons_ae->($2);
     $state = 6 if ( $str !~ /;\s*$/ );
     next;
   }
