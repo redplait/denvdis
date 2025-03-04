@@ -850,7 +850,7 @@ sub gen_inst_mask
    $cp =~ s/\{\s*\}//g;
    # and $( )$
    $cp =~ s/\$\(\s*\)\$//g;
-   $op->[13] = $cp;
+   $op->[14] = $cp;
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
   # process remained encodings
@@ -918,6 +918,48 @@ printf("enc %s enum(%s) %s in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1])
     }
   }
   return join('', @res);
+}
+
+# args: list of encoders, instr name, instr line, hash name => [ enum ]
+# return ref to hash encoder_name => [ [ enum1 ] ... or undef ]
+sub add_tenums
+{
+  my($enc, $opname, $line, $er) = @_;
+  my %res;
+  foreach my $tmask ( @$enc ) {
+    # mask $1 = table $2
+    if ( $tmask =~ /^(\w+)\s*=\*?\s*(\S+)\(([^\)]+)\)/ ) {
+      next if ( !exists($g_tabs{$2}) );
+      my @ar;
+      my $ename = $1;
+      my $cnt = 0;
+      foreach my $em ( split /\s*,\s*/, $3 ) {
+        if ( exists $er->{$em} ) {
+         push @ar, $er->{$em}; $cnt++;
+        } else { push @ar, undef; }
+      }
+      next if !$cnt;
+      $res{$ename} = \@ar;
+    }
+  }
+  return 0 != scalar keys %res ? \%res : undef;
+}
+
+sub dump_tenums
+{
+  my $te = shift;
+  return if !defined $te;
+  foreach my $t ( sort keys %$te ) {
+    printf("  te:%s(", $t);
+    my $ar = $te->{$t};
+    my $res = '';
+    foreach my $e ( @$ar ) {
+      $res .= defined($e) ? $e->[0] : '';
+      $res .= ',';
+    }
+    chop $res;
+    printf("%s)\n", $res);
+  }
 }
 
 sub dump_filters
@@ -1230,9 +1272,10 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
-      printf("   Unused %s\n", $op->[13]) if defined($op->[13]);
+      printf("   Unused %s\n", $op->[14]) if defined($op->[14]);
       # dump mask to enum mapping
       dump_mask2enum($op);
+      dump_tenums($op->[13]) if defined($op->[13]);
       # dump encodings
       printf("    %s\n", $_) for @{ $op->[5] };
       # dump constant banks
@@ -1286,6 +1329,7 @@ $state = $line = 0;
 # [9] - list with const banks, [ right, enc1, enc2, ... ] 
 # [10] - hashmap encoding -> enum
 # [11] - list of filters for this instruction
+# [12] - map with enums for table-based encoders, key is encoder name
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, %ae, $alt, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
@@ -1388,10 +1432,13 @@ my $ins_op = sub {
   }
   # fill pairs encoding -> [ enum, optional? ]
   my %mae;
+  my %missed_ae;
   while( my($a, $e) = each %ae ) {
     my $what = check_enc(\@enc, $e->[0], $a);
-    $mae{$what->[0]} = $e if ( defined($what) );
+    if ( defined($what) ) { $mae{$what->[0]} = $e; }
+    else { $missed_ae{$a} = $e };
   }
+  my $tenums = (scalar keys %missed_ae) ? add_tenums(\@enc, $op[0], $op_line, \%missed_ae): undef;
   # make new instruction
   my @c = @op;
   my @cenc = @enc;
@@ -1407,6 +1454,7 @@ my $ins_op = sub {
   $c[9] = scalar(@cb) ? \@ccb : undef; # constant bank
   $c[10] = \%mae;
   $c[11] = undef;
+  $c[12] = $tenums;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
