@@ -397,9 +397,9 @@ sub cmpa_mask
   for ( my $i = 0; $i < $g_size; $i++ ) {
     my $l = substr($a, $i, 1);
     if ( $m->[$i] eq '0' ) {
-      return 0 if ( $l ne '0' );
+      return 0 if ( $l ne '0' && $l ne '-' );
     } elsif ( $m->[$i] eq '1' ) {
-      return 0 if ( $l ne '1' );
+      return 0 if ( $l ne '1' && $l ne '-' );
     }
   }
   1;
@@ -1164,7 +1164,7 @@ sub parse0b
 }
 
 # mask map, key - mask string, value - instruction like in g_ops
-my(%g_masks);
+my(%g_masks, $g_dec_tree);
 my $g_dups = 0;
 
 sub dump_plain_value
@@ -1252,22 +1252,37 @@ sub make_test
     printf("%s:", join '', @$b);
     # try to find in all masks - very slow
     my $found = 0;
+    my $process = sub {
+     my($ops, $m) = @_;
+     printf("\n") if ( !$found );
+     printf("%s - ", $m);
+     printf("%s %d line %d items\n", $ops->[0]->[1], $ops->[0]->[4], scalar(@$ops));
+     dump_filters($ops->[0]);
+     # extract all masks values
+     dump_mask2enum($ops->[0]);
+     dump_tenums($ops->[0]->[13]) if defined($ops->[0]->[13]);
+     dump_values($b, $ops->[0]);
+     $found++;
+    };
+    if ( defined $opt_B ) {
+      my @res;
+      find_in_dectree($g_dec_tree, $b, \@res);
+      printf("%d results\n", scalar(@res));
+      foreach my $m ( @res ) {
+        next if ( !cmp_maska($m, $b) );
+        my $ops = $g_masks{$m};
+        next if ( !filter_ins($b, $ops->[0]) );
+        $process->($ops, $m);
+      }
+    } else {
     foreach my $m ( keys %g_masks ) {
       if ( cmp_maska($m, $b) ) {
         my $ops = $g_masks{$m};
         next if ( !filter_ins($b, $ops->[0]) );
-        printf("\n") if ( !$found );
-        printf("%s - ", $m);
-        printf("%s %d line %d items\n", $ops->[0]->[1], $ops->[0]->[4], scalar(@$ops));
-        dump_filters($ops->[0]);
-        # extract all masks values
-        dump_mask2enum($ops->[0]);
-        dump_tenums($ops->[0]->[13]) if defined($ops->[0]->[13]);
-        dump_values($b, $ops->[0]);
-        $found++;
+        $process->($ops, $m);
         # last; # find first mask
       }
-    }
+    } }
     printf(" NOTFound\n") if ( !$found );
   }
   close $fh;
@@ -1408,17 +1423,19 @@ sub build_node
   }
   if ( -1 == $curr_idx ) {
     # no best bit, choice first for 0 or 1
-    for ( my $i = 0; $i < $g_size; $i++ ) {
-      my $b = $bits[$i];
-      next if ( !defined $b );
-      if ( $b->[0] ) { $curr_idx = $i; last; }
-      if ( $b->[1] ) { $curr_idx = $i; last; }
-    }
+    # for ( my $i = 0; $i < $g_size; $i++ ) {
+    #  my $b = $bits[$i];
+    #  next if ( !defined $b );
+    #  if ( $b->[0] ) { $curr_idx = $i; last; }
+    #  if ( $b->[1] ) { $curr_idx = $i; last; }
+    # }
     if ( -1 == $curr_idx ) {
-      printf("%d level %d %d cnt %d curr_max %f rem %d\n", $hand, $lvl, $i, $cnt, $curr_max, scalar @$rem);
-      printf("%s MYMASK\n", join '', @$a);
-      foreach my $rmask ( @$rem ) {
-       printf("%s\n", $rmask);
+      if ( defined $opt_v ) {
+        printf("%d level %d %d cnt %d curr_max %f rem %d\n", $hand, $lvl, $i, $cnt, $curr_max, scalar @$rem);
+        printf("%s MYMASK\n", join '', @$a);
+        foreach my $rmask ( @$rem ) {
+         printf("%s\n", $rmask);
+        }
       }
       # dump bits
 #      for ( my $i = 0; $i < $g_size; $i++ ) {
@@ -1503,10 +1520,30 @@ sub build_tree
   my @all = keys %g_masks;
   my $res = build_node(\@init_a, \@init_u, \@all, 0, 2);
   # 0 - lead nodes, 1 - nodes, 2 - max nesting level
-  my @stat = ( 0, 0, 0 );
+  my @stat = ( 0, 0, 0, 0 );
+#  print Dumper($res);
   dump_decision_node($res, 0, 'C', \@stat);
-  printf("%d nodes, %d leaves, max level %d\n", $stat[0], $stat[1], $stat[2]);
+  printf("%d nodes, %d leaves, max level %d total masks %d\n", $stat[0], $stat[1], $stat[2], $stat[3]);
   $res;
+}
+
+# main horror - try to find mask array b in decision tree starting from node n, curr is result set
+sub find_in_dectree
+{
+  my($n, $b, $curr) = @_;
+  if ( $n->[0] eq 'L' ) {
+    push @$curr, @{ $n->[1] } if ( scalar @{ $n->[1] } );
+    return 1;
+  }
+  push @$curr, @{ $n->[4] } if ( scalar @{ $n->[4] } );
+  my $bit = $b->[$n->[1]];
+  if ( !$bit ) {
+    return 0 if ( !defined $n->[2] );
+    return find_in_dectree($n->[2], $b, $curr);
+  } else {
+    return 0 if ( !defined $n->[3] );
+    return find_in_dectree($n->[3], $b, $curr);
+  }
 }
 
 # for debugging of decision tree
@@ -1517,11 +1554,13 @@ sub dump_decision_node
   $st->[2] = $lvl if ( $lvl > $st->[2] );
   if ( $n->[0] eq 'L' ) {
     $st->[0]++;
-    printf("lvl %d %s masks %d\n", $lvl, $hand, defined($n->[1]) ? scalar @{ $n->[1] } : -1 );
+    $st->[3] += scalar @{ $n->[1] } if defined($n->[1]);
+    printf("lvl %d %s masks %d\n", $lvl, $hand, defined($n->[1]) ? scalar @{ $n->[1] } : -1 ) if defined($opt_v);
     return;
   }
   $st->[1]++;
-  printf("lvl %d %s bit %d masks %d\n", $lvl, $hand, $n->[1], defined($n->[4]) ? scalar @{ $n->[4] } : -1 );
+  $st->[3] += scalar @{ $n->[4] } if ( defined($n->[4]) );
+  printf("lvl %d %s bit %d masks %d\n", $lvl, $hand, $n->[1], defined($n->[4]) ? scalar @{ $n->[4] } : -1 ) if defined($opt_v);
   dump_decision_node( $n->[2], $lvl + 1, 'L', $st ) if defined $n->[2];
   dump_decision_node( $n->[3], $lvl + 1, 'R', $st ) if defined $n->[3];
 }
@@ -1975,10 +2014,11 @@ if ( defined($opt_m) ) {
 # total          367 393 435 476  602  1110  1118  1041  1165
 # duplicated      82  82 112 112    7    19    20    20    27
   if ( defined $opt_T ) {
+    $g_dec_tree = build_tree() if ( defined($opt_B) );
     make_test($opt_T);
   } else {
     if ( defined($opt_B) ) {
-      build_tree();
+      $g_dec_tree = build_tree();
       printf("min mask len %d\n", $g_min_len);
     } else {
       dump_dup_masks();
