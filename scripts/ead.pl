@@ -7,7 +7,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_c $opt_e $opt_f $opt_F $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w/;
+use vars qw/$opt_a $opt_b $opt_B $opt_c $opt_e $opt_f $opt_F $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w/;
 
 sub usage()
 {
@@ -16,6 +16,7 @@ Usage: $0 [options] md.txt
  Options:
   -a - add alternates
   -b - apply bitsets
+  -B - build decision tree for decoding
   -c - use format constant to form mask
   -e - dump enums
   -f - dump fully filled masks
@@ -237,6 +238,7 @@ sub parse_tab_keys
 
 # ENCODING WIDTH
 my $g_size;
+my $g_min_len;
 
 # for masks we need 2 map - first with name as key, second as mask
 # both contains as value array where
@@ -339,6 +341,13 @@ sub zero_mask
  }
 }
 
+# calc count of meaning bits
+sub calc_mean_bits
+{
+  my $m = shift;
+  scalar grep { $_ ne '-' } @$m;
+}
+
 # for tests only
 sub cmp_mask
 {
@@ -358,14 +367,7 @@ sub cmp_mask
   1;
 }
 
-# calc count of meaning bits
-sub calc_mean_bits
-{
-  my $m = shift;
-  scalar grep { $_ ne '-' } @$m;
-}
-
-# the same cmp_mask but second argument is arrey to ref
+# the same cmp_mask but second argument is array to ref
 sub cmp_maska
 {
   my($m, $a) = @_;
@@ -379,6 +381,25 @@ sub cmp_maska
       return 0 if ( $a->[$i] ne '0' );
     } elsif ( $l eq '1' ) {
       return 0 if ( $a->[$i] ne '1' );
+    }
+  }
+  1;
+}
+
+# like cmp_maska but m is array and a is string
+sub cmpa_mask
+{
+  my($m, $a) = @_;
+  if ( scalar(@$m) != $g_size ) {
+    carp("length of mask array must be $g_size");
+    return 0;
+  }
+  for ( my $i = 0; $i < $g_size; $i++ ) {
+    my $l = substr($a, $i, 1);
+    if ( $m->[$i] eq '0' ) {
+      return 0 if ( $l ne '0' );
+    } elsif ( $m->[$i] eq '1' ) {
+      return 0 if ( $l ne '1' );
     }
   }
   1;
@@ -850,7 +871,7 @@ sub gen_inst_mask
    $cp =~ s/\{\s*\}//g;
    # and $( )$
    $cp =~ s/\$\(\s*\)\$//g;
-   $op->[14] = $cp;
+   $op->[15] = $cp;
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
   # process remained encodings
@@ -917,6 +938,9 @@ printf("enc %s enum(%s) %s in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1])
       }
     }
   }
+  my $cmin = calc_mean_bits(\@res);
+  $g_min_len = $cmin if ( $cmin < $g_min_len );
+  $op->[14] = \@res if ( defined $opt_B );
   return join('', @res);
 }
 
@@ -1292,7 +1316,7 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
-      printf("   Unused %s\n", $op->[14]) if defined($op->[14]);
+      printf("   Unused %s\n", $op->[15]) if defined($op->[15]);
       # dump mask to enum mapping
       dump_mask2enum($op);
       dump_tenums($op->[13]) if defined($op->[13]);
@@ -1325,8 +1349,185 @@ sub insert_mask
   }
 }
 
+###
+# tree build logic
+# hard to google ISDL or LISA algos
+# this one is pretty good: https://past.date-conference.com/proceedings-archive/2016/pdf/0066.pdf
+###
+
+# leaf node is just list like
+#  [ 'L', [ array with masks ] ]
+# node with children:
+#  [ 'M', index_of_bit, ptr2left_node0, ptr2right_node1, [ array with masks ]
+# arrray with masks can occure if length of current node >= $g_min_len and some mask gave match with cmpa_mask
+# args:
+#  a - array ref to current mask, cannot be shared by all levels, for left 0, for right 1
+#  u - array ref to used masks indexes to ignore, for children add currently found bit so also cannot be shared
+#  rem - array of string with masks to place into tree
+#  level - nesting level
+#  hand 0 if left, 1 if right - for debugging
+sub build_node
+{
+  my($a, $u, $rem, $lvl, $hand) = @_;
+  my $cnt = scalar @$rem;
+  return undef if ( !$cnt );
+  # 1) build array to count bits
+  my @bits;
+  my @masks;
+  my @node_masks;
+  for ( my $i = 0; $i < $g_size; $i++ ) { push @bits, $u->[$i] ? undef : [ 0, 0, 0 ]; }
+  foreach my $kmask ( @$rem ) {
+    if ( $lvl >= $g_min_len && cmpa_mask($a, $kmask) ) { push @node_masks, $kmask; next; }
+    else { push @masks, $kmask; }
+    for ( my $i = 0; $i < $g_size; $i++ ) {
+      next if ( !defined $bits[$i] );
+      my $letter = substr($kmask, $i, 1);
+      if ( $letter eq '0' ) { $bits[$i]->[0]++; }
+      elsif ( $letter eq '1' ) { $bits[$i]->[1]++; }
+      else { $bits[$i]->[2]++; }
+    }
+  }
+  return [ 'L', \@node_masks ] if ( !scalar @masks );
+  # 2) we have some remainded masks, calc best bit position - like share of 0 or 1 / total is max
+  $cnt = scalar @masks;
+  my $curr_idx = -1;
+  my $curr_max = 0.0;
+  my $i = 0;
+  foreach my $b ( @bits ) {
+    if ( !defined $b ) { $i++; next; }
+    if ( $b->[0] == $cnt || $b->[1] == $cnt || $b->[2] == $cnt ) { $i++; next; }
+    # ignore zeros
+    if ( !$b->[0] || !$b->[1] ) { $i++; next; }
+    my $f0 = $b->[0] * 1.0 / $cnt;
+    my $f1 = $b->[1] * 1.0 / $cnt;
+    # find min($f0, $f1)
+    $f0 = $f1 if ( $f1 < $f0 );
+    if ( $f0 > $curr_max ) { $curr_max = $f0; $curr_idx = $i; }
+# printf("%d f0 %f f1 %f curr_max %f\n", $i, $f0, $f1, $curr_max);
+    $i++;
+  }
+  if ( -1 == $curr_idx ) {
+    # no best bit, choice first for 0 or 1
+    for ( my $i = 0; $i < $g_size; $i++ ) {
+      my $b = $bits[$i];
+      next if ( !defined $b );
+      if ( $b->[0] ) { $curr_idx = $i; last; }
+      if ( $b->[1] ) { $curr_idx = $i; last; }
+    }
+    if ( -1 == $curr_idx ) {
+      printf("%d level %d %d cnt %d curr_max %f rem %d\n", $hand, $lvl, $i, $cnt, $curr_max, scalar @$rem);
+      printf("%s MYMASK\n", join '', @$a);
+      foreach my $rmask ( @$rem ) {
+       printf("%s\n", $rmask);
+      }
+      # dump bits
+#      for ( my $i = 0; $i < $g_size; $i++ ) {
+#        my $b = $bits[$i];
+#        next if ( !defined $b );
+#        printf("%d bits %d %d %d\n", $i, $b->[0], $b->[1], $b->[2]);
+#      }
+      return [ 'L', $rem ];
+    }
+  }
+  # 3) split to 3 array on bit $curr_idx
+  my(@left, @right, @both);
+  foreach my $cm ( @masks ) {
+    my $letter = substr($cm, $curr_idx, 1);
+    if ( $letter eq '0' ) { push @left, $cm; }
+    elsif ( $letter eq '1' ) { push @right, $cm; }
+    else { push @both, $cm; }
+  }
+  # 4) make new mask & u
+  my @new_a = @$a;
+  my @new_u = @$u;
+  $new_u[$curr_idx] = 1;
+  # 5) left node
+  my @this_node = ( 'M', $curr_idx );
+  if ( scalar(@left) ) {
+    push @left, @both if ( scalar @both );
+    $new_a[$curr_idx] = '0';
+    push @this_node, build_node(\@new_a, \@new_u,\@left, $lvl + 1, 0);
+  } else {
+    push @this_node, undef;
+  }
+  # 6) right node
+  if ( scalar(@right) ) {
+    push @right, @both if ( scalar @both );
+    $new_a[$curr_idx] = '1';
+    push @this_node, build_node(\@new_a, \@new_u,\@right, $lvl + 1, 1);
+  } else {
+    push @this_node, undef;
+  }
+  # that's all folks
+  push @this_node, \@node_masks;
+  return \@this_node;
+}
+
+sub build_tree
+{
+  # 1) lets exclude bits with the same valus in all instructions
+  # indexes are  0  1  X
+  my @bits;
+  for ( my $i = 0; $i < $g_size; $i++ ) { push @bits, [ 0, 0, 0]; }
+  my $cnt = 0;
+  while( my($kmask, $op) = each(%g_masks) ) {
+    my @ma = split //, $kmask;
+    $cnt++;
+    for ( my $i = 0; $i < $g_size; $i++ ) {
+      if ( $ma[$i] eq '0' ) { $bits[$i]->[0]++; }
+      elsif ( $ma[$i] eq '1' ) { $bits[$i]->[1]++; }
+      else { $bits[$i]->[2]++; }
+    }
+  }
+  # 2) make initial mask and used
+  my @init_a = ( 'X' ) x $g_size;
+  my @init_u = ( 0 ) x $g_size;
+  for ( my $i = 0; $i < $g_size; $i++ ) {
+    my $b = $bits[$i];
+    if ( $b->[0] == $cnt ) {
+      $init_a[$i] = '0';
+      $init_u[$i] = 1;
+      next;
+    }
+    if ( $b->[1] == $cnt ) {
+      $init_a[$i] = '1';
+      $init_u[$i] = 1;
+      next;
+    }
+    if ( $b->[2] == $cnt ) {
+      $init_u[$i] = 1;
+      next;
+    }
+  }
+  # and finally build whole tree
+  my @all = keys %g_masks;
+  my $res = build_node(\@init_a, \@init_u, \@all, 0, 2);
+  # 0 - lead nodes, 1 - nodes, 2 - max nesting level
+  my @stat = ( 0, 0, 0 );
+  dump_decision_node($res, 0, 'C', \@stat);
+  printf("%d nodes, %d leaves, max level %d\n", $stat[0], $stat[1], $stat[2]);
+  $res;
+}
+
+# for debugging of decision tree
+sub dump_decision_node
+{
+  my($n, $lvl, $hand, $st) = @_;
+  return if ( !defined $n );
+  $st->[2] = $lvl if ( $lvl > $st->[2] );
+  if ( $n->[0] eq 'L' ) {
+    $st->[0]++;
+    printf("lvl %d %s masks %d\n", $lvl, $hand, defined($n->[1]) ? scalar @{ $n->[1] } : -1 );
+    return;
+  }
+  $st->[1]++;
+  printf("lvl %d %s bit %d masks %d\n", $lvl, $hand, $n->[1], defined($n->[4]) ? scalar @{ $n->[4] } : -1 );
+  dump_decision_node( $n->[2], $lvl + 1, 'L', $st ) if defined $n->[2];
+  dump_decision_node( $n->[3], $lvl + 1, 'R', $st ) if defined $n->[3];
+}
+
 ### main
-my $status = getopts("abcefFmrtvwT:");
+my $status = getopts("abBcefFmrtvwT:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -1350,6 +1551,7 @@ $state = $line = 0;
 # [10] - hashmap encoding -> enum
 # [11] - list of filters for this instruction
 # [12] - map with enums for table-based encoders, key is encoder name
+# [13] - ref to mask array
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, %ae, $alt, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
@@ -1475,6 +1677,7 @@ my $ins_op = sub {
   $c[10] = \%mae;
   $c[11] = undef;
   $c[12] = $tenums;
+  $c[13] = undef;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
@@ -1499,7 +1702,7 @@ while( $str = <$fh> ) {
   $line++;
   if ( !$state ) {
     if ( $str =~ /ENCODING\s+WIDTH\s+(\d+)\s*\;/ ) {
-       $g_size = int($1);
+       $g_min_len = $g_size = int($1);
        $state = 1;
        next;
     }
@@ -1774,8 +1977,13 @@ if ( defined($opt_m) ) {
   if ( defined $opt_T ) {
     make_test($opt_T);
   } else {
-    dump_dup_masks();
-    printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
+    if ( defined($opt_B) ) {
+      build_tree();
+      printf("min mask len %d\n", $g_min_len);
+    } else {
+      dump_dup_masks();
+      printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
+    }
   }
 } else {
   dump_negtree(\%g_zero);
