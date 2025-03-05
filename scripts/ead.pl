@@ -1246,6 +1246,9 @@ sub make_test
 {
   my $fn = shift;
   my($fh, $b);
+  my $cmp_cnt = 0;
+  my $filter_cnt = 0;
+  my $filtered_cnt = 0;
   open($fh, '<', $fn) or die("cannot open $fn, error $!");
   my $cf = ($g_size == 88) ? martian88($fh) : conv($fh);
   while( defined($b = $cf->()) ) {
@@ -1269,16 +1272,22 @@ sub make_test
       find_in_dectree($g_dec_tree, $b, \@res);
       printf("%d results\n", scalar(@res));
       foreach my $m ( @res ) {
+        $cmp_cnt++;
         next if ( !cmp_maska($m, $b) );
         my $ops = $g_masks{$m};
+        $filter_cnt++;
         next if ( !filter_ins($b, $ops->[0]) );
+        $filtered_cnt++;
         $process->($ops, $m);
       }
     } else {
     foreach my $m ( keys %g_masks ) {
+      $cmp_cnt++;
       if ( cmp_maska($m, $b) ) {
         my $ops = $g_masks{$m};
+        $filter_cnt++;
         next if ( !filter_ins($b, $ops->[0]) );
+        $filtered_cnt++;
         $process->($ops, $m);
         # last; # find first mask
       }
@@ -1286,6 +1295,7 @@ sub make_test
     printf(" NOTFound\n") if ( !$found );
   }
   close $fh;
+  printf("%d cmp_maska, %d filter_ins, %d filtered\n", $cmp_cnt, $filter_cnt, $filtered_cnt);
 }
 
 sub dump_mask2enum
