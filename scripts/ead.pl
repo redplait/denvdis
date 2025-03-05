@@ -341,7 +341,7 @@ sub zero_mask
  }
 }
 
-# calc count of meaning bits
+# calc count of meaningful bits
 sub calc_mean_bits
 {
   my $m = shift;
@@ -732,13 +732,27 @@ sub gen_inst_mask
     if ( $emask =~ /^(\w+)\s*=\*?\s*0b(\S+)/ ) { # enc =*? 0bxxx
       my $mask = $g_mnames{$1};
       $rem{$1} = $emask;
-      mask_value(\@res, parse0b($2), $mask);
+      my $v = parse0b($2);
+      mask_value(\@res, $v, $mask);
+      # add v record for filter
+      if ( defined $op->[12] ) { push @{ $op->[12] }, [ $mask, 'v', $v ]; }
+         else { $op->[12] = [ [ $mask, 'v', $v ] ]; }
     } elsif ( $emask =~ /^(\w+)\s*=\*?\s*(\d+)/ ) {
+      my $mask = $g_mnames{$1};
       $rem{$1} = $emask;
-      mask_value(\@res, int($2), $g_mnames{$1});
+      my $v = int($2);
+      mask_value(\@res, $v, $mask);
+      # add v record for filter
+      if ( defined $op->[12] ) { push @{ $op->[12] }, [ $mask, 'v', $v ]; }
+         else { $op->[12] = [ [ $mask, 'v', $v ] ]; }
     } elsif ( $emask =~ /^(\w+)\s*=\*?\s*0x(\w+)/i ) {
+      my $mask = $g_mnames{$1};
+      my $v = hex($2);
       $rem{$1} = $emask;
-      mask_value(\@res, hex($2), $g_mnames{$1});
+      mask_value(\@res, $v, $mask);
+      # add v record for filter
+      if ( defined $op->[12] ) { push @{ $op->[12] }, [ $mask, 'v', $v ]; }
+         else { $op->[12] = [ [ $mask, 'v', $v ] ]; }
     }
   }
   if ( scalar keys %rem ) {
@@ -998,7 +1012,8 @@ sub dump_filters
   printf("filters:\n");
   my $flist = $op->[12];
   foreach my $f ( @$flist ) {
-    printf("  %s %s %s\n", $f->[0]->[0], $f->[1], $f->[3]);
+   if ( $f->[1] eq 'v' ) { printf("  %s %s %d\n", $f->[0]->[0], $f->[1], $f->[2]); }
+    else { printf("  %s %s %s\n", $f->[0]->[0], $f->[1], $f->[3]); }
   }
 }
 
@@ -1017,6 +1032,8 @@ sub filter_ins
     next if ( !defined $v );
     if ( 'e' eq $f->[1] ) {
       return 0 if ( !defined enum_by_value($f->[2], $v) );
+    } elsif ( 'v' eq $f->[1] ) {
+      return 0 if ( $v != $f->[2] );
     } else {
       my $tr = $f->[2];
       return 0 if ( !exists $tr->{$v} );
@@ -1384,9 +1401,10 @@ sub insert_mask
 #  [ 'L', [ array with masks ] ]
 # node with children:
 #  [ 'M', index_of_bit, ptr2left_node0, ptr2right_node1, [ array with masks ]
-# arrray with masks can occure if length of current node >= $g_min_len and some mask gave match with cmpa_mask
+# arrray with masks can occure if level of current node >= $g_min_len (in other words we have enough meaningful bits)
+#  and some mask(s) gave match with current incomplete mask inside cmpa_mask
 # args:
-#  a - array ref to current mask, cannot be shared by all levels, for left 0, for right 1
+#  a - array ref to current mask, cannot be shared by all levels, for left 0, for right 1 at index_of_bit
 #  u - array ref to used masks indexes to ignore, for children add currently found bit so also cannot be shared
 #  rem - array of string with masks to place into tree
 #  level - nesting level
