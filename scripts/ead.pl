@@ -954,7 +954,7 @@ printf("enc %s enum(%s) %s in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1])
   }
   my $cmin = calc_mean_bits(\@res);
   $g_min_len = $cmin if ( $cmin < $g_min_len );
-  $op->[14] = \@res if ( defined $opt_B );
+  $op->[14] = $cmin;
   return join('', @res);
 }
 
@@ -1092,7 +1092,8 @@ my $g_diff_names = 0;
 # [10] - const bank list
 # [11] - hash with alias -> enum ref
 # [12] - list of filters for this instruction
-# [13] - string with unused formats
+# [14] - count of meaningful bits
+# [15] - string with unused formats
 sub insert_ins
 {
   my($cname, $op) = @_;
@@ -1276,7 +1277,8 @@ sub make_test
      my($ops, $m) = @_;
      printf("\n") if ( !$found );
      printf("%s - ", $m);
-     printf("%s %d line %d items\n", $ops->[0]->[1], $ops->[0]->[4], scalar(@$ops));
+     printf("%s line %d %d bits %s %d items\n", $ops->[0]->[1], $ops->[0]->[4], $ops->[0]->[14],
+       $ops->[0]->[7] ? 'ALT' : '', scalar(@$ops));
      dump_filters($ops->[0]);
      # extract all masks values
      dump_mask2enum($ops->[0]);
@@ -1377,6 +1379,8 @@ sub insert_mask
   my($cname, $op) = @_;
   # put class name to op
   unshift @$op, $cname;
+  # skip altername classes without -a option
+  # <()> return if ( $op->[7] && !defined($opt_a) );
   my $mask = gen_inst_mask($op);
   if ( exists $g_masks{$mask} ) {
      # skip alternate classes
@@ -1401,10 +1405,10 @@ sub insert_mask
 #  [ 'L', [ array with masks ] ]
 # node with children:
 #  [ 'M', index_of_bit, ptr2left_node0, ptr2right_node1, [ array with masks ]
-# arrray with masks can occure if level of current node >= $g_min_len (in other words we have enough meaningful bits)
+# arrray with masks can occurs if level of current node >= $g_min_len (in other words we have enough meaningful bits)
 #  and some mask(s) gave match with current incomplete mask inside cmpa_mask
 # args:
-#  a - array ref to current mask, cannot be shared by all levels, for left 0, for right 1 at index_of_bit
+#  a - array ref to current mask, cannot be shared by all levels bcs it patched at index_of_bit for left 0, for right 1
 #  u - array ref to used masks indexes to ignore, for children add currently found bit so also cannot be shared
 #  rem - array of string with masks to place into tree
 #  level - nesting level
@@ -1450,7 +1454,10 @@ sub build_node
     $i++;
   }
   if ( -1 == $curr_idx ) {
-    # no best bit, choice first for 0 or 1
+    # no best bit, we could choice first for 0 or 1
+    # but this lead to deep chain of flipping left or right nodes with only child
+    # you can check this uncommenting bits dump at end
+    # so stop madness and just add all remained masks to leaf node
     # for ( my $i = 0; $i < $g_size; $i++ ) {
     #  my $b = $bits[$i];
     #  next if ( !defined $b );
@@ -1486,22 +1493,18 @@ sub build_node
   my @new_a = @$a;
   my @new_u = @$u;
   $new_u[$curr_idx] = 1;
-  # 5) left node
-  my @this_node = ( 'M', $curr_idx );
+  # 5) left node - @lest || $both, patch new_a[curr_idx] to 0
+  my @this_node = ( 'M', $curr_idx, undef, undef );
   if ( scalar(@left) ) {
     push @left, @both if ( scalar @both );
     $new_a[$curr_idx] = '0';
-    push @this_node, build_node(\@new_a, \@new_u,\@left, $lvl + 1, 0);
-  } else {
-    push @this_node, undef;
+    $this_node[2] = build_node(\@new_a, \@new_u,\@left, $lvl + 1, 0);
   }
-  # 6) right node
+  # 6) right node - @right || @both, patch new_a[curr_idx] to 1
   if ( scalar(@right) ) {
     push @right, @both if ( scalar @both );
     $new_a[$curr_idx] = '1';
-    push @this_node, build_node(\@new_a, \@new_u,\@right, $lvl + 1, 1);
-  } else {
-    push @this_node, undef;
+    $this_node[3] = build_node(\@new_a, \@new_u,\@right, $lvl + 1, 1);
   }
   # that's all folks
   push @this_node, \@node_masks;
@@ -1744,7 +1747,7 @@ my $ins_op = sub {
   $c[10] = \%mae;
   $c[11] = undef;
   $c[12] = $tenums;
-  $c[13] = undef;
+  $c[13] = 0;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
