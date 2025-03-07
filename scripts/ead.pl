@@ -1274,31 +1274,34 @@ sub make_test
     # try to find in all masks - very slow
     my $found = 0;
     my $process = sub {
-     my($ops, $m) = @_;
+     my($op, $m) = @_;
      printf("\n") if ( !$found );
      printf("%s - ", $m);
-     printf("%s line %d %d bits %s %d items\n", $ops->[0]->[1], $ops->[0]->[4], $ops->[0]->[14],
-       $ops->[0]->[7] ? 'ALT' : '', scalar(@$ops));
-     dump_filters($ops->[0]);
+     printf("%s line %d %d bits %s\n", $op->[1], $op->[4], $op->[14], $op->[7] ? 'ALT' : '');
+     dump_filters($op);
      # extract all masks values
-     dump_mask2enum($ops->[0]);
-     dump_tenums($ops->[0]->[13]) if defined($ops->[0]->[13]);
-     dump_values($b, $ops->[0]);
+     dump_mask2enum($op);
+     dump_tenums($op->[13]) if defined($op->[13]);
+     dump_values($b, $op);
      $found++;
     };
     if ( defined $opt_B ) {
       my @res;
+      my @fout;
       find_in_dectree($g_dec_tree, $b, \@res);
-      printf("%d results\n", scalar(@res));
       foreach my $m ( @res ) {
         $cmp_cnt++;
         next if ( !cmp_maska($m, $b) );
         my $ops = $g_masks{$m};
-        $filter_cnt++;
-        next if ( !filter_ins($b, $ops->[0]) );
-        $filtered_cnt++;
-        $process->($ops, $m);
+        foreach my $co ( @$ops ) {
+          $filter_cnt++;
+          next if ( !filter_ins($b, $co) );
+          $filtered_cnt++;
+          push @fout, [ $co, $m ];
+        }
       }
+      printf("(%d/%d) ", scalar(@fout), scalar(@res));
+      $process->($_->[0], $_->[1]) for @fout;
     } else {
     foreach my $m ( keys %g_masks ) {
       $cmp_cnt++;
@@ -1307,7 +1310,7 @@ sub make_test
         $filter_cnt++;
         next if ( !filter_ins($b, $ops->[0]) );
         $filtered_cnt++;
-        $process->($ops, $m);
+        $process->($ops->[0], $m);
         # last; # find first mask
       }
     } }
