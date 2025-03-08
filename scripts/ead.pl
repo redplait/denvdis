@@ -501,6 +501,23 @@ sub bit_array_rev
   return \@res;
 }
 
+# encoding for 64bit - just ignore first qword from each 8
+sub old64
+{
+  my $fp = shift;
+  my $idx = 0;
+  sub {
+    my $str;
+    if ( !$idx ) {
+      return undef unless ( defined($str = <$fp>) );
+      $idx++;
+    }
+    return undef unless ( defined($str = <$fp>) );
+    $idx = 0 if ( 8 == ++$idx );
+    return conv2a($str);
+  };
+}
+
 # encoding for 88bit is pure madness
 # first 64 bit is common for next 3 64bit instructions and actually contains 3 17bit usched infos
 sub martian88
@@ -582,7 +599,7 @@ sub conv2a
   return bit_array(\@p);
 }
 
-sub conv
+sub read128
 {
   my $fp = shift;
   sub {
@@ -951,7 +968,7 @@ printf("enc %s enum(%s) %s in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1])
       if ( exists($g_tabs{$2}) ) {
          if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, 't', $g_tabs{$2}, $2 ]; }
          else { $op->[12] = [ [ $what, 't', $g_tabs{$2}, $2 ] ]; }
-      } else {
+      } elsif ( $2 ne 'IDENTICAL' ) {
         printf("%s at line %d - table %s does not exist for %s\n", $op->[1], $op->[4], $2, $1);
       }
     }
@@ -1243,22 +1260,31 @@ sub dump_values
           my $row = $tab->{$v};
           printf("   %s(%X) %s = ", $mask->[0], $v, $3);
           if ( 'ARRAY' eq ref $row ) {
+            my @fa = split /\s*,\s*/, $3;
             my $te = $op->[13];
             if ( defined($te) && exists $te->{$1} ) {
               my $res = '';
               my $ae = $te->{$1};
               for ( my $i = 0; $i < scalar @$row; $i++ ) {
-                if ( !defined $ae->[$i] ) { $res .= $row->[$i]; } else {
+                if ( !defined $ae->[$i] ) { $res .= $row->[$i];
+                  $kv->{ $fa[$i] } = $row->[$i] if ( $i < scalar @fa );
+                } else {
                   $res .= $ae->[$i]->[0] . '(' . $row->[$i] . ')';
                   my $v = enum_by_value($ae->[$i]->[1], $row->[$i]);
+                  $kv->{ $fa[$i] } = [ $row->[$i], $v ] if ( $i < scalar @fa && defined($v) );
                   $res .= $v if defined $v;
                 }
                 $res .= ',';
               }
               chop $res;
               printf("%s\n", $res);
-            } else { printf("%s\n", join ",", @$row); }
-          } else { printf("%s\n", $row); $kv->{$3} = $row; }
+            } else { printf("%s\n", join ",", @$row);
+              for ( my $i = 0; $i < scalar @$row; $i++ ) {
+                $kv->{ $fa[$i] } = $row->[$i];
+              }
+            }
+          } else { # table with single arg
+            printf("%s\n", $row); $kv->{$3} = $row; }
         } else {
           printf("   %s value %X does not exists in table %s\n", $mask->[0], $v, $2);
         }
@@ -1296,9 +1322,16 @@ sub make_test
   my $cmp_cnt = 0;
   my $filter_cnt = 0;
   my $filtered_cnt = 0;
+  my $processed = 0;
+  my $readed = 0;
   open($fh, '<', $fn) or die("cannot open $fn, error $!");
-  my $cf = ($g_size == 88) ? martian88($fh) : conv($fh);
+  my $cf;
+  if ( $g_size == 64 ) { $cf = old64($fh); }
+  elsif ($g_size == 88) { $cf = martian88($fh); }
+  elsif ($g_size == 128) { $cf = read128($fh); }
+  else { carp("unknown width $g_size"); return 0; }
   while( defined($b = $cf->()) ) {
+    $readed++;
     printf("%s:", join '', @$b);
     # try to find in all masks - very slow
     my $found = 0;
@@ -1353,9 +1386,11 @@ sub make_test
         # last; # find first mask
       }
     } }
+    $processed++ if ( $found );
     printf(" NOTFound\n") if ( !$found );
   }
   close $fh;
+  printf("readed %d, processed %d\n", $readed, $processed);
   printf("%d cmp_maska, %d filter_ins, %d filtered\n", $cmp_cnt, $filter_cnt, $filtered_cnt);
 }
 
@@ -1664,6 +1699,7 @@ $state = $line = 0;
 # [11] - list of filters for this instruction
 # [12] - map with enums for table-based encoders, key is encoder name
 # [13] - count of meaningful bits
+# [14] - list of formats
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, %ae, $alt, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
@@ -1798,7 +1834,7 @@ my $ins_op = sub {
 };
 # parse format in form /? $1 enum $2 optional value $3 alias $4
 my $cons_ae = sub {
-  my $s = shift;
+  my($s, $idx) = @_;
   # $1 - /? $2 - enum
   while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\/\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)/g ) {
     if ( exists $g_enums{$2} ) {
@@ -1931,8 +1967,8 @@ while( $str = <$fh> ) {
   # parse format
   if ( $state == 2 && $str =~ /FORMAT\s+(?:PREDICATE\s+)?(.*)Opcode\s*?(.*)$/ ) {
     $format = $2;
-    $cons_ae->($1);
-    $cons_ae->($2);
+    $cons_ae->($1, 0);
+    $cons_ae->($2, 1);
     $state = 6 if ( $str !~ /;\s*$/ );
     next;
   }
@@ -1940,7 +1976,7 @@ while( $str = <$fh> ) {
     if ( $str !~ /FORMAT\s+(?:PREDICATE\s+)?.*Opcode/ ) {
       $str =~ s/\s*$//;
       # grab /? $1 enum $2:alias $3 into %ae
-      $cons_ae->($str);
+      $cons_ae->($str, 2);
       # grab /something()
       if (  $str =~ /^\s*(.*\/\w.*)$/ ) {
         $format .= ' ' . $1;
