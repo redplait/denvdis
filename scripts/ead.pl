@@ -206,13 +206,17 @@ sub parse_tab_key
 {
   my($s, $line) = @_;
   # check in enums
-  if ( $s =~ /(\w+)@\"?(\w+)\"?\s*$/ ) {
-    return $2 if ( exists $g_enums{$1} );
+  if ( $s =~ /(\w+)@\"?([^\s\"]+)\"?$/ ) {
+    return $g_enums{$1}->{$2} if ( exists $g_enums{$1} );
     printf("unknown enum %s for table key, line %d\n", $1, $line) if ( defined $opt_v );
-    return $2;
   }
-  $s =~ s/\'//g;
-  return $s;
+  return $s if ( $s eq '-' ); # like in GetPseudoXXX
+  return hex($1) if ( $s =~ /0x([0-9a-f]+)$/i );
+  if ( $s =~ /\'/ ) {
+    $s =~ s/\'//g;
+    return $s;
+  }
+  return int($s);
 }
 
 sub parse_tab_keys
@@ -1185,9 +1189,11 @@ sub parse0b
 my(%g_masks, $g_dec_tree);
 my $g_dups = 0;
 
+# args: value, mask, reg to op->[11], ref to kv, format name
 sub dump_plain_value
 {
-  my($v, $mask, $mae) = @_;
+  my($v, $mask, $mae, $kv, $fn) = @_;
+# printf("dump_plain_value %s\n", $fn) if defined($fn);
   if ( defined($v) ) {
     printf("   %s(", $mask->[0]);
     if ( exists $mae->{$mask->[0]} ) {
@@ -1195,22 +1201,40 @@ sub dump_plain_value
       my $s = enum_by_value($g_enums{$e->[0]}, $v);
       if ( defined $s ) {
         printf("%X) %s\n", $v,$s);
+        $kv->{$fn} = [ $v, $s ] if defined($fn);
         return;
       }
     }
     if ( $v ) { printf("%X)\n", $v); }
     else { printf("0)\n"); }
+    $kv->{$fn} = $v if defined($fn);
   }
 }
 
-# args - ref to array, ref to found instruction
+# dump IDENTICAL
+# args: value, ref to kv, string args in IDENTICAL
+sub dump_id_value
+{
+  my($v, $kv, $args) = @_;
+  return 0 if ( !defined($v) );
+printf("id_value: %s\n", $args);
+  foreach my $a ( split /\s*,\s*/, $args ) {
+    $kv->{$a} = $v;
+  }
+  return 1;
+}
+
+# args - ref to bit array, ref to found instruction, ref to kvalue map
 sub dump_values
 {
-  my($a, $op) = @_;
+  my($a, $op, $kv) = @_;
   my $enc = $op->[5];
   foreach my $m ( @$enc ) {
-    # mask $1 = table $2 (args) $3
-    if ( $m =~ /^(\w+)\s*=\*?\s*(\S+)\(([^\)]+)\)/ ) {
+    if ( $m =~ /^(\w+)\s*=\*?\s*IDENTICAL\(([^\)]+)\)/ ) {
+      my $mask = $g_mnames{$1};
+      dump_id_value(extract_value($a, $mask), $kv, $2);
+       # mask $1 = table $2 (args) $3
+    } elsif ( $m =~ /^(\w+)\s*=\*?\s*(\S+)\(([^\)]+)\)/ ) {
       my $mask = $g_mnames{$1};
       my $v;
       if ( exists($g_tabs{$2}) && defined($v = extract_value($a, $mask)) ) {
@@ -1234,18 +1258,19 @@ sub dump_values
               chop $res;
               printf("%s\n", $res);
             } else { printf("%s\n", join ",", @$row); }
-          } else {
-            printf("%s\n", $row);
-          }
+          } else { printf("%s\n", $row); $kv->{$3} = $row; }
         } else {
           printf("   %s value %X does not exists in table %s\n", $mask->[0], $v, $2);
         }
       } else {
-        dump_plain_value(extract_value($a, $mask), $mask, $op->[11]);
+        dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv);
       }
+    } elsif ( $m =~ /^(\w+)\s*=\*?\s*(\S+)$/ ) {
+      my $mask = $g_mnames{$1};
+      dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv, $2);
     } elsif ( $m =~ /^(\w+)/ ) {
      my $mask = $g_mnames{$1};
-     dump_plain_value(extract_value($a, $mask), $mask, $op->[11]);
+     dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv);
    }
   }
   # dump const bank
@@ -1253,10 +1278,14 @@ sub dump_values
     my $cb = $op->[10];
     printf(" -- const bank %s\n", $cb->[0]);
     my $cb_len = scalar @$cb;
+    my @fcb;
+    if ( $cb->[0] =~ /\(\s*(.*),\s*(.*)\)/ ) {
+      push @fcb, $1; push @fcb, $2;
+    }
     for ( my $i = 1; $i < $cb_len; $i++ ) {
-     my $mask = $g_mnames{$cb->[$i]};
-     dump_plain_value(extract_value($a, $mask), $mask, $op->[11]);
-   }
+      my $mask = $g_mnames{$cb->[$i]};
+      dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv, $fcb[$i-1]);
+    }
   }
 }
 
@@ -1282,7 +1311,17 @@ sub make_test
      # extract all masks values
      dump_mask2enum($op);
      dump_tenums($op->[13]) if defined($op->[13]);
-     dump_values($b, $op);
+     my %kv;
+     dump_values($b, $op, \%kv);
+     if ( keys %kv ) {
+       printf("KV:");
+       while( my($k, $v) = each %kv ) {
+         if ( 'ARRAY' eq ref $v ) {
+           printf(" %s:%d(%s)", $k, $v->[0], $v->[1]);
+         } else { printf(" %s:%X", $k, $v); }
+       }
+       printf("\n");
+     }
      $found++;
     };
     if ( defined $opt_B ) {
@@ -1620,11 +1659,11 @@ $state = $line = 0;
 # [6] - is alternate class
 # [7] - format string
 # [8] - ref to tabs
-# [9] - list with const banks, [ right, enc1, enc2, ... ] 
+# [9] - list with const banks, [ right, enc1, enc2, ... ]
 # [10] - hashmap encoding -> enum
 # [11] - list of filters for this instruction
 # [12] - map with enums for table-based encoders, key is encoder name
-# [13] - ref to mask array
+# [13] - count of meaningful bits
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, %ae, $alt, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
@@ -1763,7 +1802,12 @@ my $cons_ae = sub {
   # $1 - /? $2 - enum
   while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\/\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)/g ) {
     if ( exists $g_enums{$2} ) {
-      $ae{$4} = [ $2, defined($1), defined($3) ? $3 : undef ];
+      # key is values in op->[11] hash is
+      # 0 - enum name
+      # 1 - if / presents
+      # 2 - default value if exists
+      # 3 - format name
+      $ae{$4} = [ $2, defined($1), defined($3) ? $3 : undef, $4 ];
     } elsif ( $2 ne 'BITSET' && $2 ne 'UImm' && $2 ne 'SImm' && $2 ne 'SSImm' && $2 ne 'F64Imm' && $2 ne 'F16Imm' && $2 ne 'F32Imm' ) {
        printf("enum %s does not exists, line %d\n", $2, $line);
     }
