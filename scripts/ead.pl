@@ -906,7 +906,7 @@ sub gen_inst_mask
    $cp =~ s/\{\s*\}//g;
    # and $( )$
    $cp =~ s/\$\(\s*\)\$//g;
-   $op->[15] = $cp;
+   $op->[16] = $cp;
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
   # process remained encodings
@@ -924,7 +924,7 @@ sub gen_inst_mask
     my $what = $g_mnames{$1};
     if ( defined $must_be->[2] ) {
     # 1) enc =*? enum(value) - need mask_value and remove from encodings
-printf("enc %s enum(%s) %s in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1]);
+printf("enc %s enum(%s) %d in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1]);
 #f      my $v = get_enc_enum($op, $1, $must_be->[0], $must_be->[2]);
 #f      if ( defined $v ) {
 #f        $rem{$what->[0]} = 1;
@@ -1315,6 +1315,105 @@ sub dump_values
   }
 }
 
+# dump /enum(value) == value and so should be ignored
+# args: ref to array made in cons_ae function, ref to kv
+sub ignore_enum
+{
+  my($ae, $kv) = @_;
+  return undef if ( !defined $ae->[2] ); # no default value
+  my $v;
+# printf("ignore_enum %s\n", $ae->[0]);
+  if ( exists $kv->{$ae->[3]} ) { $v = $kv->{$ae->[3]}; }
+  elsif ( exists $kv->{$ae->[0]} ) { $v = $kv->{$ae->[0]}; }
+  else { printf("is_ignore_enum: no value for %s format %s\n", $ae->[0], $ae->[3]);
+    return undef;
+  }
+  my $res = '';
+  $res = '.' if $ae->[1];
+  if ( 'ARRAY' ne ref $v ) {
+  printf("%s %d: single %d vs %d\n", $ae->[0], $ae->[1], $v, $ae->[2]);
+    return [ 0, '' ] if ( $v == $ae->[2] ); # defailt value
+    return [ 1, $res . enum_by_value($g_enums{$ae->[0]},$v) ];
+  }
+  # value is pair [ int, enum_string ]
+printf("%s %d: pair %s vs %d\n", $ae->[0], $ae->[1], $v->[1], $ae->[2]);
+  return [ 0, '' ] if ( $v->[0] == $ae->[2] ); # defailt value
+  return [ 1, $res . $v->[1] ];
+}
+
+# print iinstruction based on format list in op->[15]
+# args: ref to op, ret to kv collected in dump_values
+# formats
+# [!] - predicate + predicate@not
+# [~] - x@invert
+# [-] - x@negate
+# [||] - x@absolute
+# /SomeEnum(Default):alias means .SomeEnum{$value} if $value != SomeEnum{default}
+# format item is array where indexes
+# 0 - type
+# 1 - prefix symbol
+# 2 - suffix symbol
+# 3 - [x] if presents
+# 4 - name of alias to search in kv/ref to enum
+sub make_inst
+{
+  my($op, $kv) = @_;
+  my $res = '';
+  my $flist = $op->[15];
+  return $res if ( !defined $flist );
+  foreach my $f ( @$flist ) {
+    my $ae = $f->[4];
+    if ( $f->[0] eq 'P' ) { # predicate
+      my $pnot;
+      my $part = ignore_enum($ae, $kv);
+      next if ( !$part->[0] );
+      # make alias@not
+      if ( defined($f->[2]) && $f->[2] eq '!' ) {
+        $pnot = $ae->[3] . '@not';
+      }
+      my $pres = $f->[1];
+      if ( defined($pnot) && exists $kv->{$pnot} ) {
+        $pres .= '!';
+      }
+      $pres .= $part->[1];
+      $res .= $pres . ' ';
+      next;
+    } elsif ( $f->[0] eq 'E' ) { # some enum
+      my $ae = $f->[4];
+      my $part;
+      if ( defined $ae->[1] ) {
+        my $part = ignore_enum($ae, $kv);
+        if ( defined $part ) {
+          $res .= $part->[1];
+          $res .= $f->[2] if ( defined $f->[2] );
+          next;
+        }
+        # this enum has non-default value
+printf("%s: no part %d\n", $ae->[0], $ae->[1]);
+        my $v;
+        if ( exists $kv->{$ae->[3]} ) { $v = $kv->{$ae->[3]}; }
+        elsif ( exists $kv->{$ae->[0]} ) { $v = $kv->{$ae->[0]}; }
+        else { printf("format enum: no value for %s format %s\n", $ae->[0], $ae->[3]);
+         next;
+        }
+        if ( $ae->[1] ) { $res .= '.' }
+        else { $res .= ' '; }
+        $res .= $f->[1] if ( defined $f->[1] );
+        $res .= $v->[1];
+        $res .= $f->[2] if ( defined $f->[2] );
+      }
+    } elsif ( $f->[0] eq '$' ) { # opcode
+      $res .= $op->[1];
+    } elsif ( $f->[0] eq 'V' ) { # some value
+      my $v = $kv->{$f->[4]};
+      $res .= $f->[1] if ( defined $f->[1] );
+      $res .= sprintf(" 0x%X", $v);
+      $res .= $f->[2] if ( defined $f->[2] );
+    }
+  }
+  return $res;
+}
+
 sub make_test
 {
   my $fn = shift;
@@ -1355,6 +1454,7 @@ sub make_test
        }
        printf("\n");
      }
+     printf("%s\n", make_inst($op, \%kv));
      $found++;
     };
     if ( defined $opt_B ) {
@@ -1404,7 +1504,7 @@ sub dump_mask2enum
   # while( my($m, $e) = each %$m2e ) {
   foreach my $m ( sort keys %$m2e ) {
     my $e = $m2e->{$m};
-    if ( defined $e->[2] ) { printf(" %s->%s(%s)", $m, $e->[0], $e->[2]); }
+    if ( defined $e->[2] ) { printf(" %s->%s(%d)", $m, $e->[0], $e->[2]); }
     else { printf(" %s->%s", $m, $e->[0]); }
   }
   printf("\n");
@@ -1437,7 +1537,7 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
-      printf("   Unused %s\n", $op->[15]) if defined($op->[15]);
+      printf("   Unused %s\n", $op->[16]) if defined($op->[16]);
       # dump mask to enum mapping
       dump_mask2enum($op);
       dump_tenums($op->[13]) if defined($op->[13]);
@@ -1700,7 +1800,7 @@ $state = $line = 0;
 # [12] - map with enums for table-based encoders, key is encoder name
 # [13] - count of meaningful bits
 # [14] - list of formats
-my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, %ae, $alt, $format);
+my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, @flist, %ae, $alt, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
 # tref is ref to hash with table content
@@ -1708,7 +1808,7 @@ my($curr_tab, $tref);
 
 # enum state
 my($curr_enum, $eref);
-# 0 - don't parse, 1 - expect start of enum, 2 - continue with next line
+# 0 - don't parse, 1 - expect start of enum, 2 - continue with next line, 3 - expect start of table, 4 - next line for table
 my $estate = 0;
 
 my $reset_tab = sub {
@@ -1790,7 +1890,7 @@ my $parse_enum = sub {
 my $reset = sub {
   $format = $cname = '';
   $alt = $has_op = $op_line = 0;
-  @op = @enc = @nenc = @tabs = @cb = ();
+  @op = @enc = @nenc = @tabs = @cb = @flist = ();
   %ae = ();
 };
 # insert copy of current instruction
@@ -1815,6 +1915,7 @@ my $ins_op = sub {
   my @cnenc = @nenc;
   my @ctabs = @tabs;
   my @ccb = @cb;
+  my @cflist = @flist;
   $c[3] = $op_line;
   $c[4] = \@cenc;
   $c[5] = \@cnenc;
@@ -1826,6 +1927,7 @@ my $ins_op = sub {
   $c[11] = undef;
   $c[12] = $tenums;
   $c[13] = 0;
+  $c[14] = \@cflist;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
@@ -1835,16 +1937,34 @@ my $ins_op = sub {
 # parse format in form /? $1 enum $2 optional value $3 alias $4
 my $cons_ae = sub {
   my($s, $idx) = @_;
-  # $1 - /? $2 - enum
-  while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\/\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)/g ) {
+  if ( !$idx ) { # zero index - predicate
+    # $1 - @?, $2 - symbol inside [], $3 - enum, $4 - default, $5 - value name
+    if ( $s =~ /(\@?)\s*(?:\[(.)\]\s*)?([\w\.]+)(?:\(\"?([^\)\/\"]+)\"?\))?\:([\w\.]+)/ )
+    {
+      if ( exists $g_enums{$3} ) {
+        my $aref = [ $3, 0, defined($4) ? $g_enums{$3}->{$4} : undef, $5 ];
+        $ae{$5} = $aref;
+        push @flist, [ 'P', $1, $2, undef, $aref ];
+      } else {
+        carp("unknwon enum $3 for predicate");
+      }
+      return;
+    }
+  }
+  # $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
+  while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\/\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)(\s+',')?/g ) {
     if ( exists $g_enums{$2} ) {
       # key is values in op->[11] hash is
       # 0 - enum name
       # 1 - if / presents
       # 2 - default value if exists
       # 3 - format name
-      $ae{$4} = [ $2, defined($1), defined($3) ? $3 : undef, $4 ];
-    } elsif ( $2 ne 'BITSET' && $2 ne 'UImm' && $2 ne 'SImm' && $2 ne 'SSImm' && $2 ne 'F64Imm' && $2 ne 'F16Imm' && $2 ne 'F32Imm' ) {
+      my $aref = [ $2, $1 ne '', defined($3) ? $g_enums{$2}->{$3} : undef, $4 ];
+      $ae{$4} = $aref;
+      push @flist, [ 'E', undef, undef, defined($5) ? ',' : undef, $aref ];
+    } elsif ( $2 eq 'BITSET' or $2 eq 'UImm' or $2 eq 'SImm' or $2 eq 'SSImm' or $2 eq 'F64Imm' or $2 eq 'F16Imm' or $2 eq 'F32Imm' ) {
+      push @flist, [ 'V', undef, undef, defined($5) ? ',' : undef, $4, $2 ];
+    } else {
        printf("enum %s does not exists, line %d\n", $2, $line);
     }
   }
@@ -1968,6 +2088,7 @@ while( $str = <$fh> ) {
   if ( $state == 2 && $str =~ /FORMAT\s+(?:PREDICATE\s+)?(.*)Opcode\s*?(.*)$/ ) {
     $format = $2;
     $cons_ae->($1, 0);
+    push @flist, ['$'];
     $cons_ae->($2, 1);
     $state = 6 if ( $str !~ /;\s*$/ );
     next;
