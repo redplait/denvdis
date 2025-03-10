@@ -1500,7 +1500,7 @@ sub make_inst
         if ( exists $kv->{$f->[5]} ) {
           $v = $kv->{$f->[5]};
           if ( $f->[0] eq 'C' ) {
-            $res .= sprintf("[0x%X]", $pfx eq '2' ? $v * 2 : $v);
+            $res .= sprintf("[0x%X]", $pfx eq '2' ? $v * 4 : $v);
           } else {
             $res .= sprintf("[0x%X]", $v);
           }
@@ -1523,7 +1523,7 @@ sub make_inst
         if ( $sv ) {
           $res .= $sv;
           if ( $f->[0] eq 'C') {
-            $res .= ' *2 ' if ( $pfx eq '2' );
+            $res .= ' *4 ' if ( $pfx eq '2' );
           }
           $res .= '+';
         }
