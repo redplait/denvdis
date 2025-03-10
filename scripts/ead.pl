@@ -1331,17 +1331,47 @@ sub dump_values
   }
 }
 
+sub lookup_mask
+{
+  my($op, $ae) = @_;
+  return undef unless defined($op->[11]);
+  my $m2e = $op->[11];
+  keys %$m2e;
+  while( my($m, $e) = each %$m2e ) {
+   return $m if ( $e->[0] eq $ae->[0] );
+  }
+  return undef;
+}
+
+# args: instruction, ref to kv, ref to enum, ref to array with bits
+sub lookup_value
+{
+  my($op, $kv, $ae, $b) = @_;
+  if ( exists $kv->{$ae->[3]} ) { return  $kv->{$ae->[3]}; }
+  elsif ( exists $kv->{$ae->[0]} ) { return $kv->{$ae->[0]}; }
+  # for some unknown reason we still don't have this value - let's read it from $b
+  # but first we need to extract mask
+  my $mask = lookup_mask($op, $ae);
+  if ( !defined $mask ) {
+    printf("format enum: no value for %s format %s\n", $ae->[0], $ae->[3]);
+    return undef;
+  }
+  my $res = extract_value($b, $g_mnames{$mask});
+  # cache readed value in kv
+  $kv->{$ae->[0]} = $res if defined($res);
+  $res;
+}
+
 # dump /enum(value) == value and so should be ignored
 # args: ref to array made in cons_ae function, ref to kv
 sub ignore_enum
 {
-  my($ae, $kv) = @_;
+  my($op, $ae, $kv, $b) = @_;
   return undef if ( !defined $ae->[2] ); # no default value
-  my $v;
+  my $v = lookup_value($op, $kv, $ae, $b);
 # printf("ignore_enum %s\n", $ae->[0]);
-  if ( exists $kv->{$ae->[3]} ) { $v = $kv->{$ae->[3]}; }
-  elsif ( exists $kv->{$ae->[0]} ) { $v = $kv->{$ae->[0]}; }
-  else { printf("is_ignore_enum: no value for %s format %s\n", $ae->[0], $ae->[3]);
+  if ( !defined $v ) { 
+    printf("is_ignore_enum: no value for %s format %s\n", $ae->[0], $ae->[3]);
     return undef;
   }
   my $res = '';
@@ -1401,7 +1431,7 @@ sub dump_formats
 # 4 - name of alias to search in kv/ref to enum
 sub make_inst
 {
-  my($op, $kv) = @_;
+  my($op, $kv, $b) = @_;
   my $res = '';
   my $flist = $op->[15];
   return $res unless defined $flist;
@@ -1409,7 +1439,7 @@ sub make_inst
     my $ae = $f->[4];
     if ( $f->[0] eq 'P' ) { # predicate
       my $pnot;
-      my $part = ignore_enum($ae, $kv);
+      my $part = ignore_enum($op, $ae, $kv, $b);
       next if ( !$part->[0] );
       # make alias@not
       if ( defined($f->[2]) && $f->[2] eq '!' ) {
@@ -1426,7 +1456,7 @@ sub make_inst
       my $ae = $f->[4];
       my $part;
       if ( defined $ae->[1] ) {
-        my $part = ignore_enum($ae, $kv);
+        my $part = ignore_enum($op, $ae, $kv, $b);
         if ( defined $part ) {
           $res .= $part->[1];
           $res .= $f->[2] if ( defined $f->[2] );
@@ -1434,12 +1464,8 @@ sub make_inst
         }
         # this enum has non-default value
 printf("%s: no part %d\n", $ae->[0], $ae->[1]);
-        my $v;
-        if ( exists $kv->{$ae->[3]} ) { $v = $kv->{$ae->[3]}; }
-        elsif ( exists $kv->{$ae->[0]} ) { $v = $kv->{$ae->[0]}; }
-        else { printf("format enum: no value for %s format %s\n", $ae->[0], $ae->[3]);
-         next;
-        }
+        my $v = lookup_value($op, $kv, $ae, $b);
+        next unless ( defined $v );
         if ( $ae->[1] ) { $res .= '.' }
         else { $res .= ' '; }
         $res .= $f->[1] if ( defined $f->[1] );
@@ -1457,6 +1483,38 @@ printf("%s: no part %d\n", $ae->[0], $ae->[1]);
       }
     } elsif ( $f->[0] eq '$' ) { # opcode
       $res .= $op->[1];
+    } elsif ( $f->[0] eq 'C' ) { # const bank
+      my $v;
+      my $pfx = substr($op->[10]->[0], 0, 1);
+      $res .= $f->[1] if ( defined $f->[1] );
+      $res .= 'C[';
+      # sa_bank
+      if ( exists $kv->{$f->[4]} ) {
+        $v = $kv->{$f->[4]};
+        $res .= sprintf("0x%X]", $v);
+      } else {
+        $res .= sprintf("cannot find bank value %s]", $f->[4]);
+      }
+      # address can consist from 2 parts
+      if ( !defined($f->[6]) ) {
+        if ( exists $kv->{$f->[5]} ) {
+          $v = $kv->{$f->[5]};
+          $res .= sprintf("[0x%X]", $pfx eq '2' ? $v * 2 : $v);
+        } else { $res .= sprintf("[cannot find cvalue %s]", $f->[5]); }
+      } else {
+        # reg in $f->[6], imm in $f->[5]
+        my $ae = $f->[6];
+        $v = lookup_value($op, $kv, $ae, $b);
+        next unless defined($v);
+        my $ev = enum_by_value($g_enums{$ae->[0]}, $v);
+        $res .= '[' . $ev;
+        if ( $pfx eq '2' ) { $res .= ' *2 '; }
+        if ( exists $kv->{$f->[5]} ) {
+          $v = $kv->{$f->[5]};
+          $res .= sprintf("+ 0x%X]", $pfx eq '2' ? $v * 2 : $v);
+        } else { $res .= sprintf(" cannot find cvalue %s]", $f->[5]); }
+        next;
+      }
     } elsif ( $f->[0] eq 'V' ) { # some value
       if ( exists $kv->{$f->[4]} ) {
         my $v = $kv->{$f->[4]};
@@ -1514,7 +1572,7 @@ sub make_test
          printf("\n");
        }
      }
-     printf("%s\n", make_inst($op, \%kv));
+     printf("%s\n", make_inst($op, \%kv, $b));
      $found++;
     };
     if ( defined $opt_B ) {
