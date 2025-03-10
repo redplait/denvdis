@@ -2169,21 +2169,26 @@ my $cons_ae = sub {
     # remove this part from $s
     substr($s, $spos, $slen, $reps);
   }
-  # $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
-  while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)\s*(\',\')?/g ) {
-    if ( exists $g_enums{$2} ) {
+  # first 3 is optional comma, $2 - [x], $3 - [||]?
+  # next $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
+  while( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)\s*(\',\')?/g ) {
+    if ( exists $g_enums{$5} ) {
       # key is values in op->[11] hash is
       # 0 - enum name
       # 1 - if / presents
       # 2 - default value if exists
       # 3 - format name
-      my $aref = [ $2, $1 ne '', defined($3) ? $g_enums{$2}->{$3} : undef, $4 ];
-      $ae{$4} = $aref;
-      push @flist, [ 'E', undef, undef, defined($5) ? ',' : undef, $aref ];
-    } elsif ( is_type($2) ) {
-      push @flist, [ 'V', undef, undef, defined($5) ? ',' : undef, $4, $2 ];
+      my $aref = [ $5, $4 ne '', defined($6) ? $g_enums{$5}->{$6} : undef, $7 ];
+      $ae{$7} = $aref;
+      if ( defined($2) and $2 eq '!' ) {
+        push @flist, [ 'P', defined($1) ? ',' : undef, $2, defined($8) ? ',' : undef, $aref ];
+      } else {
+        push @flist, [ 'E', defined($1) ? ',' : undef, $2, defined($8) ? ',' : undef, $aref ];
+      }
+    } elsif ( is_type($5) ) {
+      push @flist, [ 'V', defined($1) ? ',' : undef, $2, defined($8) ? ',' : undef, $7, $5 ];
     } else {
-       printf("enum %s does not exists, line %d\n", $2, $line);
+       printf("enum %s does not exists, line %d\n", $5, $line);
     }
   }
 };
