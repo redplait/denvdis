@@ -914,7 +914,7 @@ sub gen_inst_mask
    $cp =~ s/\{\s*\}//g;
    # and $( )$
    $cp =~ s/\$\(\s*\)\$//g;
-   $op->[16] = $cp;
+   $op->[17] = $cp;
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
   # process remained encodings
@@ -1554,20 +1554,29 @@ sub make_test
   printf("%d cmp_maska, %d filter_ins, %d filtered\n", $cmp_cnt, $filter_cnt, $filtered_cnt);
 }
 
+sub dump_menums
+{
+ my $m2e = shift;
+    # for diffing dump mask->enum in sorted order
+    # while( my($m, $e) = each %$m2e ) {
+ foreach my $m ( sort keys %$m2e ) {
+   my $e = $m2e->{$m};
+   if ( defined $e->[2] ) { printf(" %s->%s(%d)", $m, $e->[0], $e->[2]); }
+   else { printf(" %s->%s", $m, $e->[0]); }
+  }
+  printf("\n");
+}
+
 sub dump_mask2enum
 {
   my $op = shift;
-  return if ( !defined $op->[11] );
-  printf('mask2enum:');
-  my $m2e = $op->[11];
-  # for diffing dump mask->enum in sorted order
-  # while( my($m, $e) = each %$m2e ) {
-  foreach my $m ( sort keys %$m2e ) {
-    my $e = $m2e->{$m};
-    if ( defined $e->[2] ) { printf(" %s->%s(%d)", $m, $e->[0], $e->[2]); }
-    else { printf(" %s->%s", $m, $e->[0]); }
+  if ( defined $op->[11] ) {
+    printf('mask2enum:');
+    dump_menums($op->[11]);
   }
-  printf("\n");
+  return unless defined($op->[16]);
+  printf('missed:');
+  dump_menums($op->[16]);
 }
 
 sub dump_dup_masks
@@ -1597,10 +1606,11 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
-      printf("   Unused %s\n", $op->[16]) if defined($op->[16]);
+      printf("   Unused %s\n", $op->[17]) if defined($op->[17]);
       # dump mask to enum mapping
       dump_mask2enum($op);
       dump_tenums($op->[13]) if defined($op->[13]);
+      dump_filters($op);
       # dump encodings
       printf("    %s\n", $_) for @{ $op->[5] };
       # dump constant banks
@@ -1860,6 +1870,7 @@ $state = $line = 0;
 # [12] - map with enums for table-based encoders, key is encoder name
 # [13] - count of meaningful bits
 # [14] - list of formats
+# [15] - href to renaindned enums from [10]
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, @flist, %ae, $alt, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
@@ -1968,7 +1979,8 @@ my $ins_op = sub {
     if ( defined($what) ) { $mae{$what->[0]} = $e; }
     else { $missed_ae{$a} = $e };
   }
-  my $tenums = (scalar keys %missed_ae) ? add_tenums(\@enc, $op[0], $op_line, \%missed_ae): undef;
+  my $miss_size = scalar keys %missed_ae;
+  my $tenums = $miss_size ? add_tenums(\@enc, $op[0], $op_line, \%missed_ae): undef;
   # make new instruction
   my @c = @op;
   my @cenc = @enc;
@@ -1988,6 +2000,7 @@ my $ins_op = sub {
   $c[12] = $tenums;
   $c[13] = 0;
   $c[14] = \@cflist;
+  $c[15] = $miss_size ? \%missed_ae : undef;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
