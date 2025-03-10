@@ -7,7 +7,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_B $opt_c $opt_e $opt_f $opt_F $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w/;
+use vars qw/$opt_a $opt_b $opt_B $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w/;
 
 sub usage()
 {
@@ -21,6 +21,7 @@ Usage: $0 [options] md.txt
   -e - dump enums
   -f - dump fully filled masks
   -F - filter by enums
+  -i - dump instructions formats
   -m - generate masks
   -r - fill in reverse order
   -t - dunp tables
@@ -161,6 +162,13 @@ sub enum_by_value
     return $n if ( $val == $v );
   }
   undef;
+}
+
+sub is_type
+{
+  my $c = shift;
+  return ($c eq 'BITSET') || ($c eq 'UImm') || ($c eq 'SImm') || ($c eq 'SSImm')
+   || ($c eq 'F64Imm') || ($c eq 'F16Imm') || ($c eq 'F32Imm');
 }
 
 # global tables hash map, key is name of table, value is another hash map { value -> [ literals list ] }
@@ -1029,7 +1037,7 @@ sub dump_tenums
 sub dump_filters
 {
   my $op = shift;
-  return if ( !defined $op->[12] );
+  return unless ( defined $op->[12] );
   printf("filters:\n");
   my $flist = $op->[12];
   foreach my $f ( @$flist ) {
@@ -1042,7 +1050,7 @@ sub dump_filters
 sub filter_ins
 {
   my($a, $op) = @_;
-  return 1 if ( !defined $op->[12] );
+  return 1 unless ( defined $op->[12] );
   # format of op->[12] elements is array where indexes
   # 0 - mask
   # 1 - letter 'e' for enums, 't' for tables
@@ -1241,6 +1249,14 @@ printf("id_value: %s\n", $args);
   return 1;
 }
 
+sub strip_t
+{
+  my $s = shift;
+  $s =~ s/^\s+//;
+  $s =~ s/\s+$//;
+  $s;
+}
+
 # args - ref to bit array, ref to found instruction, ref to kvalue map
 sub dump_values
 {
@@ -1251,7 +1267,7 @@ sub dump_values
       my $mask = $g_mnames{$1};
       dump_id_value(extract_value($a, $mask), $kv, $2);
        # mask $1 = table $2 (args) $3
-    } elsif ( $m =~ /^(\w+)\s*=\*?\s*(\S+)\(([^\)]+)\)/ ) {
+    } elsif ( $m =~ /^(\w+)\s*=\*?\s*(\S+)\((\s*[^\)]+)\s*\)/ ) {
       my $mask = $g_mnames{$1};
       my $v;
       if ( exists($g_tabs{$2}) && defined($v = extract_value($a, $mask)) ) {
@@ -1284,7 +1300,7 @@ sub dump_values
               }
             }
           } else { # table with single arg
-            printf("%s\n", $row); $kv->{$3} = $row; }
+            printf("%s\n", $row); $kv->{strip_t($3)} = $row; }
         } else {
           printf("   %s value %X does not exists in table %s\n", $mask->[0], $v, $2);
         }
@@ -1341,6 +1357,34 @@ printf("%s %d: pair %s vs %d\n", $ae->[0], $ae->[1], $v->[1], $ae->[2]);
   return [ 1, $res . $v->[1] ];
 }
 
+sub dump_formats
+{
+  my $op = shift;
+  return unless defined($op->[15]);
+  foreach my $f ( @{$op->[15]} ) {
+    if ( $f->[0] eq '$' ) { printf('$' . "\n"); next; }
+    printf("%s %s%s%s", $f->[0], $f->[1] || ' ', $f->[2] || ' ', $f->[3] || ' ');
+    if ( $f->[0] eq 'P' ) {
+      my $ae = $f->[4];
+      printf(" %s %s", $ae->[0], $ae->[3]);
+    } elsif ( $f->[0] eq 'E' ) {
+      my $ae = $f->[4];
+      printf(" %s %d %s %s", $ae->[0], $ae->[1], $ae->[2] || '', $ae->[3]);
+    } elsif ( $f->[0] eq 'V' ) {
+      printf(" %s %s", $f->[4], $f->[5]);
+    } elsif ( $f->[0] eq 'C' ) {
+      # const bank can have 2 or 3 op - 3rd is ref to Enum
+      if ( defined $f->[6] ) {
+        my $ae = $f->[6];
+        printf(" %s %s + %s %s", $f->[4], $f->[5], $ae->[0], $ae->[3]);
+      } else {
+        printf(" %s %s", $f->[4], $f->[5]);
+      }
+    }
+    printf("\n");
+  }
+}
+
 # print iinstruction based on format list in op->[15]
 # args: ref to op, ret to kv collected in dump_values
 # formats
@@ -1360,7 +1404,7 @@ sub make_inst
   my($op, $kv) = @_;
   my $res = '';
   my $flist = $op->[15];
-  return $res if ( !defined $flist );
+  return $res unless defined $flist;
   foreach my $f ( @$flist ) {
     my $ae = $f->[4];
     if ( $f->[0] eq 'P' ) { # predicate
@@ -1399,16 +1443,29 @@ printf("%s: no part %d\n", $ae->[0], $ae->[1]);
         if ( $ae->[1] ) { $res .= '.' }
         else { $res .= ' '; }
         $res .= $f->[1] if ( defined $f->[1] );
-        $res .= $v->[1];
+        if ( 'ARRAY' ne ref $v ) {
+          my $ev = enum_by_value($g_enums{$ae->[0]}, $v);
+          if ( defined $ev ) { $res .= $ev; }
+          else {
+            printf("cannot find value %d for enum %s\n", $v, $ae->[0]);
+            $res .= $v;
+          }
+        } else {
+          $res .= $v->[1];
+        }
         $res .= $f->[2] if ( defined $f->[2] );
       }
     } elsif ( $f->[0] eq '$' ) { # opcode
       $res .= $op->[1];
     } elsif ( $f->[0] eq 'V' ) { # some value
-      my $v = $kv->{$f->[4]};
-      $res .= $f->[1] if ( defined $f->[1] );
-      $res .= sprintf(" 0x%X", $v);
-      $res .= $f->[2] if ( defined $f->[2] );
+      if ( exists $kv->{$f->[4]} ) {
+        my $v = $kv->{$f->[4]};
+        $res .= $f->[1] if ( defined $f->[1] );
+        $res .= sprintf(" 0x%X", $v);
+        $res .= $f->[2] if ( defined $f->[2] );
+      } else {
+        printf("Value %s not exists\n", $f->[4]);
+      }
     }
   }
   return $res;
@@ -1445,14 +1502,17 @@ sub make_test
      dump_tenums($op->[13]) if defined($op->[13]);
      my %kv;
      dump_values($b, $op, \%kv);
-     if ( keys %kv ) {
-       printf("KV:");
-       while( my($k, $v) = each %kv ) {
-         if ( 'ARRAY' eq ref $v ) {
-           printf(" %s:%d(%s)", $k, $v->[0], $v->[1]);
-         } else { printf(" %s:%X", $k, $v); }
+     if ( defined $opt_i ) {
+       dump_formats($op);
+       if ( keys %kv ) {
+         printf("KV:");
+         while( my($k, $v) = each %kv ) {
+           if ( 'ARRAY' eq ref $v ) {
+             printf(" %s:%d(%s)", $k, $v->[0], $v->[1]);
+           } else { printf(" %s:%X", $k, $v); }
+         }
+         printf("\n");
        }
-       printf("\n");
      }
      printf("%s\n", make_inst($op, \%kv));
      $found++;
@@ -1774,7 +1834,7 @@ sub dump_decision_node
 }
 
 ### main
-my $status = getopts("abBcefFmrtvwT:");
+my $status = getopts("abBcefFimrtvwT:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -1951,8 +2011,12 @@ my $cons_ae = sub {
       return;
     }
   }
+  if ( $s =~ /(\',\'\s*)?C\:[^:]+:(\w+)[^:]+:(\w+)[^:]*$/ ) {
+    push @flist, [ 'C', defined($1) ? ',' : undef, undef, undef, $2, $3 ];
+    return;
+  }
   # $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
-  while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\/\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)(\s+',')?/g ) {
+  while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)\s*(\',\')?/g ) {
     if ( exists $g_enums{$2} ) {
       # key is values in op->[11] hash is
       # 0 - enum name
@@ -1962,7 +2026,7 @@ my $cons_ae = sub {
       my $aref = [ $2, $1 ne '', defined($3) ? $g_enums{$2}->{$3} : undef, $4 ];
       $ae{$4} = $aref;
       push @flist, [ 'E', undef, undef, defined($5) ? ',' : undef, $aref ];
-    } elsif ( $2 eq 'BITSET' or $2 eq 'UImm' or $2 eq 'SImm' or $2 eq 'SSImm' or $2 eq 'F64Imm' or $2 eq 'F16Imm' or $2 eq 'F32Imm' ) {
+    } elsif ( is_type($2) ) {
       push @flist, [ 'V', undef, undef, defined($5) ? ',' : undef, $4, $2 ];
     } else {
        printf("enum %s does not exists, line %d\n", $2, $line);
