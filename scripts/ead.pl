@@ -1367,10 +1367,10 @@ sub lookup_value
 sub ignore_enum
 {
   my($op, $ae, $kv, $b) = @_;
-  return undef if ( !defined $ae->[2] ); # no default value
+  return undef unless ( defined $ae->[2] ); # no default value
   my $v = lookup_value($op, $kv, $ae, $b);
 # printf("ignore_enum %s\n", $ae->[0]);
-  if ( !defined $v ) { 
+  if ( !defined $v ) {
     printf("is_ignore_enum: no value for %s format %s\n", $ae->[0], $ae->[3]);
     return undef;
   }
@@ -1447,7 +1447,7 @@ sub make_inst
       }
       my $pres = $f->[1];
       if ( defined($pnot) && exists $kv->{$pnot} ) {
-        $pres .= '!';
+        $pres .= '!' if ( $kv->{$pnot} );
       }
       $pres .= $part->[1];
       $res .= $pres . ' ';
@@ -1463,7 +1463,7 @@ sub make_inst
           next;
         }
         # this enum has non-default value
-printf("%s: no part %d\n", $ae->[0], $ae->[1]);
+# printf("%s: no part %d\n", $ae->[0], $ae->[1]);
         my $v = lookup_value($op, $kv, $ae, $b);
         next unless ( defined $v );
         if ( $ae->[1] ) { $res .= '.' }
@@ -1504,16 +1504,28 @@ printf("%s: no part %d\n", $ae->[0], $ae->[1]);
       } else {
         # reg in $f->[6], imm in $f->[5]
         my $ae = $f->[6];
-        $v = lookup_value($op, $kv, $ae, $b);
-        next unless defined($v);
-        my $ev = enum_by_value($g_enums{$ae->[0]}, $v);
-        $res .= '[' . $ev;
-        if ( $pfx eq '2' ) { $res .= ' *2 '; }
+        my $sv = '';
+        # format enum
+        if ( defined $ae->[2] ) {
+          my $tmp = ignore_enum($op, $ae, $kv, $b);
+          $sv = $tmp->[1] if ( $tmp );
+        } else {
+          $v = lookup_value($op, $kv, $ae, $b);
+          if ( defined($v) ) {
+           $sv = enum_by_value($g_enums{$ae->[0]}, $v);
+          }
+        }
+        $res .= '[';
+        if ( $sv ) {
+          $res .= $sv;
+          $res .= ' *2 ' if ( $pfx eq '2' );
+          $res .= '+';
+        }
+        # and final imm part
         if ( exists $kv->{$f->[5]} ) {
           $v = $kv->{$f->[5]};
-          $res .= sprintf("+ 0x%X]", $pfx eq '2' ? $v * 2 : $v);
+          $res .= sprintf("0x%X]", $pfx eq '2' ? $v * 2 : $v);
         } else { $res .= sprintf(" cannot find cvalue %s]", $f->[5]); }
-        next;
       }
     } elsif ( $f->[0] eq 'V' ) { # some value
       if ( exists $kv->{$f->[4]} ) {
