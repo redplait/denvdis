@@ -1402,7 +1402,7 @@ sub dump_formats
       printf(" %s %d %s %s", $ae->[0], $ae->[1], $ae->[2] || '', $ae->[3]);
     } elsif ( $f->[0] eq 'V' ) {
       printf(" %s %s", $f->[4], $f->[5]);
-    } elsif ( $f->[0] eq 'C' ) {
+    } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) {
       # const bank can have 2 or 3 op - 3rd is ref to Enum
       if ( defined $f->[6] ) {
         my $ae = $f->[6];
@@ -1483,9 +1483,9 @@ sub make_inst
       }
     } elsif ( $f->[0] eq '$' ) { # opcode
       $res .= $op->[1];
-    } elsif ( $f->[0] eq 'C' ) { # const bank
-      my $v;
-      my $pfx = substr($op->[10]->[0], 0, 1);
+    } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) { # const bank
+      my($v, $pfx);
+      $pfx = substr($op->[10]->[0], 0, 1) if ( $f->[0] eq 'C' );
       $res .= $f->[1] if ( defined $f->[1] );
       $res .= 'C[';
       # sa_bank
@@ -1499,7 +1499,11 @@ sub make_inst
       if ( !defined($f->[6]) ) {
         if ( exists $kv->{$f->[5]} ) {
           $v = $kv->{$f->[5]};
-          $res .= sprintf("[0x%X]", $pfx eq '2' ? $v * 2 : $v);
+          if ( $f->[0] eq 'C' ) {
+            $res .= sprintf("[0x%X]", $pfx eq '2' ? $v * 2 : $v);
+          } else {
+            $res .= sprintf("[0x%X]", $v);
+          }
         } else { $res .= sprintf("[cannot find cvalue %s]", $f->[5]); }
       } else {
         # reg in $f->[6], imm in $f->[5]
@@ -1518,13 +1522,20 @@ sub make_inst
         $res .= '[';
         if ( $sv ) {
           $res .= $sv;
-          $res .= ' *2 ' if ( $pfx eq '2' );
+          if ( $f->[0] eq 'C') {
+            $res .= ' *2 ' if ( $pfx eq '2' );
+          }
           $res .= '+';
         }
         # and final imm part
         if ( exists $kv->{$f->[5]} ) {
           $v = $kv->{$f->[5]};
-          $res .= sprintf("0x%X]", $pfx eq '2' ? $v * 2 : $v);
+          if ( $f->[0] eq 'C') {
+            $res .= sprintf("0x%X]", $pfx eq '2' ? $v * 2 : $v);
+          } else {
+            # TODO: check scale
+            $res .= sprintf("0x%X]", $v);
+          }
         } else { $res .= sprintf(" cannot find cvalue %s]", $f->[5]); }
       }
     } elsif ( $f->[0] eq 'V' ) { # some value
@@ -2106,6 +2117,7 @@ my $cons_ae = sub {
       return;
     }
   }
+  # try const bank address, v1
   # $1 - optional comma, $2 - [x], $3 - [||]?, $4 - first [], $5 - second []
   if ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bC\:[^:\[]+\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
         # 0 - type   1 - optional ,             2    3    4   5
@@ -2125,6 +2137,31 @@ my $cons_ae = sub {
       my $first = $1;
       $cf[6] = $cons_single->($first);
       $reps = '<CBA ' . $first . ' >' if defined($cf[6]);
+      if ( $sec =~ /\:(\w+)$/ ) { $cf[5] = $1; }
+    } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[5] = $1; }
+    # push newly created format
+    push @flist, \@cf;
+    # remove this part from $s
+    substr($s, $spos, $slen, $reps);
+  # try const bank address, v2 - the same as above but don't need to check $op->[10] for version
+  } elsif ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bCX\:[^:\[]+\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
+        # 0 - type   1 - optional ,             2    3    4   5
+    my @cf = ( 'X', defined($1) ? ',' : undef, $2, undef, $4);
+    # see details here: https://perldoc.perl.org/perlretut#Position-information
+    my $spos = $-[0];
+    my $slen = $+[0] - $-[0];
+    my $left = $4;
+    my $right = $5;
+    my $reps = '<CX>';
+    # get var from left
+    if ( $left =~ /\:(\w+)$/ ) { $cf[4] = $1; }
+    # check if right is pair enum + var
+    if ( $right =~ /^\s*(.*\:.*)\s*\+\s*(.*\:.*)\s*$/ ) {
+      # we have 2 parts
+      my $sec = $2;
+      my $first = $1;
+      $cf[6] = $cons_single->($first);
+      $reps = '<CX ' . $first . ' >' if defined($cf[6]);
       if ( $sec =~ /\:(\w+)$/ ) { $cf[5] = $1; }
     } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[5] = $1; }
     # push newly created format
