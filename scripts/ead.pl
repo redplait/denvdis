@@ -1376,7 +1376,7 @@ sub dump_formats
       # const bank can have 2 or 3 op - 3rd is ref to Enum
       if ( defined $f->[6] ) {
         my $ae = $f->[6];
-        printf(" %s %s + %s %s", $f->[4], $f->[6], $ae->[0], $ae->[3]);
+        printf(" %s %s + %s %s", $f->[4], $f->[5], $ae->[0], $ae->[3]);
       } else {
         printf(" %s %s", $f->[4], $f->[5]);
       }
@@ -2007,6 +2007,18 @@ my $ins_op = sub {
     insert_ins($cname, \@c);
    }
 };
+# consume single enum from string, regex is slightly differs from used in while /g below
+my $cons_single = sub {
+  my $s = shift;
+  if ( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)/ ) {
+    if ( exists $g_enums{$2} ) {
+      my $aref = [ $2, $1 ne '', defined($3) ? $g_enums{$2}->{$3} : undef, $4 ];
+      $ae{$4} = $aref;
+      return $aref;
+    }
+  }
+  return undef;
+};
 # parse format in form /? $1 enum $2 optional value $3 alias $4
 my $cons_ae = sub {
   my($s, $idx) = @_;
@@ -2025,13 +2037,30 @@ my $cons_ae = sub {
     }
   }
   # $1 - optional comma, $2 - [x], $3 - [||]?, $4 - first [], $5 - second []
-  if ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*C\:[^:\[]+\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
-    push @flist, [ 'C', defined($1) ? ',' : undef, $2, undef, $4, $5 ];
+  if ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bC\:[^:\[]+\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
+        # 0 - type   1 - optional ,             2    3    4   5
+    my @cf = ( 'C', defined($1) ? ',' : undef, $2, undef, $4);
     # see details here: https://perldoc.perl.org/perlretut#Position-information
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
+    my $left = $4;
+    my $right = $5;
+    my $reps = '<CBA>';
+    # get var from left
+    if ( $left =~ /\:(\w+)$/ ) { $cf[4] = $1; }
+    # check if right is pair enum + var
+    if ( $right =~ /^\s*(.*\:.*)\s*\+\s*(.*\:.*)\s*$/ ) {
+      # we have 2 parts
+      my $sec = $2;
+      my $first = $1;
+      $cf[6] = $cons_single->($first);
+      $reps = '<CBA ' . $first . ' >' if defined($cf[6]);
+      if ( $sec =~ /\:(\w+)$/ ) { $cf[5] = $1; }
+    } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[5] = $1; }
+    # push newly created format
+    push @flist, \@cf;
     # remove this part from $s
-    substr($s, $spos, $slen, '<CBA>');
+    substr($s, $spos, $slen, $reps);
   }
   # $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
   while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)\s*(\',\')?/g ) {
