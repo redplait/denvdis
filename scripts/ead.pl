@@ -1376,7 +1376,7 @@ sub dump_formats
       # const bank can have 2 or 3 op - 3rd is ref to Enum
       if ( defined $f->[6] ) {
         my $ae = $f->[6];
-        printf(" %s %s + %s %s", $f->[4], $f->[5], $ae->[0], $ae->[3]);
+        printf(" %s %s + %s %s", $f->[4], $f->[6], $ae->[0], $ae->[3]);
       } else {
         printf(" %s %s", $f->[4], $f->[5]);
       }
@@ -2024,9 +2024,14 @@ my $cons_ae = sub {
       return;
     }
   }
-  if ( $s =~ /(\',\'\s*)?C\:[^:]+:(\w+)[^:]+:(\w+)[^:]*$/ ) {
-    push @flist, [ 'C', defined($1) ? ',' : undef, undef, undef, $2, $3 ];
-    return;
+  # $1 - optional comma, $2 - [x], $3 - [||]?, $4 - first [], $5 - second []
+  if ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*C\:[^:\[]+\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
+    push @flist, [ 'C', defined($1) ? ',' : undef, $2, undef, $4, $5 ];
+    # see details here: https://perldoc.perl.org/perlretut#Position-information
+    my $spos = $-[0];
+    my $slen = $+[0] - $-[0];
+    # remove this part from $s
+    substr($s, $spos, $slen, '<CBA>');
   }
   # $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
   while( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)\s*(\',\')?/g ) {
