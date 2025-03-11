@@ -167,7 +167,7 @@ sub enum_by_value
 sub is_type
 {
   my $c = shift;
-  return ($c eq 'BITSET') || ($c eq 'UImm') || ($c eq 'SImm') || ($c eq 'SSImm')
+  return ($c eq 'BITSET') || ($c eq 'UImm') || ($c eq 'SImm') || ($c eq 'SSImm') || ($c eq 'RSImm')
    || ($c eq 'F64Imm') || ($c eq 'F16Imm') || ($c eq 'F32Imm');
 }
 
@@ -1442,15 +1442,16 @@ sub make_inst
       my $part = ignore_enum($op, $ae, $kv, $b);
       next if ( !$part->[0] );
       # make alias@not
-      if ( defined($f->[2]) && $f->[2] eq '!' ) {
+      if ( defined($f->[3]) && $f->[3] eq '!' ) {
         $pnot = $ae->[3] . '@not';
       }
-      my $pres = $f->[1];
+      my $pres = $f->[1]; # prefix
       if ( defined($pnot) && exists $kv->{$pnot} ) {
         $pres .= '!' if ( $kv->{$pnot} );
       }
       $pres .= $part->[1];
       $res .= $pres . ' ';
+      $res .= $f->[2] if ( defined $f->[2] ); # suffix
       next;
     } elsif ( $f->[0] eq 'E' ) { # some enum
       my $ae = $f->[4];
@@ -1468,7 +1469,14 @@ sub make_inst
         next unless ( defined $v );
         if ( $ae->[1] ) { $res .= '.' }
         else { $res .= ' '; }
-        $res .= $f->[1] if ( defined $f->[1] );
+        $res .= $f->[1] if ( defined $f->[1] ); # prefix
+        # check [-]
+        if ( defined($f->[3]) && ($f->[3] eq '-') ) {
+          my $pneg = $ae->[3] . '@negate';
+          if ( exists($kv->{$pneg}) && $kv->{$pneg} ) {
+            $res .= '-';
+          }
+        }
         if ( 'ARRAY' ne ref $v ) {
           my $ev = enum_by_value($g_enums{$ae->[0]}, $v);
           if ( defined $ev ) { $res .= $ev; }
@@ -1479,14 +1487,14 @@ sub make_inst
         } else {
           $res .= $v->[1];
         }
-        $res .= $f->[2] if ( defined $f->[2] );
+        $res .= $f->[2] if ( defined $f->[2] ); # suffix
       }
     } elsif ( $f->[0] eq '$' ) { # opcode
       $res .= $op->[1];
     } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) { # const bank
       my($v, $pfx);
       $pfx = substr($op->[10]->[0], 0, 1) if ( $f->[0] eq 'C' );
-      $res .= $f->[1] if ( defined $f->[1] );
+      $res .= $f->[1] if ( defined $f->[1] ); # prefix
       $res .= 'C[';
       # sa_bank
       if ( exists $kv->{$f->[4]} ) {
@@ -1537,6 +1545,7 @@ sub make_inst
             $res .= sprintf("0x%X]", $v);
           }
         } else { $res .= sprintf(" cannot find cvalue %s]", $f->[5]); }
+        $res .= $f->[2] if ( $f->[2] ); # suffix
       }
     } elsif ( $f->[0] eq 'V' ) { # some value
       if ( exists $kv->{$f->[4]} ) {
@@ -2101,6 +2110,7 @@ my $cons_single = sub {
   return undef;
 };
 # parse format in form /? $1 enum $2 optional value $3 alias $4
+# format: 0 - letter, 1 - prefix, 2 - suffix, 3 - [x]
 my $cons_ae = sub {
   my($s, $idx) = @_;
   if ( !$idx ) { # zero index - predicate
@@ -2110,7 +2120,7 @@ my $cons_ae = sub {
       if ( exists $g_enums{$3} ) {
         my $aref = [ $3, 0, defined($4) ? $g_enums{$3}->{$4} : undef, $5 ];
         $ae{$5} = $aref;
-        push @flist, [ 'P', $1, $2, undef, $aref ];
+        push @flist, [ 'P', $1, undef, $2, $aref ];
       } else {
         carp("unknwon enum $3 for predicate");
       }
@@ -2121,7 +2131,7 @@ my $cons_ae = sub {
   # $1 - optional comma, $2 - [x], $3 - [||]?, $4 - first [], $5 - second []
   if ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bC\:[^:\[]+\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
         # 0 - type   1 - optional ,             2    3    4   5
-    my @cf = ( 'C', defined($1) ? ',' : undef, $2, undef, $4);
+    my @cf = ( 'C', defined($1) ? ',' : undef, undef, $2, $4);
     # see details here: https://perldoc.perl.org/perlretut#Position-information
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
@@ -2146,7 +2156,7 @@ my $cons_ae = sub {
   # try const bank address, v2 - the same as above but don't need to check $op->[10] for version
   } elsif ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bCX\:[^:\[]+\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
         # 0 - type   1 - optional ,             2    3    4   5
-    my @cf = ( 'X', defined($1) ? ',' : undef, $2, undef, $4);
+    my @cf = ( 'X', defined($1) ? ',' : undef, undef, $2, $4);
     # see details here: https://perldoc.perl.org/perlretut#Position-information
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
@@ -2171,7 +2181,7 @@ my $cons_ae = sub {
   }
   # first 3 is optional comma, $2 - [x], $3 - [||]?
   # next $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
-  while( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)\s*(\',\')?/g ) {
+  while( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\*?\:([\w\.]+)\s*(\',\')?/g ) {
     if ( exists $g_enums{$5} ) {
       # key is values in op->[11] hash is
       # 0 - enum name
@@ -2181,12 +2191,12 @@ my $cons_ae = sub {
       my $aref = [ $5, $4 ne '', defined($6) ? $g_enums{$5}->{$6} : undef, $7 ];
       $ae{$7} = $aref;
       if ( defined($2) and $2 eq '!' ) {
-        push @flist, [ 'P', defined($1) ? ',' : undef, $2, defined($8) ? ',' : undef, $aref ];
+        push @flist, [ 'P', defined($1) ? ',' : undef, defined($8) ? ',' : undef, $2, $aref ];
       } else {
-        push @flist, [ 'E', defined($1) ? ',' : undef, $2, defined($8) ? ',' : undef, $aref ];
+        push @flist, [ 'E', defined($1) ? ',' : undef, defined($8) ? ',' : undef, $2, $aref ];
       }
     } elsif ( is_type($5) ) {
-      push @flist, [ 'V', defined($1) ? ',' : undef, $2, defined($8) ? ',' : undef, $7, $5 ];
+      push @flist, [ 'V', defined($1) ? ',' : undef, defined($8) ? ',' : undef, $2, $7, $5 ];
     } else {
        printf("enum %s does not exists, line %d\n", $5, $line);
     }
