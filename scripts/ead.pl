@@ -1239,10 +1239,10 @@ sub parse0b
 my(%g_masks, $g_dec_tree);
 my $g_dups = 0;
 
-# args: value, mask, reg to op->[11], ref to kv, format name
+# args: value, mask, reg to op->[11], ref to kv, format name, optional scale
 sub dump_plain_value
 {
-  my($v, $mask, $mae, $kv, $fn) = @_;
+  my($v, $mask, $mae, $kv, $fn, $sc) = @_;
 # printf("dump_plain_value %s\n", $fn) if defined($fn);
   if ( defined($v) ) {
     printf("   %s(", $mask->[0]);
@@ -1255,6 +1255,7 @@ sub dump_plain_value
         return;
       }
     }
+    $v *= $sc if ( defined $sc );
     if ( $v ) { printf("%X)\n", $v); }
     else { printf("0)\n"); }
     $kv->{$fn} = $v if defined($fn);
@@ -1332,9 +1333,11 @@ sub dump_values
       } else {
         dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv);
       }
-    } elsif ( $m =~ /^(\w+)\s*=\*?\s*(\S+)$/ ) {
+    } elsif ( $m =~ /^(\w+)\s*=\*?\s*([\w\.]+)(?:\s*SCALE\s+(\d+))?$/ ) {
       my $mask = $g_mnames{$1};
-      dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv, $2);
+      my $scale;
+      $scale = int($3) if defined($3);
+      dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv, $2, $scale);
     } elsif ( $m =~ /^(\w+)/ ) {
      my $mask = $g_mnames{$1};
      dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv);
