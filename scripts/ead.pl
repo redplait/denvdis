@@ -982,7 +982,7 @@ printf("enc %s enum(%s) %d in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1])
   # and add tables
   foreach my $tmask ( @{ $op->[5] } ) {
     # mask $1 = table $2
-    if ( $tmask =~ /^(\w+)\s*=\*?\s*(\S+)\((?:[^\)]+)\)/ ) {
+    if ( $tmask =~ /^(\w+)\s*=\*?\s*(\S+)\s*\((?:[^\)]+)\)/ ) {
       my $what = $g_mnames{$1};
       if ( exists($g_tabs{$2}) ) {
          if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, 't', $g_tabs{$2}, $2 ]; }
@@ -1006,7 +1006,7 @@ sub add_tenums
   my %res;
   foreach my $tmask ( @$enc ) {
     # mask $1 = table $2
-    if ( $tmask =~ /^(\w+)\s*=\*?\s*(\S+)\(([^\)]+)\)/ ) {
+    if ( $tmask =~ /^(\w+)\s*=\*?\s*(\S+)\s*\(([^\)]+)\)/ ) {
       next if ( !exists($g_tabs{$2}) );
       my @ar;
       my $ename = $1;
@@ -1293,7 +1293,7 @@ sub dump_values
       my $mask = $g_mnames{$1};
       dump_id_value(extract_value($a, $mask), $kv, $2);
        # mask $1 = table $2 (args) $3
-    } elsif ( $m =~ /^(\w+)\s*=\*?\s*(\S+)\((\s*[^\)]+)\s*\)/ ) {
+    } elsif ( $m =~ /^(\w+)\s*=\*?\s*(\S+)\s*\((\s*[^\)]+)\s*\)/ ) {
       my $mask = $g_mnames{$1};
       my $v;
       if ( exists($g_tabs{$2}) && defined($v = extract_value($a, $mask)) ) {
@@ -1333,14 +1333,13 @@ sub dump_values
       } else {
         dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv);
       }
-    } elsif ( $m =~ /^(\w+)\s*=\*?\s*([\w\.]+)(?:\s*SCALE\s+(\d+))?$/ ) {
+    } elsif ( $m =~ /^(\w+)\s*=\*?\s*([\w\.\@]+)(?:\s*SCALE\s+(\d+))?$/ ) {
       my $mask = $g_mnames{$1};
       my $scale;
       $scale = int($3) if defined($3);
       dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv, $2, $scale);
-    } elsif ( $m =~ /^(\w+)/ ) {
-     my $mask = $g_mnames{$1};
-     dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv);
+    } else {
+     carp("unknown enocoding $m");
    }
   }
   # dump const bank
@@ -1575,7 +1574,6 @@ sub make_inst
           if ( $f->[0] eq 'C') {
             $res .= sprintf("0x%X]", $pfx eq '2' ? $v * 2 : $v);
           } else {
-            # TODO: check scale
             $res .= sprintf("0x%X]", $v);
           }
         } else { $res .= sprintf(" cannot find cvalue %s]", $f->[5]); }
