@@ -193,6 +193,17 @@ sub dump_tabs
   }
 }
 
+sub tab_dim
+{
+  my($tname) = shift;
+  return undef unless exists $g_tabs{$tname};
+  my @v = values %{ $g_tabs{$tname} };
+  return undef unless @v;
+  my $v1 = $v[0];
+  return scalar @$v1 if ( 'ARRAY' eq ref $v1 );
+  1;
+}
+
 # args: string to parse, line number for diagnostic msg
 sub parse_tab_value
 {
@@ -1042,7 +1053,7 @@ sub dump_filters
   my $flist = $op->[12];
   foreach my $f ( @$flist ) {
    if ( $f->[1] eq 'v' ) { printf("  %s %s %d\n", $f->[0]->[0], $f->[1], $f->[2]); }
-    else { printf("  %s %s %s\n", $f->[0]->[0], $f->[1], $f->[3]); }
+   else { printf("  %s %s %s\n", $f->[0]->[0], $f->[1], $f->[3]); }
   }
 }
 
@@ -1053,8 +1064,10 @@ sub filter_ins
   return 1 unless ( defined $op->[12] );
   # format of op->[12] elements is array where indexes
   # 0 - mask
-  # 1 - letter 'e' for enums, 't' for tables
-  # 2 - ref to enum/letter
+  # 1 - letter 'e' for enums, 'v' for values, 't' for tables, 'T' for tables with enums
+  # 2 - ref to enum/value
+  # 3 - name of enum/table for dumping
+  # 4 ... for 'T' - names of enums to check value in them
   my $flist = $op->[12];
   foreach my $f ( @$flist ) {
     my $v = extract_value($a, $f->[0]);
@@ -1065,7 +1078,19 @@ sub filter_ins
       return 0 if ( $v != $f->[2] );
     } else {
       my $tr = $f->[2];
-      return 0 if ( !exists $tr->{$v} );
+      return 0 unless exists( $tr->{$v} );
+      return 1 if ( 't' eq $f->[1] );
+      my $row = $tr->{$v};
+      if ( 'ARRAY' eq ref($row) ) {
+        for ( my $i = 0; $i < scalar @$row; $i++ ) {
+          next unless defined($f->[4 + $i]);
+          my $e = $g_enums{ $f->[4 + $i] };
+          return 0 unless exists $e->{$row->[$i]};
+        }
+      } else {
+        my $e = $g_enums{ $f->[4] };
+        return 0 unless exists $e->{$row};
+      }
     }
   }
   1;
@@ -1470,12 +1495,18 @@ sub make_inst
         if ( $ae->[1] ) { $res .= '.' }
         else { $res .= ' '; }
         $res .= $f->[1] if ( defined $f->[1] ); # prefix
-        # check [-]
-        if ( defined($f->[3]) && ($f->[3] eq '-') ) {
-          my $pneg = $ae->[3] . '@negate';
-          if ( exists($kv->{$pneg}) && $kv->{$pneg} ) {
-            $res .= '-';
-          }
+        # check placeholders
+        if ( defined $f->[3] ) {
+         # check [-]
+         if ( $f->[3] eq '-') {
+           my $pneg = $ae->[3] . '@negate';
+           $res .= '-' if ( exists($kv->{$pneg}) && $kv->{$pneg} );
+         }
+         # check [~]
+         if ( $f->[3] eq '~') {
+           my $pneg = $ae->[3] . '@invert';
+           $res .= '~' if ( exists($kv->{$pneg}) && $kv->{$pneg} );
+         }
         }
         if ( 'ARRAY' ne ref $v ) {
           my $ev = enum_by_value($g_enums{$ae->[0]}, $v);
@@ -1953,7 +1984,7 @@ $state = $line = 0;
 # [5] - ref to nenc
 # [6] - is alternate class
 # [7] - format string
-# [8] - ref to tabs
+# [8] - ref to quoted values
 # [9] - list with const banks, [ right, enc1, enc2, ... ]
 # [10] - hashmap encoding -> enum
 # [11] - list of filters for this instruction
@@ -1961,7 +1992,7 @@ $state = $line = 0;
 # [13] - count of meaningful bits
 # [14] - list of formats
 # [15] - href to renaindned enums from [10]
-my($cname, $has_op, $op_line, @op, @enc, @nenc, @tabs, @cb, @flist, %ae, $alt, $format);
+my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @cb, @flist, %ae, $alt, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
 # tref is ref to hash with table content
@@ -2051,7 +2082,7 @@ my $parse_enum = sub {
 my $reset = sub {
   $format = $cname = '';
   $alt = $has_op = $op_line = 0;
-  @op = @enc = @nenc = @tabs = @cb = @flist = ();
+  @op = @enc = @nenc = @quoted = @cb = @flist = ();
   %ae = ();
 };
 # insert copy of current instruction
@@ -2075,7 +2106,7 @@ my $ins_op = sub {
   my @c = @op;
   my @cenc = @enc;
   my @cnenc = @nenc;
-  my @ctabs = @tabs;
+  my @cquoted = @quoted;
   my @ccb = @cb;
   my @cflist = @flist;
   $c[3] = $op_line;
@@ -2083,7 +2114,7 @@ my $ins_op = sub {
   $c[5] = \@cnenc;
   $c[6] = $alt;
   $c[7] = $format;
-  $c[8] = \@ctabs;
+  $c[8] = \@cquoted;
   $c[9] = scalar(@cb) ? \@ccb : undef; # constant bank
   $c[10] = \%mae;
   $c[11] = undef;
@@ -2413,7 +2444,7 @@ while( $str = <$fh> ) {
           printf("quoted encode mask %s not exists, line %d op %s\n", $1, $line, $op[0]);
           # $reset->();
         } else {
-          push(@tabs, $s);
+          push(@quoted, $s);
         }
         next;
       }
