@@ -94,6 +94,8 @@ my %Tabs = (
 
 # global enums hash map - like Tabs but readed dynamically
 my %g_enums;
+# enums with only value
+my %g_single_enums;
 my $g_rz = 0;
 
 sub dump_enums
@@ -102,6 +104,7 @@ sub dump_enums
   foreach my $e_name ( sort keys %g_enums ) {
     my $enum = $g_enums{$e_name};
     next if ( !scalar keys %$enum );
+    printf("<S> ") if ( check_single_enum($e_name) );
     printf("%s:\n", $e_name);
     while( my($n, $v) = each %$enum ) {
       printf("  %s\t%d\n", $n, $v);
@@ -118,6 +121,13 @@ sub is_single_enum
   my @keys = keys %$k;
   return undef if ( 1 != scalar @keys );
   $k->{$keys[0]};
+}
+
+# more fast version
+sub check_single_enum
+{
+  my $e = shift;
+  exists $g_single_enums{ $e };
 }
 
 # args: instruction, current mask, enum, value
@@ -861,7 +871,7 @@ sub gen_inst_mask
   while( $op->[8] =~ /\/([^\(\)\"\s]+)\:([\w\.]+)/pg ) {
     my $alias = $2;
     my $what;
-    my $v = is_single_enum($1);
+    my $v = check_single_enum($1);
     if ( defined($v) && defined($what = check_enc_ask($op->[5], $2)) ) {
        $rem{$what->[0]} = 1;
        my $p = pos($op->[8]);
@@ -950,7 +960,7 @@ printf("enc %s enum(%s) %d in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1])
 #f        mask_value(\@res, $v, $what);
 #f        $patched++;
 #f      }
-      my $v = is_single_enum($must_be->[0]);
+      my $v = check_single_enum($must_be->[0]);
       if ( defined($v) ) {
          $rem{$what->[0]} = 1;
          mask_value(\@res, $v, $what);
@@ -962,7 +972,7 @@ printf("enc %s enum(%s) %d in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1])
         }
     } else {
     # 2) enc = enum
-      my $v = is_single_enum($must_be->[0]);
+      my $v = check_single_enum($must_be->[0]);
       if ( defined($v) ) {
 # printf("enc %s single enum %s\n", $1, $must_be->[0]);
          $rem{$what->[0]} = 1;
@@ -2000,7 +2010,7 @@ my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @cb, @flist, %ae, $alt,
 my($curr_tab, $tref);
 
 # enum state
-my($curr_enum, $eref);
+my($curr_enum, $eref, $e_name);
 # 0 - don't parse, 1 - expect start of enum, 2 - continue with next line, 3 - expect start of table, 4 - next line for table
 my $estate = 0;
 
@@ -2010,6 +2020,10 @@ my $reset_tab = sub {
 };
 
 my $reset_enum = sub {
+  if ( defined $e_name ) {
+    $g_single_enums{$e_name} = 1 if ( is_single_enum($e_name) );
+  }
+  undef $e_name;
   $curr_enum = 0;
 };
 my $parse_pair = sub {
@@ -2296,6 +2310,7 @@ while( $str = <$fh> ) {
       $str =~ s/^\s*//; $str =~ s/\s*$//;
       if ( $str =~ /^([\w\.]+)\s*$/ ) {
         my %tmp;
+        $e_name = $1;
         $eref = $g_enums{$1} = \%tmp;
         $estate = 2;
         next;
@@ -2303,6 +2318,7 @@ while( $str = <$fh> ) {
       # compound enum like name = e1 + ...;
       if ( $str =~ /^(\w+)\s*=(.*);$/ ) {
         my %tmp;
+        $e_name = $1;
         $eref = $g_enums{$1} = \%tmp;
         $str = $2;
         foreach my $cname ( split /\s*\+\s*/, $str ) {
@@ -2314,6 +2330,7 @@ while( $str = <$fh> ) {
       }
       if ( $str =~ /^([\w\.]+)\s+(.*)\s*;?/ ) {
         my %tmp;
+        $e_name = $1;
         $eref = $g_enums{$1} = \%tmp;
         $parse_enum->($2);
         if ( $str =~ /\;$/ ) {
