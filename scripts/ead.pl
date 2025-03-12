@@ -1534,11 +1534,11 @@ sub dump_formats
       printf(" %s %s", $f->[4], $f->[5]);
     } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) {
       # const bank can have 2 or 3 op - 3rd is ref to Enum
-      if ( defined $f->[6] ) {
-        my $ae = $f->[6];
-        printf(" %s %s + %s %s", $f->[4], $f->[5], $ae->[0], $ae->[3]);
+      if ( defined $f->[7] ) {
+        my $ae = $f->[7];
+        printf(" %s: %s %s + %s %s", $f->[4], $f->[5], $f->[6], $ae->[0], $ae->[3]);
       } else {
-        printf(" %s %s", $f->[4], $f->[5]);
+        printf(" %s: %s %s", $f->[4], $f->[5], $f->[6]);
       }
     }
     printf("\n");
@@ -1631,27 +1631,32 @@ sub make_inst
       my($v, $pfx);
       $pfx = substr($op->[10]->[0], 0, 1) if ( $f->[0] eq 'C' );
       $res .= $f->[1] if ( defined $f->[1] ); # prefix
+      # check [~]
+      if ( defined($f->[3]) and defined($f->[4]) and $f->[3] eq '~' ) {
+        my $pinv = $f->[4] . '@invert';
+        $res .= '~' if ( exists($kv->{$pinv}) && $kv->{$pinv} );
+      }
       $res .= 'C[';
       # sa_bank
-      if ( exists $kv->{$f->[4]} ) {
-        $v = $kv->{$f->[4]};
+      if ( exists $kv->{$f->[5]} ) {
+        $v = $kv->{$f->[5]};
         $res .= sprintf("0x%X]", $v);
       } else {
-        $res .= sprintf("cannot find bank value %s]", $f->[4]);
+        $res .= sprintf("cannot find bank value %s]", $f->[5]);
       }
       # address can consist from 2 parts
-      if ( !defined($f->[6]) ) {
-        if ( exists $kv->{$f->[5]} ) {
-          $v = $kv->{$f->[5]};
+      if ( !defined($f->[7]) ) {
+        if ( exists $kv->{$f->[6]} ) {
+          $v = $kv->{$f->[6]};
           if ( $f->[0] eq 'C' ) {
             $res .= sprintf("[0x%X]", $pfx eq '2' ? $v * 4 : $v);
           } else {
             $res .= sprintf("[0x%X]", $v);
           }
-        } else { $res .= sprintf("[cannot find cvalue %s]", $f->[5]); }
+        } else { $res .= sprintf("[cannot find cvalue %s]", $f->[6]); }
       } else {
-        # reg in $f->[6], imm in $f->[5]
-        my $ae = $f->[6];
+        # reg in $f->[7], imm in $f->[6]
+        my $ae = $f->[7];
         my $sv = '';
         # format enum
         if ( defined $ae->[2] ) {
@@ -1672,14 +1677,14 @@ sub make_inst
           $res .= '+';
         }
         # and final imm part
-        if ( exists $kv->{$f->[5]} ) {
-          $v = $kv->{$f->[5]};
+        if ( exists $kv->{$f->[6]} ) {
+          $v = $kv->{$f->[6]};
           if ( $f->[0] eq 'C') {
             $res .= sprintf("0x%X]", $pfx eq '2' ? $v * 2 : $v);
           } else {
             $res .= sprintf("0x%X]", $v);
           }
-        } else { $res .= sprintf(" cannot find cvalue %s]", $f->[5]); }
+        } else { $res .= sprintf(" cannot find cvalue %s]", $f->[6]); }
         $res .= $f->[2] if ( $f->[2] ); # suffix
       }
     } elsif ( $f->[0] eq 'V' ) { # some value
@@ -2279,52 +2284,55 @@ my $cons_ae = sub {
     }
   }
   # try const bank address, v1
-  # $1 - optional comma, $2 - [x], $3 - [||]?, $4 - first [], $5 - second []
-  if ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bC\:[^:\[]+\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
-        # 0 - type   1 - optional ,             2    3    4   5
-    my @cf = ( 'C', defined($1) ? ',' : undef, undef, $2, $4);
+  # $1 - optional comma, $2 - [x], $3 - [||]?, $4 - name after C:, $5 - first [], $6 - second []
+  # C: can have [~] - it applied to name after prefix C: like in sample from sm75_1.txt:
+  #  [~] CX:Sb[UniformRegister:URb][UImm(16)*:Sb_offset]
+  # here we have value Sb@invert
+  if ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bC\:([^:\[]+)\s*\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
+        # 0 - type   1 - optional ,              2    3   4
+    my @cf = ( 'C', defined($1) ? ',' : undef, undef, $2, $4, $5);
     # see details here: https://perldoc.perl.org/perlretut#Position-information
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
-    my $left = $4;
-    my $right = $5;
+    my $left = $5;
+    my $right = $6;
     my $reps = '<CBA>';
     # get var from left
-    if ( $left =~ /\:(\w+)$/ ) { $cf[4] = $1; }
+    if ( $left =~ /\:(\w+)$/ ) { $cf[5] = $1; }
     # check if right is pair enum + var
     if ( $right =~ /^\s*(.*\:.*)\s*\+\s*(.*\:.*)\s*$/ ) {
       # we have 2 parts
       my $sec = $2;
       my $first = $1;
-      $cf[6] = $cons_single->($first);
-      $reps = '<CBA ' . $first . ' >' if defined($cf[6]);
-      if ( $sec =~ /\:(\w+)$/ ) { $cf[5] = $1; }
-    } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[5] = $1; }
+      $cf[7] = $cons_single->($first);
+      $reps = '<CBA ' . $first . ' >' if defined($cf[7]);
+      if ( $sec =~ /\:(\w+)$/ ) { $cf[6] = $1; }
+    } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[6] = $1; }
     # push newly created format
     push @flist, \@cf;
     # remove this part from $s
     substr($s, $spos, $slen, $reps);
   # try const bank address, v2 - the same as above but don't need to check $op->[10] for version
-  } elsif ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bCX\:[^:\[]+\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
-        # 0 - type   1 - optional ,             2    3    4   5
-    my @cf = ( 'X', defined($1) ? ',' : undef, undef, $2, $4);
+  } elsif ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bCX\:([^:\[]+)\s*\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
+        # 0 - type   1 - optional ,               2    3    4   5
+    my @cf = ( 'X', defined($1) ? ',' : undef, undef, $2, $4, $5);
     # see details here: https://perldoc.perl.org/perlretut#Position-information
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
-    my $left = $4;
-    my $right = $5;
+    my $left = $5;
+    my $right = $6;
     my $reps = '<CX>';
     # get var from left
-    if ( $left =~ /\:(\w+)$/ ) { $cf[4] = $1; }
+    if ( $left =~ /\:(\w+)$/ ) { $cf[5] = $1; }
     # check if right is pair enum + var
     if ( $right =~ /^\s*(.*\:.*)\s*\+\s*(.*\:.*)\s*$/ ) {
       # we have 2 parts
       my $sec = $2;
       my $first = $1;
-      $cf[6] = $cons_single->($first);
-      $reps = '<CX ' . $first . ' >' if defined($cf[6]);
-      if ( $sec =~ /\:(\w+)$/ ) { $cf[5] = $1; }
-    } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[5] = $1; }
+      $cf[7] = $cons_single->($first);
+      $reps = '<CX ' . $first . ' >' if defined($cf[7]);
+      if ( $sec =~ /\:(\w+)$/ ) { $cf[6] = $1; }
+    } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[6] = $1; }
     # push newly created format
     push @flist, \@cf;
     # remove this part from $s
