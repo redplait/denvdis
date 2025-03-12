@@ -7,7 +7,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_B $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w/;
+use vars qw/$opt_a $opt_b $opt_B $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -24,10 +24,11 @@ Usage: $0 [options] md.txt
   -i - dump instructions formats
   -m - generate masks
   -r - fill in reverse order
-  -t - dunp tables
-  -T - test bytes
+  -t - dump tables
+  -T - test file
   -v - verbose
   -w - dump warnings
+  -z - remove fully filled tables patterns
 EOF
   exit(8);
 }
@@ -104,7 +105,7 @@ sub dump_enums
   foreach my $e_name ( sort keys %g_enums ) {
     my $enum = $g_enums{$e_name};
     next if ( !scalar keys %$enum );
-    printf("<S> ") if ( check_single_enum($e_name) );
+    printf("<S> ") if ( exists $g_single_enums{$e_name} );
     printf("%s:\n", $e_name);
     while( my($n, $v) = each %$enum ) {
       printf("  %s\t%d\n", $n, $v);
@@ -116,11 +117,11 @@ sub dump_enums
 sub is_single_enum
 {
   my $name = shift;
-  return undef if ( !exists $g_enums{$name} );
+  return 0 if ( !exists $g_enums{$name} );
   my $k = $g_enums{$name};
   my @keys = keys %$k;
-  return undef if ( 1 != scalar @keys );
-  $k->{$keys[0]};
+  return 0 if ( 1 != scalar @keys );
+  1;
 }
 
 # more fast version
@@ -214,6 +215,37 @@ sub tab_dim
   my $v1 = $v[0];
   return scalar @$v1 if ( 'ARRAY' eq ref $v1 );
   1;
+}
+
+# find key in table $tname for row in array $tref
+sub rev_tab_lookup
+{
+  my($tname, $tref) = @_;
+  return undef unless exists $g_tabs{$tname};
+  my $t = $g_tabs{$tname};
+  keys %$t;
+  while( my($k, $row) = each %$t ) {
+    my $same = 1;
+    # compare rows - could use Data::Compare
+#  printf("%s BAD %s", $tname, $row) if ( 'ARRAY' ne ref $row );
+    for ( my $i = 0; $i < scalar @$tref; $i++ ) {
+      if ( $row->[$i] != $tref->[$i] ) { $same = 0; last; }
+    }
+    return $k if $same;
+  }
+  undef;
+}
+
+sub rev_tab1
+{
+  my($tname, $v) = @_;
+  return undef unless exists $g_tabs{$tname};
+  my $t = $g_tabs{$tname};
+  keys %$t;
+  while( my($k, $row) = each %$t ) {
+    return $k if ( $v == $row );
+  }
+  undef;
 }
 
 # args: string to parse, line number for diagnostic msg
@@ -997,23 +1029,52 @@ printf("enc %s enum(%s) %d in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1])
     if ( $tmask =~ /^(\w+)\s*=(\*)?\s*(\S+)\s*\(\s*([^\)]+)\s*\)/ ) {
       my $what = $g_mnames{$1};
       if ( exists($g_tabs{$3}) ) {
+         my $tab_name = $3;
          # example from sm55_1.txt:
-         # aSelect =* VFormat16(safmt,asel);
+         #   aSelect =* VFormat16(safmt,asel);
          # where /Integer16:safmt & /H1H0(H0):asel both enums
          my @tfilter = ( $what, 't', $g_tabs{$3}, $3 );
          my @e_args;
          my $e_cnt = 0;
          my $list = $4;
          my $me = $op->[16];
+         # another example from sm90_1.txt
+         #   BITS_4_80_77_mem=*TABLES_mem_2(sem,sco,0);
+         # in formats /STRONGONLY:sem /SYSONLY:sco
+         # both STRONGONLY & SYSONLY are single value enums
+         # so if we can fill whole row with numerical values we could find key in table via rev_tab_lookup
+         # and then make new mask $what with that key
+         my @num_row;
          foreach my $arg ( split /\s*,\s*/, $list) {
-           if ( exists $me->{$arg} ) {
+           if ( exists $g_enums{$arg} ) {
+             push @e_args, $arg; $e_cnt++;
+             push @num_row, check_single_enum($arg);
+           } elsif ( exists $me->{$arg} ) {
              push @e_args, $me->{$arg}->[0]; $e_cnt++;
+             push @num_row, check_single_enum($me->{$arg}->[0]);
+           } elsif ( $arg =~ /^\d+/ ) {
+             push @num_row, int($arg);
            } else {
              push @e_args, undef;
+             push @num_row, undef;
+           }
+         }
+         my $num_cnt = 0;
+         foreach ( @num_row) { $num_cnt++ if defined $_; }
+         my $t_dim = tab_dim($tab_name);
+         if ( defined($opt_z) && $num_cnt == $t_dim ) {
+      printf("CNT %s line %d %s: %d %d tab %s %s\n", $op->[1], $op->[4], $what->[0], $num_cnt, $t_dim, $tab_name, join(' ', @num_row));    
+           # try to find key
+           my $key = (1 == $t_dim) ? rev_tab1($tab_name, $num_row[0]) : rev_tab_lookup($tab_name, \@num_row);
+           if ( defined $key ) {
+             printf("Can remove table mask %s, key %X\n", $what->[0], $key);
+             mask_value(\@res, $key, $what);
            }
          }
          if ( $e_cnt ) {
            $tfilter[1] = 'T';
+           # remove trailng undefs
+           while( !defined $e_args[-1] ) { pop @e_args; }
            push @tfilter, $_ for ( @e_args );
          }
          if ( defined $op->[12] ) { push @{ $op->[12] }, \@tfilter; }
@@ -1743,6 +1804,18 @@ sub dump_mask2enum
   dump_menums($op->[16]);
 }
 
+sub in_missed
+{
+  my($op, $ename) = @_;
+  return undef unless defined($op->[16]);
+  my $m2e = $op->[16];
+  keys %$m2e;
+  while( my($m, $e) = each %$m2e ) {
+    return $e if ( $e eq $ename );
+  }
+  undef;
+}
+
 sub dump_dup_masks
 {
   foreach my $v ( sort { $a cmp $b } keys %g_masks ) {
@@ -2008,7 +2081,7 @@ sub dump_decision_node
 }
 
 ### main
-my $status = getopts("abBcefFimrtvwT:");
+my $status = getopts("abBcefFimrtvwzT:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -2314,7 +2387,7 @@ while( $str = <$fh> ) {
        my $kv;
        my $v = parse_tab_keys($1, $line);
        if ( defined($v) && defined($kv = parse_tab_value($key, $line)) ) {
-         if ( defined $tref ) { $tref->{$kv} = $v; }
+         if ( defined $tref ) { $tref->{$kv} //= $v; }
          else { $tref = { $kv => $v }; }
        }
       }
@@ -2340,7 +2413,7 @@ while( $str = <$fh> ) {
     # 1 - new enum
     if ( 1 == $estate ) {
       $str =~ s/^\s*//; $str =~ s/\s*$//;
-      if ( $str =~ /^([\w\.]+)\s*$/ ) {
+      if ( $str =~ /^([\w\.]+)$/ ) {
         my %tmp;
         $e_name = $1;
         $eref = $g_enums{$1} = \%tmp;
