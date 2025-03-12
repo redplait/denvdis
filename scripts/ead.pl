@@ -127,7 +127,9 @@ sub is_single_enum
 sub check_single_enum
 {
   my $e = shift;
-  exists $g_single_enums{ $e };
+  return undef unless exists $g_single_enums{ $e };
+  my @v = values %{ $g_enums{ $e } };
+  return $v[0];
 }
 
 # args: instruction, current mask, enum, value
@@ -991,14 +993,33 @@ printf("enc %s enum(%s) %d in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1])
   }
   # and add tables
   foreach my $tmask ( @{ $op->[5] } ) {
-    # mask $1 = table $2
-    if ( $tmask =~ /^(\w+)\s*=\*?\s*(\S+)\s*\((?:[^\)]+)\)/ ) {
+    # mask $1 = (optional * $2) table $3 list of vars $4
+    if ( $tmask =~ /^(\w+)\s*=(\*)?\s*(\S+)\s*\(\s*([^\)]+)\s*\)/ ) {
       my $what = $g_mnames{$1};
-      if ( exists($g_tabs{$2}) ) {
-         if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, 't', $g_tabs{$2}, $2 ]; }
-         else { $op->[12] = [ [ $what, 't', $g_tabs{$2}, $2 ] ]; }
-      } elsif ( $2 ne 'IDENTICAL' ) {
-        printf("%s at line %d - table %s does not exist for %s\n", $op->[1], $op->[4], $2, $1);
+      if ( exists($g_tabs{$3}) ) {
+         # example from sm55_1.txt:
+         # aSelect =* VFormat16(safmt,asel);
+         # where /Integer16:safmt & /H1H0(H0):asel both enums
+         my @tfilter = ( $what, 't', $g_tabs{$3}, $3 );
+         my @e_args;
+         my $e_cnt = 0;
+         my $list = $4;
+         my $me = $op->[16];
+         foreach my $arg ( split /\s*,\s*/, $list) {
+           if ( exists $me->{$arg} ) {
+             push @e_args, $me->{$arg}->[0]; $e_cnt++;
+           } else {
+             push @e_args, undef;
+           }
+         }
+         if ( $e_cnt ) {
+           $tfilter[1] = 'T';
+           push @tfilter, $_ for ( @e_args );
+         }
+         if ( defined $op->[12] ) { push @{ $op->[12] }, \@tfilter; }
+         else { $op->[12] = [ \@tfilter ] }
+      } elsif ( $3 ne 'IDENTICAL' ) {
+        printf("%s at line %d - table %s does not exist for %s\n", $op->[1], $op->[4], $3, $1);
       }
     }
   }
@@ -1063,7 +1084,15 @@ sub dump_filters
   my $flist = $op->[12];
   foreach my $f ( @$flist ) {
    if ( $f->[1] eq 'v' ) { printf("  %s %s %d\n", $f->[0]->[0], $f->[1], $f->[2]); }
-   else { printf("  %s %s %s\n", $f->[0]->[0], $f->[1], $f->[3]); }
+   elsif ( $f->[1] eq 'T' ) {
+     printf("  %s %s %s:", $f->[0]->[0], $f->[1], $f->[3]);
+     my $tlen = scalar @$f;
+     for ( my $i = 4; $i < $tlen; $i++ ) {
+       printf(",") if ( $i != 4 );
+       printf("%s", $f->[$i]) if ( defined $f->[$i] );
+     }
+     printf("\n");
+   } else { printf("  %s %s %s\n", $f->[0]->[0], $f->[1], $f->[3]); }
   }
 }
 
@@ -1083,23 +1112,26 @@ sub filter_ins
     my $v = extract_value($a, $f->[0]);
     next if ( !defined $v );
     if ( 'e' eq $f->[1] ) {
-      return 0 if ( !defined enum_by_value($f->[2], $v) );
+      return 0 unless ( defined enum_by_value($f->[2], $v) );
     } elsif ( 'v' eq $f->[1] ) {
       return 0 if ( $v != $f->[2] );
     } else {
+      # check tabs in [2]
       my $tr = $f->[2];
       return 0 unless exists( $tr->{$v} );
       return 1 if ( 't' eq $f->[1] );
+      # process T with optional enums in table values
       my $row = $tr->{$v};
       if ( 'ARRAY' eq ref($row) ) {
         for ( my $i = 0; $i < scalar @$row; $i++ ) {
           next unless defined($f->[4 + $i]);
           my $e = $g_enums{ $f->[4 + $i] };
-          return 0 unless exists $e->{$row->[$i]};
+          # check that enum in row[$i] exists
+          return 0 unless ( defined enum_by_value($e, $row->[$i]) );
         }
       } else {
         my $e = $g_enums{ $f->[4] };
-        return 0 unless exists $e->{$row};
+        return 0 unless ( defined enum_by_value($e, $row) );
       }
     }
   }
