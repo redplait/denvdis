@@ -1646,13 +1646,17 @@ sub make_inst
         $res .= $f->[1] if ( defined $f->[1] ); # prefix
         # check placeholders
         if ( defined $f->[3] ) {
+         if ( $f->[3] eq '!') {
+           my $pneg = $ae->[3] . '@not';
+           $res .= '!' if ( exists($kv->{$pneg}) && $kv->{$pneg} );
+         }
          # check [-]
-         if ( $f->[3] eq '-') {
+         elsif ( $f->[3] eq '-') {
            my $pneg = $ae->[3] . '@negate';
            $res .= '-' if ( exists($kv->{$pneg}) && $kv->{$pneg} );
          }
          # check [~]
-         if ( $f->[3] eq '~') {
+         elsif ( $f->[3] eq '~') {
            my $pneg = $ae->[3] . '@invert';
            $res .= '~' if ( exists($kv->{$pneg}) && $kv->{$pneg} );
          }
@@ -1703,6 +1707,22 @@ sub make_inst
         $res .= sprintf("cannot find TTU value %s]", $f->[4]);
       }
       next;
+    } elsif ( $f->[0] eq 'M2' ) { # TMEM
+      $res .= $f->[1] if ( defined $f->[1] ); # prefix
+      $res .= $f->[3]; # name of this TMEM
+      $res .= '[';
+      my $sv = format_enum($f->[4], $op, $kv, $b);
+      $res .= $sv if defined($sv);
+      if ( defined $f->[5] ) {
+        if ( exists $kv->{$f->[5]} ) {
+          my $v = $kv->{$f->[5]};
+          $res .= sprintf("+ 0x%X]", $v);
+        } else {
+          $res .= sprintf("cannot find TMEM value %s]", $f->[5]);
+        }
+      } else {
+        $res .= ']';
+      }
     } elsif ( $f->[0] eq 'M1' ) { # U|G MMA
       $res .= $f->[1] if ( defined $f->[1] ); # prefix
       $res .= $f->[3]; # name of this MMA
@@ -2461,6 +2481,25 @@ my $cons_ae = sub {
     my $slen = $+[0] - $-[0];
     my $reps = '<' . $2 . '>';
     $cf[4] = $cons_single->($3);
+    if ( defined $cf[4] ) {
+      push @flist, \@cf;
+      # remove this part from $s
+      substr($s, $spos, $slen, $reps);
+    }
+  } elsif ( $s=~ /(\'\,\'\s*)?\s*\b(TMEM[ABCEI])\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
+    my @cf = ( 'M2', defined($1) ? ',' : undef, undef, $2, $3);
+    my $spos = $-[0];
+    my $slen = $+[0] - $-[0];
+    my $reps = '<' . $2 . '>';
+    my $body = $3;
+    if ( $body =~ /^\s*(.*\:.*)\s*\+\s*(.*\:.*)\s*$/ ) {
+      my $f = $1;
+      my $s = $2;
+      $cf[4] = $cons_single->($f);
+      $cf[5] = $cons_value->($s);
+    } else {
+      $cf[4] = $cons_single->($body);
+    }
     if ( defined $cf[4] ) {
       push @flist, \@cf;
       # remove this part from $s
