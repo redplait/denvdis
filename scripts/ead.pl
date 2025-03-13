@@ -1532,6 +1532,16 @@ sub dump_formats
       printf(" %s %d %s %s", $ae->[0], $ae->[1], $ae->[2] || '', $ae->[3]);
     } elsif ( $f->[0] eq 'V' ) {
       printf(" %s %s", $f->[4], $f->[5]);
+    } elsif ( $f->[0] eq 'D' ) { # DESC: [4][5 /6 + 7], 6 can be optional enum
+      my $e4 = $f->[4];
+      my $e5 = $f->[5];
+      if ( defined $f->[6] ) {
+        my $ae = $f->[6];
+        printf(" [%s %s %s][%s %s %s:%s + %s]", $e4->[0], $e4->[3], defined($e4->[2]) ? $e4->[2] : '',
+          $e5->[0], $e5->[3], $ae->[0], $ae->[3], $f->[7]);
+      } else {
+        printf(" [%s %s %s][%s %s + %s]", $e4->[0], $e4->[3], defined($e4->[2]) ? $e4->[2] : '', $e5->[0], $e5->[3], $f->[7]);
+      }
     } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) {
       # const bank can have 2 or 3 op - 3rd is ref to Enum
       if ( defined $f->[7] ) {
@@ -1543,6 +1553,25 @@ sub dump_formats
     }
     printf("\n");
   }
+}
+
+sub format_enum
+{
+  my($ae, $op, $kv, $b) = @_;
+  my $sv = '';
+  # format enum
+  if ( defined $ae->[2] ) {
+    my $tmp = ignore_enum($op, $ae, $kv, $b);
+    $sv = $tmp->[1] if ( defined $tmp );
+  } else {
+    my $v = lookup_value($op, $kv, $ae, $b);
+# printf("lookup %s returned %s\n", $ae->[0], defined($v) ? $v : 'undef');
+    if ( defined($v) ) {
+      return $v->[1] if ( 'ARRAY' eq ref $v );
+      $sv = enum_by_value($g_enums{$ae->[0]}, $v);
+    }
+  }
+  $sv;
 }
 
 # print iinstruction based on format list in op->[15]
@@ -1627,6 +1656,28 @@ sub make_inst
       }
     } elsif ( $f->[0] eq '$' ) { # opcode
       $res .= $op->[1];
+    } elsif ( $f->[0] eq 'D' ) { # dest:[4][5 opt6 + 7], where 4,5 & 6 - enums and 7 - value
+      $res .= $f->[1] if ( defined $f->[1] ); # prefix
+      $res .= 'desc[';
+      # 1st bank
+      my $sv = format_enum($f->[4], $op, $kv, $b);
+      $res .= $sv if defined($sv);
+      $res .= '][';
+      # 2nd bank
+      $sv = format_enum($f->[5], $op, $kv, $b);
+      $res .= $sv if defined($sv);
+      if ( defined($f->[6]) ) {
+        my $part = ignore_enum($op, $f->[6], $kv, $b);
+        if ( $part->[0] ) { $res .= $part->[1]; }
+      }
+      $res .= ' + ';
+      if ( exists $kv->{$f->[7]} ) {
+        my $v = $kv->{$f->[7]};
+        $res .= sprintf("0x%X]", $v);
+      } else {
+        $res .= sprintf("cannot find bank value %s]", $f->[7]);
+      }
+      next;
     } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) { # const bank
       my($v, $pfx);
       $pfx = substr($op->[10]->[0], 0, 1) if ( $f->[0] eq 'C' );
@@ -1656,18 +1707,7 @@ sub make_inst
         } else { $res .= sprintf("[cannot find cvalue %s]", $f->[6]); }
       } else {
         # reg in $f->[7], imm in $f->[6]
-        my $ae = $f->[7];
-        my $sv = '';
-        # format enum
-        if ( defined $ae->[2] ) {
-          my $tmp = ignore_enum($op, $ae, $kv, $b);
-          $sv = $tmp->[1] if ( $tmp );
-        } else {
-          $v = lookup_value($op, $kv, $ae, $b);
-          if ( defined($v) ) {
-           $sv = enum_by_value($g_enums{$ae->[0]}, $v);
-          }
-        }
+        my $sv = format_enum($f->[7], $op, $kv, $b);
         $res .= '[';
         if ( $sv ) {
           $res .= $sv;
@@ -2113,7 +2153,7 @@ $state = $line = 0;
 # [13] - count of meaningful bits
 # [14] - list of formats
 # [15] - href to renaindned enums from [10]
-my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @cb, @flist, %ae, $alt, $format);
+my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @cb, @flist, %ae, $alt, %values, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
 # tref is ref to hash with table content
@@ -2263,7 +2303,18 @@ my $cons_single = sub {
       return $aref;
     }
   }
-  return undef;
+  undef;
+};
+# consime single value from string, pus in %values key name, value - format
+my $cons_value = sub {
+  my $s = shift;
+  if ( $s =~ /([\w\.]+)(?:\((?:[^\)]+\))?\*?\:([\w\.]+))/ ) {
+    if ( is_type($1) ) {
+      $values{$2} = $1;
+      return $2;
+    }
+  }
+  undef;
 };
 # parse format in form /? $1 enum $2 optional value $3 alias $4
 # format: 0 - letter, 1 - prefix, 2 - suffix, 3 - [x]
@@ -2305,7 +2356,7 @@ my $cons_ae = sub {
       my $sec = $2;
       my $first = $1;
       $cf[7] = $cons_single->($first);
-      $reps = '<CBA ' . $first . ' >' if defined($cf[7]);
+      # $reps = '<CBA ' . $first . ' >' if defined($cf[7]);
       if ( $sec =~ /\:(\w+)$/ ) { $cf[6] = $1; }
     } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[6] = $1; }
     # push newly created format
@@ -2323,20 +2374,54 @@ my $cons_ae = sub {
     my $right = $6;
     my $reps = '<CX>';
     # get var from left
-    if ( $left =~ /\:(\w+)$/ ) { $cf[5] = $1; }
+    $cf[5] = $cons_value->($left);
     # check if right is pair enum + var
     if ( $right =~ /^\s*(.*\:.*)\s*\+\s*(.*\:.*)\s*$/ ) {
       # we have 2 parts
       my $sec = $2;
       my $first = $1;
       $cf[7] = $cons_single->($first);
-      $reps = '<CX ' . $first . ' >' if defined($cf[7]);
-      if ( $sec =~ /\:(\w+)$/ ) { $cf[6] = $1; }
-    } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[6] = $1; }
+      # $reps = '<CX ' . $first . ' >' if defined($cf[7]);
+      $cf[6] = $cons_value->($sec);
+    } else { $cf[6] = $cons_value->($right); }
     # push newly created format
     push @flist, \@cf;
     # remove this part from $s
     substr($s, $spos, $slen, $reps);
+  } # DESC: $1 - optional comma, $2 - lest, $3 - right + $4
+    # DESC:memoryDescriptor[UniformRegister:Ra_URc][Register:Ra /ONLY64:input_reg_sz_64_dist + SImm(24/0)*:Ra_offset]
+    # so 4 is enum in left [], right[ 5 - enum optionally 6 - enum + 7 value]
+  elsif ( $s =~ /(\'\,\'\s*)?\s*\bDESC\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]\*?\s*\[([^\]]+)\s*\+\s*([^\]]+)\]/p ) {
+        # 0 - type   1 - optional ,               2    3    4
+    my @cf = ( 'D', defined($1) ? ',' : undef, undef, undef, $2);
+    # see details here: https://perldoc.perl.org/perlretut#Position-information
+    my $spos = $-[0];
+    my $slen = $+[0] - $-[0];
+    my $left = $2;
+    my $right = $3;
+    my $add = $4;
+    my $reps = '<DESC>';
+    # get enum from left
+    $cf[4] = $cons_single->($left);
+    # var from add
+    $cf[7] = $cons_value->($add);
+    # check if right is pair enum + var
+    if ( $right =~ /^\s*(.*\:.*)\s*\+\s*(.*\:.*)\s*$/ ) {
+      # we have 2 parts
+      my $sec = $2;
+      my $first = $1;
+      $cf[5] = $cons_single->($first);
+      $cf[6] = $cons_single->($sec);
+    } else {
+      $cf[5] = $cons_single->($right);
+    }
+    # validate
+    if ( defined($cf[4]) && defined($cf[5]) &&  defined($cf[7])) {
+      # push newly created format
+      push @flist, \@cf;
+      # remove this part from $s
+      substr($s, $spos, $slen, $reps);
+    }
   }
   # first 3 is optional comma, $2 - [x], $3 - [||]?
   # next $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
@@ -2355,6 +2440,7 @@ my $cons_ae = sub {
         push @flist, [ 'E', defined($1) ? ',' : undef, defined($8) ? ',' : undef, $2, $aref ];
       }
     } elsif ( is_type($5) ) {
+      $values{$7} = $5;
       push @flist, [ 'V', defined($1) ? ',' : undef, defined($8) ? ',' : undef, $2, $7, $5 ];
     } else {
        printf("enum %s does not exists, line %d\n", $5, $line);
