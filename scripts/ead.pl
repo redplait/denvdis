@@ -1537,8 +1537,8 @@ sub dump_formats
       my $e5 = $f->[5];
       if ( defined $f->[6] ) {
         my $ae = $f->[6];
-        printf(" [%s %s %s][%s %s %s:%s + %s]", $e4->[0], $e4->[3], defined($e4->[2]) ? $e4->[2] : '',
-          $e5->[0], $e5->[3], $ae->[0], $ae->[3], $f->[7]);
+        printf(" [%s %s %s][%s %s %s%s:%s + %s]", $e4->[0], $e4->[3], defined($e4->[2]) ? $e4->[2] : '',
+          $e5->[0], $e5->[3], defined($ae->[1]) ? '/' : '', $ae->[0], $ae->[3], $f->[7]);
       } else {
         printf(" [%s %s %s][%s %s + %s]", $e4->[0], $e4->[3], defined($e4->[2]) ? $e4->[2] : '', $e5->[0], $e5->[3], $f->[7]);
       }
@@ -1560,6 +1560,10 @@ sub format_enum
   my($ae, $op, $kv, $b) = @_;
   my $sv = '';
   # format enum
+  if ( defined $ae->[1] ) {
+    my $part = ignore_enum($op, $ae, $kv, $b);
+    return $part->[1] if ( defined $part );
+  }
   if ( defined $ae->[2] ) {
     my $tmp = ignore_enum($op, $ae, $kv, $b);
     $sv = $tmp->[1] if ( defined $tmp );
@@ -1567,8 +1571,9 @@ sub format_enum
     my $v = lookup_value($op, $kv, $ae, $b);
 # printf("lookup %s returned %s\n", $ae->[0], defined($v) ? $v : 'undef');
     if ( defined($v) ) {
-      return $v->[1] if ( 'ARRAY' eq ref $v );
-      $sv = enum_by_value($g_enums{$ae->[0]}, $v);
+      $sv = '.' if $ae->[1];
+      return $sv . $v->[1] if ( 'ARRAY' eq ref $v );
+      $sv .= enum_by_value($g_enums{$ae->[0]}, $v);
     }
   }
   $sv;
@@ -1619,7 +1624,7 @@ sub make_inst
         my $part = ignore_enum($op, $ae, $kv, $b);
         if ( defined $part ) {
           $res .= $part->[1];
-          $res .= $f->[2] if ( defined $f->[2] );
+          $res .= $f->[2] if ( defined $f->[2] ); # suffix
           next;
         }
         # this enum has non-default value
@@ -1667,8 +1672,8 @@ sub make_inst
       $sv = format_enum($f->[5], $op, $kv, $b);
       $res .= $sv if defined($sv);
       if ( defined($f->[6]) ) {
-        my $part = ignore_enum($op, $f->[6], $kv, $b);
-        if ( $part->[0] ) { $res .= $part->[1]; }
+        my $sv = format_enum($f->[6], $op, $kv, $b);
+        if ( $sv ) { $res .= $sv; }
       }
       $res .= ' + ';
       if ( exists $kv->{$f->[7]} ) {
@@ -2406,7 +2411,7 @@ my $cons_ae = sub {
     # var from add
     $cf[7] = $cons_value->($add);
     # check if right is pair enum + var
-    if ( $right =~ /^\s*(.*\:.*)\s*\+\s*(.*\:.*)\s*$/ ) {
+    if ( $right =~ /^\s*(.*\:.*)\s+(.*\:.*)\s*$/ ) {
       # we have 2 parts
       my $sec = $2;
       my $first = $1;
