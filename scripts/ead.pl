@@ -1550,6 +1550,16 @@ sub dump_formats
       } else {
         printf(" %s: %s %s", $f->[4], $f->[5], $f->[6]);
       }
+    } elsif ( $f->[0] eq 'T' ) {
+      printf(" [%s]", $f->[4]);
+    } elsif ( $f->[0] eq 'M1' ) {
+      my $ae = $f->[4];
+      printf(" [%s %s]", $ae->[0], $ae->[3]);
+    } elsif ( $f->[0] eq 'M2') {
+      my $ae = $f->[4];
+      printf(" [%s %s", $ae->[0], $ae->[3]);
+      printf(" + %s", $f->[5] ) if ( defined $f->[5] );
+      printf("]");
     }
     printf("\n");
   }
@@ -1682,6 +1692,24 @@ sub make_inst
       } else {
         $res .= sprintf("cannot find bank value %s]", $f->[7]);
       }
+      next;
+    } elsif ( $f->[0] eq 'T' ) { # TTU
+      $res .= $f->[1] if ( defined $f->[1] ); # prefix
+      $res .= 'TTU[';
+      if ( exists $kv->{$f->[4]} ) {
+        my $v = $kv->{$f->[4]};
+        $res .= sprintf("0x%X]", $v);
+      } else {
+        $res .= sprintf("cannot find TTU value %s]", $f->[4]);
+      }
+      next;
+    } elsif ( $f->[0] eq 'M1' ) { # U|G MMA
+      $res .= $f->[1] if ( defined $f->[1] ); # prefix
+      $res .= $f->[3]; # name of this MMA
+      $res .= '[';
+      my $sv = format_enum($f->[4], $op, $kv, $b);
+      $res .= $sv if defined($sv);
+      $res .= ']';
       next;
     } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) { # const bank
       my($v, $pfx);
@@ -2423,6 +2451,28 @@ my $cons_ae = sub {
     # validate
     if ( defined($cf[4]) && defined($cf[5]) &&  defined($cf[7])) {
       # push newly created format
+      push @flist, \@cf;
+      # remove this part from $s
+      substr($s, $spos, $slen, $reps);
+    }
+  } elsif ( $s =~ /(\'\,\'\s*)?\s*\b(RF|TMA|[UG]MMA|UMMA[AB])\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
+    my @cf = ( 'M1', defined($1) ? ',' : undef, undef, $2, $3);
+    my $spos = $-[0];
+    my $slen = $+[0] - $-[0];
+    my $reps = '<' . $2 . '>';
+    $cf[4] = $cons_single->($3);
+    if ( defined $cf[4] ) {
+      push @flist, \@cf;
+      # remove this part from $s
+      substr($s, $spos, $slen, $reps);
+    }
+  } elsif ( $s =~ /(\'\,\'\s*)?\s*\bTTU\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
+    my @cf = ( 'T', defined($1) ? ',' : undef, undef, undef, $3);
+    my $spos = $-[0];
+    my $slen = $+[0] - $-[0];
+    my $reps = '<TTU>';
+    $cf[4] = $cons_value->($3);
+    if ( defined $cf[4] ) {
       push @flist, \@cf;
       # remove this part from $s
       substr($s, $spos, $slen, $reps);
