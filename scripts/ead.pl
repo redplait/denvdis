@@ -1775,10 +1775,15 @@ sub make_inst
       my($v, $pfx);
       $pfx = substr($op->[10]->[0], 0, 1) if ( $f->[0] eq 'C' );
       $res .= $f->[1] if ( defined $f->[1] ); # prefix
-      # check [~]
-      if ( defined($f->[3]) and defined($f->[4]) and $f->[3] eq '~' ) {
-        my $pinv = $f->[4] . '@invert';
-        $res .= '~' if ( exists($kv->{$pinv}) && $kv->{$pinv} );
+      if ( defined($f->[3]) and defined($f->[4]) ) {
+        # check [~]
+        if ( $f->[3] eq '~' ) {
+          my $pinv = $f->[4] . '@invert';
+          $res .= '~' if ( exists($kv->{$pinv}) && $kv->{$pinv} );
+        } elsif ( $f->[3] eq '-' ) {
+          my $pneg = $f->[4] . '@negate';
+          $res .= '-' if ( exists($kv->{$pneg}) && $kv->{$pneg} );
+        }
       }
       $res .= 'C[';
       # sa_bank
