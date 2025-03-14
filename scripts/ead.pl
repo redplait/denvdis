@@ -1449,6 +1449,10 @@ sub dump_values
       my $scale;
       $scale = int($3) if defined($3);
       dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv, $2, $scale);
+      # sm86 has strange formats like BITS_16_63_48_Sc=Sb convertFloatType(ofmt == `OFMT@E8M7_V2 || ofmt == `OFMT@BF16_V2, E8M7Imm, ofmt == `OFMT@E6M9_V2, E6M9Imm, F16Imm)
+    } elsif ( $m=~ /^(\w+)\s*=\*?\s*([\w\.\@]+)\s+convertFloatType/ ) {
+      my $mask = $g_mnames{$1};
+      dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv);
     } else {
      carp("unknown enocoding $m");
    }
@@ -2548,6 +2552,24 @@ my $cons_ae = sub {
     my $slen = $+[0] - $-[0];
     my $reps = '<TTU>';
     $cf[4] = $cons_value->($2);
+    if ( defined $cf[4] ) {
+      push @flist, \@cf;
+      # remove this part from $s
+      substr($s, $spos, $slen, $reps);
+    }
+  } elsif ( $s =~ /(\'\,\'\s*)?\s*\bA\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
+    my @cf = ( 'A', defined($1) ? ',' : undef, undef, undef, $2);
+    my $spos = $-[0];
+    my $slen = $+[0] - $-[0];
+    my $reps = '<TTU>';
+    my @a = split(/\s+\+\s+/, $2);
+    # 1st can be value or enum
+    my $is_e = $cons_single->($a[0]);
+    if ( defined($is_e) ) { $cf[4] = $is_e; }
+    else { $cf[4] = $cons_value->($a[0]); }
+    # optional 2nd is value
+    $cf[5] = $cons_value->($a[1]) if ( scalar(@a) > 1 );
+    # add formal list
     if ( defined $cf[4] ) {
       push @flist, \@cf;
       # remove this part from $s
