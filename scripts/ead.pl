@@ -1562,7 +1562,7 @@ sub dump_formats
       } else {
         printf(" %s: %s %s", $f->[4], $f->[5], $f->[6]);
       }
-    } elsif ( $f->[0] eq 'A' ) {
+    } elsif ( $f->[0] eq 'A' or $f->[0] eq '[' ) {
       for ( my $i = 4; $i < scalar @$f; $i++ ) {
         if ( 'ARRAY' eq ref $f->[$i] ) {
           my $ae = $f->[$i];
@@ -1696,6 +1696,25 @@ sub make_inst
     } elsif ( $f->[0] eq '$' ) { # opcode
       $res .= $op->[1];
       next;
+    } elsif ( $f->[0] eq '[' ) {
+      $res .= $f->[1] if ( defined $f->[1] ); # prefix
+      $res .= '[';
+      for ( my $i = 4; $i < scalar @$f; $i++ ) {
+        if ( 'ARRAY' eq ref $f->[$i] ) {
+          my $sv = format_enum($f->[$i], $op, $kv, $b);
+          $res .= $sv if defined($sv);
+        } elsif ( '+' eq $f->[$i] ) { $res .= ' + '; }
+        else {
+          if ( exists $kv->{$f->[$i]} ) {
+            my $v = $kv->{$f->[$i]};
+            $res .= sprintf("0x%X", $v);
+          } else {
+            $res .= sprintf("cannot find value %s", $f->[$i]);
+          }
+        }
+      }
+      $res .= ']';
+      next;
     } elsif ( $f->[0] eq 'A' ) {
       $res .= $f->[1] if ( defined $f->[1] ); # prefix
       $res .= 'attr[';
@@ -1707,13 +1726,13 @@ sub make_inst
         else {
           if ( exists $kv->{$f->[$i]} ) {
             my $v = $kv->{$f->[$i]};
-            $res .= sprintf("0x%X]", $v);
+            $res .= sprintf("0x%X", $v);
           } else {
-            $res .= sprintf("cannot find A value %s]", $f->[$i]);
+            $res .= sprintf("cannot find A value %s", $f->[$i]);
           }
         }
-        $res .= ']';
       }
+      $res .= ']';
       next;
     } elsif ( $f->[0] eq 'D' ) { # dest:[4][5 opt6 + 7], where 4,5 & 6 - enums and 7 - value
       $res .= $f->[1] if ( defined $f->[1] ); # prefix
@@ -2573,7 +2592,10 @@ my $cons_ae = sub {
     if ( defined($is_e) ) { $cf[4] = $is_e; }
     else { $cf[4] = $cons_value->($a[0]); }
     # optional 2nd is value
-    $cf[5] = $cons_value->($a[1]) if ( scalar(@a) > 1 );
+    if ( scalar(@a) > 1 ) {
+      $cf[5] = '+';
+      $cf[6] = $cons_value->($a[1]);
+    }
     # add formal list
     if ( defined $cf[4] ) {
       push @flist, \@cf;
