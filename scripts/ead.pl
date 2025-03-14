@@ -97,6 +97,8 @@ my %Tabs = (
 my %g_enums;
 # enums with only value
 my %g_single_enums;
+# used enums
+my %g_used_enums;
 my $g_rz = 0;
 
 sub dump_enums
@@ -120,8 +122,7 @@ sub is_single_enum
   return 0 if ( !exists $g_enums{$name} );
   my $k = $g_enums{$name};
   my @keys = keys %$k;
-  return 0 if ( 1 != scalar @keys );
-  1;
+  1 == scalar @keys;
 }
 
 # more fast version
@@ -2504,18 +2505,21 @@ my $cons_ae = sub {
       push @flist, \@cf;
       # remove this part from $s
       substr($s, $spos, $slen, $reps);
-    }
+    } # TTU $1 - optional comma, $2 - body in []
   } elsif ( $s =~ /(\'\,\'\s*)?\s*\bTTU\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
     my @cf = ( 'T', defined($1) ? ',' : undef, undef, undef, $3);
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
     my $reps = '<TTU>';
-    $cf[4] = $cons_value->($3);
+    $cf[4] = $cons_value->($2);
     if ( defined $cf[4] ) {
       push @flist, \@cf;
       # remove this part from $s
       substr($s, $spos, $slen, $reps);
     }
+  } # last one to check what remainded
+  elsif ( $s =~ /\b(\w+)\:(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
+    printf("UNKNOWN MEM %s [%s], line %d\n", $1, $2, $line);
   }
   # first 3 is optional comma, $2 - [x], $3 - [||]?
   # next $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
