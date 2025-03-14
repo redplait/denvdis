@@ -136,9 +136,9 @@ sub is_single_enum
 sub check_single_enum
 {
   my $e = shift;
-  return undef unless exists $g_single_enums{ $e };
+  return unless exists $g_single_enums{ $e };
   my @v = values %{ $g_enums{ $e } };
-  return $v[0];
+  $v[0];
 }
 
 # args: instruction, current mask, enum, value
@@ -147,12 +147,12 @@ sub get_enc_enum
   my($op, $mask, $e, $vname) = @_;
   if ( !exists $g_enums{$e} ) {
     printf("not existing enum %s for mask %s, op %s line %d\n", $e, $mask, $op->[1], $op->[4]);
-    return undef;
+    return;
   }
   my $er = $g_enums{$e};
   if ( !exists $er->{$vname} ) {
     printf("not existing value %s in enum %s for mask %s, op %s line %d\n", $vname, $e, $mask, $op->[1], $op->[4]);
-    return undef;
+    return;
   }
   $er->{$vname};
 }
@@ -194,6 +194,7 @@ sub is_type
 
 # global tables hash map, key is name of table, value is another hash map { value -> [ literals list ] }
 my %g_tabs;
+my %g_used_tabs;
 
 sub dump_tabs
 {
@@ -217,9 +218,9 @@ sub dump_tabs
 sub tab_dim
 {
   my($tname) = shift;
-  return undef unless exists $g_tabs{$tname};
+  return unless exists $g_tabs{$tname};
   my @v = values %{ $g_tabs{$tname} };
-  return undef unless @v;
+  return unless @v;
   my $v1 = $v[0];
   return scalar @$v1 if ( 'ARRAY' eq ref $v1 );
   1;
@@ -229,7 +230,7 @@ sub tab_dim
 sub rev_tab_lookup
 {
   my($tname, $tref) = @_;
-  return undef unless exists $g_tabs{$tname};
+  return unless exists $g_tabs{$tname};
   my $t = $g_tabs{$tname};
   keys %$t;
   while( my($k, $row) = each %$t ) {
@@ -247,7 +248,7 @@ sub rev_tab_lookup
 sub rev_tab1
 {
   my($tname, $v) = @_;
-  return undef unless exists $g_tabs{$tname};
+  return unless exists $g_tabs{$tname};
   my $t = $g_tabs{$tname};
   keys %$t;
   while( my($k, $row) = each %$t ) {
@@ -267,7 +268,7 @@ sub parse_tab_value
   if ( $s =~ /(\w+)@\"?(\w+)\"?\s*$/ ) {
    return $g_enums{$1}->{$2} if ( exists $g_enums{$1} );
    printf("unknown enum %s for table key, line %d\n", $1, $line);
-   return undef;
+   return;
   }
   printf("unknown table value %d, line %d\n", $s, $line);
   undef;
@@ -300,10 +301,10 @@ sub parse_tab_keys
     my @res;
     foreach my $v ( split /\s+/, $s ) {
       my $next = parse_tab_key($v, $line);
-      return undef if ( !defined $next );
+      return if ( !defined $next );
       push @res, $next;
     }
-    return undef if ( !scalar @res );
+    return unless ( scalar @res );
     return \@res;
   } else {
     # just some literal
@@ -524,7 +525,7 @@ sub extract_value
       if ( $a->[$base - $j] eq '1' ) {
         if ( $idx > 63 ) {
           carp("too big index $idx in mask $name");
-          return undef;
+          return;
         }
         $res |= 1 << $idx;
       }
@@ -538,7 +539,7 @@ sub extract_value
        if ( [$base + $j] eq '1' ) {
         if ( $idx > 63 ) {
           carp("too big index $idx in mask $name");
-          return undef;
+          return;
         }
         $res |= 1 << $idx;
        }
@@ -580,10 +581,10 @@ sub old64
   sub {
     my $str;
     if ( !$idx ) {
-      return undef unless ( defined($str = <$fp>) );
+      return unless ( defined($str = <$fp>) );
       $idx++;
     }
-    return undef unless ( defined($str = <$fp>) );
+    return unless ( defined($str = <$fp>) );
     $idx = 0 if ( 8 == ++$idx );
     return conv2a($str);
   };
@@ -604,7 +605,7 @@ sub martian88
     my $str;
     my $i;
     if ( !$idx ) {
-      return undef unless ( defined($str = <$fp>) );
+      return unless ( defined($str = <$fp>) );
       my @a;
       while ( $str =~ /([0-9a-f]{2})/ig ) {
        push @a, hex($1);
@@ -612,13 +613,13 @@ sub martian88
       }
       if ( 8 != $i ) {
         carp("bad control word, len %d", $i);
-        return undef;
+        return;
       }
       if ( defined $opt_v ) { printf("%2.2X ", $_) for @a; }
       $v = bit_array_rev(\@a);
       printf("\n%s\n", join '', @$v) if ( defined $opt_v );
     }
-    return undef unless ( defined($str = <$fp>) );
+    return unless ( defined($str = <$fp>) );
     my @l;
     $i = 0;
     while ( $str =~ /([0-9a-f]{2})/ig ) {
@@ -627,8 +628,8 @@ sub martian88
     }
     if ( 8 != $i ) {
       carp("bad word, len %d", $i);
-        return undef;
-     }
+      return;
+    }
     # result array has 88 - 64 - 21 = 3 leading 0
     my @res = ('0') x 3;
     # now add lower 21 bit from v
@@ -663,7 +664,7 @@ sub conv2a
     push(@p, reverse splice(@res));
   } else {
     carp("unknown size $len");
-    return undef;
+    return;
   }
   if ( defined $opt_v ) {
     printf("%2.2X      ", $_) for @p; printf("\n"); }
@@ -675,7 +676,7 @@ sub read128
   my $fp = shift;
   sub {
     my $str;
-    return undef unless ( defined($str = <$fp>) );
+    return unless ( defined($str = <$fp>) );
     return conv2a($str);
   }
 }
@@ -732,7 +733,7 @@ sub get_letter
   return 'f' if ( $m =~ /_srcfmt$/ );
   return 'F' if ( $m =~ /_dstfmt$/ );
   return 'o' if ( $m =~ /_opex$/ );
- return undef;
+  undef;
 }
 
 # args: ref to op, string mask, optional array ref of missed masks
@@ -1038,6 +1039,7 @@ printf("enc %s enum(%s) %d in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1])
       my $what = $g_mnames{$1};
       if ( exists($g_tabs{$3}) ) {
          my $tab_name = $3;
+         $g_used_tabs{$3} //= 1;
          # example from sm55_1.txt:
          #   aSelect =* VFormat16(safmt,asel);
          # where /Integer16:safmt & /H1H0(H0):asel both enums
@@ -1108,6 +1110,7 @@ sub add_tenums
     # mask $1 = table $2
     if ( $tmask =~ /^(\w+)\s*=\*?\s*(\S+)\s*\(([^\)]+)\)/ ) {
       next if ( !exists($g_tabs{$2}) );
+      $g_used_tabs{$2} //= 1;
       my @ar;
       my $ename = $1;
       my $cnt = 0;
@@ -1217,7 +1220,7 @@ sub check_enc_ask
     if ( $enc =~ /^(\S+)\s*=\s*\*\s*(\S+)$/ ) {
       if ( $2 eq $alias ) {
         return $g_mnames{$1} if exists $g_mnames{$1};
-        return undef;
+        return;
       }
     }
   }
@@ -1423,7 +1426,7 @@ sub dump_values
                   $kv->{ $fa[$i] } = $row->[$i] if ( $i < scalar @fa );
                 } else {
                   $res .= $ae->[$i]->[0] . '(' . $row->[$i] . ')';
-                  my $v = enum_by_value($ae->[$i]->[1], $row->[$i]);
+                  $v = enum_by_value($ae->[$i]->[1], $row->[$i]);
                   $kv->{ $fa[$i] } = [ $row->[$i], $v ] if ( $i < scalar @fa && defined($v) );
                   $res .= $v if defined $v;
                 }
@@ -1476,13 +1479,13 @@ sub dump_values
 sub lookup_mask
 {
   my($op, $ae) = @_;
-  return undef unless defined($op->[11]);
+  return unless defined($op->[11]);
   my $m2e = $op->[11];
   keys %$m2e;
   while( my($m, $e) = each %$m2e ) {
    return $m if ( $e->[0] eq $ae->[0] );
   }
-  return undef;
+  undef;
 }
 
 # args: instruction, ref to kv, ref to enum, ref to array with bits
@@ -1496,7 +1499,7 @@ sub lookup_value
   my $mask = lookup_mask($op, $ae);
   if ( !defined $mask ) {
     printf("format enum: no value for %s format %s\n", $ae->[0], $ae->[3]);
-    return undef;
+    return;
   }
   my $res = extract_value($b, $g_mnames{$mask});
   # cache readed value in kv
@@ -1509,12 +1512,12 @@ sub lookup_value
 sub ignore_enum
 {
   my($op, $ae, $kv, $b) = @_;
-  return undef unless ( defined $ae->[2] ); # no default value
+  return unless ( defined $ae->[2] ); # no default value
   my $v = lookup_value($op, $kv, $ae, $b);
 # printf("ignore_enum %s\n", $ae->[0]);
   if ( !defined $v ) {
     printf("is_ignore_enum: no value for %s format %s\n", $ae->[0], $ae->[3]);
-    return undef;
+    return;
   }
   my $res = '';
   $res = '.' if $ae->[1];
@@ -1969,7 +1972,7 @@ sub dump_mask2enum
 sub in_missed
 {
   my($op, $ename) = @_;
-  return undef unless defined($op->[16]);
+  return unless defined($op->[16]);
   my $m2e = $op->[16];
   keys %$m2e;
   while( my($m, $e) = each %$m2e ) {
@@ -2063,7 +2066,7 @@ sub build_node
 {
   my($a, $u, $rem, $lvl, $hand) = @_;
   my $cnt = scalar @$rem;
-  return undef if ( !$cnt );
+  return if ( !$cnt );
   # 1) build array to count bits
   my @bits;
   my @masks;
