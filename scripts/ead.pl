@@ -1698,7 +1698,7 @@ sub make_inst
       next;
     } elsif ( $f->[0] eq '[' ) {
       $res .= $f->[1] if ( defined $f->[1] ); # prefix
-      $res .= '[';
+      $res .= ' [';
       for ( my $i = 4; $i < scalar @$f; $i++ ) {
         if ( 'ARRAY' eq ref $f->[$i] ) {
           my $sv = format_enum($f->[$i], $op, $kv, $b);
@@ -2540,7 +2540,7 @@ my $cons_ae = sub {
       # remove this part from $s
       substr($s, $spos, $slen, $reps);
     }
-  } elsif ( $s =~ /(\'\,\'\s*)?\s*\b(RF|TMA|[UG]MMA|UMMA[AB])\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
+  } elsif ( $s =~ /(\'\,\'\s*)?\s*\b(RF|TMA|[UG]MMA|UMMA[AB])\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/p ) {
     my @cf = ( 'M1', defined($1) ? ',' : undef, undef, $2, $3);
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
@@ -2551,7 +2551,7 @@ my $cons_ae = sub {
       # remove this part from $s
       substr($s, $spos, $slen, $reps);
     }
-  } elsif ( $s=~ /(\'\,\'\s*)?\s*\b(TMEM[ABCEI])\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
+  } elsif ( $s=~ /(\'\,\'\s*)?\s*\b(TMEM[ABCEI])\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/p ) {
     my @cf = ( 'M2', defined($1) ? ',' : undef, undef, $2, $3);
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
@@ -2570,7 +2570,7 @@ my $cons_ae = sub {
       # remove this part from $s
       substr($s, $spos, $slen, $reps);
     } # TTU $1 - optional comma, $2 - body in []
-  } elsif ( $s =~ /(\'\,\'\s*)?\s*\bTTU\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
+  } elsif ( $s =~ /(\'\,\'\s*)?\s*\bTTU\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/p ) {
     my @cf = ( 'T', defined($1) ? ',' : undef, undef, undef, $3);
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
@@ -2581,11 +2581,11 @@ my $cons_ae = sub {
       # remove this part from $s
       substr($s, $spos, $slen, $reps);
     }
-  } elsif ( $s =~ /(\'\,\'\s*)?\s*\bA\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
+  } elsif ( $s =~ /(\'\,\'\s*)?\s*\bA\:\s*(?:[^\:\[]+)?\s*\[([^\]]+)\]/p ) {
     my @cf = ( 'A', defined($1) ? ',' : undef, undef, undef, $2);
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
-    my $reps = '<TTU>';
+    my $reps = '<A>';
     my @a = split(/\s+\+\s+/, $2);
     # 1st can be value or enum
     my $is_e = $cons_single->($a[0]);
@@ -2602,9 +2602,47 @@ my $cons_ae = sub {
       # remove this part from $s
       substr($s, $spos, $slen, $reps);
     }
+  } # generic []
+  elsif ( $s =~ /(\'\,\'\s*)?\s+\[\s([^\]]+)\s\]/p ) {
+    my @cf = ( '[', defined($1) ? ',' : undef, undef, undef);
+    my $spos = $-[0];
+    my $slen = $+[0] - $-[0];
+    my $reps = '[]';
+    my $is_ok = 1;
+    my @a = split(/\s+\+\s+/, $2);
+    for ( my $i = 0; $i < scalar @a; $i++ ) {
+      push @cf, '+' if ( $i );
+      my @curr = split /\s+/, $a[$i];
+      if ( 2 == @curr ) {
+        # both should be enums
+        my $e1 = $cons_single->($curr[0]);
+        my $e2 = $cons_single->($curr[1]);
+        if ( !defined($e1) || !defined($e2) ) {
+          printf("cannot parse mem idx %d, left %s right %s, line %d\n", $i, $curr[0], $curr[1], $line);
+          $is_ok = 0;
+          last;
+        }
+        push @cf, $e1;
+        push @cf, $e2;
+      } else {
+        my $is_e = $cons_single->($a[$i]);
+        $is_e = $cons_value->($a[$i]) unless defined($is_e);
+        if ( !defined $is_e ) {
+          printf("cannot parse mem idx %d: %s, line %d\n", $i, $a[$i], $line);
+          $is_ok = 0;
+          last;
+        }
+        push @cf, $is_e;
+      }
+    }
+    if ( $is_ok ) {
+      push @flist, \@cf;
+      # remove this part from $s
+      substr($s, $spos, $slen, $reps);
+    }
   } # last one to check what remainded
   elsif ( $s =~ /\b(\w+)\:(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
-    printf("UNKNOWN MEM %s [%s], line %d\n", $1, $2, $line);
+    printf("UNKNOWN MEM %s [%s], line %d\n", $1, $2, $line) if ( !exists $g_enums{$1} );
   }
   # first 3 is optional comma, $2 - [x], $3 - [||]?
   # next $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
