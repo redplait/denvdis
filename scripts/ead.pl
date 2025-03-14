@@ -101,6 +101,13 @@ my %g_single_enums;
 my %g_used_enums;
 my $g_rz = 0;
 
+# non-existing enums
+my %g_bad_enums = (
+ REQ => 1,
+ RD => 1,
+ WR => 1,
+);
+
 sub dump_enums
 {
   printf("-- Enums\n");
@@ -1551,6 +1558,14 @@ sub dump_formats
       } else {
         printf(" %s: %s %s", $f->[4], $f->[5], $f->[6]);
       }
+    } elsif ( $f->[0] eq 'A' ) {
+      for ( my $i = 4; $i < scalar @$f; $i++ ) {
+        if ( 'ARRAY' eq ref $f->[$i] ) {
+          my $ae = $f->[$i];
+          printf(" %s %s", $ae->[0], $ae->[3]);
+        } elsif ( $f->[$i] eq '+' ) { printf(" +"); }
+        else { printf(" %s", $f->[$i]); }
+      }
     } elsif ( $f->[0] eq 'T' ) {
       printf(" [%s]", $f->[4]);
     } elsif ( $f->[0] eq 'M1' ) {
@@ -1676,6 +1691,26 @@ sub make_inst
       }
     } elsif ( $f->[0] eq '$' ) { # opcode
       $res .= $op->[1];
+      next;
+    } elsif ( $f->[0] eq 'A' ) {
+      $res .= $f->[1] if ( defined $f->[1] ); # prefix
+      $res .= 'attr[';
+      for ( my $i = 4; $i < scalar @$f; $i++ ) {
+        if ( 'ARRAY' eq ref $f->[$i] ) {
+          my $sv = format_enum($f->[$i], $op, $kv, $b);
+          $res .= $sv if defined($sv);
+        } elsif ( '+' eq $f->[$i] ) { $res .= ' + '; }
+        else {
+          if ( exists $kv->{$f->[$i]} ) {
+            my $v = $kv->{$f->[$i]};
+            $res .= sprintf("0x%X]", $v);
+          } else {
+            $res .= sprintf("cannot find A value %s]", $f->[$i]);
+          }
+        }
+        $res .= ']';
+      }
+      next;
     } elsif ( $f->[0] eq 'D' ) { # dest:[4][5 opt6 + 7], where 4,5 & 6 - enums and 7 - value
       $res .= $f->[1] if ( defined $f->[1] ); # prefix
       $res .= 'desc[';
@@ -2315,6 +2350,7 @@ my $ins_op = sub {
   my %mae;
   my %missed_ae;
   while( my($a, $e) = each %ae ) {
+    $g_used_enums{$e->[0]} //= 1;
     my $what = check_enc(\@enc, $e->[0], $a);
     if ( defined($what) ) { $mae{$what->[0]} = $e; }
     else { $missed_ae{$a} = $e };
@@ -2525,6 +2561,7 @@ my $cons_ae = sub {
   # next $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
   while( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\*?\:([\w\.]+)\s*(\',\')?/g ) {
     if ( exists $g_enums{$5} ) {
+      next if ( exists $g_bad_enums{$5} );
       # key is values in op->[11] hash is
       # 0 - enum name
       # 1 - if / presents
