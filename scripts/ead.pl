@@ -2428,10 +2428,10 @@ my $ins_op = sub {
 # consume single enum from string, regex is slightly differs from used in while /g below
 my $cons_single = sub {
   my $s = shift;
-  if ( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\:([\w\.]+)/ ) {
+  if ( $s =~ /(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(\/PRINT)?\))?\:([\w\.]+)/ ) {
     if ( exists $g_enums{$2} ) {
-      my $aref = [ $2, $1 ne '', defined($3) ? $g_enums{$2}->{$3} : undef, $4 ];
-      $ae{$4} = $aref;
+      my $aref = [ $2, $1 ne '', defined($3) ? $g_enums{$2}->{$3} : undef, $5, defined($4) ];
+      $ae{$5} = $aref;
       return $aref;
     }
   }
@@ -2659,8 +2659,8 @@ my $cons_ae = sub {
     printf("UNKNOWN MEM %s [%s], line %d\n", $1, $2, $line) if ( !exists $g_enums{$1} );
   }
   # first 3 is optional comma, $2 - [x], $3 - [||]?
-  # next $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
-  while( $s =~ /(?:\'(\,|\?)\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\*?\:([\w\.]+)\s*(\',\')?/g ) {
+  # next $4 - /?, $5 - enum, $6 - def_value, $7 - optional /PRINT,  $8 - alias $9 - leading char
+  while( $s =~ /(?:\'(\,|\?)\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(\/PRINT)?\))?\*?\:([\w\.]+)\s*(\',\')?/g ) {
     if ( exists $g_enums{$5} ) {
       next if ( exists $g_bad_enums{$5} );
       # key is values in op->[11] hash is
@@ -2668,16 +2668,16 @@ my $cons_ae = sub {
       # 1 - if / presents
       # 2 - default value if exists
       # 3 - format name
-      my $aref = [ $5, $4 ne '', defined($6) ? $g_enums{$5}->{$6} : undef, $7 ];
-      $ae{$7} = $aref;
-      if ( defined($2) and $2 eq '!' ) {
-        push @flist, [ 'P', $1, defined($8) ? ',' : undef, $2, $aref ];
+      my $aref = [ $5, $4 ne '', defined($6) ? $g_enums{$5}->{$6} : undef, $8, defined($7) ];
+      $ae{$8} = $aref;
+      if ( defined($2) and $2 eq '!' and !defined($8) ) {
+        push @flist, [ 'P', $1, defined($9) ? ',' : undef, $2, $aref ];
       } else {
-        push @flist, [ 'E', $1, defined($8) ? ',' : undef, $2, $aref ];
+        push @flist, [ 'E', $1, defined($9) ? ',' : undef, $2, $aref ];
       }
     } elsif ( is_type($5) ) {
-      $values{$7} = [ $5, undef ];
-      push @flist, [ 'V', $1, defined($8) ? ',' : undef, $2, $7, $5 ];
+      $values{$8} = [ $5, undef ];
+      push @flist, [ 'V', $1, defined($9) ? ',' : undef, $2, $8, $5 ];
     } else {
        printf("enum %s does not exists, line %d\n", $5, $line);
     }
