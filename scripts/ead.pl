@@ -2347,16 +2347,61 @@ sub gen_tabs
   printf($fh "\n");
 }
 
+# generate key for hash of used enum attrs
+sub c_ae
+{
+  my $ae = shift;
+  my $res = $ae->[0];
+  $res .= '_t' if ( $ae->[1] );
+  $res .= '_' . $ae->[2] if ( defined $ae->[2] ); # default value
+  $res .= '_p' if ( $ae->[4] );
+  $res;
+}
+sub gen_ae
+{
+  my($fh, $ae, $name) = @_;
+  printf($fh "static const nv_eattr %s_%s = { ", $opt_C, $name);
+  printf($fh "%s,", $ae->[1] ? 'true' : 'false');
+  printf($fh "%s,", $ae->[4] ? 'true' : 'false');
+  printf($fh "%s,", defined $ae->[2] ? 'true' : 'false');
+  printf($fh "%d,", $ae->[2] || 0);
+  printf($fh "&%s };\n", c_enum_name($ae->[0]));
+}
 sub gen_instr
 {
   my $fh = shift;
+  my %cached_ae;
   while( my($m, $list) = each %g_masks) {
     printf($fh "//%s\n", $m);
     foreach my $op ( @$list ) {
+      # collect enums
+      foreach my $ae ( values %{ $op->[17] } ) {
+        my $ename = c_ae($ae);
+        next if exists $cached_ae{$ename};
+        gen_ae($fh, $ae, $ename);
+        $cached_ae{$ename} = 1;
+      }
+      # dump instruction
       printf($fh "static const struct nv_instr %s_%d = {\n", $opt_C, $op->[19]);
       # name mask n line alt meaning_bits
-      printf($fh "\"%s\", \"%s\", %d, %d, %d, %d", $m, $op->[1], $op->[19], $op->[4], $op->[7], $op->[14]);
-      printf($fh "};\n");
+      printf($fh "\"%s\",\n \"%s\", %d, %d, %d, %d,\n", $m, $op->[1], $op->[19], $op->[4], $op->[7], $op->[14]);
+      if ( defined $op->[18] ) {
+        printf($fh " {");
+        my $vlist = $op->[18];
+        while( my($v, $vf) = each %$vlist ) {
+          printf($fh " {\"%s\", { %s, %s}},", $v, 'NV_' . $vf->[0], defined($vf->[1]) ? 'true' : 'false');
+        }
+        printf($fh "}, // values formats\n");
+      } else {
+        printf($fh " {}, // no values\n");
+      }
+      # dump enum attrs
+      printf($fh " {");
+      foreach my $ae ( values %{ $op->[17] } ) {
+        my $ename = c_ae($ae);
+        printf($fh "{ \"%s\", &%s_%s },", $ae->[3], $opt_C, $ename);
+      }
+      printf($fh "} };\n");
     }
   }
 }
@@ -2582,7 +2627,7 @@ my $cons_single = sub {
   }
   undef;
 };
-# consime single value from string, pus in %values key name, value - format
+# consime single value from string, put in %values key name, value - format
 my $cons_value = sub {
   my $s = shift;
   if ( $s =~ /([\w\.]+)(?:\((?:[^\)]+\))?(\*)?\:([\w\.]+))/ ) {
