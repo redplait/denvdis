@@ -978,7 +978,7 @@ sub gen_inst_mask
    $cp =~ s/\{\s*\}//g;
    # and $( )$
    $cp =~ s/\$\(\s*\)\$//g;
-   $op->[17] = $cp;
+   $op->[20] = $cp;
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
   # process remained encodings
@@ -2008,7 +2008,7 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
-      printf("   Unused %s\n", $op->[17]) if defined($op->[17]);
+      printf("   Unused %s\n", $op->[20]) if defined($op->[20]);
       # dump mask to enum mapping
       dump_mask2enum($op);
       dump_tenums($op->[13]) if defined($op->[13]);
@@ -2273,6 +2273,9 @@ $state = $line = 0;
 # [13] - count of meaningful bits
 # [14] - list of formats
 # [15] - href to renaindned enums from [10]
+# [16] - original ae hash
+# [17] - value names -> type hash
+# [18] - idx
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @cb, @flist, %ae, $alt, %values, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
@@ -2369,6 +2372,7 @@ my $reset = sub {
   $alt = $has_op = $op_line = 0;
   @op = @enc = @nenc = @quoted = @cb = @flist = ();
   %ae = ();
+  %values = ();
 };
 # insert copy of current instruction
 my $ins_op = sub {
@@ -2378,6 +2382,7 @@ my $ins_op = sub {
     return;
   }
   # fill pairs encoding -> [ enum, optional? ]
+  my %cae = %ae;
   my %mae;
   my %missed_ae;
   while( my($a, $e) = each %ae ) {
@@ -2408,6 +2413,12 @@ my $ins_op = sub {
   $c[13] = 0;
   $c[14] = \@cflist;
   $c[15] = $miss_size ? \%missed_ae : undef;
+  $c[16] = \%cae;
+  if ( keys %values ) {
+    my %cvals = %values;
+    $c[17] = \%cvals;
+  }
+  $c[18] = 0;
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
@@ -2429,10 +2440,10 @@ my $cons_single = sub {
 # consime single value from string, pus in %values key name, value - format
 my $cons_value = sub {
   my $s = shift;
-  if ( $s =~ /([\w\.]+)(?:\((?:[^\)]+\))?\*?\:([\w\.]+))/ ) {
+  if ( $s =~ /([\w\.]+)(?:\((?:[^\)]+\))?(\*)?\:([\w\.]+))/ ) {
     if ( is_type($1) ) {
-      $values{$2} = $1;
-      return $2;
+      $values{$3} = [ $1, $2 ];
+      return $3;
     }
   }
   undef;
@@ -2649,7 +2660,7 @@ my $cons_ae = sub {
   }
   # first 3 is optional comma, $2 - [x], $3 - [||]?
   # next $1 - /? $2 - enum $3 - def_value $4 - alias $5 - leading char
-  while( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\*?\:([\w\.]+)\s*(\',\')?/g ) {
+  while( $s =~ /(?:\'(\,|\?)\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*(\/?)([\w\.]+)(?:\(\"?([^\)\"]+)\"?(?:\/PRINT)?\))?\*?\:([\w\.]+)\s*(\',\')?/g ) {
     if ( exists $g_enums{$5} ) {
       next if ( exists $g_bad_enums{$5} );
       # key is values in op->[11] hash is
@@ -2660,13 +2671,13 @@ my $cons_ae = sub {
       my $aref = [ $5, $4 ne '', defined($6) ? $g_enums{$5}->{$6} : undef, $7 ];
       $ae{$7} = $aref;
       if ( defined($2) and $2 eq '!' ) {
-        push @flist, [ 'P', defined($1) ? ',' : undef, defined($8) ? ',' : undef, $2, $aref ];
+        push @flist, [ 'P', $1, defined($8) ? ',' : undef, $2, $aref ];
       } else {
-        push @flist, [ 'E', defined($1) ? ',' : undef, defined($8) ? ',' : undef, $2, $aref ];
+        push @flist, [ 'E', $1, defined($8) ? ',' : undef, $2, $aref ];
       }
     } elsif ( is_type($5) ) {
-      $values{$7} = $5;
-      push @flist, [ 'V', defined($1) ? ',' : undef, defined($8) ? ',' : undef, $2, $7, $5 ];
+      $values{$7} = [ $5, undef ];
+      push @flist, [ 'V', $1, defined($8) ? ',' : undef, $2, $7, $5 ];
     } else {
        printf("enum %s does not exists, line %d\n", $5, $line);
     }
