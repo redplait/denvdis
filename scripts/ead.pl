@@ -1656,6 +1656,8 @@ sub make_inst
       if ( defined $ae->[1] ) {
         my $part = ignore_enum($op, $ae, $kv, $b);
         if ( defined $part ) {
+          next if ( !$part->[0] );
+          $res .= $f->[1] if ( defined $f->[1] ); # prefix
           $res .= $part->[1];
           $res .= $f->[2] if ( defined $f->[2] ); # suffix
           next;
