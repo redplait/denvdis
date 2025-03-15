@@ -2265,6 +2265,89 @@ sub dump_decision_node
   dump_decision_node( $n->[3], $lvl + 1, 'R', $st ) if defined $n->[3];
 }
 
+# C++ generator logic
+sub gen_masks
+{
+  my $fh = shift;
+  printf($fh "// ---- masks\n");
+}
+
+sub gen_enums
+{
+  my $fh = shift;
+  printf($fh "// ---- enums\n");
+  foreach my $ename ( keys %g_used_enums ) {
+    printf($fh "NV_ENUM(%s_enum_%s) = {\n", $opt_C, $ename);
+    my %cenum;
+    # make copy
+    my $oe = $g_enums{$ename};
+    while( my($k, $v) = each %$oe ) {
+      $cenum{$v} = $k;
+    }
+    foreach my $i ( sort keys %cenum ) {
+      printf($fh " { %d, \"%s\" },\n", $i, $cenum{$i} );
+    }
+    printf($fh "};\n");
+  }
+  printf($fh "\n");
+}
+
+sub gen_tabs
+{
+  my $fh = shift;
+  printf($fh "// ---- tables\n");
+  foreach my $ename ( keys %g_used_tabs ) {
+    my $t = $g_tabs{$ename};
+    my @cont;
+    foreach my $tkey ( sort keys %$t ) {
+      my $pfx = sprintf("s_%d_%s", $tkey, $ename);
+      push @cont, [ $tkey, $pfx];
+      printf($fh "static const int %s[] = {", $pfx);
+      my $row = $t->{$tkey};
+      if ( 'ARRAY' eq ref $row ) {
+        printf($fh "%d", scalar @$row);
+        foreach my $r ( @$row ) {
+          printf($fh ", %d", $r);
+        }
+        printf($fh " };\n");
+      } else {
+        printf($fh "1, %d };\n", $row);
+      }
+    }
+    printf($fh "NV_TAB(%s_tab_%s) = {\n", $opt_C, $ename);
+    printf($fh " {%d, %s},\n", $_->[0], $_->[1]) for @cont;
+    printf($fh "};\n");
+  }
+  printf($fh "\n");
+}
+
+sub gen_C
+{
+  # enum all instructions
+  my $n = 0;
+  while( my($kmask, $op) = each(%g_masks) ) {
+   foreach my $inst ( @$op ) { $op->[19] = $n++; }
+  }
+  # open file
+  my $fname = $opt_C . '.inc';
+  my $fh;
+  open($fh, '>', $fname) or die("Cannot create $fname, error $!");
+  # make header
+  printf($fh "// Dont edit this file - it was generated %s with option %s\n", scalar(localtime), $opt_C);
+  # for debugging only
+  printf($fh "#include \"include/nv_types.h\"\n");
+  # dump masks
+  gen_masks($fh);
+  # dump used enums
+  gen_enums($fh);
+  # dump used tabs
+  gen_tabs($fh);
+  # dump instructions
+  # dump g_masks
+  # dump binary tree
+  close $fh;
+}
+
 ### main
 my $status = getopts("abBcefFimrtvwzT:C:");
 usage() if ( !$status );
@@ -2995,6 +3078,7 @@ if ( defined($opt_m) ) {
     if ( defined($opt_B) ) {
       $g_dec_tree = build_tree();
       printf("min mask len %d\n", $g_min_len);
+      gen_C() if defined($opt_C);
     } else {
       dump_dup_masks();
       printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
