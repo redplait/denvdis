@@ -1,5 +1,6 @@
 #!perl -w
 # some nvdisasm encoding analysis
+# -CBFrm to produce c++
 use strict;
 use warnings;
 use Getopt::Std;
@@ -7,7 +8,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_B $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -17,6 +18,7 @@ Usage: $0 [options] md.txt
   -a - add alternates
   -b - apply bitsets
   -B - build decision tree for decoding
+  -C - suffix
   -c - use format constant to form mask
   -e - dump enums
   -f - dump fully filled masks
@@ -1612,6 +1614,22 @@ sub format_enum
   $sv;
 }
 
+sub move_last_commas
+{
+  my $flist = shift;
+  for ( my $i = 0; $i < scalar(@$flist) - 1; $i++ ) {
+    my $f = $flist->[$i];
+    next if ( $f->[0] eq '$');
+    if ( defined($f->[2]) ) { # check if we have suffix
+      my $next = $flist->[$i + 1];
+      if ( !defined $next->[1] ) {
+        $next->[1] = $f->[2];
+        $f->[2] = undef;
+      }
+    }
+  }
+}
+
 # print iinstruction based on format list in op->[15]
 # args: ref to op, ret to kv collected in dump_values
 # formats
@@ -1852,9 +1870,9 @@ sub make_inst
     } elsif ( $f->[0] eq 'V' ) { # some value
       if ( exists $kv->{$f->[4]} ) {
         my $v = $kv->{$f->[4]};
-        $res .= $f->[1] if ( defined $f->[1] );
+        $res .= $f->[1] if ( defined $f->[1] ); # prefix
         $res .= sprintf(" 0x%X", $v);
-        $res .= $f->[2] if ( defined $f->[2] );
+        $res .= $f->[2] if ( defined $f->[2] ); # suffix
       } else {
         printf("Value %s not exists\n", $f->[4]);
       }
@@ -2248,7 +2266,7 @@ sub dump_decision_node
 }
 
 ### main
-my $status = getopts("abBcefFimrtvwzT:");
+my $status = getopts("abBcefFimrtvwzT:C:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -2402,6 +2420,7 @@ my $ins_op = sub {
   my @cquoted = @quoted;
   my @ccb = @cb;
   my @cflist = @flist;
+  move_last_commas(\@cflist);
   $c[3] = $op_line;
   $c[4] = \@cenc;
   $c[5] = \@cnenc;
@@ -2468,6 +2487,8 @@ my $cons_ae = sub {
       return;
     }
   }
+  # collapse $( ... )$
+  $s =~ s/\$\((.*)\)\$/$1/;
   # try const bank address, v1
   # $1 - optional comma, $2 - [x], $3 - [||]?, $4 - name after C:, $5 - first [], $6 - second []
   # C: can have [~] - it applied to name after prefix C: like in sample from sm75_1.txt:
@@ -2619,7 +2640,7 @@ my $cons_ae = sub {
       substr($s, $spos, $slen, $reps);
     }
   } # generic []
-  elsif ( $s =~ /(\'\,\'\s*)?\s+\[\s([^\]]+)\s\]/p ) {
+  elsif ( $s =~ /(\'\,\'\s*)?\s+\[\s+([^\]]+)\s+\]/p ) {
     my @cf = ( '[', defined($1) ? ',' : undef, undef, undef);
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
