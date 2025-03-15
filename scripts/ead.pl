@@ -2266,12 +2266,34 @@ sub dump_decision_node
 }
 
 # C++ generator logic
+sub c_mask_name
+{
+  sprintf("%s_mask_%s", $opt_C, shift);
+}
 sub gen_masks
 {
   my $fh = shift;
   printf($fh "// ---- masks\n");
+  foreach my $m ( keys %g_mnames ) {
+    my $op = $g_mnames{$m}->[3];
+    my $total = scalar @$op;
+    printf($fh "NV_MASK(%s, %d) = { ", c_mask_name($m), $total / 2);
+    for ( my $i = $total - 2; $i >= 0; $i -= 2 ) {
+      # 1st - offset, 2nd - len
+      # we need to invert mask, so new offset will be g_size - (offset + len)
+      my $off = $op->[$i];
+      my $len = $op->[$i+1];
+      printf($fh "std::make_pair( %d, %d )", $g_size - ($off + $len), $len);
+      printf($fh ",") if ( $i );
+    }
+    printf($fh "};\n");
+  }
 }
 
+sub c_enum_name
+{
+  sprintf("%s_enum_%s", $opt_C, shift);
+}
 sub gen_enums
 {
   my $fh = shift;
@@ -2292,6 +2314,10 @@ sub gen_enums
   printf($fh "\n");
 }
 
+sub c_tab_name
+{
+  sprintf("%s_tab_%s", $opt_C, shift);
+}
 sub gen_tabs
 {
   my $fh = shift;
@@ -2321,12 +2347,26 @@ sub gen_tabs
   printf($fh "\n");
 }
 
+sub gen_instr
+{
+  my $fh = shift;
+  while( my($m, $list) = each %g_masks) {
+    printf($fh "//%s\n", $m);
+    foreach my $op ( @$list ) {
+      printf($fh "static const struct nv_instr %s_%d = {\n", $opt_C, $op->[19]);
+      # name mask n line alt meaning_bits
+      printf($fh "\"%s\", \"%s\", %d, %d, %d, %d", $m, $op->[1], $op->[19], $op->[4], $op->[7], $op->[14]);
+      printf($fh "};\n");
+    }
+  }
+}
+
 sub gen_C
 {
   # enum all instructions
   my $n = 0;
   while( my($kmask, $op) = each(%g_masks) ) {
-   foreach my $inst ( @$op ) { $op->[19] = $n++; }
+   foreach my $inst ( @$op ) { $inst->[19] = $n++; }
   }
   # open file
   my $fname = $opt_C . '.inc';
@@ -2343,6 +2383,7 @@ sub gen_C
   # dump used tabs
   gen_tabs($fh);
   # dump instructions
+  gen_instr($fh);
   # dump g_masks
   # dump binary tree
   close $fh;
