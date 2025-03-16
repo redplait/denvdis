@@ -2266,6 +2266,17 @@ sub dump_decision_node
 }
 
 # C++ generator logic
+sub dump_matched
+{
+  my($fh, $list) = @_;
+  return unless defined($list);
+  foreach my $m ( @$list ) {
+    my $ops = $g_masks{$m};
+    foreach my $op ( @$ops ) {
+      printf($fh "&%s_%d,", $opt_C, $op->[19]);
+    }
+  }
+}
 sub traverse_btree
 {
   my($fh, $n, $num) = @_;
@@ -2274,8 +2285,8 @@ sub traverse_btree
     return 'nullptr' unless defined($n->[1]); # empty leaf node - wtf?
     my $name = 'leaf_' . $$num++;
     printf($fh "static const NV_bt_node %s = { true, {\n", $name);
-    my $list = $n->[1];
-    # dump insts in $list
+    # dump insts in $n->[1]
+    dump_matched($fh, $n->[1]);
     printf($fh "} };\n");
     return $name;
   }
@@ -2283,7 +2294,8 @@ sub traverse_btree
   my $right = traverse_btree( $fh, $n->[3], $num);
   my $name = 'node_' . $$num++;
   printf($fh "static const NV_non_leaf %s = { false, {\n", $name);
-  # dump insts in $list
+  # dump insts in $n->[4]
+  dump_matched($fh, $n->[4]);
   printf($fh "}, %d, %s, %s };\n", $n->[1], 
     $left ne 'nullptr' ? '&' . $left : $left, $right ne 'nullptr' ? '&' . $right : $right);
   return $name;
@@ -2442,6 +2454,77 @@ sub gen_filter
   printf($fh " return 1;\n}\n");
   $name;
 }
+sub inl_extract
+{
+  my($fh, $m, $n) = @_;
+  my($mask, $size) = c_get_mask($m);
+  printf($fh "auto v%d = fn(%s, %d);\n", $n, $mask, $size);
+}
+sub gen_extr
+{
+  my($op, $fh) = @_;
+  my $enc = $op->[5];
+  return 'nullptr' unless defined($enc);
+  my $name = sprintf("%s_%d_extr", $opt_C, $op->[19]);
+  printf($fh "\nvoid %s(std::function<uint64_t(const std::pair<short, short> *, size_t)>  &fn, NV_extracted &res) {\n", $name);
+  # c++ impl of dump_values
+  my $index = 0;
+  foreach my $m ( @$enc ) {
+    if ( $m =~ /^(\w+)\s*=\*?\s*IDENTICAL\(([^\)]+)\)/ ) {
+      my $ids = $2;
+      printf($fh "// %s identical %s\n", $1, $2);
+      inl_extract($fh, $1, $index);
+      # fill
+      foreach my $a ( split /\s*,\s*/, $ids ) {
+        printf($fh "res[\"%s\"] = v%d;\n", $a, $index);
+      }
+      $index++; next;
+    } elsif ( $m =~ /^(\w+)\s*=\*?\s*(\S+)\s*\((\s*[^\)]+)\s*\)/ ) {
+      if ( exists($g_tabs{$2}) ) {
+        printf($fh "// %s table %s %s\n", $1, $2, $3);
+      } else {
+        inl_extract($fh, $1, $index);
+        printf($fh "// %s bad table %s %s\n", $1, $2, $3);
+        printf($fh "res[\"%s\"] = v%d;\n", $2, $index);
+        $index++; next;
+      }
+    } elsif ( $m =~ /^(\w+)\s*=\*?\s*([\w\.\@]+)(?:\s*SCALE\s+(\d+))?$/ ) {
+      if ( defined $3 ) {
+        printf($fh "// %s to %s scale %s\n", $1, $2, $3);
+      } else {
+        printf($fh "// %s to %s\n", $1, $2);
+      }
+      inl_extract($fh, $1, $index);
+      if ( defined $3 ) {
+        printf($fh "res[\"%s\"] = v%d * %s;\n", $2, $index, $3);
+      } else {
+        printf($fh "res[\"%s\"] = v%d;\n", $2, $index);
+      }
+      $index++; next;
+    } elsif ( $m=~ /^(\w+)\s*=\*?\s*([\w\.\@]+)\s+convertFloatType/ ) {
+      inl_extract($fh, $1, $index);
+      printf($fh "res[\"%s\"] = v%d;\n", $2, $index);
+      $index++; next;
+    }
+  }
+  # const bank
+  if ( defined $op->[10] ) {
+    my $cb = $op->[10];
+    printf($fh "// const bank %s\n", $cb->[0]);
+    my $cb_len = scalar @$cb;
+    my @fcb;
+    if ( $cb->[0] =~ /\(\s*(.*),\s*(.*)\)/ ) {
+      push @fcb, $1; push @fcb, $2;
+    }
+    for ( my $i = 1; $i < $cb_len; $i++ ) {
+      inl_extract($fh, $cb->[$i], $index);
+      printf($fh "res[\"%s\"] = v%d;\n", $fcb[$i-1], $index);
+      $index++;
+    }
+  }
+  printf($fh "\n}\n");
+  $name;
+}
 sub gen_instr
 {
   my $fh = shift;
@@ -2458,6 +2541,8 @@ sub gen_instr
       }
       # filter
       my $op_filter = gen_filter($op, $fh);
+      # extractor
+      my $op_extr = gen_extr($op, $fh);
       # dump instruction
       printf($fh "static const struct nv_instr %s_%d = {\n", $opt_C, $op->[19]);
       # name mask n line alt meaning_bits
@@ -2478,7 +2563,7 @@ sub gen_instr
         my $ename = c_ae($ae);
         printf($fh "{ \"%s\", &%s },", $ae->[3], c_ae_name($ename));
       }
-      printf($fh "}, %s\n", $op_filter);
+      printf($fh "}, %s, %s\n", $op_filter, $op_extr);
       printf($fh " };\n");
     }
   }
@@ -2752,7 +2837,7 @@ my $cons_ae = sub {
     my $right = $6;
     my $reps = '<CBA>';
     # get var from left
-    if ( $left =~ /\:(\w+)$/ ) { $cf[5] = $1; }
+    if ( $left =~ /\:(\w+)$/ ) { $cf[5] = $1; $cons_value->($left); }
     # check if right is pair enum + var
     if ( $right =~ /^\s*(.*\:.*)\s*\+\s*(.*\:.*)\s*$/ ) {
       # we have 2 parts
@@ -2760,8 +2845,8 @@ my $cons_ae = sub {
       my $first = $1;
       $cf[7] = $cons_single->($first);
       # $reps = '<CBA ' . $first . ' >' if defined($cf[7]);
-      if ( $sec =~ /\:(\w+)$/ ) { $cf[6] = $1; }
-    } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[6] = $1; }
+      if ( $sec =~ /\:(\w+)$/ ) { $cf[6] = $1; $cons_value->($sec); }
+    } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[6] = $1; $cons_value->($right); }
     # push newly created format
     push @flist, \@cf;
     # remove this part from $s
@@ -2939,6 +3024,7 @@ my $cons_ae = sub {
       # 1 - if / presents
       # 2 - default value if exists
       # 3 - format name
+      # 4 - if /PRINT presents
       my $aref = [ $5, $4 ne '', defined($6) ? $g_enums{$5}->{$6} : undef, $8, defined($7) ];
       $ae{$8} = $aref;
       if ( defined($2) and $2 eq '!' and !defined($8) ) {
