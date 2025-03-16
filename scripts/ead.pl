@@ -2268,7 +2268,9 @@ sub dump_decision_node
 # C++ generator logic
 sub c_mask_name
 {
-  sprintf("%s_mask_%s", $opt_C, shift);
+  my $m = shift;
+  $m =~ s/\./_/g;
+  sprintf("%s_mask_%s", $opt_C, $m);
 }
 sub gen_masks
 {
@@ -2283,23 +2285,32 @@ sub gen_masks
       # we need to invert mask, so new offset will be g_size - (offset + len)
       my $off = $op->[$i];
       my $len = $op->[$i+1];
-      printf($fh "std::make_pair( %d, %d )", $g_size - ($off + $len), $len);
+      printf($fh "{ %d, %d }", $g_size - ($off + $len), $len);
       printf($fh ",") if ( $i );
     }
     printf($fh "};\n");
   }
 }
+# return (mask_name, mask_size)
+sub c_get_mask
+{
+  my $mname = shift;
+  my $mask = $g_mnames{$mname};
+  return ( c_mask_name($mname), scalar( @{$mask->[3]} ) / 2 );
+}
 
 sub c_enum_name
 {
-  sprintf("%s_enum_%s", $opt_C, shift);
+  my $e = shift;
+  $e =~ s/\./_/g;
+  sprintf("%s_enum_%s", $opt_C, $e);
 }
 sub gen_enums
 {
   my $fh = shift;
   printf($fh "// ---- enums\n");
   foreach my $ename ( keys %g_used_enums ) {
-    printf($fh "NV_ENUM(%s_enum_%s) = {\n", $opt_C, $ename);
+    printf($fh "NV_ENUM(%s) = {\n", c_enum_name($ename));
     my %cenum;
     # make copy
     my $oe = $g_enums{$ename};
@@ -2340,7 +2351,7 @@ sub gen_tabs
         printf($fh "1, %d };\n", $row);
       }
     }
-    printf($fh "NV_TAB(%s_tab_%s) = {\n", $opt_C, $ename);
+    printf($fh "NV_TAB(%s) = {\n", c_tab_name($ename));
     printf($fh " {%d, %s},\n", $_->[0], $_->[1]) for @cont;
     printf($fh "};\n");
   }
@@ -2357,15 +2368,57 @@ sub c_ae
   $res .= '_p' if ( $ae->[4] );
   $res;
 }
+sub c_ae_name
+{
+  my $ae = shift;
+  $ae =~ s/\./_/g;
+  sprintf("%s_%s", $opt_C, $ae);
+}
 sub gen_ae
 {
   my($fh, $ae, $name) = @_;
-  printf($fh "static const nv_eattr %s_%s = { ", $opt_C, $name);
+  printf($fh "static const nv_eattr %s = { ", c_ae_name($name));
   printf($fh "%s,", $ae->[1] ? 'true' : 'false');
   printf($fh "%s,", $ae->[4] ? 'true' : 'false');
   printf($fh "%s,", defined $ae->[2] ? 'true' : 'false');
   printf($fh "%d,", $ae->[2] || 0);
   printf($fh "&%s };\n", c_enum_name($ae->[0]));
+}
+sub gen_filter
+{
+  my($op, $fh) = @_;
+  return 'nullptr' unless defined($op->[12]);
+  my $name = sprintf("%s_%d_filter", $opt_C, $op->[19]);
+  printf($fh "\nint %s(std::function<uint64_t(const std::pair<short, short> *, size_t)>  &fn) {\n", $name);
+  # c++ impl of filter_ins
+  my $flist = $op->[12];
+  foreach my $f ( @$flist ) {
+    my($mask, $size) = c_get_mask($f->[0]->[0]);
+    printf($fh " { // %s\n", $f->[1]);
+    printf($fh " auto v = fn(%s, %d);\n", $mask, $size);
+    if ( 'v' eq $f->[1] ) {
+      printf($fh " if ( v != %d ) return 0;", $f->[2]);
+    } elsif ( 'e' eq $f->[1] ) {
+      my $ename = c_enum_name($f->[3]);
+      printf($fh " auto ci = %s.find((int)v); if ( ci == %s.end() ) return 0;", $ename, $ename);
+    } else {
+      my $tr = $f->[2];
+      my $tab_name = c_tab_name($f->[3]);
+      printf($fh " auto ti = %s.find((int)v); if ( ti == %s.end() ) return 0;", $tab_name, $tab_name);
+      if ( 'T' eq $f->[1] ) {
+        # extract row from table and check in enums
+        for ( my $i = 4; $i < scalar @$f; $i++ ) {
+          next unless defined($f->[$i]);
+          my $e = c_enum_name($f->[$i]);
+          my $i_name = 'i' . ($i - 3);
+          printf($fh "\n auto %s = %s.find((int)ti->second[%d]); if ( %s == %s.end()) return 0;", $i_name, $e, $i - 3, $i_name, $e);
+        }
+      }
+    }
+    printf($fh " }\n");
+  }
+  printf($fh " return 1;\n}\n");
+  $name;
 }
 sub gen_instr
 {
@@ -2381,6 +2434,8 @@ sub gen_instr
         gen_ae($fh, $ae, $ename);
         $cached_ae{$ename} = 1;
       }
+      # filter
+      my $op_filter = gen_filter($op, $fh);
       # dump instruction
       printf($fh "static const struct nv_instr %s_%d = {\n", $opt_C, $op->[19]);
       # name mask n line alt meaning_bits
@@ -2399,9 +2454,10 @@ sub gen_instr
       printf($fh " {");
       foreach my $ae ( values %{ $op->[17] } ) {
         my $ename = c_ae($ae);
-        printf($fh "{ \"%s\", &%s_%s },", $ae->[3], $opt_C, $ename);
+        printf($fh "{ \"%s\", &%s },", $ae->[3], c_ae_name($ename));
       }
-      printf($fh "} };\n");
+      printf($fh "}, %s\n", $op_filter);
+      printf($fh " };\n");
     }
   }
 }
@@ -2994,6 +3050,7 @@ while( $str = <$fh> ) {
     parse_mask($str); next;
   }
   # parse format
+  $str =~ s/CC\(CC\)TestCC\/Test\(T\)\:(\w+)/ \/Test\(T\)\:Test /g if ( $state == 2 );
   if ( $state == 2 && $str =~ /FORMAT\s+(?:PREDICATE\s+)?(.*)Opcode\s*?(.*)$/ ) {
     $format = $2;
     $cons_ae->($1, 0);
@@ -3005,6 +3062,9 @@ while( $str = <$fh> ) {
   if ( 6 == $state ) {
     if ( $str !~ /FORMAT\s+(?:PREDICATE\s+)?.*Opcode/ ) {
       $str =~ s/\s*$//;
+      # fix TestCC/Test like
+      # CC(CC):TestCC/Test(T):fcomp
+      $str =~ s/CC\(CC\)TestCC\/Test\(T\)\:(\w+)/ \/Test\(T\)\:Test /g;
       # grab /? $1 enum $2:alias $3 into %ae
       $cons_ae->($str, 2);
       # grab /something()
