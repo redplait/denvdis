@@ -2266,6 +2266,28 @@ sub dump_decision_node
 }
 
 # C++ generator logic
+sub traverse_btree
+{
+  my($fh, $n, $num) = @_;
+  return 'nullptr' unless ( defined($n) );
+  if ( $n->[0] eq 'L' ) {
+    return 'nullptr' unless defined($n->[1]); # empty leaf node - wtf?
+    my $name = 'leaf_' . $$num++;
+    printf($fh "static const NV_bt_node %s = { true, {\n", $name);
+    my $list = $n->[1];
+    # dump insts in $list
+    printf($fh "} };\n");
+    return $name;
+  }
+  my $left = traverse_btree( $fh, $n->[2], $num);
+  my $right = traverse_btree( $fh, $n->[3], $num);
+  my $name = 'node_' . $$num++;
+  printf($fh "static const NV_non_leaf %s = { false, {\n", $name);
+  # dump insts in $list
+  printf($fh "}, %d, %s, %s };\n", $n->[1], 
+    $left ne 'nullptr' ? '&' . $left : $left, $right ne 'nullptr' ? '&' . $right : $right);
+  return $name;
+}
 sub c_mask_name
 {
   my $m = shift;
@@ -2485,8 +2507,9 @@ sub gen_C
   gen_tabs($fh);
   # dump instructions
   gen_instr($fh);
-  # dump g_masks
-  # dump binary tree
+  # dump binary tree in g_dec_tree
+  my $num = 0;
+  my $root = traverse_btree($fh, $g_dec_tree, \$num);
   close $fh;
 }
 
