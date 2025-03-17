@@ -112,7 +112,7 @@ struct nv64: public NV_base_decoder {
       cqword = *(uint64_t *)curr;
       curr += 8;
       // 6 bit - 3f, << 2 = 0xfc
-      opcode = cqword & 0x3 | ((cqword >> (64 - 4)) & 0xfc);
+      opcode = cqword & 0x3 | ((cqword >> (64 - 8)) & 0xfc);
     }
     // fill ctrl
     ctrl = (cqword >> (8 * m_idx + 2)) & 0xff;
@@ -182,10 +182,98 @@ struct nv88: public NV_base_decoder {
     if ( 3 == m_idx ) m_idx = 0;
     return 1;
   }
+  inline uint64_t e1(short start, short len, uint64_t &res) const
+  {
+    for ( int i = 0; i < len; i++ ) {
+      res <<= 1;
+      if ( *value & (1L << (i + start)) ) res |= 1L;
+    }
+    return res;
+  }
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
   {
     uint64_t res = 0L;
     for ( int m = 0; m < mask_size; m++ ) {
+     if ( mask[m].first + mask[m].second < 64 ) {
+       e1(mask[m].first, mask[m].second, res);
+       continue;
+     }
+     for ( int i = 0; i < mask[m].second; i++ ) {
+       res <<= 1;
+       if ( check_bit(mask[m].first + i) ) res |= 1L;
+     }
+    }
+    return res;
+  }
+};
+
+struct nv128: public NV_base_decoder {
+ protected:
+  const int _width = 128;
+  uint64_t q1, q2;
+  inline int check_bit(int idx) const
+  {
+    if ( idx < 64 )
+      return q1 & (1L << idx);
+    idx -= 64;
+    return q2 & (1L << idx);
+  }
+  int check_mask(const char *mask) const
+  {
+    uint64_t m = 1L;
+    int j, i = 127;
+    for ( j = 0; j < 64; i--, j++ ) {
+      if ( '1' == mask[i] && !(q1 & m) ) return 0;
+      if ( '0' == mask[i] && (q1 & m) ) return 0;
+      m <<= 1;
+    }
+    m = 1L;
+    for ( j = 0; j < 64; j++, i-- ) {
+      if ( '1' == mask[i] && !(q2 & m) ) return 0;
+      if ( '0' == mask[i] && (q2 & m) ) return 0;
+      m <<= 1;
+    }
+    return 1;
+  }
+  // if idx == 0 - read control word, then first opcode
+  int next() {
+    if ( !is_inited() ) return 0;
+    if ( end - curr < 2 * 8 ) return 0;
+    q1 = *(uint64_t *)curr;
+    curr += 8;
+    q2 = *(uint64_t *)curr;
+    curr += 8;
+    return 1;
+  }
+  inline uint64_t e1(short start, short len, uint64_t &res) const
+  {
+    for ( int i = 0; i < len; i++ ) {
+      res <<= 1;
+      if ( q1 & (1 << (i + start)) ) res |= 1L;
+    }
+    return res;
+  }
+  inline uint64_t e2(short start, short len, uint64_t &res) const
+  {
+    for ( int i = 0; i < len; i++ ) {
+      res <<= 1;
+      if ( q2 & (1 << (i + start)) ) res |= 1L;
+    }
+    return res;
+  }
+  uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
+  {
+    uint64_t res = 0L;
+    for ( int m = 0; m < mask_size; m++ ) {
+     if ( mask[m].first > 63 ) {
+       e2(mask[m].first - 64, mask[m].second, res);
+       continue;
+     }
+     if ( mask[m].first + mask[m].second < 64 ) {
+       e1(mask[m].first, mask[m].second, res);
+       continue;
+     }
+     // 1st part from q1, then from q2
      for ( int i = 0; i < mask[m].second; i++ ) {
        res <<= 1;
        if ( check_bit(mask[m].first + i) ) res |= 1L;
