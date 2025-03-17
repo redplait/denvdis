@@ -1,4 +1,5 @@
 #include <functional>
+#include <algorithm>
 #include <unordered_map>
 #include <list>
 #include <string_view>
@@ -86,6 +87,7 @@ struct NV_base_decoder {
 
 struct nv64: public NV_base_decoder {
  protected:
+  const int _width = 64;
   uint64_t *value, cqword;
   inline int check_bit(int idx) const
   {
@@ -94,7 +96,7 @@ struct nv64: public NV_base_decoder {
   int check_mask(const char *mask) const
   {
     uint64_t m = 1L;
-    for ( int i = 63; i >= 0; i++ ) {
+    for ( int i = 63; i >= 0; i-- ) {
       if ( '1' == mask[i] && !(*value & m) ) return 0;
       if ( '0' == mask[i] && (*value & m) ) return 0;
       m <<= 1;
@@ -134,6 +136,119 @@ struct nv64: public NV_base_decoder {
   }
 };
 
-// disasm interface
-struct NV_disasm {
+struct nv88: public NV_base_decoder {
+ protected:
+  const int _width = 88;
+  uint64_t *value, cqword, cword;
+  inline int check_bit(int idx) const
+  {
+    if ( idx < 64 )
+      return *value & (1L << idx);
+    idx -= 64;
+    return cword & (1L << idx);
+  }
+  int check_mask(const char *mask) const
+  {
+    uint64_t m = 1L;
+    int j, i = 87;
+    for ( j = 0; j < 64; i--, j++ ) {
+      if ( '1' == mask[i] && !(*value & m) ) return 0;
+      if ( '0' == mask[i] && (*value & m) ) return 0;
+      m <<= 1;
+    }
+    m = 1L;
+    for ( j = 0; j < 24; j++, i-- ) {
+      if ( '1' == mask[i] && !(cword & m) ) return 0;
+      if ( '0' == mask[i] && (cword & m) ) return 0;
+      m <<= 1;
+    }
+    return 1;
+  }
+  // if idx == 0 - read control word, then first opcode
+  int next() {
+    if ( !is_inited() ) return 0;
+    if ( !m_idx ) {
+      // check that we have space for least 8 64 qwords
+      if ( end - curr < 4 * 8 ) return 0;
+      cqword = *(uint64_t *)curr;
+      curr += 8;
+    }
+    // fill cword - 21 bit = 1fffff
+    cword = (cqword >> (21 * m_idx)) & 0x1fffff;
+    // fill value
+    value = (uint64_t *)curr;
+    curr += 8;
+    m_idx++;
+    if ( 3 == m_idx ) m_idx = 0;
+    return 1;
+  }
+  uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
+  {
+    uint64_t res = 0L;
+    for ( int m = 0; m < mask_size; m++ ) {
+     for ( int i = 0; i < mask[m].second; i++ ) {
+       res <<= 1;
+       if ( check_bit(mask[m].first + i) ) res |= 1L;
+     }
+    }
+    return res;
+  }
 };
+
+// disasm interface
+struct INV_disasm {
+  virtual void init(const unsigned char *buf, size_t size) = 0;
+  virtual int get(std::list< std::pair<const struct nv_instr *, NV_extracted> > &) = 0;
+  virtual size_t offset() const = 0;
+  virtual int width() const = 0;
+  virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const = 0;
+  virtual ~INV_disasm() = default;
+};
+
+template <typename T>
+struct NV_disasm: public INV_disasm, T
+{
+  NV_disasm(const NV_non_leaf *root)
+  {
+    m_root = root;
+  }
+  virtual int width() const { return T::_width; }
+  virtual size_t offset() const { return T::curr_off(); }
+  virtual void init(const unsigned char *buf, size_t size) {
+    T::_init(buf, size);
+  }
+  virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const {
+   _op = T::opcode;
+   _ctrl = T::ctrl;
+  }
+  virtual int get(std::list< std::pair<const struct nv_instr *, NV_extracted> > &res)
+  {
+    if ( !T::next() ) return 0;
+    // traverse decode tree
+    std::list<const struct nv_instr *> tmp;
+    rec_find(m_root, tmp);
+    // boring repeating code but you can't just pass lambda to std::function ref
+    std::function<uint64_t(const std::pair<short, short> *, size_t)> extr_func =
+      [&](const std::pair<short, short> *m, size_t ms) { return T::extract(m, ms); };
+    for ( auto i: tmp ) {
+      if ( !i->filter( extr_func ) ) continue;
+      NV_extracted ex_data;
+      i->extract( extr_func, ex_data );
+      res.push_back( { i, std::move( ex_data ) } );
+    }
+    return !res.empty();
+  }
+ protected:
+  void rec_find(const NV_bt_node *curr, std::list<const nv_instr *> &res) {
+    if ( curr == nullptr ) return;
+    std::copy_if( curr->ins.begin(), curr->ins.end(), res.begin(), [&](const nv_instr *ins){ return T::check_mask(ins->mask); } );
+    if ( curr->is_leaf )
+      return;
+    const NV_non_leaf *b2 = (const NV_non_leaf *)curr;
+    if ( T::check_bit(b2->bit) ) rec_find(b2->right, res);
+    else rec_find(b2->left, res);
+  }
+  const NV_non_leaf *m_root = nullptr;
+};
+
+extern "C" INV_disasm *get_sm();

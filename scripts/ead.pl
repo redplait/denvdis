@@ -2424,7 +2424,7 @@ sub gen_filter
   my($op, $fh) = @_;
   return 'nullptr' unless defined($op->[12]);
   my $name = sprintf("%s_%d_filter", $opt_C, $op->[19]);
-  printf($fh "\nint %s(std::function<uint64_t(const std::pair<short, short> *, size_t)>  &fn) {\n", $name);
+  printf($fh "\nstatic int %s(std::function<uint64_t(const std::pair<short, short> *, size_t)>  &fn) {\n", $name);
   # c++ impl of filter_ins
   my $flist = $op->[12];
   foreach my $f ( @$flist ) {
@@ -2470,7 +2470,7 @@ sub gen_extr
   my $enc = $op->[5];
   return 'nullptr' unless defined($enc);
   my $name = sprintf("%s_%d_extr", $opt_C, $op->[19]);
-  printf($fh "\nvoid %s(std::function<uint64_t(const std::pair<short, short> *, size_t)>  &fn, NV_extracted &res) {\n", $name);
+  printf($fh "\nstatic void %s(std::function<uint64_t(const std::pair<short, short> *, size_t)>  &fn, NV_extracted &res) {\n", $name);
   # c++ impl of dump_values
   my $index = 0;
   foreach my $m ( @$enc ) {
@@ -2610,6 +2610,9 @@ sub gen_C
   # dump binary tree in g_dec_tree
   my $num = 0;
   my $root = traverse_btree($fh, $g_dec_tree, \$num);
+  # finally gen get_sm
+  printf($fh "\nINV_disasm *get_sm() {\n");
+  printf($fh " return new NV_disasm<nv%d>(&%s); }\n", $g_size, $root);
   close $fh;
 }
 
