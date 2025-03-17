@@ -28,6 +28,7 @@ struct nv_eattr {
  bool print;  // /PRINT
  bool has_def_value;
  int def_value;
+ const char *ename;
  const std::unordered_map<int, const char *> *em;
 };
 
@@ -36,6 +37,8 @@ struct NV_disasm {
 };
 
 typedef int (*nv_filter)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &);
+typedef std::unordered_map<std::string_view, uint64_t> NV_extracted;
+typedef void (*nv_extract)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &, NV_extracted &);
 
 struct nv_instr {
  const char *name;
@@ -47,6 +50,7 @@ struct nv_instr {
  const std::unordered_map<std::string_view, const nv_vattr> vas;
  const std::unordered_map<std::string_view, const nv_eattr *> eas;
  nv_filter filter;
+ nv_extract extract;
 };
 
 // binary tree

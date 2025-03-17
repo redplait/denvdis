@@ -2416,6 +2416,7 @@ sub gen_ae
   printf($fh "%s,", $ae->[4] ? 'true' : 'false');
   printf($fh "%s,", defined $ae->[2] ? 'true' : 'false');
   printf($fh "%d,", $ae->[2] || 0);
+  printf($fh "\"%s\",", $ae->[0]);
   printf($fh "&%s };\n", c_enum_name($ae->[0]));
 }
 sub gen_filter
@@ -2460,6 +2461,9 @@ sub inl_extract
   my($mask, $size) = c_get_mask($m);
   printf($fh "auto v%d = fn(%s, %d);\n", $n, $mask, $size);
 }
+# example from sm3:
+# /ICmpAll:icomp but there is no encoder for icomp, instead we have
+# IComp = ICmpAll - so we must check if second arg is enum
 sub gen_extr
 {
   my($op, $fh) = @_;
