@@ -2486,6 +2486,17 @@ sub gen_extr
     } elsif ( $m =~ /^(\w+)\s*=\*?\s*(\S+)\s*\((\s*[^\)]+)\s*\)/ ) {
       if ( exists($g_tabs{$2}) ) {
         printf($fh "// %s table %s %s\n", $1, $2, $3);
+        inl_extract($fh, $1, $index);
+        my $tab_name = c_tab_name($2);
+        printf($fh "auto i%d = %s.find(v%d); if ( i%d != %s.end() ) {\n", $index, $tab_name, $index, $index, $tab_name);
+        printf($fh " auto &ctab = i%d->second;\n", $index);
+        my @fa = split /\s*,\s*/, $3;
+        for ( my $i = 0; $i < @fa; $i++ ) {
+          next if ( $fa[$i] =~ /^\d+$/ ); # skip constant
+          printf($fh " res[\"%s\"] = ctab[%d];\n", $fa[$i], $i+1);
+        }
+        printf($fh "}\n");
+        $index++; next;
       } else {
         inl_extract($fh, $1, $index);
         printf($fh "// %s bad table %s %s\n", $1, $2, $3);
