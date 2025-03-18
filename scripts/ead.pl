@@ -2461,6 +2461,13 @@ sub inl_extract
   my($mask, $size) = c_get_mask($m);
   printf($fh "auto v%d = fn(%s, %d);\n", $n, $mask, $size);
 }
+sub bank_extract
+{
+  my($fh, $m, $n) = @_;
+  my($mask, $size) = c_get_mask($m);
+  printf($fh "auto c%d = fn(%s, %d);\n", $n, $mask, $size);
+  return mask_len($g_mnames{$m});
+}
 # example from sm3:
 # /ICmpAll:icomp but there is no encoder for icomp, instead we have
 # IComp = ICmpAll - so we must check if second arg is enum
@@ -2530,11 +2537,24 @@ sub gen_extr
     my @fcb;
     if ( $cb->[0] =~ /\(\s*(.*),\s*(.*)\)/ ) {
       push @fcb, $1; push @fcb, $2;
+    } else {
+      printf("bad const bank %s\n", $cb->[0]);
     }
-    for ( my $i = 1; $i < $cb_len; $i++ ) {
-      inl_extract($fh, $cb->[$i], $index);
-      printf($fh "res[\"%s\"] = v%d;\n", $fcb[$i-1], $index);
-      $index++;
+    # special case for sm3:
+    # BcbankHi,BcbankLo,Bcaddr =  ConstBankAddress2(constBank,immConstOffset)
+    # here constBank = BcbankLo | (BcbankHi << size(BcbankLo)
+    if ( 4 == $cb_len ) {
+      bank_extract($fh, $cb->[1], 0);
+      my $lo_size = bank_extract($fh, $cb->[2], 1);
+      bank_extract($fh, $cb->[3], 2);
+      printf($fh "res[\"%s\"] = c1 | (c0 << %d);\n", $fcb[0], $lo_size);
+      printf($fh "res[\"%s\"] = c2;\n", $fcb[1]);
+    } else {
+      for ( my $i = 1; $i < $cb_len; $i++ ) {
+        inl_extract($fh, $cb->[$i], $index);
+        printf($fh "res[\"%s\"] = v%d;\n", $fcb[$i-1], $index);
+        $index++;
+      }
     }
   }
   printf($fh "\n}\n");
@@ -2592,7 +2612,7 @@ sub gen_C
    foreach my $inst ( @$op ) { $inst->[19] = $n++; }
   }
   # open file
-  my $fname = $opt_C . '.inc';
+  my $fname = $opt_C . '.cc';
   my $fh;
   open($fh, '>', $fname) or die("Cannot create $fname, error $!");
   # make header
