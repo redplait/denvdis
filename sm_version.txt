@@ -4,10 +4,10 @@ c  sm12
 d  sm13
 14 sm20
 15 sm21
-1E sm30
-20 sm32
-23 sm35
-25 sm37
+1E sm30 - sm3.md
+20 sm32 - sm4.md
+23 sm35 - sm4.md
+25 sm37 - sm4.md
 32 sm50 - sm5.md
 34 sm52 - sm52.md
 35 sm53 - sm52.md
@@ -19,7 +19,7 @@ d  sm13
 4b sm75
 50 sm80
 56 sm86
-57 sm87
+57 sm87 - sm86.md
 59 sm89
 5a sm90
 64 sm100
