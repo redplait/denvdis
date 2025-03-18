@@ -194,7 +194,7 @@ struct nv88: public NV_base_decoder {
   {
     uint64_t res = 0L;
     for ( int m = 0; m < mask_size; m++ ) {
-     if ( mask[m].first + mask[m].second < 64 ) {
+     if ( mask[m].first + mask[m].second <= 64 ) {
        e1(mask[m].first, mask[m].second, res);
        continue;
      }
@@ -211,6 +211,10 @@ struct nv128: public NV_base_decoder {
  protected:
   const int _width = 128;
   uint64_t q1, q2;
+  // shadow from base
+  inline size_t curr_off() const {
+     return curr - start - 16;
+   }
   inline int check_bit(int idx) const
   {
     if ( idx < 64 )
@@ -269,7 +273,7 @@ struct nv128: public NV_base_decoder {
        e2(mask[m].first - 64, mask[m].second, res);
        continue;
      }
-     if ( mask[m].first + mask[m].second < 64 ) {
+     if ( mask[m].first + mask[m].second <= 64 ) {
        e1(mask[m].first, mask[m].second, res);
        continue;
      }
@@ -329,7 +333,8 @@ struct NV_disasm: public INV_disasm, T
  protected:
   void rec_find(const NV_bt_node *curr, std::list<const nv_instr *> &res) {
     if ( curr == nullptr ) return;
-    std::copy_if( curr->ins.begin(), curr->ins.end(), res.begin(), [&](const nv_instr *ins){ return T::check_mask(ins->mask); } );
+    std::copy_if( curr->ins.begin(), curr->ins.end(), std::back_inserter(res),
+     [&](const nv_instr *ins){ return T::check_mask(ins->mask); } );
     if ( curr->is_leaf )
       return;
     const NV_non_leaf *b2 = (const NV_non_leaf *)curr;
