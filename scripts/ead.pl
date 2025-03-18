@@ -980,7 +980,7 @@ sub gen_inst_mask
    $cp =~ s/\{\s*\}//g;
    # and $( )$
    $cp =~ s/\$\(\s*\)\$//g;
-   $op->[20] = $cp;
+   $op->[21] = $cp;
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
   # process remained encodings
@@ -2028,7 +2028,7 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
-      printf("   Unused %s\n", $op->[20]) if defined($op->[20]);
+      printf("   Unused %s\n", $op->[21]) if defined($op->[21]);
       # dump mask to enum mapping
       dump_mask2enum($op);
       dump_tenums($op->[13]) if defined($op->[13]);
@@ -2582,6 +2582,18 @@ sub gen_instr
       printf($fh "static const struct nv_instr %s_%d = {\n", $opt_C, $op->[19]);
       # name mask n line alt meaning_bits
       printf($fh "\"%s\",\n \"%s\", %d, %d, %d, %d,\n", $m, $op->[1], $op->[19], $op->[4], $op->[7], $op->[14]);
+      # brt properties
+      if ( defined $op->[20] ) {
+        my $brt = $op->[20];
+        printf($fh "%s,", $brt->[0] || '0');
+        if ( defined $brt->[1]) { printf($fh "\"%s\",", $brt->[1]); }
+        else { printf($fh "nullptr,"); }
+        if ( defined $brt->[2]) { printf($fh "\"%s\",", $brt->[2]); }
+        else { printf($fh "nullptr,"); }
+        printf($fh "\n");
+      } else {
+        printf($fh "0, nullptr, nullptr,\n");
+      }
       if ( defined $op->[18] ) {
         printf($fh " {");
         my $vlist = $op->[18];
@@ -2667,7 +2679,8 @@ $state = $line = 0;
 # [16] - original ae hash
 # [17] - value names -> type hash
 # [18] - idx
-my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @cb, @flist, %ae, $alt, %values, $format);
+# [19] - BRT properties
+my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @cb, @flist, @b_props, %ae, $alt, %values, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
 # tref is ref to hash with table content
@@ -2761,7 +2774,7 @@ my $parse_enum = sub {
 my $reset = sub {
   $format = $cname = '';
   $alt = $has_op = $op_line = 0;
-  @op = @enc = @nenc = @quoted = @cb = @flist = ();
+  @op = @enc = @nenc = @quoted = @cb = @flist = @b_props = ();
   %ae = ();
   %values = ();
 };
@@ -2811,6 +2824,12 @@ my $ins_op = sub {
     $c[17] = \%cvals;
   }
   $c[18] = 0;
+  if ( scalar(@b_props) ) {
+    my @cp = @b_props;
+    $c[19] = \@cp;
+  } else {
+    $c[19] = undef;
+  }
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
    } else {
@@ -3228,7 +3247,7 @@ while( $str = <$fh> ) {
     $state = 2;
     next;
   }
-  if ( $state == 2 && $str =~ /OPCODES/ ) {
+  if ( ($state == 2 || $state == 7) && $str =~ /OPCODES/ ) {
     $state = 3;
     next;
   }
@@ -3240,6 +3259,25 @@ while( $str = <$fh> ) {
     next if ( $name =~ /_pipe/ );
     $op[0] = $name;
     $op[1] = $value;
+  }
+  # properties
+  if ( $str =~ /^\s*PROPERTIES/ ) {
+    $state = 7;
+    next;
+  }
+  if ( 7 == $state ) {
+    if ( $str =~ /^\s*BRANCH_TYPE =\s*(\S+);/ ) {
+      $b_props[0] = $1;
+      next;
+    }
+    if ( $str =~ /^\s*BRANCH_TARGET_INDEX = INDEX\(([^\)]+)\)/ ) {
+      $b_props[1] = $1;
+      next;
+    }
+    if ( $str =~ /CC_INDEX = INDEX\(([^\)]+)\)/ ) {
+      $b_props[2] = $1;
+      next;
+    }
   }
   # encoding
   if ( $str =~ /^\s*ENCODING/ ) {

@@ -19,6 +19,13 @@ enum NV_Format {
   NV_F32Imm,
 };
 
+enum NV_Brt {
+ BRT_CALL = 1,
+ BRT_RETURN = 2,
+ BRT_BRANCH = 3,
+ BRT_BRANCHOUT = 4,
+};
+
 struct nv_vattr {
  enum NV_Format kind;
  bool has_ast; // final *
@@ -44,6 +51,9 @@ struct nv_instr {
  int line;
  int alt;
  int meaning_bits;
+ int brt;
+ const char *target_index;
+ const char *cc_index;
  const std::unordered_map<std::string_view, const nv_vattr> vas;
  const std::unordered_map<std::string_view, const nv_eattr *> eas;
  nv_filter filter;
