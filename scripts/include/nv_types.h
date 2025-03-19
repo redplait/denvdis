@@ -321,13 +321,28 @@ struct nv128: public NV_base_decoder {
   }
   int check_mask(const char *mask) const
   {
+#ifdef DEBUG
+printf("check_mask %s\n", mask);
+printf("%2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X\n",
+ curr[-1], curr[-2], curr[-3], curr[-4], curr[-5], curr[-6], curr[-7], curr[-8],
+ curr[-9], curr[-10], curr[-11], curr[-12], curr[-13], curr[-14], curr[-15], curr[-16]
+);
+#endif
 #ifdef __SIZEOF_INT128__
     __uint128_t m = 1L;
-    int j = 127;
-    for ( int i = 0; j < 128; i--, j++ ) {
-      if ( '1' == mask[i] && !(q & m) ) return 0;
-      if ( '0' == mask[i] && (q & m) ) return 0;
-      m <<= 1;
+    int i = 127;
+    for ( int j = 0; j < 128; i--, j++ ) {
+      if ( '1' == mask[i] && !(q & m) ) {
+#ifdef DEBUG
+printf("stop1 %d\n", i);
+#endif
+       return 0; }
+      if ( '0' == mask[i] && (q & m) ) {
+#ifdef DEBUG
+printf("stop0 %d\n", i);
+#endif
+       return 0; }
+      m <<= 1L;
     }
 #else
     uint64_t m = 1L;
@@ -346,13 +361,12 @@ struct nv128: public NV_base_decoder {
 #endif
     return 1;
   }
-  // if idx == 0 - read control word, then first opcode
   int next() {
     if ( !is_inited() ) return 0;
     if ( end - curr < 2 * 8 ) return 0;
 #ifdef __SIZEOF_INT128__
     q = *(__uint128_t *)curr;
-    curr += sizeof(q);
+    curr += 16;
 #else
     q1 = *(uint64_t *)curr;
     curr += 8;
@@ -424,7 +438,7 @@ struct NV_disasm: public INV_disasm, T
     std::function<uint64_t(const std::pair<short, short> *, size_t)> extr_func =
       [&](const std::pair<short, short> *m, size_t ms) { return T::extract(m, ms); };
     for ( auto i: tmp ) {
-      if ( !i->filter( extr_func ) ) continue;
+      if ( i->filter && !i->filter( extr_func ) ) continue;
       NV_extracted ex_data;
       i->extract( extr_func, ex_data );
       res.push_back( { i, std::move( ex_data ) } );
