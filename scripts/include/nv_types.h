@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <list>
 #include <string_view>
+#include <stdio.h>
 
 #define NV_MASK(name, size) static const std::pair<short, short> name[size]
 #define NV_ENUM(name)  static const std::unordered_map<int, const char *> name
@@ -45,8 +46,8 @@ typedef std::unordered_map<std::string_view, uint64_t> NV_extracted;
 typedef void (*nv_extract)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &, NV_extracted &);
 
 struct nv_instr {
- const char *name;
  const char *mask;
+ const char *name;
  int n; // number for formatting
  int line;
  int alt;
@@ -72,12 +73,86 @@ struct NV_non_leaf: public NV_bt_node
   const NV_bt_node *left, *right;
 };
 
+const uint64_t s_masks[64] = {
+/*  0 */ 0x1,
+/*  1 */ 0x3,
+/*  2 */ 0x7,
+/*  3 */ 0xf,
+/*  4 */ 0x1f,
+/*  5 */ 0x3f,
+/*  6 */ 0x7f,
+/*  7 */ 0xff,
+/*  8 */ 0x1ff,
+/*  9 */ 0x3ff,
+/* 10 */ 0x7ff,
+/* 11 */ 0xfff,
+/* 12 */ 0x1fff,
+/* 13 */ 0x3fff,
+/* 14 */ 0x7fff,
+/* 15 */ 0xffff,
+/* 16 */ 0x1ffff,
+/* 17 */ 0x3ffff,
+/* 18 */ 0x7ffff,
+/* 19 */ 0xfffff,
+/* 20 */ 0x1fffff,
+/* 21 */ 0x3fffff,
+/* 22 */ 0x7fffff,
+/* 23 */ 0xffffff,
+/* 24 */ 0x1ffffff,
+/* 25 */ 0x3ffffff,
+/* 26 */ 0x7ffffff,
+/* 27 */ 0xfffffff,
+/* 28 */ 0x1fffffff,
+/* 29 */ 0x3fffffff,
+/* 30 */ 0x7fffffff,
+/* 31 */ 0xffffffff,
+/* 32 */ 0x1ffffffffL,
+/* 33 */ 0x3ffffffffL,
+/* 34 */ 0x7ffffffffL,
+/* 35 */ 0xfffffffffL,
+/* 36 */ 0x1fffffffffL,
+/* 37 */ 0x3fffffffffL,
+/* 38 */ 0x7fffffffffL,
+/* 39 */ 0xffffffffffL,
+/* 40 */ 0x1ffffffffffL,
+/* 41 */ 0x3ffffffffffL,
+/* 42 */ 0x7ffffffffffL,
+/* 43 */ 0xfffffffffffL,
+/* 44 */ 0x1fffffffffffL,
+/* 45 */ 0x3fffffffffffL,
+/* 46 */ 0x7fffffffffffL,
+/* 47 */ 0xffffffffffffL,
+/* 48 */ 0x1ffffffffffffL,
+/* 49 */ 0x3ffffffffffffL,
+/* 50 */ 0x7ffffffffffffL,
+/* 51 */ 0xfffffffffffffL,
+/* 52 */ 0x1fffffffffffffL,
+/* 53 */ 0x3fffffffffffffL,
+/* 54 */ 0x7fffffffffffffL,
+/* 55 */ 0xffffffffffffffL,
+/* 56 */ 0x1ffffffffffffffL,
+/* 57 */ 0x3ffffffffffffffL,
+/* 58 */ 0x7ffffffffffffffL,
+/* 59 */ 0xfffffffffffffffL,
+/* 60 */ 0x1fffffffffffffffL,
+/* 61 */ 0x3fffffffffffffffL,
+/* 62 */ 0x7fffffffffffffffL,
+/* 63 */ 0xffffffffffffffffL,
+};
+
 struct NV_base_decoder {
  uint8_t opcode = 0; // highest 6 bits and the lowest 2 bits are the opcode
  uint8_t ctrl = 0; // the middle 56 bits are used to control the execution of the following 7 instructions, each
    // of which is assigned to an 8-bit control code
    // Bit 4, 5, and 7 represent shared memory, global memory, and
    // the texture cache dependency barrier, respectively.
+  inline uint64_t _extract(uint64_t v, short pos, short len) const {
+    return (v >> pos) & s_masks[len - 1];
+  }
+  inline int _check_bit(uint64_t v, int idx) const {
+    // visual studio has _bitset64
+    return (v >> idx) & 1;
+  }
  protected:
    inline size_t curr_off() const {
      return curr - start - 8;
@@ -99,9 +174,8 @@ struct nv64: public NV_base_decoder {
  protected:
   const int _width = 64;
   uint64_t *value, cqword;
-  inline int check_bit(int idx) const
-  {
-    return *value & (1L << idx);
+  inline int check_bit(int idx) const {
+    return _check_bit(*value, idx);
   }
   int check_mask(const char *mask) const
   {
@@ -136,12 +210,8 @@ struct nv64: public NV_base_decoder {
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
   {
     uint64_t res = 0L;
-    for ( int m = 0; m < mask_size; m++ ) {
-     for ( int i = 0; i < mask[m].second; i++ ) {
-       res <<= 1;
-       if ( check_bit(mask[m].first + i) ) res |= 1L;
-     }
-    }
+    for ( int m = 0; m < mask_size; m++ )
+     res = (res << mask[m].second) | _extract(*value, mask[m].first, mask[m].second);
     return res;
   }
 };
@@ -153,9 +223,8 @@ struct nv88: public NV_base_decoder {
   inline int check_bit(int idx) const
   {
     if ( idx < 64 )
-      return *value & (1L << idx);
-    idx -= 64;
-    return cword & (1L << idx);
+     return _check_bit(*value, idx);
+    return _check_bit(cword, idx - 64);
   }
   int check_mask(const char *mask) const
   {
@@ -167,7 +236,7 @@ struct nv88: public NV_base_decoder {
       m <<= 1;
     }
     m = 1L;
-    for ( j = 0; j < 24; j++, i-- ) {
+    for ( j = 0; j < 24; i--, j++ ) {
       if ( '1' == mask[i] && !(cword & m) ) return 0;
       if ( '0' == mask[i] && (cword & m) ) return 0;
       m <<= 1;
@@ -185,6 +254,14 @@ struct nv88: public NV_base_decoder {
     }
     // fill cword - 21 bit = 1fffff
     cword = (cqword >> (21 * m_idx)) & 0x1fffff;
+    // fill ctrl - see https://github.com/NervanaSystems/maxas/wiki/Control-Codes
+    switch(m_idx) {
+      case 0: ctrl = (cqword & 0x00000000001e0000) >> 17;
+       break;
+      case 1: ctrl = (cqword & 0x000003c000000000) >> 38;
+       break;
+      case 2: ctrl = (cqword & 0x7800000000000000) >> 59;
+    }
     // fill value
     value = (uint64_t *)curr;
     curr += 8;
@@ -192,27 +269,26 @@ struct nv88: public NV_base_decoder {
     if ( 3 == m_idx ) m_idx = 0;
     return 1;
   }
-  inline uint64_t e1(short start, short len, uint64_t &res) const
-  {
-    for ( int i = 0; i < len; i++ ) {
-      res <<= 1;
-      if ( *value & (1L << (i + start)) ) res |= 1L;
-    }
-    return res;
-  }
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
   {
     uint64_t res = 0L;
     for ( int m = 0; m < mask_size; m++ ) {
      if ( mask[m].first + mask[m].second <= 64 ) {
-       e1(mask[m].first, mask[m].second, res);
+       res = (res << mask[m].second) | _extract(*value, mask[m].first, mask[m].second);
        continue;
      }
-     for ( int i = 0; i < mask[m].second; i++ ) {
-       res <<= 1;
-       if ( check_bit(mask[m].first + i) ) res |= 1L;
+     if ( mask[m].first > 63 ) {
+       res = (res << mask[m].second) | _extract(cword, mask[m].first - 64, mask[m].second);
+// printf("%X> %d %d: %X\n", cword, mask[m].first - 64, mask[m].second, res);
+       continue;
      }
+     uint64_t tmp = 0;
+     for ( int i = 0; i < mask[m].second; i++ ) {
+       if ( check_bit(mask[m].first + i) ) tmp |= 1L << i;
+     }
+     res = (res << mask[m].second) | tmp;
     }
+// printf("%X\n", res);
     return res;
   }
 };
@@ -228,9 +304,8 @@ struct nv128: public NV_base_decoder {
   inline int check_bit(int idx) const
   {
     if ( idx < 64 )
-      return q1 & (1L << idx);
-    idx -= 64;
-    return q2 & (1L << idx);
+      return _check_bit(q1, idx);
+    return _check_bit(q2, idx - 64);
   }
   int check_mask(const char *mask) const
   {
@@ -259,39 +334,24 @@ struct nv128: public NV_base_decoder {
     curr += 8;
     return 1;
   }
-  inline uint64_t e1(short start, short len, uint64_t &res) const
-  {
-    for ( int i = 0; i < len; i++ ) {
-      res <<= 1;
-      if ( q1 & (1 << (i + start)) ) res |= 1L;
-    }
-    return res;
-  }
-  inline uint64_t e2(short start, short len, uint64_t &res) const
-  {
-    for ( int i = 0; i < len; i++ ) {
-      res <<= 1;
-      if ( q2 & (1 << (i + start)) ) res |= 1L;
-    }
-    return res;
-  }
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
   {
     uint64_t res = 0L;
     for ( int m = 0; m < mask_size; m++ ) {
      if ( mask[m].first > 63 ) {
-       e2(mask[m].first - 64, mask[m].second, res);
+       res = (res << mask[m].second) | _extract(q2, mask[m].first - 64, mask[m].second);
        continue;
      }
      if ( mask[m].first + mask[m].second <= 64 ) {
-       e1(mask[m].first, mask[m].second, res);
+       res = (res << mask[m].second) | _extract(q1, mask[m].first, mask[m].second);
        continue;
      }
      // 1st part from q1, then from q2
+     uint64_t tmp = 0;
      for ( int i = 0; i < mask[m].second; i++ ) {
-       res <<= 1;
-       if ( check_bit(mask[m].first + i) ) res |= 1L;
+       if ( check_bit(mask[m].first + i) ) tmp |= 1L << i;
      }
+     res = (res << mask[m].second) | tmp;
     }
     return res;
   }
