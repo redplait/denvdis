@@ -2288,7 +2288,7 @@ sub traverse_btree
     # dump insts in $n->[1]
     dump_matched($fh, $n->[1]);
     printf($fh "} };\n");
-    return $name;
+    return '&' . $name;
   }
   my $left = traverse_btree( $fh, $n->[2], $num);
   my $right = traverse_btree( $fh, $n->[3], $num);
@@ -2296,9 +2296,9 @@ sub traverse_btree
   printf($fh "static const NV_non_leaf %s = { false, {\n", $name);
   # dump insts in $n->[4]
   dump_matched($fh, $n->[4]);
-  printf($fh "}, %d, %s, %s };\n", $n->[1], 
-    $left ne 'nullptr' ? '&' . $left : $left, $right ne 'nullptr' ? '&' . $right : $right);
-  return $name;
+  # must invert bit position too
+  printf($fh "}, %d, %s, %s };\n", $g_size - 1 - $n->[1], $left, $right);
+  return '&' . $name;
 }
 sub c_mask_name
 {
@@ -2312,15 +2312,14 @@ sub gen_masks
   printf($fh "// ---- masks\n");
   foreach my $m ( keys %g_mnames ) {
     my $op = $g_mnames{$m}->[3];
-    my $total = scalar @$op;
-    printf($fh "NV_MASK(%s, %d) = { ", c_mask_name($m), $total / 2);
-    for ( my $i = $total - 2; $i >= 0; $i -= 2 ) {
+    printf($fh "NV_MASK(%s, %d) = { ", c_mask_name($m), (scalar @$op) / 2);
+    for ( my $i = 0; $i < scalar @$op; $i += 2 ) {
       # 1st - offset, 2nd - len
       # we need to invert mask, so new offset will be g_size - (offset + len)
       my $off = $op->[$i];
       my $len = $op->[$i+1];
       printf($fh "{ %d, %d }", $g_size - ($off + $len), $len);
-      printf($fh ",") if ( $i );
+      printf($fh ",");
     }
     printf($fh "};\n");
   }
@@ -2644,7 +2643,7 @@ sub gen_C
   my $root = traverse_btree($fh, $g_dec_tree, \$num);
   # finally gen get_sm
   printf($fh "\nINV_disasm *get_sm() {\n");
-  printf($fh " return new NV_disasm<nv%d>(&%s); }\n", $g_size, $root);
+  printf($fh " return new NV_disasm<nv%d>(%s); }\n", $g_size, $root);
   close $fh;
 }
 
