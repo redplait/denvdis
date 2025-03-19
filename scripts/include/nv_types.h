@@ -296,19 +296,40 @@ struct nv88: public NV_base_decoder {
 struct nv128: public NV_base_decoder {
  protected:
   const int _width = 128;
+  // from https://stackoverflow.com/questions/16088282/is-there-a-128-bit-integer-in-gcc
+#ifdef __SIZEOF_INT128__
+  __uint128_t q;
+  inline uint64_t extract128(__uint128_t v, short pos, short len) const {
+    return (v >> pos) & s_masks[len - 1];
+  }
+#else
   uint64_t q1, q2;
+#endif
   // shadow from base
   inline size_t curr_off() const {
      return curr - start - 16;
    }
   inline int check_bit(int idx) const
   {
+#ifdef __SIZEOF_INT128__
+    return (q >> idx) & 1;
+#else
     if ( idx < 64 )
       return _check_bit(q1, idx);
     return _check_bit(q2, idx - 64);
+#endif
   }
   int check_mask(const char *mask) const
   {
+#ifdef __SIZEOF_INT128__
+    __uint128_t m = 1L;
+    int j = 127;
+    for ( int i = 0; j < 128; i--, j++ ) {
+      if ( '1' == mask[i] && !(q & m) ) return 0;
+      if ( '0' == mask[i] && (q & m) ) return 0;
+      m <<= 1;
+    }
+#else
     uint64_t m = 1L;
     int j, i = 127;
     for ( j = 0; j < 64; i--, j++ ) {
@@ -322,22 +343,31 @@ struct nv128: public NV_base_decoder {
       if ( '0' == mask[i] && (q2 & m) ) return 0;
       m <<= 1;
     }
+#endif
     return 1;
   }
   // if idx == 0 - read control word, then first opcode
   int next() {
     if ( !is_inited() ) return 0;
     if ( end - curr < 2 * 8 ) return 0;
+#ifdef __SIZEOF_INT128__
+    q = *(__uint128_t *)curr;
+    curr += sizeof(q);
+#else
     q1 = *(uint64_t *)curr;
     curr += 8;
     q2 = *(uint64_t *)curr;
     curr += 8;
+#endif
     return 1;
   }
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
   {
     uint64_t res = 0L;
     for ( int m = 0; m < mask_size; m++ ) {
+#ifdef __SIZEOF_INT128__
+     res = (res << mask[m].second) | extract128(q, mask[m].first, mask[m].second);
+#else
      if ( mask[m].first > 63 ) {
        res = (res << mask[m].second) | _extract(q2, mask[m].first - 64, mask[m].second);
        continue;
@@ -352,6 +382,7 @@ struct nv128: public NV_base_decoder {
        if ( check_bit(mask[m].first + i) ) tmp |= 1L << i;
      }
      res = (res << mask[m].second) | tmp;
+#endif
     }
     return res;
   }
