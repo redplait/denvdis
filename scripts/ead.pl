@@ -3265,7 +3265,7 @@ while( $str = <$fh> ) {
     next;
   }
   if ( 7 == $state ) {
-    if ( $str =~ /^\s*BRANCH_TYPE =\s*(\S+);/ ) {
+    if ( $str =~ /^\s*BRANCH_TYPE =\s*(\S+)\s*;/ ) {
       $b_props[0] = $1;
       next;
     }
