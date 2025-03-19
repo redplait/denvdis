@@ -8,7 +8,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_N $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -25,6 +25,7 @@ Usage: $0 [options] md.txt
   -F - filter by enums
   -i - dump instructions formats
   -m - generate masks
+  -N - test single bitmask from cmd-line
   -r - fill in reverse order
   -t - dump tables
   -T - test file
@@ -1173,7 +1174,7 @@ sub dump_filters
 # args: mask array, instruction
 sub filter_ins
 {
-  my($a, $op) = @_;
+  my($a, $op, $verb) = @_;
   return 1 unless ( defined $op->[12] );
   # format of op->[12] elements is array where indexes
   # 0 - mask
@@ -1185,6 +1186,7 @@ sub filter_ins
   foreach my $f ( @$flist ) {
     my $v = extract_value($a, $f->[0]);
     next if ( !defined $v );
+    printf("v %X for mask %s\n", $v, $f->[0]->[0]) if ( defined $verb );
     if ( 'e' eq $f->[1] ) {
       return 0 unless ( defined enum_by_value($f->[2], $v) );
     } elsif ( 'v' eq $f->[1] ) {
@@ -1879,6 +1881,38 @@ sub make_inst
     }
   }
   return $res;
+}
+
+# try to find mask from $opt_N
+sub make_single_test
+{
+  my @nb = split(//, $opt_N);
+  if ( $g_size != scalar @nb ) {
+    carp("bad size of -N arg, should be $g_size");
+    return;
+  }
+  my @res;
+  my @fout;
+  find_in_dectree($g_dec_tree, \@nb, \@res);
+  # dump results
+  printf("found %d\n", scalar @res);
+  foreach my $r ( @res ) {
+    printf("%s\n", $r);
+    # cmp with mask
+    push @fout, $r if ( cmp_maska($r, \@nb));
+  }
+  printf("matched: %d\n", scalar @fout);
+  # dump matched masks
+  foreach my $r ( @fout ) {
+    printf("%s\n", $r);
+    my $ops = $g_masks{$r};
+    foreach my $co ( @$ops ) {
+      printf("%s line %d\n", $co->[1], $co->[4]);
+      dump_filters($co);
+      next if ( !filter_ins(\@nb, $co, 1) );
+      printf("MATCH\n");
+    }
+  }
 }
 
 sub make_test
@@ -2648,7 +2682,7 @@ sub gen_C
 }
 
 ### main
-my $status = getopts("abBcefFimrtvwzT:C:");
+my $status = getopts("abBcefFimrtvwzT:N:C:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -3401,9 +3435,10 @@ if ( defined($opt_m) ) {
 #  compound enums
 # total          367 393 435 476  602  1110  1118  1041  1165
 # duplicated      82  82 112 112    7    19    20    20    27
-  if ( defined $opt_T ) {
+  if ( defined($opt_T) || defined($opt_N) ) {
     $g_dec_tree = build_tree() if ( defined($opt_B) );
-    make_test($opt_T);
+    make_single_test() if defined($opt_N);
+    make_test($opt_T) if defined($opt_T);
   } else {
     if ( defined($opt_B) ) {
       $g_dec_tree = build_tree();
