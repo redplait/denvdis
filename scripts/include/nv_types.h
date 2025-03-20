@@ -430,7 +430,7 @@ struct NV_disasm: public INV_disasm, T
   }
   virtual int get(std::list< std::pair<const struct nv_instr *, NV_extracted> > &res)
   {
-    if ( !T::next() ) return 0;
+    if ( !T::next() ) return -1;
     // traverse decode tree
     std::list<const struct nv_instr *> tmp;
     rec_find(m_root, tmp);
