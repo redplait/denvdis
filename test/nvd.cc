@@ -277,12 +277,43 @@ class nv_dis
    void try_dis();
    void hdump_section(section *);
    void parse_attrs(Elf_Half idx, section *);
+   void dump_ops(const struct nv_instr *, NV_extracted &);
    FILE *m_out;
    Elf_Half n_sec;
    elfio reader;
    INV_disasm *m_dis = nullptr;
    int m_width;
 };
+
+void nv_dis::dump_ops(const struct nv_instr *i, NV_extracted &kv)
+{
+  for ( auto kv1: kv )
+  {
+    std::string name(kv1.first.begin(), kv1.first.end());
+    // check in values
+    auto vi = i->vas.find(kv1.first);
+    if ( vi != i->vas.end() ) {
+      fprintf(m_out, " V %s: %X type %d\n", name.c_str(), kv1.second, vi->second.kind);
+      continue;
+    }
+    // check in enums
+    auto ei = i->eas.find(kv1.first);
+    if ( ei != i->eas.end() ) {
+      fprintf(m_out, " E %s: %s %X", name.c_str(), ei->second->ename, kv1.second);
+      auto eid = ei->second->em->find(kv1.second);
+      if ( eid != ei->second->em->end() )
+        fprintf(m_out, " %s\n", eid->second);
+      else
+        fprintf(m_out," UNKNOWN_ENUM %X\n", kv1.second);
+      continue;
+    }
+    if ( name.find('@') != std::string::npos ) {
+      fprintf(m_out, " @ %s: %X\n", name.c_str(), kv1.second);
+      continue;
+    }
+    fprintf(m_out, " U %s: %X\n", name.c_str(), kv1.second);
+  }
+}
 
 void nv_dis::try_dis()
 {
@@ -309,7 +340,7 @@ void nv_dis::try_dis()
     // dump ins
     for ( auto &p: res ) {
       fprintf(m_out, "%s line %d n %d\n", p.first->name, p.first->line, p.first->n);
-      // TODO: dump operands
+      if ( opt_O ) dump_ops( p.first, p.second );
     }
   }
 }
