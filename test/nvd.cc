@@ -274,6 +274,11 @@ class nv_dis
        m_out = stdout;
      }
    }
+   void dis_stat() const
+   {
+     if ( dis_total )
+       fprintf(m_out, "total %ld, not_found %ld, dups %ld\n", dis_total, dis_notfound, dis_dups);
+   }
   protected:
    void try_dis();
    void hdump_section(section *);
@@ -284,6 +289,10 @@ class nv_dis
    elfio reader;
    INV_disasm *m_dis = nullptr;
    int m_width;
+   // disasm stat
+   long dis_total = 0;
+   long dis_notfound = 0;
+   long dis_dups = 0;
 };
 
 void nv_dis::dump_ops(const struct nv_instr *i, NV_extracted &kv)
@@ -319,10 +328,12 @@ void nv_dis::dump_ops(const struct nv_instr *i, NV_extracted &kv)
 void nv_dis::try_dis()
 {
   while(1) {
-    std::list< std::pair<const struct nv_instr *, NV_extracted> > res;
+    std::vector< std::pair<const struct nv_instr *, NV_extracted> > res;
     int get_res = m_dis->get(res);
     if ( -1 == get_res ) { fprintf(m_out, "stop at %X\n", m_dis->offset()); break; }
+    dis_total++;
     if ( !get_res ) {
+      dis_notfound++;
       fprintf(m_out, "Not found at %X", m_dis->offset());
       if ( opt_N ) {
         std::string bstr;
@@ -332,6 +343,7 @@ void nv_dis::try_dis()
       fprintf(m_out, "\n");
       continue;
     }
+    if ( res.size() > 1 ) dis_dups++;
     fprintf(m_out, "/* res %d %X ", res.size(), m_dis->offset());
     if ( m_width == 64 ) {
       unsigned char op = 0, ctrl = 0;
@@ -519,5 +531,6 @@ int main(int argc, char **argv)
       else
         dis.process();
     }
+    dis.dis_stat();
   }
 }
