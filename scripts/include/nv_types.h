@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <list>
+#include <string>
 #include <string_view>
 #include <stdio.h>
 
@@ -157,6 +158,13 @@ struct NV_base_decoder {
    inline size_t curr_off() const {
      return curr - start - 8;
    }
+   static void to_str(uint64_t v, std::string &res, int idx = 63) {
+     for ( int i = idx; i >= 0; i-- )
+     {
+       if ( v & (1L << i) ) res.push_back('1');
+       else res.push_back('0');
+     }
+   }
    const unsigned char *start = nullptr, *curr = nullptr, *end;
    int m_idx = 0;
    inline int is_inited() const
@@ -185,6 +193,12 @@ struct nv64: public NV_base_decoder {
       if ( '0' == mask[i] && (*value & m) ) return 0;
       m <<= 1;
     }
+    return 1;
+  }
+  int gen_mask(std::string &res) const
+  {
+    if ( !is_inited() ) return 0;
+    to_str(*value, res);
     return 1;
   }
   // if idx == 0 - read control word, then first opcode
@@ -225,6 +239,13 @@ struct nv88: public NV_base_decoder {
     if ( idx < 64 )
      return _check_bit(*value, idx);
     return _check_bit(cword, idx - 64);
+  }
+  int gen_mask(std::string &res) const
+  {
+    if ( !is_inited() ) return 0;
+    to_str(cword, res, 23);
+    to_str(*value, res);
+    return 1;
   }
   int check_mask(const char *mask) const
   {
@@ -319,6 +340,24 @@ struct nv128: public NV_base_decoder {
     return _check_bit(q2, idx - 64);
 #endif
   }
+  int gen_mask(std::string &res) const
+  {
+    if ( !is_inited() ) return 0;
+#ifdef __SIZEOF_INT128__
+    __uint128_t m = 1L;
+    int i = 127;
+    for ( int j = 0; j < 128; i--, j++ ) {
+      if ( q & m ) res.push_back('1');
+      else res.push_back('0');
+      m <<= 1L;
+    }
+    std::reverse(res.begin(), res.end());
+#else
+    to_str(q2, res);
+    to_str(q1, res);
+#endif
+    return 1;
+  }
   int check_mask(const char *mask) const
   {
 #ifdef DEBUG
@@ -406,6 +445,8 @@ printf("stop0 %d\n", i);
 struct INV_disasm {
   virtual void init(const unsigned char *buf, size_t size) = 0;
   virtual int get(std::list< std::pair<const struct nv_instr *, NV_extracted> > &) = 0;
+  // reverse method of check_mask - generate mask from currently instruction, for -N option
+  virtual int gen_mask(std::string &) = 0;
   virtual size_t offset() const = 0;
   virtual int width() const = 0;
   virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const = 0;
@@ -427,6 +468,9 @@ struct NV_disasm: public INV_disasm, T
   virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const {
    _op = T::opcode;
    _ctrl = T::ctrl;
+  }
+  virtual int gen_mask(std::string &res) {
+    return T::gen_mask(res);
   }
   virtual int get(std::list< std::pair<const struct nv_instr *, NV_extracted> > &res)
   {
