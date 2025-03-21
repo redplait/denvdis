@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <unordered_map>
 #include <list>
+#include <vector>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <stdio.h>
@@ -444,7 +446,7 @@ printf("stop0 %d\n", i);
 // disasm interface
 struct INV_disasm {
   virtual void init(const unsigned char *buf, size_t size) = 0;
-  virtual int get(std::list< std::pair<const struct nv_instr *, NV_extracted> > &) = 0;
+  virtual int get(std::vector< std::pair<const struct nv_instr *, NV_extracted> > &) = 0;
   // reverse method of check_mask - generate mask from currently instruction, for -N option
   virtual int gen_mask(std::string &) = 0;
   virtual size_t offset() const = 0;
@@ -472,7 +474,7 @@ struct NV_disasm: public INV_disasm, T
   virtual int gen_mask(std::string &res) {
     return T::gen_mask(res);
   }
-  virtual int get(std::list< std::pair<const struct nv_instr *, NV_extracted> > &res)
+  virtual int get(std::vector< std::pair<const struct nv_instr *, NV_extracted> > &res)
   {
     if ( !T::next() ) return -1;
     // traverse decode tree

@@ -338,6 +338,47 @@ sub mask_len
   return $res;
 }
 
+# key - name, value 1 if it incompleted and 0 otherwise
+my %g_cached_enums;
+# return greatest possibly value for this mask
+# like if len = 3 then it is 7: 1 << 3 = 8 then -1 = 7
+sub mask_range
+{
+  my $m = shift;
+  my $len = mask_len($m);
+  return 1 if ( 1 == $len );
+  return (1 << $len) - 1;
+}
+
+sub is_incomplete
+{
+  my($m, $ename) = @_;
+  return $g_cached_enums{$ename} if exists $g_cached_enums{$ename};
+  # not cached
+  my $e = $g_enums{$ename};
+  my $res = 1;
+  my %tmp;
+  $tmp{$_} = 1 for ( values %$e );
+  foreach ( 0 .. mask_range($m) ) {
+    if ( !exists $tmp{$_} ) {
+      $res = 0;
+      last;
+    }
+  }
+  $g_cached_enums{$ename} = 1 - $res;
+  return 1 - $res;
+}
+
+sub dump_incompleted
+{
+  return if ! keys(%g_cached_enums);
+  printf("Incompleted enums:\n");
+  while( my($k, $v) = each(%g_cached_enums) ) {
+    next if ( !$v );
+    printf(" %s\n", $k);
+  }
+}
+
 sub dump_decode
 {
   my $d = shift;
@@ -684,7 +725,6 @@ sub read128
   }
 }
 
-
 # arg: a - ref to result array, l - letter, mask - ref to value in g_mnames
 sub fill_mask
 {
@@ -702,7 +742,6 @@ sub fill_mask
  }
  return $res;
 }
-
 
 my %g_letters = (
  RegA => 'a',
@@ -831,24 +870,24 @@ sub gen_inst_mask
       my $v = parse0b($2);
       mask_value(\@res, $v, $mask);
       # add v record for filter
-      if ( defined $op->[12] ) { push @{ $op->[12] }, [ $mask, 'v', $v ]; }
-         else { $op->[12] = [ [ $mask, 'v', $v ] ]; }
+      # if ( defined $op->[12] ) { push @{ $op->[12] }, [ $mask, 'v', $v ]; }
+      # else { $op->[12] = [ [ $mask, 'v', $v ] ]; }
     } elsif ( $emask =~ /^(\w+)\s*=\*?\s*(\d+)/ ) {
       my $mask = $g_mnames{$1};
       $rem{$1} = $emask;
       my $v = int($2);
       mask_value(\@res, $v, $mask);
       # add v record for filter
-      if ( defined $op->[12] ) { push @{ $op->[12] }, [ $mask, 'v', $v ]; }
-         else { $op->[12] = [ [ $mask, 'v', $v ] ]; }
+      # if ( defined $op->[12] ) { push @{ $op->[12] }, [ $mask, 'v', $v ]; }
+      # else { $op->[12] = [ [ $mask, 'v', $v ] ]; }
     } elsif ( $emask =~ /^(\w+)\s*=\*?\s*0x(\w+)/i ) {
       my $mask = $g_mnames{$1};
       my $v = hex($2);
       $rem{$1} = $emask;
       mask_value(\@res, $v, $mask);
       # add v record for filter
-      if ( defined $op->[12] ) { push @{ $op->[12] }, [ $mask, 'v', $v ]; }
-         else { $op->[12] = [ [ $mask, 'v', $v ] ]; }
+      # if ( defined $op->[12] ) { push @{ $op->[12] }, [ $mask, 'v', $v ]; }
+      # else { $op->[12] = [ [ $mask, 'v', $v ] ]; }
     }
   }
   if ( scalar keys %rem ) {
@@ -913,6 +952,7 @@ sub gen_inst_mask
     push @pos, [ $p - length(${^MATCH}), $p ];
     mask_value(\@res, $v, $what);
   } }
+  unless ( defined $opt_F ) {
   # check /enum:alias where enc =* alias
   while( $op->[8] =~ /\/([^\(\)\"\s]+)\:([\w\.]+)/pg ) {
     my $alias = $2;
@@ -959,7 +999,7 @@ sub gen_inst_mask
         push @pos, [ $p - length(${^MATCH}), $p ];
         mask_value(\@res, $value, $what);
       }
-  }
+  } }
   # and again check for ZeroRegister(RZ) in format - in worst case just assign it yet one more time
   while ( $op->[8] =~ /\bZeroRegister\(\"?RZ\"?\)\:([\w\.]+)/pg ) {
     my $what = check_enc($op->[5], $1, $1);
@@ -992,44 +1032,30 @@ sub gen_inst_mask
 # printf("%s line %d\n", $op->[1], $op->[4]);
 # printf("%s\n", join('', @res));
   foreach my $emask ( @{ $op->[5] } ) {
-    next if ( $emask !~ /^(\w+)\s*=\*/ ); # wtf? bad encoding?
-    next if ( !exists $mae->{$1} ); # skip encoding without enum
-    # now we have 2 cases
-    my $must_be = $mae->{$1};
+    next if ( $emask !~ /^(\w+)\s*=(\*?)\s*([\w\.]+)/ ); # wtf? bad encoding?
     my $what = $g_mnames{$1};
-    if ( defined $must_be->[2] ) {
-    # 1) enc =*? enum(value) - need mask_value and remove from encodings
-printf("enc %s enum(%s) %d in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1]);
-#f      my $v = get_enc_enum($op, $1, $must_be->[0], $must_be->[2]);
-#f      if ( defined $v ) {
-#f        $rem{$what->[0]} = 1;
-#f        mask_value(\@res, $v, $what);
-#f        $patched++;
-#f      }
-      my $v = check_single_enum($must_be->[0]);
-      if ( defined($v) ) {
-         $rem{$what->[0]} = 1;
-         mask_value(\@res, $v, $what);
-         $patched++;
-        } else {
-         # put this enum into filter at ->[12]
-         if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, 'e', $g_enums{$must_be->[0]}, $must_be->[0] ]; }
-         else { $op->[12] = [ [ $what, 'e', $g_enums{$must_be->[0]}, $must_be->[0] ] ]; }
-        }
+    my $ast = $2 ne '';
+    my $ename;
+    if ( !exists $mae->{$1} ) {
+      next unless exists $g_enums{$3};
+      $ename = $3;
     } else {
-    # 2) enc = enum
-      my $v = check_single_enum($must_be->[0]);
-      if ( defined($v) ) {
-# printf("enc %s single enum %s\n", $1, $must_be->[0]);
-         $rem{$what->[0]} = 1;
-         mask_value(\@res, $v, $what);
-         $patched++;
-        } else {
-# printf("enc %s enum %s\n", $1, $must_be->[0]);
-         # put this enum into filter at ->[12]
-         if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, 'e', $g_enums{$must_be->[0]}, $must_be->[0] ]; }
-         else { $op->[12] = [ [ $what, 'e', $g_enums{$must_be->[0]}, $must_be->[0] ] ]; }
-        }
+      my $must_be = $mae->{$1};
+      $ename = $must_be->[0];
+      # printf("enc %s enum(%s) %d in %s\n", $1, $must_be->[0], $must_be->[2], $op->[1]) if ( defined $must_be->[2] );
+    }
+    my $v = check_single_enum($ename);
+    if ( defined($v) ) {
+      $rem{$ename} = 1;
+      mask_value(\@res, $v, $what);
+      $patched++;
+    } elsif ( !$ast ) {
+      $v = is_incomplete($what, $ename);
+      if ( $v ) {
+      # put this enum into filter at ->[12]
+        if ( defined $op->[12] ) { push @{ $op->[12] }, [ $what, 'e', $g_enums{$ename}, $ename ]; }
+         else { $op->[12] = [ [ $what, 'e', $g_enums{$ename}, $ename ] ]; }
+      }
     }
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
@@ -1459,7 +1485,7 @@ sub dump_values
       # sm86 has strange formats like BITS_16_63_48_Sc=Sb convertFloatType(ofmt == `OFMT@E8M7_V2 || ofmt == `OFMT@BF16_V2, E8M7Imm, ofmt == `OFMT@E6M9_V2, E6M9Imm, F16Imm)
     } elsif ( $m=~ /^(\w+)\s*=\*?\s*([\w\.\@]+)\s+convertFloatType/ ) {
       my $mask = $g_mnames{$1};
-      dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv);
+      dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv, $2);
     } else {
      carp("unknown enocoding $m");
    }
@@ -1527,12 +1553,14 @@ sub ignore_enum
   $res = '.' if $ae->[1];
   if ( 'ARRAY' ne ref $v ) {
   printf("%s %d: single %d vs %d\n", $ae->[0], $ae->[1], $v, $ae->[2]);
-    return [ 0, '' ] if ( $v == $ae->[2] ); # defailt value
-    return [ 1, $res . enum_by_value($g_enums{$ae->[0]},$v) ];
+    return [ 0, '' ] if ( $v == $ae->[2] ); # default value
+    my $ev = enum_by_value($g_enums{$ae->[0]}, $v);
+    return [ 1, $res . $ev ] if ( defined ( $ev ) );
+    return;
   }
   # value is pair [ int, enum_string ]
 printf("%s %d: pair %s vs %d\n", $ae->[0], $ae->[1], $v->[1], $ae->[2]);
-  return [ 0, '' ] if ( $v->[0] == $ae->[2] ); # defailt value
+  return [ 0, '' ] if ( $v->[0] == $ae->[2] ); # default value
   return [ 1, $res . $v->[1] ];
 }
 
@@ -1610,7 +1638,9 @@ sub format_enum
     if ( defined($v) ) {
       $sv = '.' if $ae->[1];
       return $sv . $v->[1] if ( 'ARRAY' eq ref $v );
-      $sv .= enum_by_value($g_enums{$ae->[0]}, $v);
+      my $ev = enum_by_value($g_enums{$ae->[0]}, $v);
+      if ( defined $ev ) { $sv .= $ev; }
+      else { $sv = ''; }
     }
   }
   $sv;
@@ -1891,15 +1921,21 @@ sub make_single_test
     carp("bad size of -N arg, should be $g_size");
     return;
   }
-  my @res;
   my @fout;
-  find_in_dectree($g_dec_tree, \@nb, \@res);
-  # dump results
-  printf("found %d\n", scalar @res);
-  foreach my $r ( @res ) {
-    printf("%s\n", $r);
-    # cmp with mask
-    push @fout, $r if ( cmp_maska($r, \@nb));
+  if ( defined $opt_B ) {
+    my @res;
+    find_in_dectree($g_dec_tree, \@nb, \@res);
+    # dump results
+    printf("found %d\n", scalar @res);
+    foreach my $r ( @res ) {
+      printf("%s\n", $r);
+      # cmp with mask
+      push @fout, $r if ( cmp_maska($r, \@nb));
+    }
+  } else {
+    foreach my $m ( keys %g_masks ) {
+      push @fout, $m if ( cmp_maska($m, \@nb) );
+    }
   }
   printf("matched: %d\n", scalar @fout);
   # dump matched masks
@@ -1907,7 +1943,7 @@ sub make_single_test
     printf("%s\n", $r);
     my $ops = $g_masks{$r};
     foreach my $co ( @$ops ) {
-      printf("%s line %d\n", $co->[1], $co->[4]);
+      printf("%s line %d %s\n", $co->[1], $co->[4], $co->[7] ? 'ALT' : '');
       dump_filters($co);
       next if ( !filter_ins(\@nb, $co, 1) );
       printf("MATCH\n");
@@ -3446,6 +3482,7 @@ if ( defined($opt_m) ) {
       gen_C() if defined($opt_C);
     } else {
       dump_dup_masks();
+      dump_incompleted();
       printf("%d duplicates (%d different names), total %d\n", $g_dups, $g_diff_names, scalar keys %g_masks);
     }
   }
