@@ -322,8 +322,13 @@ void nv_dis::try_dis()
     int get_res = m_dis->get(res);
     if ( -1 == get_res ) { fprintf(m_out, "stop at %X\n", m_dis->offset()); break; }
     if ( !get_res ) {
-      fprintf(m_out, "Not found at %X\n", m_dis->offset());
-      // TODO: dump if opt_N
+      fprintf(m_out, "Not found at %X", m_dis->offset());
+      if ( opt_N ) {
+        std::string bstr;
+        if ( m_dis->gen_mask(bstr) )
+          fprintf(m_out, " %s", bstr.c_str());
+      }
+      fprintf(m_out, "\n");
       continue;
     }
     fprintf(m_out, "/* res %d %X ", res.size(), m_dis->offset());
