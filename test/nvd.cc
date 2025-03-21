@@ -263,6 +263,7 @@ class nv_dis
      return (m_dis != nullptr);
    }
    void process();
+   int single_section(int idx);
    void open_log(const char *of) {
      if ( m_out && m_out != stdout ) {
        fclose(m_out);
@@ -407,6 +408,18 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
   }
 }
 
+int nv_dis::single_section(int idx)
+{
+  n_sec = reader.sections.size();
+  if ( idx < 0 || idx >= n_sec ) return -1;
+  section *sec = reader.sections[idx];
+  if ( sec->get_type() == SHT_NOBITS ) return 0;
+  if ( !sec->get_size() ) return 0;
+  m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size() );
+  try_dis();
+  return 1;
+}
+
 void nv_dis::process()
 {
   n_sec = reader.sections.size();
@@ -466,6 +479,7 @@ void usage(const char *prog)
   printf("-N - dump not found masks\n");
   printf("-o - output file\n");
   printf("-O - dump operands\n");
+  printf("-s index - disasm only single section withh index\n");
   printf("-t - dump symbols\n");
   exit(6);
 }
@@ -473,9 +487,10 @@ void usage(const char *prog)
 int main(int argc, char **argv)
 {
   int c;
+  int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "ehtNOo:");
+    c = getopt(argc, argv, "ehtNOs:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'e': opt_e = 1; break;
@@ -484,6 +499,7 @@ int main(int argc, char **argv)
       case 'O': opt_O = 1; break;
       case 'N': opt_N = 1; break;
       case 'o': o_fname = optarg; break;
+      case 's': s = atoi(optarg); break;
       default: usage(argv[0]);
     }
   }
@@ -497,6 +513,11 @@ int main(int argc, char **argv)
     nv_dis dis;
     if ( o_fname ) dis.open_log(o_fname);
     if ( dis.open(argv[i]) )
-      dis.process();
+    {
+      if ( s != -1 )
+        dis.single_section(s);
+      else
+        dis.process();
+    }
   }
 }
