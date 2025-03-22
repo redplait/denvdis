@@ -334,10 +334,22 @@ int nv_dis::calc_index(const NV_res &res, int rz) const
     missed[i] = calc_miss( res[i].first, res[i].second, rz);
   }
   int res_idx = -1;
+  bool mult = false;
   for ( size_t i = 0; i < res.size(); ++i )
   {
     if ( !missed[i] ) {
-      if ( res_idx != -1 ) return -1;
+      if ( res_idx != -1 ) { mult = true; continue; }
+      res_idx = i;
+    }
+  }
+  if ( !mult ) return res_idx;
+  // try the same without alts
+  mult = false; res_idx = -1;
+  for ( size_t i = 0; i < res.size(); ++i )
+  {
+    if ( res[i].first->alt ) continue;
+    if ( !missed[i] ) {
+      if ( res_idx != -1 ) { mult = true; continue; }
       res_idx = i;
     }
   }
