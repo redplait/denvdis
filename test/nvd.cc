@@ -280,11 +280,13 @@ class nv_dis
        fprintf(m_out, "total %ld, not_found %ld, dups %ld\n", dis_total, dis_notfound, dis_dups);
    }
   protected:
+   typedef std::pair<const struct nv_instr *, NV_extracted> NV_pair;
    typedef std::vector< std::pair<const struct nv_instr *, NV_extracted> > NV_res;
    void try_dis();
    void hdump_section(section *);
    void parse_attrs(Elf_Half idx, section *);
-   void dump_ops(const struct nv_instr *, NV_extracted &);
+   void dump_ins(const NV_pair &p);
+   void dump_ops(const struct nv_instr *, const NV_extracted &);
    int cmp(const std::string_view &, const char *) const;
    int calc_miss(const struct nv_instr *, const NV_extracted &, int) const;
    int calc_index(const NV_res &, int) const;
@@ -353,10 +355,14 @@ int nv_dis::calc_index(const NV_res &res, int rz) const
       res_idx = i;
     }
   }
+  if ( mult ) {
+    for ( size_t i = 0; i < res.size(); ++i ) fprintf(m_out, " %d", missed[i]);
+    return -1;
+  }
   return res_idx;
 }
 
-void nv_dis::dump_ops(const struct nv_instr *i, NV_extracted &kv)
+void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv)
 {
   for ( auto kv1: kv )
   {
@@ -384,6 +390,22 @@ void nv_dis::dump_ops(const struct nv_instr *i, NV_extracted &kv)
     }
     fprintf(m_out, " U %s: %X\n", name.c_str(), kv1.second);
   }
+}
+
+static const char *s_brts[4] = {
+ "BRT_CALL",
+ "BRT_RETURN",
+ "BRT_BRANCH",
+ "BRT_BRANCHOUT"
+};
+
+void nv_dis::dump_ins(const NV_pair &p)
+{
+  fprintf(m_out, "%s line %d n %d", p.first->name, p.first->line, p.first->n);
+  if ( p.first->brt ) fprintf(m_out, " %s", s_brts[p.first->brt-1]);
+  if ( p.first->alt ) fprintf(m_out, " ALT");
+  fprintf(m_out, "\n");
+  if ( opt_O ) dump_ops( p.first, p.second );
 }
 
 void nv_dis::try_dis()
@@ -416,21 +438,15 @@ void nv_dis::try_dis()
       m_dis->get_ctrl(op, ctrl);
       fprintf(m_out, "ctrl %2.2X ", ctrl);
     }
+    if ( res_idx == -1 ) fprintf(m_out, " DUPS ");
     fprintf(m_out, "*/\n");
     if ( res_idx == -1 ) {
       // dump ins
       dis_dups++;
-      for ( auto &p: res ) {
-        fprintf(m_out, "%s line %d n %d", p.first->name, p.first->line, p.first->n);
-        if ( p.first->alt ) fprintf(m_out, " ALT");
-        fprintf(m_out, "\n");
-        if ( opt_O ) dump_ops( p.first, p.second );
-      }
+      for ( auto &p: res ) dump_ins(p);
     } else {
       // dump single
-      auto &ins = res[res_idx];
-      fprintf(m_out, "%s line %d n %d\n", ins.first->name, ins.first->line, ins.first->n);
-      if ( opt_O ) dump_ops( ins.first, ins.second );
+      dump_ins(res[res_idx]);
     }
   }
 }
