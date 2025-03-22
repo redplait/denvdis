@@ -864,7 +864,7 @@ sub gen_inst_mask
   # encodings
   my %rem;
   foreach my $emask ( @{ $op->[5] } ) {
-    if ( $emask =~ /^(\w+)\s*=\*?\s*0b(\S+)/ ) { # enc =*? 0bxxx
+    if ( $emask =~ /^([\w\.]+)\s*=\*?\s*0b(\S+)/ ) { # enc =*? 0bxxx
       my $mask = $g_mnames{$1};
       $rem{$1} = $emask;
       my $v = parse0b($2);
@@ -872,7 +872,7 @@ sub gen_inst_mask
       # add v record for filter
       # if ( defined $op->[12] ) { push @{ $op->[12] }, [ $mask, 'v', $v ]; }
       # else { $op->[12] = [ [ $mask, 'v', $v ] ]; }
-    } elsif ( $emask =~ /^(\w+)\s*=\*?\s*(\d+)/ ) {
+    } elsif ( $emask =~ /^([\w\.]+)\s*=\*?\s*(\d+)/ ) {
       my $mask = $g_mnames{$1};
       $rem{$1} = $emask;
       my $v = int($2);
@@ -880,7 +880,7 @@ sub gen_inst_mask
       # add v record for filter
       # if ( defined $op->[12] ) { push @{ $op->[12] }, [ $mask, 'v', $v ]; }
       # else { $op->[12] = [ [ $mask, 'v', $v ] ]; }
-    } elsif ( $emask =~ /^(\w+)\s*=\*?\s*0x(\w+)/i ) {
+    } elsif ( $emask =~ /^([\w\.]+)\s*=\*?\s*0x(\w+)/i ) {
       my $mask = $g_mnames{$1};
       my $v = hex($2);
       $rem{$1} = $emask;
@@ -896,7 +896,7 @@ sub gen_inst_mask
   }
   # enc = `const - in op->[9]
   foreach my $q ( @{ $op->[9] } ) {
-    if ( $q =~ /^(\w+)\s*=\*?\s*\`(\S+)/ ) {
+    if ( $q =~ /^([\w\.]+)\s*=\*?\s*\`(\S+)/ ) {
       my $v = $2;
       if ( $v eq 'Register@RZ' ) {
         $rem{$1} = $q;
@@ -1032,7 +1032,7 @@ sub gen_inst_mask
 # printf("%s line %d\n", $op->[1], $op->[4]);
 # printf("%s\n", join('', @res));
   foreach my $emask ( @{ $op->[5] } ) {
-    next if ( $emask !~ /^(\w+)\s*=(\*?)\s*([\w\.]+)/ ); # wtf? bad encoding?
+    next if ( $emask !~ /^([\w\.]+)\s*=(\*?)\s*([\w\.]+)/ ); # wtf? bad encoding?
     my $what = $g_mnames{$1};
     my $ast = $2 ne '';
     my $ename;
@@ -1064,7 +1064,7 @@ sub gen_inst_mask
   # and add tables
   foreach my $tmask ( @{ $op->[5] } ) {
     # mask $1 = (optional * $2) table $3 list of vars $4
-    if ( $tmask =~ /^(\w+)\s*=(\*)?\s*(\S+)\s*\(\s*([^\)]+)\s*\)/ ) {
+    if ( $tmask =~ /^([\w\.]+)\s*=(\*)?\s*(\S+)\s*\(\s*([^\)]+)\s*\)/ ) {
       my $what = $g_mnames{$1};
       if ( exists($g_tabs{$3}) ) {
          my $tab_name = $3;
@@ -1137,7 +1137,7 @@ sub add_tenums
   my %res;
   foreach my $tmask ( @$enc ) {
     # mask $1 = table $2
-    if ( $tmask =~ /^(\w+)\s*=\*?\s*(\S+)\s*\(([^\)]+)\)/ ) {
+    if ( $tmask =~ /^([\w\.]+)\s*=\*?\s*(\S+)\s*\(([^\)]+)\)/ ) {
       next if ( !exists($g_tabs{$2}) );
       $g_used_tabs{$2} //= 1;
       my @ar;
@@ -2550,7 +2550,7 @@ sub gen_extr
   # c++ impl of dump_values
   my $index = 0;
   foreach my $m ( @$enc ) {
-    if ( $m =~ /^(\w+)\s*=\*?\s*IDENTICAL\(([^\)]+)\)/ ) {
+    if ( $m =~ /^([\w\.]+)\s*=\*?\s*IDENTICAL\(([^\)]+)\)/ ) {
       my $ids = $2;
       printf($fh "// %s identical %s\n", $1, $2);
       inl_extract($fh, $1, $index);
@@ -2559,7 +2559,7 @@ sub gen_extr
         printf($fh "res[\"%s\"] = v%d;\n", $a, $index);
       }
       $index++; next;
-    } elsif ( $m =~ /^(\w+)\s*=\*?\s*(\S+)\s*\((\s*[^\)]+)\s*\)/ ) {
+    } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*(\S+)\s*\((\s*[^\)]+)\s*\)/ ) {
       if ( exists($g_tabs{$2}) ) {
         printf($fh "// %s table %s %s\n", $1, $2, $3);
         inl_extract($fh, $1, $index);
@@ -2579,7 +2579,7 @@ sub gen_extr
         printf($fh "res[\"%s\"] = v%d;\n", $2, $index);
         $index++; next;
       }
-    } elsif ( $m =~ /^(\w+)\s*=\*?\s*([\w\.\@]+)(?:\s*SCALE\s+(\d+))?$/ ) {
+    } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)(?:\s*SCALE\s+(\d+))?$/ ) {
       if ( defined $3 ) {
         printf($fh "// %s to %s scale %s\n", $1, $2, $3);
       } else {
@@ -2592,7 +2592,7 @@ sub gen_extr
         printf($fh "res[\"%s\"] = v%d;\n", $2, $index);
       }
       $index++; next;
-    } elsif ( $m=~ /^(\w+)\s*=\*?\s*([\w\.\@]+)\s+convertFloatType/ ) {
+    } elsif ( $m=~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)\s+convertFloatType/ ) {
       inl_extract($fh, $1, $index);
       printf($fh "res[\"%s\"] = v%d;\n", $2, $index);
       $index++; next;
