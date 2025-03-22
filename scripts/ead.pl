@@ -2713,7 +2713,7 @@ sub gen_C
   my $root = traverse_btree($fh, $g_dec_tree, \$num);
   # finally gen get_sm
   printf($fh "\nINV_disasm *get_sm() {\n");
-  printf($fh " return new NV_disasm<nv%d>(%s); }\n", $g_size, $root);
+  printf($fh " return new NV_disasm<nv%d>(%s, %d); }\n", $g_size, $root, $g_rz);
   close $fh;
 }
 

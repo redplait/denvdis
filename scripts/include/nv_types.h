@@ -453,13 +453,15 @@ struct INV_disasm {
   virtual int width() const = 0;
   virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const = 0;
   virtual ~INV_disasm() = default;
+  int rz;
 };
 
 template <typename T>
 struct NV_disasm: public INV_disasm, T
 {
-  NV_disasm(const NV_non_leaf *root)
+  NV_disasm(const NV_non_leaf *root, int _rz)
   {
+    rz = _rz;
     m_root = root;
   }
   virtual int width() const { return T::_width; }
