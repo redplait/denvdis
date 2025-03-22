@@ -280,10 +280,14 @@ class nv_dis
        fprintf(m_out, "total %ld, not_found %ld, dups %ld\n", dis_total, dis_notfound, dis_dups);
    }
   protected:
+   typedef std::vector< std::pair<const struct nv_instr *, NV_extracted> > NV_res;
    void try_dis();
    void hdump_section(section *);
    void parse_attrs(Elf_Half idx, section *);
    void dump_ops(const struct nv_instr *, NV_extracted &);
+   int cmp(const std::string_view &, const char *) const;
+   int calc_miss(const struct nv_instr *, const NV_extracted &, int) const;
+   int calc_index(const NV_res &, int) const;
    FILE *m_out;
    Elf_Half n_sec;
    elfio reader;
@@ -294,6 +298,51 @@ class nv_dis
    long dis_notfound = 0;
    long dis_dups = 0;
 };
+
+int nv_dis::cmp(const std::string_view &sv, const char *s) const
+{
+  size_t i = 0;
+  for ( auto c = sv.cbegin(); c != sv.cend(); ++c, ++i ) {
+    if ( *c != s[1] ) return 0;
+  }
+  return 1;
+}
+
+int nv_dis::calc_miss(const struct nv_instr *ins, const NV_extracted &kv, int rz) const
+{
+  int res = 0;
+  for ( auto &ki: kv ) {
+    auto kiter = ins->eas.find(ki.first);
+    if ( kiter == ins->eas.end() ) continue;
+    if ( cmp(ki.first, "NonZeroRegister") && ki.second == rz ) {
+      res++; continue;
+    }
+    if ( cmp(ki.first, "NonZeroUniformRegister") && ki.second == rz ) {
+      res++; continue;
+    }
+    // check in enum
+    auto ei = kiter->second->em->find(ki.second);
+    if ( ei == kiter->second->em->end() ) res++;
+  }
+  return res;
+}
+
+int nv_dis::calc_index(const NV_res &res, int rz) const
+{
+  std::vector<int> missed(res.size());
+  for ( size_t i = 0; i < res.size(); ++i ) {
+    missed[i] = calc_miss( res[i].first, res[i].second, rz);
+  }
+  int res_idx = -1;
+  for ( size_t i = 0; i < res.size(); ++i )
+  {
+    if ( !missed[i] ) {
+      if ( res_idx != -1 ) return -1;
+      res_idx = i;
+    }
+  }
+  return res_idx;
+}
 
 void nv_dis::dump_ops(const struct nv_instr *i, NV_extracted &kv)
 {
@@ -328,7 +377,7 @@ void nv_dis::dump_ops(const struct nv_instr *i, NV_extracted &kv)
 void nv_dis::try_dis()
 {
   while(1) {
-    std::vector< std::pair<const struct nv_instr *, NV_extracted> > res;
+    NV_res res;
     int get_res = m_dis->get(res);
     if ( -1 == get_res ) { fprintf(m_out, "stop at %X\n", m_dis->offset()); break; }
     dis_total++;
@@ -343,7 +392,8 @@ void nv_dis::try_dis()
       fprintf(m_out, "\n");
       continue;
     }
-    if ( res.size() > 1 ) dis_dups++;
+    int res_idx = 0;
+    if ( res.size() > 1 ) res_idx = calc_index(res, m_dis->rz);
     fprintf(m_out, "/* res %d %X ", res.size(), m_dis->offset());
     if ( m_width == 64 ) {
       unsigned char op = 0, ctrl = 0;
@@ -355,10 +405,20 @@ void nv_dis::try_dis()
       fprintf(m_out, "ctrl %2.2X ", ctrl);
     }
     fprintf(m_out, "*/\n");
-    // dump ins
-    for ( auto &p: res ) {
-      fprintf(m_out, "%s line %d n %d\n", p.first->name, p.first->line, p.first->n);
-      if ( opt_O ) dump_ops( p.first, p.second );
+    if ( res_idx == -1 ) {
+      // dump ins
+      dis_dups++;
+      for ( auto &p: res ) {
+        fprintf(m_out, "%s line %d n %d", p.first->name, p.first->line, p.first->n);
+        if ( p.first->alt ) fprintf(m_out, " ALT");
+        fprintf(m_out, "\n");
+        if ( opt_O ) dump_ops( p.first, p.second );
+      }
+    } else {
+      // dump single
+      auto &ins = res[res_idx];
+      fprintf(m_out, "%s line %d n %d\n", ins.first->name, ins.first->line, ins.first->n);
+      if ( opt_O ) dump_ops( ins.first, ins.second );
     }
   }
 }
