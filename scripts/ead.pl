@@ -2559,7 +2559,7 @@ sub gen_extr
         printf($fh "res[\"%s\"] = v%d;\n", $a, $index);
       }
       $index++; next;
-    } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*(\S+)\s*\((\s*[^\)]+)\s*\)/ ) {
+    } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*(\S+)\s*\(\s*([^\)]+)\s*\)/ ) {
       if ( exists($g_tabs{$2}) ) {
         printf($fh "// %s table %s %s\n", $1, $2, $3);
         inl_extract($fh, $1, $index);
