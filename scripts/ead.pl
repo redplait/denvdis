@@ -2568,6 +2568,7 @@ sub gen_extr
         printf($fh " auto &ctab = i%d->second;\n", $index);
         my @fa = split /\s*,\s*/, $3;
         for ( my $i = 0; $i < @fa; $i++ ) {
+          $fa[$i] =~ s/\s+$//;
           next if ( $fa[$i] =~ /^\d+$/ ); # skip constant
           printf($fh " res[\"%s\"] = ctab[%d];\n", $fa[$i], $i+1);
         }
@@ -3323,7 +3324,10 @@ while( $str = <$fh> ) {
   # parse opcode
   if ( $state == 3 && $str =~ /^\s*(\S+)\s*=\s*(\S+);/ ) {
     my $name = $1;
-    my $value = parse0b($2);
+    my $vs = $2;
+    my $value;
+    if ( $vs =~ /^(\d+)$/ ) { $value = int($1); }
+    else { $value = parse0b($vs); }
     # skip pipe version
     next if ( $name =~ /_pipe/ );
     $op[0] = $name;
