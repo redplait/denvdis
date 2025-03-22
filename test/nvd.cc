@@ -286,8 +286,10 @@ class nv_dis
    void hdump_section(section *);
    void parse_attrs(Elf_Half idx, section *);
    void dump_ins(const NV_pair &p);
+   const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    void dump_ops(const struct nv_instr *, const NV_extracted &);
    int cmp(const std::string_view &, const char *) const;
+   bool contain(const std::string_view &, char) const;
    int calc_miss(const struct nv_instr *, const NV_extracted &, int) const;
    int calc_index(const NV_res &, int) const;
    FILE *m_out;
@@ -305,17 +307,39 @@ int nv_dis::cmp(const std::string_view &sv, const char *s) const
 {
   size_t i = 0;
   for ( auto c = sv.cbegin(); c != sv.cend(); ++c, ++i ) {
-    if ( *c != s[1] ) return 0;
+    if ( *c != s[i] ) return 0;
   }
   return 1;
+}
+
+bool nv_dis::contain(const std::string_view &sv, char sym) const
+{
+  return sv.find(sym) != std::string::npos;
+}
+
+// old MD has encoders like Mask = Enum
+// so check in eas
+const nv_eattr *nv_dis::try_by_ename(const struct nv_instr *ins, const std::string_view &sv) const
+{
+  if ( contain(sv, '@') ) return nullptr;
+  // check in values
+  auto vi = ins->vas.find(sv);
+  if ( vi != ins->vas.end() ) return nullptr;
+  for ( auto ei: ins->eas ) {
+    if ( cmp(sv, ei.second->ename) ) return ei.second;
+  }
+  return nullptr;
 }
 
 int nv_dis::calc_miss(const struct nv_instr *ins, const NV_extracted &kv, int rz) const
 {
   int res = 0;
-  for ( auto &ki: kv ) {
+  for ( auto ki: kv ) {
+    const nv_eattr *ea = nullptr;
     auto kiter = ins->eas.find(ki.first);
-    if ( kiter == ins->eas.end() ) continue;
+    if ( kiter != ins->eas.end() ) { ea = kiter->second; }
+    else { ea = try_by_ename(ins, ki.first); }
+    if ( !ea ) continue;
     if ( cmp(ki.first, "NonZeroRegister") && ki.second == rz ) {
       res++; continue;
     }
@@ -323,8 +347,8 @@ int nv_dis::calc_miss(const struct nv_instr *ins, const NV_extracted &kv, int rz
       res++; continue;
     }
     // check in enum
-    auto ei = kiter->second->em->find(ki.second);
-    if ( ei == kiter->second->em->end() ) res++;
+    auto ei = ea->em->find(ki.second);
+    if ( ei == ea->em->end() ) res++;
   }
   return res;
 }
