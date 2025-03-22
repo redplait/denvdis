@@ -2931,7 +2931,8 @@ my $cons_value = sub {
 };
 # parse format in form /? $1 enum $2 optional value $3 alias $4
 # format: 0 - letter, 1 - prefix, 2 - suffix, 3 - [x]
-my $cons_ae = sub {
+my $cons_ae;
+$cons_ae = sub {
   my($s, $idx) = @_;
   if ( !$idx ) { # zero index - predicate
     # $1 - @?, $2 - symbol inside [], $3 - enum, $4 - default, $5 - value name
@@ -2958,11 +2959,11 @@ my $cons_ae = sub {
         # 0 - type   1 - optional ,              2    3   4
     my @cf = ( 'C', defined($1) ? ',' : undef, undef, $2, $4, $5);
     # see details here: https://perldoc.perl.org/perlretut#Position-information
-    my $spos = $-[0];
-    my $slen = $+[0] - $-[0];
     my $left = $5;
     my $right = $6;
-    my $reps = '<CBA>';
+    $s = ${^POSTMATCH};
+    # process left part
+    $cons_ae->(${^PREMATCH}, $idx+1);
     # get var from left
     if ( $left =~ /\:(\w+)$/ ) { $cf[5] = $1; $cons_value->($left); }
     # check if right is pair enum + var
@@ -2971,14 +2972,11 @@ my $cons_ae = sub {
       my $sec = $2;
       my $first = $1;
       $cf[7] = $cons_single->($first);
-      # $reps = '<CBA ' . $first . ' >' if defined($cf[7]);
       if ( $sec =~ /\:(\w+)$/ ) { $cf[6] = $1; $cons_value->($sec); }
     } elsif ( $right =~ /\:(\w+)\s*$/ ) { $cf[6] = $1; $cons_value->($right); }
     # push newly created format
     push @flist, \@cf;
-    # remove this part from $s
-    substr($s, $spos, $slen, $reps);
-  # try const bank address, v2 - the same as above but don't need to check $op->[10] for version
+  # try const bank address, v2 with CX prefix - the same as above but don't need to check $op->[10] for version
   } elsif ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bCX\:([^:\[]+)\s*\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
         # 0 - type   1 - optional ,               2    3    4   5
     my @cf = ( 'X', defined($1) ? ',' : undef, undef, $2, $4, $5);
@@ -3100,13 +3098,14 @@ my $cons_ae = sub {
       substr($s, $spos, $slen, $reps);
     }
   } # generic []
-  elsif ( $s =~ /(\'\,\'\s*)?\s+\[\s+([^\]]+)\s+\]/p ) {
+  elsif ( $s =~ /(\'\,\'\s*)?\s+\[\s*([^\]\-\!\~\|]+)\s*\]/p ) {
     my @cf = ( '[', defined($1) ? ',' : undef, undef, undef);
-    my $spos = $-[0];
-    my $slen = $+[0] - $-[0];
-    my $reps = '[]';
+    my $second = $2;
+    $s = ${^POSTMATCH};
+    # process left part
+    $cons_ae->(${^PREMATCH}, $idx+1);
     my $is_ok = 1;
-    my @a = split(/\s+\+\s+/, $2);
+    my @a = split(/\s+\+\s+/, $second);
     for ( my $i = 0; $i < scalar @a; $i++ ) {
       push @cf, '+' if ( $i );
       my @curr = split /\s+/, $a[$i];
@@ -3134,8 +3133,6 @@ my $cons_ae = sub {
     }
     if ( $is_ok ) {
       push @flist, \@cf;
-      # remove this part from $s
-      substr($s, $spos, $slen, $reps);
     }
   } # last one to check what remainded
   elsif ( $s =~ /\b(\w+)\:(?:[^\:\[]+)?\s*\[([^\]]+)\]/ ) {
