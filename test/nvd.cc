@@ -398,11 +398,14 @@ void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv)
       continue;
     }
     // check in enums
+    const nv_eattr *ea = nullptr;
     auto ei = i->eas.find(kv1.first);
-    if ( ei != i->eas.end() ) {
-      fprintf(m_out, " E %s: %s %X", name.c_str(), ei->second->ename, kv1.second);
-      auto eid = ei->second->em->find(kv1.second);
-      if ( eid != ei->second->em->end() )
+    if ( ei != i->eas.end() ) { ea = ei->second; }
+    else { ea = try_by_ename(i, kv1.first); }
+    if ( ea ) {
+      fprintf(m_out, " E %s: %s %X", name.c_str(), ea->ename, kv1.second);
+      auto eid = ea->em->find(kv1.second);
+      if ( eid != ea->em->end() )
         fprintf(m_out, " %s\n", eid->second);
       else
         fprintf(m_out," UNKNOWN_ENUM %X\n", kv1.second);
