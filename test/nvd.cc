@@ -3,6 +3,7 @@
 #include <map>
 #include <dlfcn.h>
 #include <getopt.h>
+#include <fp16.h>
 #include "elfio/elfio.hpp"
 #include "include/nv_types.h"
 
@@ -292,6 +293,8 @@ class nv_dis
    bool contain(const std::string_view &, char) const;
    int calc_miss(const struct nv_instr *, const NV_extracted &, int) const;
    int calc_index(const NV_res &, int) const;
+   // renderer
+   void dump_value(std::string &res, const nv_vattr &, uint64_t v) const;
    FILE *m_out;
    Elf_Half n_sec;
    elfio reader;
@@ -315,6 +318,30 @@ int nv_dis::cmp(const std::string_view &sv, const char *s) const
 bool nv_dis::contain(const std::string_view &sv, char sym) const
 {
   return sv.find(sym) != std::string::npos;
+}
+
+void nv_dis::dump_value(std::string &res, const nv_vattr &a, uint64_t v) const
+{
+  char buf[128];
+  auto copy = v;
+  uint32_t f32;
+  switch(a.kind)
+  {
+    case NV_F64Imm:
+      snprintf(buf, 127, "%f", *(double *)&v);
+     break;
+    case NV_F16Imm:
+      f32 = fp16_ieee_to_fp32_bits((uint16_t)v);
+      snprintf(buf, 127, "%f", *(float *)&f32);
+     break;
+    case NV_F32Imm:
+      snprintf(buf, 127, "%f", *(float *)&v);
+     break;
+    default:
+      snprintf(buf, 127, "%X", v);
+  }
+  buf[127] = 0;
+  res = buf;
 }
 
 // old MD has encoders like Mask = Enum
@@ -394,7 +421,9 @@ void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv)
     // check in values
     auto vi = i->vas.find(kv1.first);
     if ( vi != i->vas.end() ) {
-      fprintf(m_out, " V %s: %X type %d\n", name.c_str(), kv1.second, vi->second.kind);
+      std::string buf;
+      dump_value(buf, vi->second, kv1.second);
+      fprintf(m_out, " V %s: %s type %d\n", name.c_str(), buf.c_str(), vi->second.kind);
       continue;
     }
     // check in enums
