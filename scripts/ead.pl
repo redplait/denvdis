@@ -6,6 +6,7 @@ use warnings;
 use Getopt::Std;
 use Carp;
 use Data::Dumper;
+use v5.10;
 
 # options
 use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_N $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
@@ -356,17 +357,17 @@ sub is_incomplete
   return $g_cached_enums{$ename} if exists $g_cached_enums{$ename};
   # not cached
   my $e = $g_enums{$ename};
-  my $res = 1;
+  my $res = 0;
   my %tmp;
   $tmp{$_} = 1 for ( values %$e );
   foreach ( 0 .. mask_range($m) ) {
     if ( !exists $tmp{$_} ) {
-      $res = 0;
+      $res = 1;
       last;
     }
   }
-  $g_cached_enums{$ename} = 1 - $res;
-  return 1 - $res;
+  $g_cached_enums{$ename} = $res;
+  $res;
 }
 
 sub dump_incompleted
@@ -1433,11 +1434,11 @@ sub dump_values
   my($a, $op, $kv) = @_;
   my $enc = $op->[5];
   foreach my $m ( @$enc ) {
-    if ( $m =~ /^(\w+)\s*=\*?\s*IDENTICAL\(([^\)]+)\)/ ) {
+    if ( $m =~ /^([\w\.]+)\s*=\*?\s*IDENTICAL\(([^\)]+)\)/ ) {
       my $mask = $g_mnames{$1};
       dump_id_value(extract_value($a, $mask), $kv, $2);
        # mask $1 = table $2 (args) $3
-    } elsif ( $m =~ /^(\w+)\s*=\*?\s*(\S+)\s*\((\s*[^\)]+)\s*\)/ ) {
+    } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*(\S+)\s*\((\s*[^\)]+)\s*\)/ ) {
       my $mask = $g_mnames{$1};
       my $v;
       if ( exists($g_tabs{$2}) && defined($v = extract_value($a, $mask)) ) {
@@ -1477,13 +1478,13 @@ sub dump_values
       } else {
         dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv);
       }
-    } elsif ( $m =~ /^(\w+)\s*=\*?\s*([\w\.\@]+)(?:\s*SCALE\s+(\d+))?$/ ) {
+    } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)(?:\s*SCALE\s+(\d+))?$/ ) {
       my $mask = $g_mnames{$1};
       my $scale;
       $scale = int($3) if defined($3);
       dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv, $2, $scale);
       # sm86 has strange formats like BITS_16_63_48_Sc=Sb convertFloatType(ofmt == `OFMT@E8M7_V2 || ofmt == `OFMT@BF16_V2, E8M7Imm, ofmt == `OFMT@E6M9_V2, E6M9Imm, F16Imm)
-    } elsif ( $m=~ /^(\w+)\s*=\*?\s*([\w\.\@]+)\s+convertFloatType/ ) {
+    } elsif ( $m=~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)\s+convertFloatType/ ) {
       my $mask = $g_mnames{$1};
       dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv, $2);
     } else {
@@ -2630,6 +2631,96 @@ sub gen_extr
   printf($fh "\n}\n");
   $name;
 }
+sub gen_base
+{
+  my $f = shift;
+  my $res = '';
+  # prefix
+  if ( $f->[1] ) { $res .= "'" . $f->[1] . "', "; }
+  else { $res .= '0, '}
+  # suffix
+  if ( $f->[2] ) { $res .= "'" . $f->[2] . "', "; }
+  else { $res .= '0, '}
+  # mod
+  if ( $f->[3] ) { $res .= "'" . $f->[3] . "'"; }
+  else { $res .= '0'}
+  $res;
+}
+# M1 & M2 used $f->[3] as format string
+sub gen_base2
+{
+  my $f = shift;
+  my $res = '';
+  # prefix
+  if ( $f->[1] ) { $res .= "'" . $f->[1] . "', "; }
+  else { $res .= '0, '}
+  # suffix
+  if ( $f->[2] ) { $res .= "'" . $f->[2] . "', "; }
+  else { $res .= '0, '}
+  # mod
+  $res .= '0';
+  $res;
+}
+sub quoted_s
+{
+  my $s = shift;
+  return 'nullptr' unless defined($s);
+  '"' . $s . '"';
+}
+sub rend_name_ea
+{
+  my($f, $idx) = @_;
+  my $ea = $f->[$idx];
+  return quoted_s($ea->[3]);
+}
+sub rend_value
+{
+  my $r = shift;
+  'R_value, 0, ' . quoted_s($r);
+}
+sub rend_enum
+{
+  my $r = shift;
+  'R_enum, 0, ' . quoted_s($r->[3]);
+}
+sub gen_render
+{
+  my($op, $fh) = @_;
+  printf($fh "static void fill_rend_%d(NV_rlist *res) {\n", $op->[19]);
+  my $idx = 0;
+  foreach my $f ( @{ $op->[15] } ) {
+    # total Wittenoom
+    if ( $f->[0] eq '$') {
+      printf($fh " render_base v%d{R_opcode, %s};\n", $idx, gen_base($f));
+    } elsif ( $f->[0] eq 'P' ) {
+      printf($fh " render_named v%d{R_predicate, %s, %s};\n", $idx, gen_base($f), rend_name_ea($f, 4));
+    } elsif ( $f->[0] eq 'E' ) {
+      printf($fh " render_named v%d{R_enum, %s, %s};\n", $idx, gen_base($f), rend_name_ea($f, 4));
+    } elsif ( $f->[0] eq 'V' ) {
+      printf($fh " render_named v%d{R_value, %s, %s};\n", $idx, gen_base($f), quoted_s($f->[4]));
+    } elsif ( $f->[0] eq '[' ) {
+      printf($fh " render_mem v%d{R_mem, %s, nullptr};\n", $idx, gen_base($f));
+      # TODO: add list for [
+    } elsif ( $f->[0] eq 'A' ) {
+      printf($fh " render_mem v%d{R_mem, %s, \"A\"};\n", $idx, gen_base($f));
+    } elsif ( $f->[0] eq 'C') {
+      printf($fh " render_C v%d{R_C, %s, %s, { %s }};\n", $idx, gen_base($f), quoted_s($f->[4]), rend_value($f->[5]));
+    } elsif ( $f->[0] eq 'X' ) {
+      printf($fh " render_C v%d{R_CX, %s, %s, { %s }};\n", $idx, gen_base($f), quoted_s($f->[4]), rend_enum($f->[5]));
+    } elsif ( $f->[0] eq 'D' ) {
+      printf($fh " render_desc v%d{R_desc, %s};\n", $idx, gen_base($f));
+    } elsif ( $f->[0] eq 'T' ) {
+      printf($fh " render_TTU v%d{R_TTU, %s, { %s } };\n", $idx, gen_base($f), rend_value($f->[4]));
+    } elsif ( $f->[0] eq 'M1' ) {
+      printf($fh " render_M1 v%d{R_M1, %s, %s, { %s } };\n", $idx, gen_base2($f), quoted_s($f->[3]), rend_enum($f->[4]));
+    } elsif ( $f->[0] eq 'M2' ) {
+      printf($fh " render_mem v%d{R_mem, %s, %s};\n", $idx, gen_base2($f), quoted_s($f->[3]));
+      # TODO: add list for [
+    }
+    printf($fh " NVREND_PUSH( v%d )\n", $idx++);
+  }
+  printf($fh "}\n\n");
+}
 sub gen_instr
 {
   my $fh = shift;
@@ -2648,6 +2739,8 @@ sub gen_instr
       my $op_filter = gen_filter($op, $fh);
       # extractor
       my $op_extr = gen_extr($op, $fh);
+      # render
+      gen_render($op, $fh);
       # dump instruction
       printf($fh "static const struct nv_instr %s_%d = {\n", $opt_C, $op->[19]);
       # name mask n line alt meaning_bits
@@ -2709,12 +2802,17 @@ sub gen_C
   gen_tabs($fh);
   # dump instructions
   gen_instr($fh);
+  # ins_render
+  printf($fh "NV_one_render ins_render[%d] = {\n", $n);
+  printf($fh " { fill_rend_%d },\n", $_) for ( 0 .. $n - 1);
+  printf($fh "};\n");
   # dump binary tree in g_dec_tree
+  printf($fh "\n// binary tree\n");
   my $num = 0;
   my $root = traverse_btree($fh, $g_dec_tree, \$num);
   # finally gen get_sm
   printf($fh "\nINV_disasm *get_sm() {\n");
-  printf($fh " return new NV_disasm<nv%d>(%s, %d); }\n", $g_size, $root, $g_rz);
+  printf($fh " return new NV_disasm<nv%d>(%s, %d, %d); }\n", $g_size, $root, $g_rz, $n);
   close $fh;
 }
 
@@ -2977,6 +3075,7 @@ $cons_ae = sub {
     # push newly created format
     push @flist, \@cf;
   # try const bank address, v2 with CX prefix - the same as above but don't need to check $op->[10] for version
+  # $1 - optional comma, $2 - [x], $3 - [||]?, $4 - name after CX:, $5 - first [], $6 - second []
   } elsif ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bCX\:([^:\[]+)\s*\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
         # 0 - type   1 - optional ,               2    3    4   5
     my @cf = ( 'X', defined($1) ? ',' : undef, undef, $2, $4, $5);
@@ -2987,7 +3086,7 @@ $cons_ae = sub {
     my $right = $6;
     my $reps = '<CX>';
     # get var from left
-    $cf[5] = $cons_value->($left);
+    $cf[5] = $cons_single->($left);
     # check if right is pair enum + var
     if ( $right =~ /^\s*(.*\:.*)\s*\+\s*(.*\:.*)\s*$/ ) {
       # we have 2 parts
@@ -3151,7 +3250,7 @@ $cons_ae = sub {
       # 4 - if /PRINT presents
       my $aref = [ $5, $4 ne '', defined($6) ? $g_enums{$5}->{$6} : undef, $8, defined($7) ];
       $ae{$8} = $aref;
-      if ( defined($2) and $2 eq '!' and !defined($8) ) {
+      if ( defined($2) and $2 eq '!' and defined($6) ) {
         push @flist, [ 'P', $1, defined($9) ? ',' : undef, $2, $aref ];
       } else {
         push @flist, [ 'E', $1, defined($9) ? ',' : undef, $2, $aref ];

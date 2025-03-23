@@ -443,6 +443,107 @@ printf("stop0 %d\n", i);
   }
 };
 
+// renderer guts
+enum NV_rend {
+ R_value = 1,
+ R_enum,
+ R_predicate,
+ R_opcode,
+ R_C, R_CX,
+ R_TTU,
+ R_M1, // like TMA
+ R_desc,
+ R_mem
+};
+
+struct ve_base {
+  NV_rend type;
+  char pfx;
+  const char *arg;
+};
+
+struct render_base
+{
+  NV_rend type;
+  char pfx;
+  char sfx;
+  char mod; // !~- etc
+};
+
+struct render_named: public render_base
+{
+  const char *name;
+};
+
+// C: name [value] [list]
+// CX: name [enum] [value]
+// A: name [list]
+// DESC: [enum][list]
+// T: [value] - TTU
+// M1: [enum]
+// remaining: prefix name [list]
+// for R_mem name is null
+struct render_TTU: public render_base
+{
+  ve_base left;
+};
+
+struct render_M1: public render_named
+{
+  ve_base left;
+};
+
+struct render_C: public render_named
+{
+  ve_base left;
+  std::list<ve_base> right;
+};
+
+struct render_desc: public render_base
+{
+  ve_base left;
+  std::list<ve_base> right;
+};
+
+struct render_mem: public render_named
+{
+  std::list<ve_base> right;
+};
+
+// helper to fill list
+template <typename T>
+struct from
+{
+   from(T& _f) {
+     _l = &_f.right;
+   }
+   template <typename O>
+   from<T> &push(O &&item) {
+    _l->push_back( std::move(item) );
+    return *this;
+   }
+  protected:
+   std::list<ve_base> *_l;
+};
+
+#define NVREND_PUSH(c)  res->push_back( std::move(c) );
+
+// per-instruction object
+typedef std::list<render_base> NV_rlist;
+typedef void (*NV_fill_render)(NV_rlist *);
+
+struct NV_one_render
+{
+  NV_rlist rlist;
+  NV_fill_render fill;
+  std::once_flag once;
+  NV_one_render(NV_fill_render _f): fill(_f) {}
+};
+
+// you can't forward declare 'static' array in terrible C++
+// https://stackoverflow.com/questions/936446/is-it-possible-to-forward-declare-a-static-array
+extern NV_one_render ins_render[];
+
 // disasm interface
 struct INV_disasm {
   virtual void init(const unsigned char *buf, size_t size) = 0;
@@ -452,6 +553,7 @@ struct INV_disasm {
   virtual size_t offset() const = 0;
   virtual int width() const = 0;
   virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const = 0;
+  virtual const NV_rlist *get_rend(int idx) const = 0;
   virtual ~INV_disasm() = default;
   int rz;
 };
@@ -459,10 +561,11 @@ struct INV_disasm {
 template <typename T>
 struct NV_disasm: public INV_disasm, T
 {
-  NV_disasm(const NV_non_leaf *root, int _rz)
+  NV_disasm(const NV_non_leaf *root, int _rz, int cnt)
   {
     rz = _rz;
     m_root = root;
+    m_cnt = cnt;
   }
   virtual int width() const { return T::_width; }
   virtual size_t offset() const { return T::curr_off(); }
@@ -475,6 +578,13 @@ struct NV_disasm: public INV_disasm, T
   }
   virtual int gen_mask(std::string &res) {
     return T::gen_mask(res);
+  }
+  const NV_rlist *get_rend(int idx) const
+  {
+    if ( idx < 0 || idx >= m_cnt ) return nullptr;
+    NV_rlist *res = &ins_render[idx].rlist;
+    std::call_once(ins_render[idx].once, ins_render[idx].fill, res);
+    return res;
   }
   virtual int get(std::vector< std::pair<const struct nv_instr *, NV_extracted> > &res)
   {
@@ -494,6 +604,7 @@ struct NV_disasm: public INV_disasm, T
     return !res.empty();
   }
  protected:
+  int m_cnt;
   void rec_find(const NV_bt_node *curr, std::list<const nv_instr *> &res) {
     if ( curr == nullptr ) return;
     std::copy_if( curr->ins.begin(), curr->ins.end(), std::back_inserter(res),
