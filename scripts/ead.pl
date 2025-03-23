@@ -1592,11 +1592,19 @@ sub dump_formats
       }
     } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) {
       # const bank can have 2 or 3 op - 3rd is ref to Enum
+      printf(" %s: ", $f->[4]); # C:name
+      # $f->[5] can be ea
+      if ( 'ARRAY' eq ref $f->[5] ) {
+        my $ae = $f->[5];
+        printf("%s %s", $ae->[0], $ae->[3]);
+      } else {
+        printf("%s", $f->[5]);
+      }
       if ( defined $f->[7] ) {
         my $ae = $f->[7];
-        printf(" %s: %s %s + %s %s", $f->[4], $f->[5], $f->[6], $ae->[0], $ae->[3]);
+        printf(" %s + %s %s", $f->[6], $ae->[0], $ae->[3]);
       } else {
-        printf(" %s: %s %s", $f->[4], $f->[5], $f->[6]);
+        printf(" %s", $f->[6]);
       }
     } elsif ( $f->[0] eq 'A' or $f->[0] eq '[' ) {
       for ( my $i = 4; $i < scalar @$f; $i++ ) {
@@ -2678,10 +2686,38 @@ sub rend_value
   my $r = shift;
   'R_value, 0, ' . quoted_s($r);
 }
+sub rend_value_plus
+{
+  my($r, $p) = @_;
+  my $res = 'R_value, ';
+  if ($p) { $res .= "'+', "; }
+  else { $res .= '0, ';}
+  $res . quoted_s($r);
+}
 sub rend_enum
 {
   my $r = shift;
   'R_enum, 0, ' . quoted_s($r->[3]);
+}
+# args: $fh, vX index, $f list, start index
+sub rend_list
+{
+  my($fh, $vidx, $f, $idx) = @_;
+  printf($fh "{ // rend for %d idx %d\n", $vidx, $idx);
+  my $li = 0;
+  my $was = 0;
+  for ( my $i = $idx; $i < scalar @$f; $i++ ) {
+    next unless defined $f->[$i];
+    if ( 'ARRAY' eq ref $f->[$i] ) { # make enum
+      printf($fh " ve_base l%d{ %s };\n", $li, rend_enum($f->[$i]));
+    } elsif ( '+' eq $f->[$i] ) { $was = 1; next; }
+    else { # make value
+      printf($fh " ve_base l%d{ %s };\n", $li, rend_value_plus($f->[$i], $was));
+      $was = 0;
+    }
+    printf($fh " v%d.right.push_back( std::move(l%d));\n", $vidx, $li++);
+  }
+  printf($fh "}\n");
 }
 sub gen_render
 {
@@ -2692,30 +2728,34 @@ sub gen_render
     # total Wittenoom
     if ( $f->[0] eq '$') {
       printf($fh " render_base v%d{R_opcode, %s};\n", $idx, gen_base($f));
-    } elsif ( $f->[0] eq 'P' ) {
+    } elsif ( $f->[0] eq 'P' ) { # +
       printf($fh " render_named v%d{R_predicate, %s, %s};\n", $idx, gen_base($f), rend_name_ea($f, 4));
-    } elsif ( $f->[0] eq 'E' ) {
+    } elsif ( $f->[0] eq 'E' ) { # +
       printf($fh " render_named v%d{R_enum, %s, %s};\n", $idx, gen_base($f), rend_name_ea($f, 4));
-    } elsif ( $f->[0] eq 'V' ) {
+    } elsif ( $f->[0] eq 'V' ) { # +
       printf($fh " render_named v%d{R_value, %s, %s};\n", $idx, gen_base($f), quoted_s($f->[4]));
     } elsif ( $f->[0] eq '[' ) {
       printf($fh " render_mem v%d{R_mem, %s, nullptr};\n", $idx, gen_base($f));
-      # TODO: add list for [
+      rend_list($fh, $idx, $f, 4);
     } elsif ( $f->[0] eq 'A' ) {
-      printf($fh " render_mem v%d{R_mem, %s, \"A\"};\n", $idx, gen_base($f));
+      printf($fh " render_mem v%d{R_mem, %s, \"attr\"};\n", $idx, gen_base($f));
+      rend_list($fh, $idx, $f, 4);
     } elsif ( $f->[0] eq 'C') {
       printf($fh " render_C v%d{R_C, %s, %s, { %s }};\n", $idx, gen_base($f), quoted_s($f->[4]), rend_value($f->[5]));
+      rend_list($fh, $idx, $f, 6);
     } elsif ( $f->[0] eq 'X' ) {
       printf($fh " render_C v%d{R_CX, %s, %s, { %s }};\n", $idx, gen_base($f), quoted_s($f->[4]), rend_enum($f->[5]));
+      rend_list($fh, $idx, $f, 6);
     } elsif ( $f->[0] eq 'D' ) {
-      printf($fh " render_desc v%d{R_desc, %s};\n", $idx, gen_base($f));
-    } elsif ( $f->[0] eq 'T' ) {
+      printf($fh " render_desc v%d{R_desc, %s, { %s }};\n", $idx, gen_base($f), rend_enum($f->[4]));
+      rend_list($fh, $idx, $f, 5);
+    } elsif ( $f->[0] eq 'T' ) { # +
       printf($fh " render_TTU v%d{R_TTU, %s, { %s } };\n", $idx, gen_base($f), rend_value($f->[4]));
-    } elsif ( $f->[0] eq 'M1' ) {
+    } elsif ( $f->[0] eq 'M1' ) { # +
       printf($fh " render_M1 v%d{R_M1, %s, %s, { %s } };\n", $idx, gen_base2($f), quoted_s($f->[3]), rend_enum($f->[4]));
     } elsif ( $f->[0] eq 'M2' ) {
       printf($fh " render_mem v%d{R_mem, %s, %s};\n", $idx, gen_base2($f), quoted_s($f->[3]));
-      # TODO: add list for [
+      rend_list($fh, $idx, $f, 4);
     }
     printf($fh " NVREND_PUSH( v%d )\n", $idx++);
   }
