@@ -1,4 +1,4 @@
-NVidia sass disassembler
+NVidia sass disassembler. See chaotic and incomplete documentation in my [blog](https://redplait.blogspot.com/search/label/cuda)
 
 ### Dependencies
 * [ELFIO](https://github.com/serge1/ELFIO) for ELF files parsing
