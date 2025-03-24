@@ -295,6 +295,8 @@ class nv_dis
    int calc_miss(const struct nv_instr *, const NV_extracted &, int) const;
    int calc_index(const NV_res &, int) const;
    // renderer
+   int render_ve(const ve_base &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
+   int render_ve_list(const std::list<ve_base> &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
    int check_mod(char c, const NV_extracted &, const char* name, std::string &r) const;
    void dump_value(std::string &res, const nv_vattr &, uint64_t v) const;
    FILE *m_out;
@@ -340,10 +342,11 @@ void nv_dis::dump_value(std::string &res, const nv_vattr &a, uint64_t v) const
       snprintf(buf, 127, "%f", *(float *)&v);
      break;
     default:
-      snprintf(buf, 127, "%X", v);
+      if ( !v ) { res += '0'; return; }
+      snprintf(buf, 127, "0x%X", v);
   }
   buf[127] = 0;
-  res = buf;
+  res += buf;
 }
 
 // old MD has encoders like Mask = Enum
@@ -430,6 +433,40 @@ int nv_dis::check_mod(char c, const NV_extracted &kv, const char* name, std::str
   return 1;
 }
 
+// render left [] in C, CX, desc etc
+int nv_dis::render_ve(const ve_base &ve, const struct nv_instr *i, const NV_extracted &kv, std::string &res) const
+{
+  if ( ve.type == R_value )
+  {
+    auto kvi = kv.find(ve.arg);
+    if ( kvi == kv.end() ) return 1;
+    auto vi = i->vas.find(ve.arg);
+    if ( vi == i->vas.end() ) return 1;
+    dump_value(res, vi->second, kvi->second);
+    return 0;
+  }
+  // enum
+  auto ei = i->eas.find(ve.arg);
+  if ( ei == i->eas.end() ) return 1;
+  const nv_eattr *ea = ei->second;
+  auto kvi = kv.find(ve.arg);
+  if ( kvi == kv.end() ) return 1;
+  auto eid = ea->em->find(kvi->second);
+  if ( eid != ea->em->end() )
+    res += eid->second;
+  else return 1;
+  return 0;
+}
+
+// render right []
+int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i, const NV_extracted &kv, std::string &res) const
+{
+  auto size = l.size();
+  if ( 1 == size )
+    return render_ve(*l.begin(), i, kv, res);
+  return 0;
+}
+
 int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv)
 {
   int idx = 0;
@@ -458,7 +495,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
         if ( vi->second.kind == NV_BITSET ) was_bs = 1;
         dump_value(tmp, vi->second, kvi->second);
         if ( rn->pfx ) { res += rn->pfx; res += ' '; }
-        else if ( was_bs ) res += '&';
+        else if ( was_bs ) res += " &";
         res += tmp;
        } break;
 
@@ -526,12 +563,56 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
        } break;
 
       case R_C:
-      case R_CX:
-      case R_TTU:
-      case R_M1:
-      case R_desc:
-      case R_mem:
-       break;
+      case R_CX: {
+         const render_C *rn = (const render_C *)ri;
+         if ( rn->pfx ) res += rn->pfx;
+         else res += ' ';
+         if ( rn->mod ) check_mod(rn->mod, kv, rn->name, res);
+         res += "c:[";
+         missed += render_ve(rn->left, i, kv, res);
+         res += "][";
+         missed += render_ve_list(rn->right, i, kv, res);
+         res += ']';
+       } break;
+
+      case R_TTU: {
+         const render_TTU *rt = (const render_TTU *)ri;
+         if ( rt->pfx ) res += rt->pfx;
+         else res += ' ';
+         res += "tti:[";
+         missed += render_ve(rt->left, i, kv, res);
+         res += ']';
+       } break;
+
+      case R_M1: {
+         const render_M1 *rt = (const render_M1 *)ri;
+         if ( rt->pfx ) res += rt->pfx;
+         else res += ' ';
+         res += rt->name;
+         res += ":[";
+         missed += render_ve(rt->left, i, kv, res);
+         res += ']';
+       } break;
+
+      case R_desc: {
+         const render_desc *rt = (const render_desc *)ri;
+         if ( rt->pfx ) res += rt->pfx;
+         else res += ' ';
+         res += "desc:[";
+         missed += render_ve(rt->left, i, kv, res);
+         res += "],[";
+         missed += render_ve_list(rt->right, i, kv, res);
+         res += ']';
+       } break;
+
+      case R_mem: {
+         const render_mem *rt = (const render_mem *)ri;
+         if ( rt->pfx ) res += rt->pfx;
+         else res += ' ';
+         res += "[";
+         missed += render_ve_list(rt->right, i, kv, res);
+         res += ']';
+       } break;
       default: fprintf(stderr, "unknown rend type %d at index %d for inst %s\n", ri->type, idx, i->name);
     }
     idx++;
