@@ -287,6 +287,7 @@ class nv_dis
    void hdump_section(section *);
    void parse_attrs(Elf_Half idx, section *);
    void dump_ins(const NV_pair &p);
+   int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &);
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    void dump_ops(const struct nv_instr *, const NV_extracted &);
    int cmp(const std::string_view &, const char *) const;
@@ -294,6 +295,7 @@ class nv_dis
    int calc_miss(const struct nv_instr *, const NV_extracted &, int) const;
    int calc_index(const NV_res &, int) const;
    // renderer
+   int check_mod(char c, const NV_extracted &, const char* name, std::string &r) const;
    void dump_value(std::string &res, const nv_vattr &, uint64_t v) const;
    FILE *m_out;
    Elf_Half n_sec;
@@ -412,6 +414,131 @@ int nv_dis::calc_index(const NV_res &res, int rz) const
   return -1;
 }
 
+int nv_dis::check_mod(char c, const NV_extracted &kv, const char* name, std::string &r) const
+{
+  std::string mod_name(name);
+  switch(c) {
+    case '!': mod_name += "@not"; break;
+    case '-': mod_name += "@negate"; break;
+    case '~': mod_name += "@invert"; break;
+    default: return 0;
+  }
+  auto kvi = kv.find(mod_name);
+  if ( kvi == kv.end() ) return 0;
+  if ( !kvi->second ) return 0;
+  r += c;
+  return 1;
+}
+
+int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv)
+{
+  int idx = 0;
+  int missed = 0;
+  int was_bs = 0;
+  for ( auto ri: *rl ) {
+    std::string tmp;
+    switch(ri->type)
+    {
+      case R_opcode:
+       res += i->name;
+       break;
+
+      case R_value: {
+        const render_named *rn = (const render_named *)ri;
+        auto kvi = kv.find(rn->name);
+        if ( kvi == kv.end() ) {
+          missed++;
+          break;
+        }
+        auto vi = i->vas.find(rn->name);
+        if ( vi == i->vas.end() ) {
+          missed++;
+          break;
+        }
+        if ( vi->second.kind == NV_BITSET ) was_bs = 1;
+        dump_value(tmp, vi->second, kvi->second);
+        if ( rn->pfx ) { res += rn->pfx; res += ' '; }
+        else if ( was_bs ) res += '&';
+        res += tmp;
+       } break;
+
+      case R_enum: {
+         const render_named *rn = (const render_named *)ri;
+         const nv_eattr *ea = nullptr;
+         auto ei = i->eas.find(rn->name);
+         if ( ei != i->eas.end() ) { ea = ei->second; }
+         else { ea = try_by_ename(i, rn->name); }
+         if ( !ea ) {
+           missed++;
+           break;
+         }
+         auto kvi = kv.find(rn->name);
+         if ( kvi == kv.end() ) {
+           kvi = kv.find(ea->ename);
+           if ( kvi == kv.end() ) {
+             missed++;
+             break;
+           }
+         }
+         // now we have enum attr in ea and value in kvi
+         // we have 2 cases - if this attr has ignore and !print and value == def_value - we should skip it
+         if ( ea->has_def_value && ea->def_value == (int)kvi->second && ea->ignore && !ea->print ) break;
+         if ( ea->ignore ) res += '.';
+         else {
+           if ( rn->pfx ) res += rn->pfx;
+           else res += ' ';
+           // check mod
+           if ( rn->mod ) check_mod(rn->mod, kv, rn->name, res);
+         }
+         auto eid = ea->em->find(kvi->second);
+         if ( eid != ea->em->end() )
+           res += eid->second;
+         else {
+           missed++;
+           break;
+         }
+       } break;
+
+      case R_predicate: { // like enum but can be ignored if has default value
+         const render_named *rn = (const render_named *)ri;
+         auto ei = i->eas.find(rn->name);
+         if ( ei == i->eas.end() ) {
+           missed++;
+           break;
+         }
+         const nv_eattr *ea = ei->second;
+         auto kvi = kv.find(rn->name);
+         if ( kvi == kv.end() ) {
+           missed++;
+           break;
+         }
+         if ( ea->def_value == (int)kvi->second ) break;
+         if ( rn->pfx ) res += rn->pfx;
+         if ( rn->mod ) check_mod(rn->mod, kv, rn->name, res);
+         auto eid = ea->em->find(kvi->second);
+         if ( eid != ea->em->end() )
+           res += eid->second;
+         else {
+           missed++;
+           break;
+         }
+         if ( '@' == rn->pfx ) res += ' ';
+       } break;
+
+      case R_C:
+      case R_CX:
+      case R_TTU:
+      case R_M1:
+      case R_desc:
+      case R_mem:
+       break;
+      default: fprintf(stderr, "unknown rend type %d at index %d for inst %s\n", ri->type, idx, i->name);
+    }
+    idx++;
+  }
+  return missed;
+}
+
 void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv)
 {
   for ( auto kv1: kv )
@@ -460,8 +587,13 @@ void nv_dis::dump_ins(const NV_pair &p)
   if ( p.first->brt ) fprintf(m_out, " %s", s_brts[p.first->brt-1]);
   if ( p.first->alt ) fprintf(m_out, " ALT");
   auto rend = m_dis->get_rend(p.first->n);
-  if ( rend ) fprintf(m_out, " %d render items\n", rend->size());
-  fprintf(m_out, "\n");
+  if ( rend ) {
+    fprintf(m_out, " %d render items\n", rend->size());
+    std::string r;
+    render(rend, r, p.first, p.second);
+    fprintf(m_out, "> %s\n", r.c_str());
+  } else
+    fprintf(m_out, " NO_Render\n");
   if ( opt_O ) dump_ops( p.first, p.second );
 }
 
