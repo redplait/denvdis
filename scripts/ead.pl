@@ -2619,6 +2619,8 @@ sub gen_extr
     } else {
       printf("bad const bank %s\n", $cb->[0]);
     }
+    # scale for Address2
+    my $pfx = substr($op->[10]->[0], 0, 1);
     # special case for sm3:
     # BcbankHi,BcbankLo,Bcaddr =  ConstBankAddress2(constBank,immConstOffset)
     # here constBank = BcbankLo | (BcbankHi << size(BcbankLo)
@@ -2627,11 +2629,19 @@ sub gen_extr
       my $lo_size = bank_extract($fh, $cb->[2], 1);
       bank_extract($fh, $cb->[3], 2);
       printf($fh "res[\"%s\"] = c1 | (c0 << %d);\n", $fcb[0], $lo_size);
-      printf($fh "res[\"%s\"] = c2;\n", $fcb[1]);
+      if ( $pfx eq '2' ) {
+        printf($fh "res[\"%s\"] = 4 * c2;\n", $fcb[1]);
+      } else {
+        printf($fh "res[\"%s\"] = c2;\n", $fcb[1]);
+      }
     } else {
       for ( my $i = 1; $i < $cb_len; $i++ ) {
         inl_extract($fh, $cb->[$i], $index);
-        printf($fh "res[\"%s\"] = v%d;\n", $fcb[$i-1], $index);
+        if ( $i == 2 && $pfx eq '2' ) {
+          printf($fh "res[\"%s\"] = 4 * v%d;\n", $fcb[$i-1], $index);
+        } else {
+          printf($fh "res[\"%s\"] = v%d;\n", $fcb[$i-1], $index);
+        }
         $index++;
       }
     }
