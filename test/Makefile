@@ -3,55 +3,56 @@ ELFIO=-I ../../../../../ELFIO/
 # patch to fp16 (https://github.com/Maratyszcza/FP16)
 FP16=-I ../../FP16/include
 # for release add -Os and remove -g
-SM_FLAGS=-shared -fpic -msse2avx -g $(IFLAGS)
+SM_FLAGS=-shared -fpic -msse2avx -g -pthread $(IFLAGS)
+SM_LIBS=-lstdc++ -lpthread
 
 nvd: nvd.cc
 	gcc -g $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
 
 sm120.so: sm120.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm101.so: sm101.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm100.so: sm100.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm90.so: sm90.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm89.so: sm89.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm86.so: sm86.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm80.so: sm80.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm75.so: sm75.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm72.so: sm72.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm57.so: sm57.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm55.so: sm55.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm52.so: sm52.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm5.so: sm5.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm4.so: sm4.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm3.so: sm3.cc
-	gcc $(SM_FLAGS) -o $@ $^ -lstdc++
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm3.cc: ../scripts/ead.pl
 	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm3 ../data/sm3_1.txt

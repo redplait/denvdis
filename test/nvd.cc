@@ -406,11 +406,10 @@ int nv_dis::calc_index(const NV_res &res, int rz) const
       res_idx = i;
     }
   }
-  if ( mult ) {
-    for ( size_t i = 0; i < res.size(); ++i ) fprintf(m_out, " %d", missed[i]);
-    return -1;
-  }
-  return res_idx;
+  if ( !mult ) return res_idx;
+  // no, we still have duplicates - dump missed and return -1
+  for ( size_t i = 0; i < res.size(); ++i ) fprintf(m_out, " %d", missed[i]);
+  return -1;
 }
 
 void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv)
@@ -460,6 +459,8 @@ void nv_dis::dump_ins(const NV_pair &p)
   fprintf(m_out, "%s line %d n %d", p.first->name, p.first->line, p.first->n);
   if ( p.first->brt ) fprintf(m_out, " %s", s_brts[p.first->brt-1]);
   if ( p.first->alt ) fprintf(m_out, " ALT");
+  auto rend = m_dis->get_rend(p.first->n);
+  if ( rend ) fprintf(m_out, " %d render items\n", rend->size());
   fprintf(m_out, "\n");
   if ( opt_O ) dump_ops( p.first, p.second );
 }
