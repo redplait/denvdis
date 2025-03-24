@@ -51,11 +51,11 @@ typedef void (*nv_extract)(std::function<uint64_t(const std::pair<short, short> 
 struct nv_instr {
  const char *mask;
  const char *name;
- int n; // number for formatting
  int line;
- int alt;
- int meaning_bits;
- int brt;
+ short n; // number for formatting
+ char alt;
+ short meaning_bits;
+ char brt; // NV_Brt or 0
  const char *target_index;
  const char *cc_index;
  const std::unordered_map<std::string_view, const nv_vattr> vas;
@@ -468,10 +468,20 @@ struct render_base
   char pfx;
   char sfx;
   char mod; // !~- etc
+  render_base(NV_rend _t, char _p, char _s, char _m):
+   type(_t), pfx(_p), sfx(_s), mod(_m) {}
+  render_base() = default;
+  virtual ~render_base() = default;
 };
+
+#define NR_BORING type = t; pfx = _p; sfx = _s; mod = _m;
 
 struct render_named: public render_base
 {
+  render_named() = default;
+  render_named(NV_rend t, char _p, char _s, char _m, const char *_n):
+   name(_n)
+  { NR_BORING }
   const char *name;
 };
 
@@ -485,30 +495,59 @@ struct render_named: public render_base
 // for R_mem name is null
 struct render_TTU: public render_base
 {
+  render_TTU(NV_rend t, char _p, char _s, char _m, ve_base _v)
+  {
+    NR_BORING
+    left = _v;
+  }
   ve_base left;
 };
 
 struct render_M1: public render_named
 {
+  render_M1(NV_rend t, char _p, char _s, char _m, const char *_n, ve_base _b)
+  {
+    NR_BORING
+    name = _n;
+    left = _b;
+  }
   ve_base left;
 };
 
 struct render_C: public render_named
 {
+  render_C(NV_rend t, char _p, char _s, char _m, const char *_n, ve_base _b)
+  {
+    NR_BORING
+    name = _n;
+    left = _b;
+  }
   ve_base left;
   std::list<ve_base> right;
 };
 
 struct render_desc: public render_base
 {
+  render_desc(NV_rend t, char _p, char _s, char _m, ve_base _b)
+  {
+    NR_BORING
+    left = _b;
+  }
   ve_base left;
   std::list<ve_base> right;
 };
 
 struct render_mem: public render_named
 {
+  render_mem(NV_rend t, char _p, char _s, char _m, const char *_n)
+  {
+    NR_BORING
+    name = _n;
+  }
   std::list<ve_base> right;
 };
+
+#undef NR_BORING
 
 // helper to fill list
 template <typename T>
@@ -526,10 +565,15 @@ struct from
    std::list<ve_base> *_l;
 };
 
-#define NVREND_PUSH(c)  res->push_back( std::move(c) );
+#define NVREND_PUSH(c)  res->push_back( c );
 
 // per-instruction object
-typedef std::list<render_base> NV_rlist;
+struct NV_rlist: public std::list<render_base *> {
+ ~NV_rlist() {
+    for ( auto ptr: *this ) delete ptr;
+  }
+};
+
 typedef void (*NV_fill_render)(NV_rlist *);
 
 struct NV_one_render

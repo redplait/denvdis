@@ -2715,7 +2715,7 @@ sub rend_list
       printf($fh " ve_base l%d{ %s };\n", $li, rend_value_plus($f->[$i], $was));
       $was = 0;
     }
-    printf($fh " v%d.right.push_back( std::move(l%d));\n", $vidx, $li++);
+    printf($fh " v%d->right.push_back( std::move(l%d));\n", $vidx, $li++);
   }
   printf($fh "}\n");
 }
@@ -2727,34 +2727,34 @@ sub gen_render
   foreach my $f ( @{ $op->[15] } ) {
     # total Wittenoom
     if ( $f->[0] eq '$') {
-      printf($fh " render_base v%d{R_opcode, %s};\n", $idx, gen_base($f));
+      printf($fh " auto v%d = new render_base(R_opcode, %s);\n", $idx, gen_base($f));
     } elsif ( $f->[0] eq 'P' ) { # +
-      printf($fh " render_named v%d{R_predicate, %s, %s};\n", $idx, gen_base($f), rend_name_ea($f, 4));
+      printf($fh " auto v%d = new render_named(R_predicate, %s, %s);\n", $idx, gen_base($f), rend_name_ea($f, 4));
     } elsif ( $f->[0] eq 'E' ) { # +
-      printf($fh " render_named v%d{R_enum, %s, %s};\n", $idx, gen_base($f), rend_name_ea($f, 4));
+      printf($fh " auto v%d = new render_named(R_enum, %s, %s);\n", $idx, gen_base($f), rend_name_ea($f, 4));
     } elsif ( $f->[0] eq 'V' ) { # +
-      printf($fh " render_named v%d{R_value, %s, %s};\n", $idx, gen_base($f), quoted_s($f->[4]));
+      printf($fh " auto v%d = new render_named(R_value, %s, %s);\n", $idx, gen_base($f), quoted_s($f->[4]));
     } elsif ( $f->[0] eq '[' ) {
-      printf($fh " render_mem v%d{R_mem, %s, nullptr};\n", $idx, gen_base($f));
+      printf($fh " auto v%d = new render_mem(R_mem, %s, nullptr);\n", $idx, gen_base($f));
       rend_list($fh, $idx, $f, 4);
     } elsif ( $f->[0] eq 'A' ) {
-      printf($fh " render_mem v%d{R_mem, %s, \"attr\"};\n", $idx, gen_base($f));
+      printf($fh " auto v%d = new render_mem(R_mem, %s, \"attr\");\n", $idx, gen_base($f));
       rend_list($fh, $idx, $f, 4);
     } elsif ( $f->[0] eq 'C') {
-      printf($fh " render_C v%d{R_C, %s, %s, { %s }};\n", $idx, gen_base($f), quoted_s($f->[4]), rend_value($f->[5]));
+      printf($fh " auto v%d = new render_C(R_C, %s, %s, { %s });\n", $idx, gen_base($f), quoted_s($f->[4]), rend_value($f->[5]));
       rend_list($fh, $idx, $f, 6);
     } elsif ( $f->[0] eq 'X' ) {
-      printf($fh " render_C v%d{R_CX, %s, %s, { %s }};\n", $idx, gen_base($f), quoted_s($f->[4]), rend_enum($f->[5]));
+      printf($fh " auto v%d = new render_C(R_CX, %s, %s, { %s });\n", $idx, gen_base($f), quoted_s($f->[4]), rend_enum($f->[5]));
       rend_list($fh, $idx, $f, 6);
     } elsif ( $f->[0] eq 'D' ) {
-      printf($fh " render_desc v%d{R_desc, %s, { %s }};\n", $idx, gen_base($f), rend_enum($f->[4]));
+      printf($fh " auto v%d = new render_desc(R_desc, %s, { %s });\n", $idx, gen_base($f), rend_enum($f->[4]));
       rend_list($fh, $idx, $f, 5);
     } elsif ( $f->[0] eq 'T' ) { # +
-      printf($fh " render_TTU v%d{R_TTU, %s, { %s } };\n", $idx, gen_base($f), rend_value($f->[4]));
+      printf($fh " auto v%d = new render_TTU(R_TTU, %s, { %s } );\n", $idx, gen_base($f), rend_value($f->[4]));
     } elsif ( $f->[0] eq 'M1' ) { # +
-      printf($fh " render_M1 v%d{R_M1, %s, %s, { %s } };\n", $idx, gen_base2($f), quoted_s($f->[3]), rend_enum($f->[4]));
+      printf($fh " auto v%d = new render_M1(R_M1, %s, %s, { %s } );\n", $idx, gen_base2($f), quoted_s($f->[3]), rend_enum($f->[4]));
     } elsif ( $f->[0] eq 'M2' ) {
-      printf($fh " render_mem v%d{R_mem, %s, %s};\n", $idx, gen_base2($f), quoted_s($f->[3]));
+      printf($fh " auto v%d = new render_mem(R_mem, %s, %s);\n", $idx, gen_base2($f), quoted_s($f->[3]));
       rend_list($fh, $idx, $f, 4);
     }
     printf($fh " NVREND_PUSH( v%d )\n", $idx++);
@@ -2783,8 +2783,8 @@ sub gen_instr
       gen_render($op, $fh);
       # dump instruction
       printf($fh "static const struct nv_instr %s_%d = {\n", $opt_C, $op->[19]);
-      # name mask n line alt meaning_bits
-      printf($fh "\"%s\",\n \"%s\", %d, %d, %d, %d,\n", $m, $op->[1], $op->[19], $op->[4], $op->[7], $op->[14]);
+      # name mask line n alt meaning_bits
+      printf($fh "\"%s\",\n \"%s\", %d, %d, %d, %d,\n", $m, $op->[1], $op->[4], $op->[19], $op->[7], $op->[14]);
       # brt properties
       if ( defined $op->[20] ) {
         my $brt = $op->[20];
