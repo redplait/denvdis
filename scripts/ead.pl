@@ -339,6 +339,24 @@ sub mask_len
   return $res;
 }
 
+sub scale_len
+{
+  my $s = shift;
+  return 0 unless defined($s);
+  given(int($s)) {
+    when(1) { return 0;} # wtf?
+    when(2) { return 1;}
+    when(4) { return 2;}
+    when(8) { return 3;}
+    when(16) { return 4;}
+    when(32) { return 5;}
+    default: {
+      carp("unknown scale $s");
+      return 0;
+    }
+  }
+}
+
 # key - name, value 1 if it incompleted and 0 otherwise
 my %g_cached_enums;
 # return greatest possibly value for this mask
@@ -2597,7 +2615,7 @@ sub gen_extr
       }
       # mask $1 value $2
       if ( defined $op->[18] && exists $op->[18]->{$2} ) {
-        $vw->{$2} = mask_len( $g_mnames{$1} ) if exists($g_mnames{$1});
+        $vw->{$2} = mask_len( $g_mnames{$1} ) + scale_len($3) if exists($g_mnames{$1});
       }
       inl_extract($fh, $1, $index);
       if ( defined $3 ) {
