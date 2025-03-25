@@ -299,6 +299,7 @@ class nv_dis
    int render_ve_list(const std::list<ve_base> &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
    int check_mod(char c, const NV_extracted &, const char* name, std::string &r) const;
    void dump_value(std::string &res, const nv_vattr &, uint64_t v) const;
+   bool check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    FILE *m_out;
    Elf_Half n_sec;
    elfio reader;
@@ -517,6 +518,22 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
   return missed;
 }
 
+bool nv_dis::check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const
+{
+  if ( !i->brt || !i->target_index ) return false;
+  if ( kvi->first != i->target_index ) return false;
+  // find width
+//printf("try to find target_index %s value %lX\n", i->target_index, kvi->second);
+  auto wi = i->vwidth.find(kvi->first);
+  if ( wi == i->vwidth.end() ) return false;
+  // yes, this is some imm for branch, check if it negative
+  if ( kvi->second & (1L << (wi->second - 1)) )
+    res = kvi->second - (1L << wi->second);
+  else
+    res = (long)kvi->second;
+  return true;
+}
+
 int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv)
 {
   int idx = 0;
@@ -543,7 +560,16 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
           break;
         }
         if ( vi->second.kind == NV_BITSET ) was_bs = 1;
-        dump_value(tmp, vi->second, kvi->second);
+        long branch_off = 0;
+        if ( check_branch(i, kvi, branch_off) ) {
+          char buf[128];
+          snprintf(buf, 127, "%ld", branch_off);
+          tmp = buf;
+          // make (LABEL_xxx)
+          snprintf(buf, 127, " (LABEL_%lX)", branch_off + m_dis->off_next());
+          tmp += buf;
+        } else
+          dump_value(tmp, vi->second, kvi->second);
         if ( rn->pfx ) { res += rn->pfx; res += ' '; }
         else if ( was_bs ) res += " &";
         res += tmp;
