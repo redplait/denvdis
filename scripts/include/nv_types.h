@@ -159,7 +159,10 @@ struct NV_base_decoder {
   }
  protected:
    inline size_t curr_off() const {
-     return curr - start - 8;
+      return curr - start- 8;
+   }
+   inline size_t offset_next() const {
+     return curr - start;
    }
    static void to_str(uint64_t v, std::string &res, int idx = 63) {
      for ( int i = idx; i >= 0; i-- )
@@ -331,8 +334,8 @@ struct nv128: public NV_base_decoder {
 #endif
   // shadow from base
   inline size_t curr_off() const {
-     return curr - start - 16;
-   }
+    return curr - start - 16;
+  }
   inline int check_bit(int idx) const
   {
 #ifdef __SIZEOF_INT128__
@@ -596,6 +599,7 @@ struct INV_disasm {
   // reverse method of check_mask - generate mask from currently instruction, for -N option
   virtual int gen_mask(std::string &) = 0;
   virtual size_t offset() const = 0;
+  virtual size_t off_next() const = 0;
   virtual int width() const = 0;
   virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const = 0;
   virtual const NV_rlist *get_rend(int idx) const = 0;
@@ -614,6 +618,7 @@ struct NV_disasm: public INV_disasm, T
   }
   virtual int width() const { return T::_width; }
   virtual size_t offset() const { return T::curr_off(); }
+  virtual size_t off_next() const { return T::offset_next(); }
   virtual void init(const unsigned char *buf, size_t size) {
     T::_init(buf, size);
   }
