@@ -464,7 +464,57 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
   auto size = l.size();
   if ( 1 == size )
     return render_ve(*l.begin(), i, kv, res);
-  return 0;
+  int missed = 0;
+  int idx = 0;
+  for ( auto ve: l ) {
+    if ( ve.type == R_value )
+    {
+      auto kvi = kv.find(ve.arg);
+      if ( kvi == kv.end() ) { missed++; idx++; continue; }
+      auto vi = i->vas.find(ve.arg);
+      if ( vi == i->vas.end() ) { missed++; idx++; continue; }
+      std::string tmp;
+      dump_value(tmp, vi->second, kvi->second);
+      if ( tmp == "0" && idx ) { idx++; continue; } // ignore +0
+      if ( ve.pfx ) res += ve.pfx;
+      else if ( idx ) res += '+';
+      res += tmp;
+      idx++;
+      continue;
+    }
+    // this is (optional) enum
+    const nv_eattr *ea = nullptr;
+    auto ei = i->eas.find(ve.arg);
+    if ( ei != i->eas.end() ) { ea = ei->second; }
+    else { ea = try_by_ename(i, ve.arg); }
+    if ( !ea ) {
+      missed++;
+      continue;
+    }
+    auto kvi = kv.find(ve.arg);
+    if ( kvi == kv.end() ) {
+      kvi = kv.find(ea->ename);
+      if ( kvi == kv.end() ) {
+        missed++;
+        continue;
+      }
+    }
+    if ( !ea->ignore ) idx++;
+    if ( ea->has_def_value && ea->def_value == (int)kvi->second && ea->ignore && !ea->print ) continue;
+    if ( ea->ignore ) res += '.';
+    else {
+      if ( ve.pfx ) res += ve.pfx;
+      else if ( idx > 1 ) res += ' ';
+    }
+    auto eid = ea->em->find(kvi->second);
+    if ( eid != ea->em->end() )
+       res += eid->second;
+    else {
+       missed++;
+       continue;
+    }
+  }
+  return missed;
 }
 
 int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv)
@@ -671,7 +721,8 @@ void nv_dis::dump_ins(const NV_pair &p)
   if ( rend ) {
     fprintf(m_out, " %d render items\n", rend->size());
     std::string r;
-    render(rend, r, p.first, p.second);
+    int miss = render(rend, r, p.first, p.second);
+    if ( miss ) fprintf(m_out, "%d", miss);
     fprintf(m_out, "> %s\n", r.c_str());
   } else
     fprintf(m_out, " NO_Render\n");
