@@ -58,6 +58,7 @@ struct nv_instr {
  char brt; // NV_Brt or 0
  const char *target_index;
  const char *cc_index;
+ const std::unordered_map<std::string_view, short> vwidth;
  const std::unordered_map<std::string_view, const nv_vattr> vas;
  const std::unordered_map<std::string_view, const nv_eattr *> eas;
  nv_filter filter;

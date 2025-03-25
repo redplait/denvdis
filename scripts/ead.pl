@@ -334,7 +334,7 @@ sub mask_len
   my $res = 0;
   my $list = $op->[3];
   for ( my $i = 0; $i < scalar @$list; $i += 2 ) {
-    $res = $list->[$i+1];
+    $res += $list->[$i+1];
   }
   return $res;
 }
@@ -2551,7 +2551,7 @@ sub bank_extract
 # IComp = ICmpAll - so we must check if second arg is enum
 sub gen_extr
 {
-  my($op, $fh) = @_;
+  my($op, $fh, $vw) = @_;
   my $enc = $op->[5];
   return 'nullptr' unless defined($enc);
   my $name = sprintf("%s_%d_extr", $opt_C, $op->[19]);
@@ -2594,6 +2594,10 @@ sub gen_extr
         printf($fh "// %s to %s scale %s\n", $1, $2, $3);
       } else {
         printf($fh "// %s to %s\n", $1, $2);
+      }
+      # mask $1 value $2
+      if ( defined $op->[18] && exists $op->[18]->{$2} ) {
+        $vw->{$2} = mask_len( $g_mnames{$1} ) if exists($g_mnames{$1});
       }
       inl_extract($fh, $1, $index);
       if ( defined $3 ) {
@@ -2788,7 +2792,8 @@ sub gen_instr
       # filter
       my $op_filter = gen_filter($op, $fh);
       # extractor
-      my $op_extr = gen_extr($op, $fh);
+      my %vw;
+      my $op_extr = gen_extr($op, $fh, \%vw);
       # render
       gen_render($op, $fh);
       # dump instruction
@@ -2807,6 +2812,17 @@ sub gen_instr
       } else {
         printf($fh "0, nullptr, nullptr,\n");
       }
+      # vwidth
+      if ( keys %vw ) {
+        printf($fh " {");
+        while( my($v, $w) = each %vw ) {
+          printf($fh " {\"%s\", %d },\n", $v, $w);
+        }
+        printf($fh "}, // values width\n");
+      } else {
+        printf($fh " {}, // no width\n");
+      }
+      # vas
       if ( defined $op->[18] ) {
         printf($fh " {");
         my $vlist = $op->[18];
