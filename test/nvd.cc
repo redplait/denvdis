@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <map>
+#include <unordered_set>
 #include <dlfcn.h>
 #include <getopt.h>
 #include <fp16.h>
@@ -217,6 +218,13 @@ static std::map<unsigned int, const char *> s_sht = {
 
 typedef INV_disasm *(*Dproto)(void);
 
+// extracted from EIATTR_INDIRECT_BRANCH_TARGETS
+struct bt_per_section
+{
+  std::unordered_map<uint32_t, uint32_t> branches; // key - offset, value - target
+  std::unordered_set<uint32_t> labels; // offset of label
+};
+
 class nv_dis
 {
   public:
@@ -226,6 +234,7 @@ class nv_dis
     }
    ~nv_dis() {
      if ( m_dis != nullptr ) delete m_dis;
+     for ( auto bi: m_branches ) delete bi.second;
      if ( m_out && m_out != stdout) fclose(m_out);
    }
    int open(const char *fname) {
@@ -283,10 +292,22 @@ class nv_dis
   protected:
    typedef std::pair<const struct nv_instr *, NV_extracted> NV_pair;
    typedef std::vector< std::pair<const struct nv_instr *, NV_extracted> > NV_res;
-   void try_dis();
+   void try_dis(Elf_Word idx);
    void hdump_section(section *);
    void parse_attrs(Elf_Half idx, section *);
-   void dump_ins(const NV_pair &p);
+   const bt_per_section *bget(Elf_Word i) const {
+     auto bi = m_branches.find(i);
+     if ( bi == m_branches.end() ) return nullptr;
+     return bi->second;
+   }
+   bt_per_section *get_branch(Elf_Word i) {
+     auto bi = m_branches.find(i);
+     if ( bi != m_branches.end() ) return bi->second;
+     auto res = new bt_per_section();
+     m_branches[i] = res;
+     return res;
+   }
+   void dump_ins(const NV_pair &p, uint32_t);
    int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &);
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    void dump_ops(const struct nv_instr *, const NV_extracted &);
@@ -305,6 +326,8 @@ class nv_dis
    elfio reader;
    INV_disasm *m_dis = nullptr;
    int m_width;
+   // indirect branches
+   std::unordered_map<Elf_Word, bt_per_section *> m_branches;
    // disasm stat
    long dis_total = 0;
    long dis_notfound = 0;
@@ -744,7 +767,7 @@ static const char *s_brts[4] = {
  "BRT_BRANCHOUT"
 };
 
-void nv_dis::dump_ins(const NV_pair &p)
+void nv_dis::dump_ins(const NV_pair &p, uint32_t label)
 {
   fprintf(m_out, "%s line %d n %d", p.first->name, p.first->line, p.first->n);
   if ( p.first->brt ) fprintf(m_out, " %s", s_brts[p.first->brt-1]);
@@ -755,14 +778,18 @@ void nv_dis::dump_ins(const NV_pair &p)
     std::string r;
     int miss = render(rend, r, p.first, p.second);
     if ( miss ) fprintf(m_out, "%d", miss);
-    fprintf(m_out, "> %s\n", r.c_str());
+    if ( label )
+     fprintf(m_out, "> %s (* BRANCH_TARGET LABEL_%X *)\n", r.c_str(), label);
+    else
+      fprintf(m_out, "> %s\n", r.c_str());
   } else
     fprintf(m_out, " NO_Render\n");
   if ( opt_O ) dump_ops( p.first, p.second );
 }
 
-void nv_dis::try_dis()
+void nv_dis::try_dis(Elf_Word idx)
 {
+  auto branches = bget(idx);
   while(1) {
     NV_res res;
     int get_res = m_dis->get(res);
@@ -781,7 +808,18 @@ void nv_dis::try_dis()
     }
     int res_idx = 0;
     if ( res.size() > 1 ) res_idx = calc_index(res, m_dis->rz);
-    fprintf(m_out, "/* res %d %X ", res.size(), m_dis->offset());
+    // check branch label
+    auto off = m_dis->offset();
+    uint32_t curr_label = 0;
+    if ( branches ) {
+      auto li = branches->labels.find(off);
+      if ( li != branches->labels.end() )
+        fprintf(m_out, "LABEL_%X:\n", off);
+      auto bi = branches->branches.find(off);
+      if ( bi != branches->branches.end() )
+        curr_label = bi->second;
+    }
+    fprintf(m_out, "/* res %d %X ", res.size(), off);
     if ( m_width == 64 ) {
       unsigned char op = 0, ctrl = 0;
       m_dis->get_ctrl(op, ctrl);
@@ -796,10 +834,10 @@ void nv_dis::try_dis()
     if ( res_idx == -1 ) {
       // dump ins
       dis_dups++;
-      for ( auto &p: res ) dump_ins(p);
+      for ( auto &p: res ) dump_ins(p, 0);
     } else {
       // dump single
-      dump_ins(res[res_idx]);
+      dump_ins(res[res_idx], curr_label);
     }
   }
 }
@@ -837,6 +875,10 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
       fprintf(m_out, "%X: UNKNOWN ATTR %X", data - start, attr);
     switch (format)
     {
+      case 1: data += 2;
+        // check align
+        if ( (data - start) & 0x3 ) data += 4 - ((data - start) & 0x3);
+        break;
       case 2:
         fprintf(m_out, " %2.2X\n", data[2]);
         data += 3;
@@ -852,6 +894,19 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
         fprintf(m_out, " len %4.4X\n", a_len);
         if ( data + 4 + a_len <= end && opt_h )
           HexDump(m_out, (const unsigned char *)(data + 4), a_len);
+        if ( attr == 0x34 ) {
+          // collect indirect branches
+          auto ib = get_branch(sec->get_info());
+          for ( const char *bcurr = data + 4; data + 4 + a_len - bcurr >= 0x10; bcurr += 0x10 ) {
+            // offset 0 - address of instruction
+            // offset c - address of label
+            uint32_t addr = *(uint32_t *)(bcurr),
+              lab = *(uint32_t *)(bcurr + 0xc);
+ // fprintf(m_out, "addr %X label %X\n", addr, lab);
+            ib->labels.insert(lab);
+            ib->branches[addr] = lab;
+          }
+        }
         data += 4 + a_len;
         break;
       default: fprintf(stderr, "unknown format %d, section %d off %X (%s)\n",
@@ -869,7 +924,7 @@ int nv_dis::single_section(int idx)
   if ( sec->get_type() == SHT_NOBITS ) return 0;
   if ( !sec->get_size() ) return 0;
   m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size() );
-  try_dis();
+  try_dis(idx);
   return 1;
 }
 
@@ -918,7 +973,7 @@ void nv_dis::process()
     if ( !strncmp(sname.c_str(), ".text.", 6) )
     {
       m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size() );
-      try_dis();
+      try_dis(i);
     }
   }
 }
