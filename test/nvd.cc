@@ -520,8 +520,14 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
 
 bool nv_dis::check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const
 {
-  if ( !i->brt || !i->target_index ) return false;
-  if ( kvi->first != i->target_index ) return false;
+  if ( !i->brt || !i->target_index ) {
+    // BSSY has type RSImm
+    auto vi = i->vas.find(kvi->first);
+    if ( vi == i->vas.end() ) return false;
+    if ( vi->second.kind != NV_RSImm ) return false;
+  } else {
+    if ( kvi->first != i->target_index ) return false;
+  }
   // find width
 //printf("try to find target_index %s value %lX\n", i->target_index, kvi->second);
   auto wi = i->vwidth.find(kvi->first);
