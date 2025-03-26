@@ -2751,6 +2751,24 @@ sub rend_list
   }
   printf($fh "}\n");
 }
+# 7 - reg, 6 - imm
+sub rend_C_list
+{
+  my($fh, $vidx, $f) = @_;
+  printf($fh "{ // rend_C for %d len %d\n", $vidx, scalar @$f);
+  if ( !defined $f->[7] ) {
+   printf($fh " ve_base l%d{ %s };\n", 0, rend_value_plus($f->[6], 0));
+   printf($fh " v%d->right.push_back( std::move(l%d));\n", $vidx, 0);
+  } else {
+   # first enum
+   printf($fh " ve_base l%d{ %s };\n", 0, rend_enum($f->[7]));
+   printf($fh " v%d->right.push_back( std::move(l%d));\n", $vidx, 0);
+   # then value
+   printf($fh " ve_base l%d{ %s };\n", 1, rend_value_plus($f->[6], 1));
+   printf($fh " v%d->right.push_back( std::move(l%d));\n", $vidx, 1);
+  }
+  printf($fh "}\n");
+}
 sub gen_render
 {
   my($op, $fh) = @_;
@@ -2774,7 +2792,7 @@ sub gen_render
       rend_list($fh, $idx, $f, 4);
     } elsif ( $f->[0] eq 'C') {
       printf($fh " auto v%d = new render_C(R_C, %s, %s, { %s });\n", $idx, gen_base($f), quoted_s($f->[4]), rend_value($f->[5]));
-      rend_list($fh, $idx, $f, 6);
+      rend_C_list($fh, $idx, $f);
     } elsif ( $f->[0] eq 'X' ) {
       printf($fh " auto v%d = new render_C(R_CX, %s, %s, { %s });\n", $idx, gen_base($f), quoted_s($f->[4]), rend_enum($f->[5]));
       rend_list($fh, $idx, $f, 6);
