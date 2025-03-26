@@ -567,7 +567,8 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
 {
   int idx = 0;
   int missed = 0;
-  int was_bs = 0;
+  int was_bs = 0; // seems that scheduling args always starts with BITSET req_xx
+  int prev = -1;  // workaround to fix op, bcs testcc is missed
   for ( auto ri: *rl ) {
     std::string tmp;
     switch(ri->type)
@@ -588,7 +589,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
           missed++;
           break;
         }
-        if ( vi->second.kind == NV_BITSET ) was_bs = 1;
+        if ( vi->second.kind == NV_BITSET && !strncmp(rn->name, "req_", 4) ) was_bs = 1;
         long branch_off = 0;
         if ( check_branch(i, kvi, branch_off) ) {
           char buf[128];
@@ -599,7 +600,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
           tmp += buf;
         } else
           dump_value(tmp, vi->second, kvi->second);
-        if ( rn->pfx ) { res += rn->pfx; res += ' '; }
+        if ( rn->pfx ) { if ( prev != R_opcode ) res += rn->pfx; res += ' '; }
         else if ( was_bs ) res += " &";
         res += tmp;
        } break;
@@ -612,23 +613,29 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
          else { ea = try_by_ename(i, rn->name); }
          if ( !ea ) {
            missed++;
-           break;
+           idx++;
+           continue;
          }
          auto kvi = kv.find(rn->name);
          if ( kvi == kv.end() ) {
            kvi = kv.find(ea->ename);
            if ( kvi == kv.end() ) {
              missed++;
-             break;
+             idx++;
+             continue;
            }
          }
          // now we have enum attr in ea and value in kvi
          // we have 2 cases - if this attr has ignore and !print and value == def_value - we should skip it
-         if ( ea->has_def_value && ea->def_value == (int)kvi->second && ea->ignore && !ea->print ) break;
+         if ( ea->has_def_value && ea->def_value == (int)kvi->second && ea->ignore && !ea->print ) {
+           idx++; continue;
+         }
          if ( ea->ignore ) res += '.';
          else {
-           if ( rn->pfx ) res += rn->pfx;
-           else res += ' ';
+           if ( rn->pfx ) {
+             if ( '?' == rn->pfx ) res += ' ';
+             res += rn->pfx;
+           } else res += ' ';
            // check mod
            if ( rn->mod ) check_mod(rn->mod, kv, rn->name, res);
          }
@@ -638,6 +645,9 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
          else {
            missed++;
            break;
+         }
+         if ( ea->ignore ) {
+           idx++; continue;
          }
        } break;
 
@@ -718,8 +728,10 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
          missed += render_ve_list(rt->right, i, kv, res);
          res += ']';
        } break;
+
       default: fprintf(stderr, "unknown rend type %d at index %d for inst %s\n", ri->type, idx, i->name);
     }
+    prev = ri->type;
     idx++;
   }
   return missed;
