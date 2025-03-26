@@ -7,6 +7,8 @@ use Getopt::Std;
 use Carp;
 use Data::Dumper;
 use v5.10;
+use feature qw( switch );
+no warnings qw( experimental::smartmatch );
 
 # options
 use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_N $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
@@ -2764,7 +2766,7 @@ sub rend_C_list
    printf($fh " ve_base l%d{ %s };\n", 0, rend_enum($f->[7]));
    printf($fh " v%d->right.push_back( std::move(l%d));\n", $vidx, 0);
    # then value
-   printf($fh " ve_base l%d{ %s };\n", 1, rend_value_plus($f->[6], 1));
+   printf($fh " ve_base l%d{ %s };\n", 1, rend_value_plus($f->[6], 0));
    printf($fh " v%d->right.push_back( std::move(l%d));\n", $vidx, 1);
   }
   printf($fh "}\n");
@@ -2795,7 +2797,7 @@ sub gen_render
       rend_C_list($fh, $idx, $f);
     } elsif ( $f->[0] eq 'X' ) {
       printf($fh " auto v%d = new render_C(R_CX, %s, %s, { %s });\n", $idx, gen_base($f), quoted_s($f->[4]), rend_enum($f->[5]));
-      rend_list($fh, $idx, $f, 6);
+      rend_C_list($fh, $idx, $f);
     } elsif ( $f->[0] eq 'D' ) {
       printf($fh " auto v%d = new render_desc(R_desc, %s, { %s });\n", $idx, gen_base($f), rend_enum($f->[4]));
       rend_list($fh, $idx, $f, 5);
