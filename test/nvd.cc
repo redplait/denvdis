@@ -319,7 +319,8 @@ class nv_dis
    int render_ve(const ve_base &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
    int render_ve_list(const std::list<ve_base> &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
    int check_mod(char c, const NV_extracted &, const char* name, std::string &r) const;
-   void dump_value(std::string &res, const nv_vattr &, uint64_t v) const;
+   void dump_value(const struct nv_instr *, const NV_extracted &kv, const std::string_view &,
+     std::string &res, const nv_vattr &, uint64_t v) const;
    bool check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    FILE *m_out;
    Elf_Half n_sec;
@@ -348,12 +349,26 @@ bool nv_dis::contain(const std::string_view &sv, char sym) const
   return sv.find(sym) != std::string::npos;
 }
 
-void nv_dis::dump_value(std::string &res, const nv_vattr &a, uint64_t v) const
+void nv_dis::dump_value(const struct nv_instr *ins, const NV_extracted &kv, const std::string_view &var_name,
+  std::string &res, const nv_vattr &a, uint64_t v) const
 {
   char buf[128];
   auto copy = v;
   uint32_t f32;
-  switch(a.kind)
+  NV_Format kind = a.kind;
+  if ( !ins->vf_conv.empty() ) {
+    auto convi = ins->vf_conv.find(var_name);
+    if ( convi != ins->vf_conv.end() ) {
+      auto vi = kv.find(convi->second.fmt_var);
+// printf("ins %s line %d  value fmt_var %d\n", ins->name, ins->line, (int)vi->second);
+      if ( vi != kv.end() && ((short)vi->second == convi->second.v1 || (short)vi->second == convi->second.v2) )
+      {
+// printf("ins %s line %d: change kind to %d bcs value fmt_var %d\n", ins->name, ins->line, convi->second.format, (int)vi->second);
+        kind = (NV_Format)convi->second.format;
+      }
+    }
+  }
+  switch(kind)
   {
     case NV_F64Imm:
       snprintf(buf, 127, "%f", *(double *)&v);
@@ -466,7 +481,7 @@ int nv_dis::render_ve(const ve_base &ve, const struct nv_instr *i, const NV_extr
     if ( kvi == kv.end() ) return 1;
     auto vi = i->vas.find(ve.arg);
     if ( vi == i->vas.end() ) return 1;
-    dump_value(res, vi->second, kvi->second);
+    dump_value(i, kv, ve.arg, res, vi->second, kvi->second);
     return 0;
   }
   // enum
@@ -498,7 +513,7 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
       auto vi = i->vas.find(ve.arg);
       if ( vi == i->vas.end() ) { missed++; idx++; continue; }
       std::string tmp;
-      dump_value(tmp, vi->second, kvi->second);
+      dump_value(i, kv, ve.arg, tmp, vi->second, kvi->second);
       if ( tmp == "0" && idx ) { idx++; continue; } // ignore +0
       if ( ve.pfx ) res += ve.pfx;
       else if ( idx ) res += '+';
@@ -528,7 +543,7 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
     if ( ea->ignore ) res += '.';
     else {
       if ( ve.pfx ) res += ve.pfx;
-      else if ( idx > 1 ) res += ' ';
+      else if ( idx > 1 ) res += " + ";
     }
     auto eid = ea->em->find(kvi->second);
     if ( eid != ea->em->end() )
@@ -599,7 +614,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
           snprintf(buf, 127, " (LABEL_%lX)", branch_off + m_dis->off_next());
           tmp += buf;
         } else
-          dump_value(tmp, vi->second, kvi->second);
+          dump_value(i, kv, rn->name, tmp, vi->second, kvi->second);
         if ( rn->pfx ) { if ( prev != R_opcode ) res += rn->pfx; res += ' '; }
         else if ( was_bs ) res += " &";
         res += tmp;
@@ -746,7 +761,7 @@ void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv)
     auto vi = i->vas.find(kv1.first);
     if ( vi != i->vas.end() ) {
       std::string buf;
-      dump_value(buf, vi->second, kv1.second);
+      dump_value(i, kv, kv1.first, buf, vi->second, kv1.second);
       fprintf(m_out, " V %s: %s type %d\n", name.c_str(), buf.c_str(), vi->second.kind);
       continue;
     }
