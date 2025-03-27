@@ -2566,12 +2566,61 @@ sub bank_extract
   printf($fh "auto c%d = fn(%s, %d);\n", $n, $mask, $size);
   return mask_len($g_mnames{$m});
 }
+# args: op, field name, format for field, ref to float conv ref, array wirh convertFloatType args
+sub parse_conv_float
+{
+  my($op, $fname, $format, $fc, $args) = @_;
+  my @spl = split(/\s*\|\|\s*/, $args->[0]);
+  my $prev;
+  my %vhash;
+  foreach my $s ( @spl ) {
+    if ( $s !~ /([\w\.]+)\s*==\s*`([\w\.]+)@([\w\.]+)/ ) {
+      printf("bad conv_float %s for %s, line %d\n", $s, $op->[1], $op->[4]);
+      next;
+    }
+    # check if we have var in $1
+    my $vname = $1;
+    if ( !exists $op->[17]->{$vname} ) {
+      printf("bad conv_float varname %s for %s, line %d\n", $vname, $op->[1], $op->[4]);
+      next;
+    }
+    if ( defined $prev ) {
+      return 0 if ( $prev ne $vname );
+    } else {
+      $prev = $vname;
+    }
+    # check value $3 in enum $3
+    if ( !exists $g_enums{$2} ) {
+      printf("bad conv_float enum %s for %s, line %d\n", $2, $op->[1], $op->[4]);
+      next;
+    }
+    my $e = $g_enums{$2};
+    if ( !exists $e->{$3} ) {
+      printf("no value %s in enum %s for %s, line %d\n", $3, $2, $op->[1], $op->[4]);
+      next;
+    }
+    next if exists $vhash{$e->{$3}};
+    $vhash{$e->{$3}} = 1;
+  }
+  # ok, check size
+  my @vkeys = values %vhash;
+  return 0 unless ( scalar @vkeys );
+  if ( scalar(@vkeys) > 2 ) {
+      printf("bad conv_float values count %d for %s, line %d\n", scalar @vkeys, $op->[1], $op->[4]);
+      return 0;
+  }
+  # fill array for $fc
+  my @res = ( $prev, $format, $vkeys[0] );
+  push @res, scalar(@vkeys) > 1 ? $vkeys[1]: -1;
+  $fc->{$fname} = \@res;
+  1;
+}
 # example from sm3:
 # /ICmpAll:icomp but there is no encoder for icomp, instead we have
 # IComp = ICmpAll - so we must check if second arg is enum
 sub gen_extr
 {
-  my($op, $fh, $vw) = @_;
+  my($op, $fh, $vw, $fc) = @_;
   my $enc = $op->[5];
   return 'nullptr' unless defined($enc);
   my $name = sprintf("%s_%d_extr", $opt_C, $op->[19]);
@@ -2626,9 +2675,31 @@ sub gen_extr
         printf($fh "res[\"%s\"] = v%d;\n", $2, $index);
       }
       $index++; next;
-    } elsif ( $m=~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)\s+convertFloatType/ ) {
+    } elsif ( $m=~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)\s+convertFloatType\s*\((.*)\s*\)/ ) {
+      printf($fh "// convertFloatType %s\n", $3);
       inl_extract($fh, $1, $index);
+      my $field = $2;
       printf($fh "res[\"%s\"] = v%d;\n", $2, $index);
+      if ( defined $fc ) {
+        # I don't know exact format of convertFloatType function - seems that it must have 3 fields:
+        # 1 - expression
+        # 2 - format name
+        # 3 - type F16Imm or F32Imm
+        # so first thing to do - split on commas and check size and last arg
+        my @fc_args = split(/\s*,\s*/, $3);
+        if ( 3 != scalar @fc_args) {
+          printf("bad args for convertFloatType(%s) for %s, line %d\n", $3, $op->[1], $op->[4]);
+        } elsif ( $fc_args[2] eq 'F16Imm' || $fc_args[2] eq 'F32Imm' ) {
+          if ( $fc_args[0] =~ /1\s*==\s*1/ ) {
+            # it's much simpler just to replace vas field
+            my $vas = $op->[18];
+            if ( exists $vas->{$field} ) { $vas->{$field}->[0] = $fc_args[2]; }
+            else { printf("no vas for %s, instr %s line %d\n", $field, $op->[1], $op->[4]); }
+          } else {
+            parse_conv_float($op, $field, $fc_args[2], $fc, \@fc_args);
+          }
+        }
+      }
       $index++; next;
     }
   }
@@ -2831,7 +2902,8 @@ sub gen_instr
       my $op_filter = gen_filter($op, $fh);
       # extractor
       my %vw;
-      my $op_extr = gen_extr($op, $fh, \%vw);
+      my %fc;
+      my $op_extr = gen_extr($op, $fh, \%vw, \%fc);
       # render
       gen_render($op, $fh);
       # dump instruction
