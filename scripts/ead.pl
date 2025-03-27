@@ -2603,7 +2603,7 @@ sub parse_conv_float
     $vhash{$e->{$3}} = 1;
   }
   # ok, check size
-  my @vkeys = values %vhash;
+  my @vkeys = keys %vhash;
   return 0 unless ( scalar @vkeys );
   if ( scalar(@vkeys) > 2 ) {
       printf("bad conv_float values count %d for %s, line %d\n", scalar @vkeys, $op->[1], $op->[4]);
@@ -2931,6 +2931,19 @@ sub gen_instr
         printf($fh "}, // values width\n");
       } else {
         printf($fh " {}, // no width\n");
+      }
+      # vf_conv
+      my @fconv = keys %fc;
+      if ( scalar @fconv ) {
+        printf($fh " { // %d conversions\n", scalar @fconv);
+        foreach my $c1 ( @fconv ) {
+          printf($fh " { \"%s\", {", $c1);
+          my $ca = %fc{$c1};
+          printf($fh "\"%s\", NV_%s, %d, %d} },\n", $ca->[0], $ca->[1], $ca->[2], $ca->[3]);
+        }
+        printf($fh "},\n");
+      } else {
+        printf($fh " {}, // no vf_conv\n");
       }
       # vas
       if ( defined $op->[18] ) {
