@@ -2611,7 +2611,11 @@ sub parse_conv_float
   }
   # fill array for $fc
   my @res = ( $prev, $format, $vkeys[0] );
-  push @res, scalar(@vkeys) > 1 ? $vkeys[1]: -1;
+  if ( $format eq 'F16Imm') {
+    push @res, 0;
+  } else {
+    push @res, scalar(@vkeys) > 1 ? $vkeys[1]: -1;
+  }
   $fc->{$fname} = \@res;
   1;
 }
@@ -2687,16 +2691,20 @@ sub gen_extr
         # 3 - type F16Imm or F32Imm
         # so first thing to do - split on commas and check size and last arg
         my @fc_args = split(/\s*,\s*/, $3);
-        if ( 3 != scalar @fc_args) {
+        my $fc_len = scalar @fc_args;
+        if ( $fc_len < 3 ) {
           printf("bad args for convertFloatType(%s) for %s, line %d\n", $3, $op->[1], $op->[4]);
-        } elsif ( $fc_args[2] eq 'F16Imm' || $fc_args[2] eq 'F32Imm' ) {
-          if ( $fc_args[0] =~ /1\s*==\s*1/ ) {
-            # it's much simpler just to replace vas field
-            my $vas = $op->[18];
-            if ( exists $vas->{$field} ) { $vas->{$field}->[0] = $fc_args[2]; }
-            else { printf("no vas for %s, instr %s line %d\n", $field, $op->[1], $op->[4]); }
-          } else {
-            parse_conv_float($op, $field, $fc_args[2], $fc, \@fc_args);
+        } else {
+          splice @fc_args, 0, $fc_len - 3 if ( $fc_len > 3 );
+          if ( $fc_args[2] eq 'F16Imm' || $fc_args[2] eq 'F32Imm' ) {
+            if ( $fc_args[0] =~ /1\s*==\s*1/ ) {
+              # it's much simpler just to replace vas field
+              my $vas = $op->[18];
+              if ( exists $vas->{$field} ) { $vas->{$field}->[0] = $fc_args[2]; }
+              else { printf("no vas for %s, instr %s line %d\n", $field, $op->[1], $op->[4]); }
+            } else {
+              parse_conv_float($op, $field, $fc_args[2], $fc, \@fc_args);
+            }
           }
         }
       }
