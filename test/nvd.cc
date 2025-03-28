@@ -291,15 +291,10 @@ class nv_dis
    }
   protected:
    typedef std::pair<const struct nv_instr *, NV_extracted> NV_pair;
-   typedef std::vector< std::pair<const struct nv_instr *, NV_extracted> > NV_res;
+   typedef std::vector<NV_pair> NV_res;
    void try_dis(Elf_Word idx);
    void hdump_section(section *);
    void parse_attrs(Elf_Half idx, section *);
-   const bt_per_section *bget(Elf_Word i) const {
-     auto bi = m_branches.find(i);
-     if ( bi == m_branches.end() ) return nullptr;
-     return bi->second;
-   }
    bt_per_section *get_branch(Elf_Word i) {
      auto bi = m_branches.find(i);
      if ( bi != m_branches.end() ) return bi->second;
@@ -307,8 +302,8 @@ class nv_dis
      m_branches[i] = res;
      return res;
    }
-   void dump_ins(const NV_pair &p, uint32_t);
-   int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &);
+   void dump_ins(const NV_pair &p, uint32_t, std::unordered_set<uint32_t> *);
+   int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, std::unordered_set<uint32_t> *);
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    void dump_ops(const struct nv_instr *, const NV_extracted &);
    int cmp(const std::string_view &, const char *) const;
@@ -578,7 +573,7 @@ bool nv_dis::check_branch(const struct nv_instr *i, const NV_extracted::const_it
   return true;
 }
 
-int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv)
+int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv, std::unordered_set<uint32_t> *l)
 {
   int idx = 0;
   int missed = 0;
@@ -612,6 +607,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
           tmp = buf;
           // make (LABEL_xxx)
           snprintf(buf, 127, " (LABEL_%lX)", branch_off + m_dis->off_next());
+          if ( l ) l->insert(branch_off + m_dis->off_next());
           tmp += buf;
         } else
           dump_value(i, kv, rn->name, tmp, vi->second, kvi->second);
@@ -794,7 +790,7 @@ static const char *s_brts[4] = {
  "BRT_BRANCHOUT"
 };
 
-void nv_dis::dump_ins(const NV_pair &p, uint32_t label)
+void nv_dis::dump_ins(const NV_pair &p, uint32_t label, std::unordered_set<uint32_t> *l)
 {
   fprintf(m_out, "%s line %d n %d", p.first->name, p.first->line, p.first->n);
   if ( p.first->brt ) fprintf(m_out, " %s", s_brts[p.first->brt-1]);
@@ -803,7 +799,7 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label)
   if ( rend ) {
     fprintf(m_out, " %d render items\n", rend->size());
     std::string r;
-    int miss = render(rend, r, p.first, p.second);
+    int miss = render(rend, r, p.first, p.second, l);
     if ( miss ) fprintf(m_out, "%d", miss);
     if ( label )
      fprintf(m_out, "> %s (* BRANCH_TARGET LABEL_%X *)\n", r.c_str(), label);
@@ -816,7 +812,7 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label)
 
 void nv_dis::try_dis(Elf_Word idx)
 {
-  auto branches = bget(idx);
+  auto branches = get_branch(idx);
   while(1) {
     NV_res res;
     int get_res = m_dis->get(res);
@@ -861,10 +857,10 @@ void nv_dis::try_dis(Elf_Word idx)
     if ( res_idx == -1 ) {
       // dump ins
       dis_dups++;
-      for ( auto &p: res ) dump_ins(p, 0);
+      for ( auto &p: res ) dump_ins(p, 0, nullptr);
     } else {
       // dump single
-      dump_ins(res[res_idx], curr_label);
+      dump_ins(res[res_idx], curr_label, branches ? &branches->labels: nullptr);
     }
   }
 }
