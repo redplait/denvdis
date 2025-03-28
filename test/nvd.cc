@@ -709,7 +709,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
          const render_TTU *rt = (const render_TTU *)ri;
          if ( rt->pfx ) res += rt->pfx;
          else res += ' ';
-         res += "tti:[";
+         res += "ttu:[";
          missed += render_ve(rt->left, i, kv, res);
          res += ']';
        } break;

@@ -1,6 +1,6 @@
 IFLAGS=-I ../scripts
 ELFIO=-I ../../../../../ELFIO/
-# patch to fp16 (https://github.com/Maratyszcza/FP16)
+# path to fp16 (https://github.com/Maratyszcza/FP16)
 FP16=-I ../../FP16/include
 # for release add -Os and remove -g
 SM_FLAGS=-shared -fpic -msse2avx -g -pthread $(IFLAGS)
