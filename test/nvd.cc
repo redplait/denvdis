@@ -217,12 +217,13 @@ static std::map<unsigned int, const char *> s_sht = {
 };
 
 typedef INV_disasm *(*Dproto)(void);
+typedef std::unordered_set<uint32_t> NV_labels;
 
 // extracted from EIATTR_INDIRECT_BRANCH_TARGETS
 struct bt_per_section
 {
   std::unordered_map<uint32_t, uint32_t> branches; // key - offset, value - target
-  std::unordered_set<uint32_t> labels; // offset of label
+  NV_labels labels; // offset of label
 };
 
 class nv_dis
@@ -302,8 +303,8 @@ class nv_dis
      m_branches[i] = res;
      return res;
    }
-   void dump_ins(const NV_pair &p, uint32_t, std::unordered_set<uint32_t> *);
-   int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, std::unordered_set<uint32_t> *);
+   void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
+   int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *);
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    void dump_ops(const struct nv_instr *, const NV_extracted &);
    int cmp(const std::string_view &, const char *) const;
@@ -573,7 +574,7 @@ bool nv_dis::check_branch(const struct nv_instr *i, const NV_extracted::const_it
   return true;
 }
 
-int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv, std::unordered_set<uint32_t> *l)
+int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv, NV_labels *l)
 {
   int idx = 0;
   int missed = 0;
@@ -790,7 +791,7 @@ static const char *s_brts[4] = {
  "BRT_BRANCHOUT"
 };
 
-void nv_dis::dump_ins(const NV_pair &p, uint32_t label, std::unordered_set<uint32_t> *l)
+void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
 {
   fprintf(m_out, "%s line %d n %d", p.first->name, p.first->line, p.first->n);
   if ( p.first->brt ) fprintf(m_out, " %s", s_brts[p.first->brt-1]);
