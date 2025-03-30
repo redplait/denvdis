@@ -98,10 +98,18 @@ const one_md mds[] = {
  { 0x4CD5960, 0xA0F0E, "llvm", 1 },
  { 0x4D776A0, 0x14387, "ptx_out", 1 },
  { 0x4D77420, 0x277, "regs", 1 },
+ { 0x4D8BA40, 0x3D8, "d1" },
+ { 0x4D8BE20, 0x860, "d2" },
+ { 0x4DAB620, 0x543F9, "d3", 1 },
+ { 0x4E01F00, 0xACB2, "d4", 1 },
+ { 0x4E01C80, 0x277, "d5", 1 },
+ { 0x4E0CD60, 0x1B, "d6" },
  { 0, 0, NULL }, // last
 };
 
 const one_md bcs[] = {
+ { 0x3D611A0, 0x15A8, "c23" },
+ { 0x3D62760, 0x15A8, "c24" },
  { 0x3DCF740, 0x106A7C, "c1" },
  { 0x3DC6400, 0x4988, "c2" },
  { 0x3D652C0, 0x205B0, "c3" },
