@@ -2668,8 +2668,8 @@ sub gen_extr
       } else {
         printf($fh "// %s to %s\n", $1, $2);
       }
-      # mask $1 value $2
-      if ( defined $op->[18] && exists $op->[18]->{$2} ) {
+      # mask $1 value $2 - ignore req_bit_set bcs it's always BITSET
+      if ( defined $op->[18] && $2 ne 'req_bit_set' && exists $op->[18]->{$2} ) {
         $vw->{$2} = mask_len( $g_mnames{$1} ) + scale_len($3) if exists($g_mnames{$1});
       }
       inl_extract($fh, $1, $index);
@@ -2914,6 +2914,16 @@ sub gen_instr
       my $op_extr = gen_extr($op, $fh, \%vw, \%fc);
       # render
       gen_render($op, $fh);
+      # vwidth
+      my $width_name;
+      if ( keys %vw ) {
+        $width_name = 'width_' . $op->[19];
+        printf($fh "static const NV_width %s = { // %d widths\n", $width_name, scalar keys %vw);
+        while( my($v, $w) = each %vw ) {
+          printf($fh " {\"%s\", %d },\n", $v, $w);
+        }
+        printf($fh "};\n");
+      }
       # vf_conv
       my $conv_name;
       my @fconv = keys %fc;
@@ -2922,7 +2932,7 @@ sub gen_instr
         printf($fh "static const NV_conv %s = { // %d conversions\n", $conv_name, scalar @fconv);
         foreach my $c1 ( @fconv ) {
           printf($fh " { \"%s\", {", $c1);
-          my $ca = %fc{$c1};
+          my $ca = $fc{$c1};
           printf($fh "\"%s\", NV_%s, %d, %d} },\n", $ca->[0], $ca->[1], $ca->[2], $ca->[3]);
         }
         printf($fh "};\n");
@@ -2947,15 +2957,8 @@ sub gen_instr
       if ( defined $conv_name ) { printf($fh "&%s,\n", $conv_name); }
       else { printf($fh " nullptr,\n"); }
       # vwidth
-      if ( keys %vw ) {
-        printf($fh " {");
-        while( my($v, $w) = each %vw ) {
-          printf($fh " {\"%s\", %d },\n", $v, $w);
-        }
-        printf($fh "}, // values width\n");
-      } else {
-        printf($fh " {}, // no width\n");
-      }
+      if ( defined $width_name ) { printf($fh "&%s,\n", $width_name); }
+      else { printf($fh " nullptr,\n"); }
       # vas
       if ( defined $op->[18] ) {
         printf($fh " {");

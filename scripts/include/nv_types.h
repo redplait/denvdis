@@ -52,7 +52,8 @@ struct nv_float_conv {
 
 typedef int (*nv_filter)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &);
 typedef std::unordered_map<std::string_view, uint64_t> NV_extracted;
-typedef const std::unordered_map<std::string_view, nv_float_conv> NV_conv;
+typedef std::unordered_map<std::string_view, short> NV_width;
+typedef std::unordered_map<std::string_view, nv_float_conv> NV_conv;
 typedef void (*nv_extract)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &, NV_extracted &);
 
 struct nv_instr {
@@ -67,7 +68,7 @@ struct nv_instr {
  const char *cc_index;
  const char *sidl_name;
  const NV_conv *vf_conv;
- const std::unordered_map<std::string_view, short> vwidth;
+ const NV_width *vwidth;
  const std::unordered_map<std::string_view, const nv_vattr> vas;
  const std::unordered_map<std::string_view, const nv_eattr *> eas;
  nv_filter filter;
