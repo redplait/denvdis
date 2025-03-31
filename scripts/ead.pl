@@ -2914,6 +2914,19 @@ sub gen_instr
       my $op_extr = gen_extr($op, $fh, \%vw, \%fc);
       # render
       gen_render($op, $fh);
+      # vf_conv
+      my $conv_name;
+      my @fconv = keys %fc;
+      if ( scalar @fconv ) {
+        $conv_name = 'conv_' . $op->[19];
+        printf($fh "static const NV_conv %s = { // %d conversions\n", $conv_name, scalar @fconv);
+        foreach my $c1 ( @fconv ) {
+          printf($fh " { \"%s\", {", $c1);
+          my $ca = %fc{$c1};
+          printf($fh "\"%s\", NV_%s, %d, %d} },\n", $ca->[0], $ca->[1], $ca->[2], $ca->[3]);
+        }
+        printf($fh "};\n");
+      }
       # dump instruction
       printf($fh "static const struct nv_instr %s_%d = {\n", $opt_C, $op->[19]);
       # name mask line n alt meaning_bits
@@ -2930,6 +2943,9 @@ sub gen_instr
       } else {
         printf($fh "0, nullptr, nullptr, nullptr,\n");
       }
+      # vf_conv
+      if ( defined $conv_name ) { printf($fh "&%s,\n", $conv_name); }
+      else { printf($fh " nullptr,\n"); }
       # vwidth
       if ( keys %vw ) {
         printf($fh " {");
@@ -2939,19 +2955,6 @@ sub gen_instr
         printf($fh "}, // values width\n");
       } else {
         printf($fh " {}, // no width\n");
-      }
-      # vf_conv
-      my @fconv = keys %fc;
-      if ( scalar @fconv ) {
-        printf($fh " { // %d conversions\n", scalar @fconv);
-        foreach my $c1 ( @fconv ) {
-          printf($fh " { \"%s\", {", $c1);
-          my $ca = %fc{$c1};
-          printf($fh "\"%s\", NV_%s, %d, %d} },\n", $ca->[0], $ca->[1], $ca->[2], $ca->[3]);
-        }
-        printf($fh "},\n");
-      } else {
-        printf($fh " {}, // no vf_conv\n");
       }
       # vas
       if ( defined $op->[18] ) {
