@@ -64,6 +64,7 @@ struct nv_instr {
  char brt; // NV_Brt or 0
  const char *target_index;
  const char *cc_index;
+ const char *sidl_name;
  const std::unordered_map<std::string_view, short> vwidth;
  const std::unordered_map<std::string_view, nv_float_conv> vf_conv;
  const std::unordered_map<std::string_view, const nv_vattr> vas;

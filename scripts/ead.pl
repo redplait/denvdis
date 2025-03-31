@@ -1508,7 +1508,7 @@ sub dump_values
       my $mask = $g_mnames{$1};
       dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv, $2);
     } else {
-     carp("unknown enocoding $m");
+     carp("unknown encoding $m");
    }
   }
   # dump const bank
@@ -1573,14 +1573,14 @@ sub ignore_enum
   my $res = '';
   $res = '.' if $ae->[1];
   if ( 'ARRAY' ne ref $v ) {
-  printf("%s %d: single %d vs %d\n", $ae->[0], $ae->[1], $v, $ae->[2]);
+  printf("%s %d: single %d vs %d\n", $ae->[0], $ae->[1], $v, $ae->[2]) if defined($opt_v);
     return [ 0, '' ] if ( $v == $ae->[2] ); # default value
     my $ev = enum_by_value($g_enums{$ae->[0]}, $v);
     return [ 1, $res . $ev ] if ( defined ( $ev ) );
     return;
   }
   # value is pair [ int, enum_string ]
-printf("%s %d: pair %s vs %d\n", $ae->[0], $ae->[1], $v->[1], $ae->[2]);
+printf("%s %d: pair %s vs %d\n", $ae->[0], $ae->[1], $v->[1], $ae->[2]) if defined($opt_v);
   return [ 0, '' ] if ( $v->[0] == $ae->[2] ); # default value
   return [ 1, $res . $v->[1] ];
 }
@@ -2922,13 +2922,13 @@ sub gen_instr
       if ( defined $op->[20] ) {
         my $brt = $op->[20];
         printf($fh "%s,", $brt->[0] || '0');
-        if ( defined $brt->[1]) { printf($fh "\"%s\",", $brt->[1]); }
-        else { printf($fh "nullptr,"); }
-        if ( defined $brt->[2]) { printf($fh "\"%s\",", $brt->[2]); }
-        else { printf($fh "nullptr,"); }
+        for ( my $bi = 1; $bi < 4; $bi++ ) {
+          if ( defined $brt->[$bi]) { printf($fh "\"%s\",", $brt->[$bi]); }
+          else { printf($fh "nullptr,"); }
+        }
         printf($fh "\n");
       } else {
-        printf($fh "0, nullptr, nullptr,\n");
+        printf($fh "0, nullptr, nullptr, nullptr,\n");
       }
       # vwidth
       if ( keys %vw ) {
@@ -3642,6 +3642,11 @@ while( $str = <$fh> ) {
     }
     if ( $str =~ /CC_INDEX = INDEX\(([^\)]+)\)/ ) {
       $b_props[2] = $1;
+      next;
+    }
+    # SIDL_NAME
+    if ( $str =~ /SIDL_NAME\s*=\s*`SIDL_NAMES@(\w+)/ ) {
+      $b_props[3] = $1;
       next;
     }
   }
