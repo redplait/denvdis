@@ -294,6 +294,132 @@ static const char* get_merc_reloc_name(unsigned t)
   return mrelocs[t];
 }
 
+// CUDA relocs
+const char *cuda_relocs[] = {
+/*  0 */ "R_CUDA_NONE",
+/*  1 */ "R_CUDA_32",
+/*  2 */ "R_CUDA_64",
+/*  3 */ "R_CUDA_G32",
+/*  4 */ "R_CUDA_G64",
+/*  5 */ "R_CUDA_ABS32_26",
+/*  6 */ "R_CUDA_TEX_HEADER_INDEX",
+/*  7 */ "R_CUDA_SAMP_HEADER_INDEX",
+/*  8 */ "R_CUDA_SURF_HW_DESC",
+/*  9 */ "R_CUDA_SURF_HW_SW_DESC",
+/*  A */ "R_CUDA_ABS32_LO_26",
+/*  B */ "R_CUDA_ABS32_HI_26",
+/*  C */ "R_CUDA_ABS32_23",
+/*  D */ "R_CUDA_ABS32_LO_23",
+/*  E */ "R_CUDA_ABS32_HI_23",
+/*  F */ "R_CUDA_ABS24_26",
+/* 10 */ "R_CUDA_ABS24_23",
+/* 11 */ "R_CUDA_ABS16_26",
+/* 12 */ "R_CUDA_ABS16_23",
+/* 13 */ "R_CUDA_TEX_SLOT",
+/* 14 */ "R_CUDA_SAMP_SLOT",
+/* 15 */ "R_CUDA_SURF_SLOT",
+/* 16 */ "R_CUDA_TEX_BINDLESSOFF13_32",
+/* 17 */ "R_CUDA_TEX_BINDLESSOFF13_47",
+/* 18 */ "R_CUDA_CONST_FIELD19_28",
+/* 19 */ "R_CUDA_CONST_FIELD19_23",
+/* 1A */ "R_CUDA_TEX_SLOT9_49",
+/* 1B */ "R_CUDA_6_31",
+/* 1C */ "R_CUDA_2_47",
+/* 1D */ "R_CUDA_TEX_BINDLESSOFF13_41",
+/* 1E */ "R_CUDA_TEX_BINDLESSOFF13_45",
+/* 1F */ "R_CUDA_FUNC_DESC32_23",
+/* 20 */ "R_CUDA_FUNC_DESC32_LO_23",
+/* 21 */ "R_CUDA_FUNC_DESC32_HI_23",
+/* 22 */ "R_CUDA_FUNC_DESC_32",
+/* 23 */ "R_CUDA_FUNC_DESC_64",
+/* 24 */ "R_CUDA_CONST_FIELD21_26",
+/* 25 */ "R_CUDA_QUERY_DESC21_37",
+/* 26 */ "R_CUDA_CONST_FIELD19_26",
+/* 27 */ "R_CUDA_CONST_FIELD21_23",
+/* 28 */ "R_CUDA_PCREL_IMM24_26",
+/* 29 */ "R_CUDA_PCREL_IMM24_23",
+/* 2A */ "R_CUDA_ABS32_20",
+/* 2B */ "R_CUDA_ABS32_LO_20",
+/* 2C */ "R_CUDA_ABS32_HI_20",
+/* 2D */ "R_CUDA_ABS24_20",
+/* 2E */ "R_CUDA_ABS16_20",
+/* 2F */ "R_CUDA_FUNC_DESC32_20",
+/* 30 */ "R_CUDA_FUNC_DESC32_LO_20",
+/* 31 */ "R_CUDA_FUNC_DESC32_HI_20",
+/* 32 */ "R_CUDA_CONST_FIELD19_20",
+/* 33 */ "R_CUDA_BINDLESSOFF13_36",
+/* 34 */ "R_CUDA_SURF_HEADER_INDEX",
+/* 35 */ "R_CUDA_INSTRUCTION64",
+/* 36 */ "R_CUDA_CONST_FIELD21_20",
+/* 37 */ "R_CUDA_ABS32_32",
+/* 38 */ "R_CUDA_ABS32_LO_32",
+/* 39 */ "R_CUDA_ABS32_HI_32",
+/* 3A */ "R_CUDA_ABS47_34",
+/* 3B */ "R_CUDA_ABS16_32",
+/* 3C */ "R_CUDA_ABS24_32",
+/* 3D */ "R_CUDA_FUNC_DESC32_32",
+/* 3E */ "R_CUDA_FUNC_DESC32_LO_32",
+/* 3F */ "R_CUDA_FUNC_DESC32_HI_32",
+/* 40 */ "R_CUDA_CONST_FIELD19_40",
+/* 41 */ "R_CUDA_BINDLESSOFF14_40",
+/* 42 */ "R_CUDA_CONST_FIELD21_38",
+/* 43 */ "R_CUDA_INSTRUCTION128",
+/* 44 */ "R_CUDA_YIELD_OPCODE9_0",
+/* 45 */ "R_CUDA_YIELD_CLEAR_PRED4_87",
+/* 46 */ "R_CUDA_32_LO",
+/* 47 */ "R_CUDA_32_HI",
+/* 48 */ "R_CUDA_UNUSED_CLEAR32",
+/* 49 */ "R_CUDA_UNUSED_CLEAR64",
+/* 4A */ "R_CUDA_ABS24_40",
+/* 4B */ "R_CUDA_ABS55_16_34",
+/* 4C */ "R_CUDA_8_0",
+/* 4D */ "R_CUDA_8_8",
+/* 4E */ "R_CUDA_8_16",
+/* 4F */ "R_CUDA_8_24",
+/* 50 */ "R_CUDA_8_32",
+/* 51 */ "R_CUDA_8_40",
+/* 52 */ "R_CUDA_8_48",
+/* 53 */ "R_CUDA_8_56",
+/* 54 */ "R_CUDA_G8_0",
+/* 55 */ "R_CUDA_G8_8",
+/* 56 */ "R_CUDA_G8_16",
+/* 57 */ "R_CUDA_G8_24",
+/* 58 */ "R_CUDA_G8_32",
+/* 59 */ "R_CUDA_G8_40",
+/* 5A */ "R_CUDA_G8_48",
+/* 5B */ "R_CUDA_G8_56",
+/* 5C */ "R_CUDA_FUNC_DESC_8_0",
+/* 5D */ "R_CUDA_FUNC_DESC_8_8",
+/* 5E */ "R_CUDA_FUNC_DESC_8_16",
+/* 5F */ "R_CUDA_FUNC_DESC_8_24",
+/* 60 */ "R_CUDA_FUNC_DESC_8_32",
+/* 61 */ "R_CUDA_FUNC_DESC_8_40",
+/* 62 */ "R_CUDA_FUNC_DESC_8_48",
+/* 63 */ "R_CUDA_FUNC_DESC_8_56",
+/* 64 */ "R_CUDA_ABS20_44",
+/* 65 */ "R_CUDA_SAMP_HEADER_INDEX_0",
+/* 66 */ "R_CUDA_UNIFIED",
+/* 67 */ "R_CUDA_UNIFIED_32",
+/* 68 */ "R_CUDA_UNIFIED_8_0",
+/* 69 */ "R_CUDA_UNIFIED_8_8",
+/* 6A */ "R_CUDA_UNIFIED_8_16",
+/* 6B */ "R_CUDA_UNIFIED_8_24",
+/* 6C */ "R_CUDA_UNIFIED_8_32",
+/* 6D */ "R_CUDA_UNIFIED_8_40",
+/* 6E */ "R_CUDA_UNIFIED_8_48",
+/* 6F */ "R_CUDA_UNIFIED_8_56",
+/* 70 */ "R_CUDA_UNIFIED32_LO_32",
+/* 71 */ "R_CUDA_UNIFIED32_HI_32",
+/* 72 */ "R_CUDA_ABS56_16_34",
+/* 73 */ "R_CUDA_CONST_FIELD22_37",
+};
+
+static const char* get_cuda_reloc_name(unsigned t)
+{
+  if ( t >= sizeof(cuda_relocs) / sizeof(cuda_relocs[0]) ) return nullptr;
+  return cuda_relocs[t];
+}
+
 typedef INV_disasm *(*Dproto)(void);
 typedef std::unordered_set<uint32_t> NV_labels;
 
@@ -374,6 +500,7 @@ class nv_dis
    void try_dis(Elf_Word idx);
    void hdump_section(section *);
    void dump_mrelocs(section *);
+   void dump_crelocs(section *);
    void parse_attrs(Elf_Half idx, section *);
    bt_per_section *get_branch(Elf_Word i) {
      auto bi = m_branches.find(i);
@@ -1057,6 +1184,29 @@ void nv_dis::dump_mrelocs(section *sec)
   sec->set_type(old_type);
 }
 
+void nv_dis::dump_crelocs(section *sec)
+{
+  if ( !sec->get_size() ) return;
+  const_relocation_section_accessor rsa(reader, sec);
+  auto n = rsa.get_entries_num();
+  fprintf(m_out, "%d relocs:\n", n);
+  if ( !n ) return;
+  for ( Elf_Xword i = 0; i < n; i++ ) {
+    Elf64_Addr addr;
+    Elf_Word sym;
+    unsigned type;
+    Elf_Sxword add;
+    if ( rsa.get_entry(i, addr, sym, type, add) ) {
+      auto tname = get_cuda_reloc_name(type);
+      fprintf(m_out, " [%d] %X sym %d add %X", n, addr, sym, add);
+      if ( tname )
+       fprintf(m_out, " %s\n", tname);
+      else
+       fprintf(m_out, " type %d\n", type);
+    }
+  }
+}
+
 void nv_dis::process()
 {
   n_sec = reader.sections.size();
@@ -1078,7 +1228,10 @@ void nv_dis::process()
       if ( st == 0x70000000 ) parse_attrs(i, sec);
       else if ( st > 0x70000000 ) hdump_section(sec);
     } else {
-      if ( st == SHT_NOTE )
+      if ( st == SHT_REL || st == SHT_RELA ) {
+        fprintf(m_out, "[%d] %s type %X flags %X\n", i, sec->get_name().c_str(), st, sf);
+        if ( opt_r ) dump_crelocs(sec);
+      } else if ( st == SHT_NOTE )
       {
         auto tf = sf & 0xFF00000;
         if ( tf == 0x1000000 ) {
