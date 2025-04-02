@@ -11,6 +11,7 @@
 int opt_e = 0,
     opt_h = 0,
     opt_t = 0,
+    opt_r = 0,
     opt_N = 0,
     opt_O = 0;
 
@@ -216,6 +217,83 @@ static std::map<unsigned int, const char *> s_sht = {
  { 0x70000075, "SHT_CUDA_CONSTANT_B17" },
 };
 
+// MERCURY relocs
+const char *mrelocs[] = {
+/*  0 */ "R_MERCURY_NONE",
+/*  1 */ "R_MERCURY_G64",
+/*  2 */ "R_MERCURY_ABS64",
+/*  3 */ "R_MERCURY_ABS32",
+/*  4 */ "R_MERCURY_ABS16",
+/*  5 */ "R_MERCURY_ABS32_LO",
+/*  6 */ "R_MERCURY_ABS32_HI",
+/*  7 */ "R_MERCURY_PROG_REL64",
+/*  8 */ "R_MERCURY_PROG_REL32",
+/*  9 */ "R_MERCURY_PROG_REL32_LO",
+/*  a */ "R_MERCURY_PROG_REL32_HI",
+/*  b */ "R_MERCURY_TEX_HEADER_INDEX",
+/*  c */ "R_MERCURY_SAMP_HEADER_INDEX",
+/*  d */ "R_MERCURY_SURF_HEADER_INDEX",
+/*  e */ "R_MERCURY_UNUSED_CLEAR64",
+/*  f */ "R_MERCURY_FUNC_DESC_64",
+/* 10 */ "R_MERCURY_8_0",
+/* 11 */ "R_MERCURY_8_8",
+/* 12 */ "R_MERCURY_8_16",
+/* 13 */ "R_MERCURY_8_24",
+/* 14 */ "R_MERCURY_8_32",
+/* 15 */ "R_MERCURY_8_40",
+/* 16 */ "R_MERCURY_8_48",
+/* 17 */ "R_MERCURY_8_56",
+/* 18 */ "R_MERCURY_G8_0",
+/* 19 */ "R_MERCURY_G8_8",
+/* 1a */ "R_MERCURY_G8_16",
+/* 1b */ "R_MERCURY_G8_24",
+/* 1c */ "R_MERCURY_G8_32",
+/* 1d */ "R_MERCURY_G8_40",
+/* 1e */ "R_MERCURY_G8_48",
+/* 1f */ "R_MERCURY_G8_56",
+/* 20 */ "R_MERCURY_FUNC_DESC_8_0",
+/* 21 */ "R_MERCURY_FUNC_DESC_8_8",
+/* 22 */ "R_MERCURY_FUNC_DESC_8_16",
+/* 23 */ "R_MERCURY_FUNC_DESC_8_24",
+/* 24 */ "R_MERCURY_FUNC_DESC_8_32",
+/* 25 */ "R_MERCURY_FUNC_DESC_8_40",
+/* 26 */ "R_MERCURY_FUNC_DESC_8_48",
+/* 27 */ "R_MERCURY_FUNC_DESC_8_56",
+/* 28 */ "R_MERCURY_ABS_PROG_REL32_LO",
+/* 29 */ "R_MERCURY_ABS_PROG_REL32_HI",
+/* 2a */ "R_MERCURY_PROG_REL8_0",
+/* 2b */ "R_MERCURY_PROG_REL8_8",
+/* 2c */ "R_MERCURY_PROG_REL8_16",
+/* 2d */ "R_MERCURY_PROG_REL8_24",
+/* 2e */ "R_MERCURY_PROG_REL8_32",
+/* 2f */ "R_MERCURY_PROG_REL8_40",
+/* 30 */ "R_MERCURY_PROG_REL8_48",
+/* 31 */ "R_MERCURY_PROG_REL8_56",
+/* 32 */ "R_MERCURY_UNIFIED",
+/* 33 */ "R_MERCURY_UNIFIED_32",
+/* 34 */ "R_MERCURY_UNIFIED_8_0",
+/* 35 */ "R_MERCURY_UNIFIED_8_8",
+/* 36 */ "R_MERCURY_UNIFIED_8_16",
+/* 37 */ "R_MERCURY_UNIFIED_8_24",
+/* 38 */ "R_MERCURY_UNIFIED_8_32",
+/* 39 */ "R_MERCURY_UNIFIED_8_40",
+/* 3a */ "R_MERCURY_UNIFIED_8_48",
+/* 3b */ "R_MERCURY_UNIFIED_8_56",
+/* 3c */ "R_MERCURY_ABS_PROG_REL32",
+/* 3d */ "R_MERCURY_ABS_PROG_REL64",
+/* 3e */ "R_MERCURY_UNIFIED32_LO",
+/* 3e */ "R_MERCURY_UNIFIED32_HI",
+/* 40 */ "R_MERCURY_NONE_LAST",
+};
+
+static const char* get_merc_reloc_name(unsigned t)
+{
+  if ( t < 0x10000 ) return nullptr;
+  t -= 0x10000;
+  if ( t >= sizeof(mrelocs) / sizeof(mrelocs[0]) ) return nullptr;
+  return mrelocs[t];
+}
+
 typedef INV_disasm *(*Dproto)(void);
 typedef std::unordered_set<uint32_t> NV_labels;
 
@@ -295,6 +373,7 @@ class nv_dis
    typedef std::vector<NV_pair> NV_res;
    void try_dis(Elf_Word idx);
    void hdump_section(section *);
+   void dump_mrelocs(section *);
    void parse_attrs(Elf_Half idx, section *);
    bt_per_section *get_branch(Elf_Word i) {
      auto bi = m_branches.find(i);
@@ -953,6 +1032,31 @@ int nv_dis::single_section(int idx)
   return 1;
 }
 
+void nv_dis::dump_mrelocs(section *sec)
+{
+  const_relocation_section_accessor rsa(reader, sec);
+  auto n = rsa.get_entries_num();
+  fprintf(m_out, "%d relocs:\n", n);
+  if ( !n ) return;
+  auto old_type = sec->get_type();
+  sec->set_type(SHT_RELA);
+  for ( Elf_Xword i = 0; i < n; i++ ) {
+    Elf64_Addr addr;
+    Elf_Word sym;
+    unsigned type;
+    Elf_Sxword add;
+    if ( rsa.get_entry(i, addr, sym, type, add) ) {
+      auto tname = get_merc_reloc_name(type);
+      fprintf(m_out, " [%d] %X sym %d add %X", n, addr, sym, add);
+      if ( tname )
+       fprintf(m_out, " %s\n", tname);
+      else
+       fprintf(m_out, " type %d\n", type);
+    }
+  }
+  sec->set_type(old_type);
+}
+
 void nv_dis::process()
 {
   n_sec = reader.sections.size();
@@ -988,6 +1092,7 @@ void nv_dis::process()
       } else {
        fprintf(m_out, "[%d] %s type %X flags %X\n", i, sec->get_name().c_str(), st, sf);
        if ( st == 0x70000083 ) parse_attrs(i, sec);
+       else if ( st == 0x70000082 && opt_r ) dump_mrelocs(sec);
        else if ( st > 0x70000000 ) hdump_section(sec);
       }
     }
@@ -1012,6 +1117,7 @@ void usage(const char *prog)
   printf("-N - dump not found masks\n");
   printf("-o - output file\n");
   printf("-O - dump operands\n");
+  printf("-r - dump relocs\n");
   printf("-s index - disasm only single section withh index\n");
   printf("-t - dump symbols\n");
   exit(6);
@@ -1023,13 +1129,14 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "ehtNOs:o:");
+    c = getopt(argc, argv, "ehrtNOs:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'e': opt_e = 1; break;
       case 'h': opt_h = 1; break;
       case 't': opt_t = 1; break;
       case 'O': opt_O = 1; break;
+      case 'r': opt_r = 1; break;
       case 'N': opt_N = 1; break;
       case 'o': o_fname = optarg; break;
       case 's': s = atoi(optarg); break;
