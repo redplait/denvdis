@@ -1,0 +1,2119 @@
+},
+	
+and.b32  	
+xor.b32  	
+and.b64  	
+xor.b64  	
+and.b16  	
+xor.b16  	
+and.pred  	
+xor.pred  	
+ld.global.nc.b32 	
+match.all.sync.b32 	
+match.any.sync.b32 	
+popc.b32 	
+atom.cta.and.b32 	
+atom.shared.and.b32 	
+atom.global.and.b32 	
+atom.and.b32 	
+atom.sys.and.b32 	
+suq.channel_data_type.b32 	
+txq.channel_data_type.b32 	
+suq.array_size.b32 	
+txq.array_size.b32 	
+atom.cta.exch.b32 	
+atom.shared.exch.b32 	
+atom.global.exch.b32 	
+atom.exch.b32 	
+atom.sys.exch.b32 	
+suq.width.b32 	
+txq.width.b32 	
+suq.depth.b32 	
+txq.depth.b32 	
+bfi.b32 	
+ldu.global.b32 	
+, 0;
+	// <end>}
+	mov.frel.b32 	
+shl.b32 	
+match.all.b32 	
+ld.param.b32 	
+shfl.sync.down.b32 	
+shf.l.wrap.b32 	
+shf.r.wrap.b32 	
+selp.b32 	
+shf.l.clamp.b32 	
+shf.r.clamp.b32 	
+shfl.sync.up.b32 	
+p2r.b32 	
+suq.channel_order.b32 	
+txq.channel_order.b32 	
+atom.cta.or.b32 	
+atom.shared.or.b32 	
+atom.global.or.b32 	
+atom.or.b32 	
+atom.sys.or.b32 	
+atom.cta.xor.b32 	
+atom.shared.xor.b32 	
+atom.global.xor.b32 	
+atom.xor.b32 	
+atom.sys.xor.b32 	
+atom.cta.cas.b32 	
+atom.sys.cas.b32 	
+txq.num_samples.b32 	
+txq.num_mipmap_levels.b32 	
+fns.b32 	
+suq.height.b32 	
+txq.height.b32 	
+prmt.b32 	
+vote.sync.ballot.b32 	
+vote.ballot.b32 	
+not.b32 	
+brev.b32 	
+mov.b32 	
+shfl.sync.idx.b32 	
+shfl.sync.bfly.b32 	
+match.any.b32 	
+clz.b32 	
+.f32.f32 	
+.s32.f32 	
+.u32.f32 	
+.f64.f32 	
+.s64.f32 	
+.u64.f32 	
+.f16.f32 	
+.s16.f32 	
+.u16.f32 	
+.s8.f32 	
+.u8.f32 	
+sub.f32 	
+ld.global.nc.f32 	
+atom.cta.add.f32 	
+atom.shared.add.f32 	
+atom.global.add.f32 	
+atom.add.f32 	
+atom.sys.add.f32 	
+neg.f32 	
+ldu.global.f32 	
+div.full.f32 	
+mul.f32 	
+ld.param.f32 	
+fma.rm.f32 	
+add.rm.f32 	
+mul.rm.f32 	
+rcp.rm.f32 	
+sqrt.rm.f32 	
+div.rm.f32 	
+min.f32 	
+fma.rn.f32 	
+sub.rn.f32 	
+add.rn.f32 	
+mul.rn.f32 	
+rcp.rn.f32 	
+sqrt.rn.f32 	
+div.rn.f32 	
+selp.f32 	
+fma.rp.f32 	
+add.rp.f32 	
+mul.rp.f32 	
+rcp.rp.f32 	
+sqrt.rp.f32 	
+div.rp.f32 	
+abs.f32 	
+mov.f32 	
+max.f32 	
+lg2.approx.f32 	
+ex2.approx.f32 	
+tanh.approx.f32 	
+sin.approx.f32 	
+rcp.approx.f32 	
+cos.approx.f32 	
+rsqrt.approx.f32 	
+div.approx.f32 	
+fma.rz.f32 	
+add.rz.f32 	
+mul.rz.f32 	
+rcp.rz.f32 	
+sqrt.rz.f32 	
+div.rz.f32 	
+sub.ftz.f32 	
+add.ftz.f32 	
+neg.ftz.f32 	
+div.full.ftz.f32 	
+mul.ftz.f32 	
+fma.rm.ftz.f32 	
+add.rm.ftz.f32 	
+mul.rm.ftz.f32 	
+rcp.rm.ftz.f32 	
+sqrt.rm.ftz.f32 	
+div.rm.ftz.f32 	
+min.ftz.f32 	
+fma.rn.ftz.f32 	
+sub.rn.ftz.f32 	
+add.rn.ftz.f32 	
+mul.rn.ftz.f32 	
+rcp.rn.ftz.f32 	
+sqrt.rn.ftz.f32 	
+div.rn.ftz.f32 	
+fma.rp.ftz.f32 	
+add.rp.ftz.f32 	
+mul.rp.ftz.f32 	
+rcp.rp.ftz.f32 	
+sqrt.rp.ftz.f32 	
+div.rp.ftz.f32 	
+abs.ftz.f32 	
+max.ftz.f32 	
+lg2.approx.ftz.f32 	
+ex2.approx.ftz.f32 	
+sin.approx.ftz.f32 	
+rcp.approx.ftz.f32 	
+cos.approx.ftz.f32 	
+rsqrt.approx.ftz.f32 	
+div.approx.ftz.f32 	
+fma.rz.ftz.f32 	
+add.rz.ftz.f32 	
+mul.rz.ftz.f32 	
+rcp.rz.ftz.f32 	
+sqrt.rz.ftz.f32 	
+div.rz.ftz.f32 	
+.f32.s32 	
+dp4a.s32.s32 	
+dp2a.hi.s32.s32 	
+dp2a.lo.s32.s32 	
+dp4a.u32.s32 	
+dp2a.hi.u32.s32 	
+dp2a.lo.u32.s32 	
+.f64.s32 	
+cvt.s64.s32 	
+.u64.s32 	
+.f16.s32 	
+.s16.s32 	
+.u16.s32 	
+.s8.s32 	
+.u8.s32 	
+sub.s32 	
+sub.cc.s32 	
+subc.cc.s32 	
+addc.cc.s32 	
+add.cc.s32 	
+sad.s32 	
+atom.cta.add.s32 	
+atom.sys.add.s32 	
+mul.wide.s32 	
+bfe.s32 	
+neg.s32 	
+mul.hi.s32 	
+rem.s32 	
+atom.cta.min.s32 	
+atom.shared.min.s32 	
+atom.global.min.s32 	
+atom.min.s32 	
+atom.sys.min.s32 	
+mul24.lo.s32 	
+mad.lo.s32 	
+mul.lo.s32 	
+selp.s32 	
+shr.s32 	
+abs.s32 	
+div.s32 	
+atom.cta.max.s32 	
+atom.shared.max.s32 	
+atom.global.max.s32 	
+atom.max.s32 	
+atom.sys.max.s32 	
+.f32.u32 	
+dp4a.s32.u32 	
+dp2a.hi.s32.u32 	
+dp2a.lo.s32.u32 	
+dp4a.u32.u32 	
+dp2a.hi.u32.u32 	
+dp2a.lo.u32.u32 	
+.f64.u32 	
+.s64.u32 	
+.u64.u32 	
+.f16.u32 	
+.s16.u32 	
+cvt.u16.u32 	
+.s8.u32 	
+.u8.u32 	
+alloca.u32 	
+atom.cta.dec.u32 	
+atom.shared.dec.u32 	
+atom.global.dec.u32 	
+atom.dec.u32 	
+atom.sys.dec.u32 	
+ld.global.nc.u32 	
+atom.cta.inc.u32 	
+atom.shared.inc.u32 	
+atom.global.inc.u32 	
+atom.inc.u32 	
+atom.sys.inc.u32 	
+, 0; 
+	bar.red.popc.u32 	
+sad.u32 	
+, %amt2;
+	add.u32 	
+atom.cta.add.u32 	
+; 
+	atom.shared.add.u32 	
+; 
+	atom.global.add.u32 	
+; 
+	atom.add.u32 	
+atom.sys.add.u32 	
+cvta.shared.u32 	
+cvta.to.shared.u32 	
+mad.wide.u32 	
+mul.wide.u32 	
+bfe.u32 	
+mul.hi.u32 	
+cvta.global.u32 	
+cvta.to.global.u32 	
+ldu.global.u32 	
+;
+	cvta.local.u32 	
+cvta.to.local.u32 	
+cvta.param.u32 	
+rem.u32 	
+atom.cta.min.u32 	
+atom.shared.min.u32 	
+atom.global.min.u32 	
+atom.min.u32 	
+atom.sys.min.u32 	
+mul24.lo.u32 	
+, 0; 
+	bar.red.and.pred 	%p2, 0, %p1; 
+	selp.u32 	
+, 0; 
+	bar.red.or.pred 	%p2, 0, %p1; 
+	selp.u32 	
+shr.u32 	
+cvta.const.u32 	
+cvta.to.const.u32 	
+div.u32 	
+mov.u32 	
+atom.cta.max.u32 	
+atom.shared.max.u32 	
+atom.global.max.u32 	
+atom.max.u32 	
+atom.sys.max.u32 	
+.f32x2 	
+sub.f16x2 	
+add.f16x2 	
+mul.f16x2 	
+fma.rn.f16x2 	
+sub.rn.f16x2 	
+add.rn.f16x2 	
+mul.rn.f16x2 	
+sub.ftz.f16x2 	
+add.ftz.f16x2 	
+mul.ftz.f16x2 	
+fma.rn.ftz.f16x2 	
+sub.rn.ftz.f16x2 	
+add.rn.ftz.f16x2 	
+mul.rn.ftz.f16x2 	
+match.all.sync.b64 	
+match.any.sync.b64 	
+popc.b64 	
+atom.cta.and.b64 	
+atom.shared.and.b64 	
+atom.global.and.b64 	
+atom.and.b64 	
+atom.sys.and.b64 	
+atom.cta.exch.b64 	
+atom.shared.exch.b64 	
+atom.global.exch.b64 	
+atom.exch.b64 	
+atom.sys.exch.b64 	
+bfi.b64 	
+shl.b64 	
+match.all.b64 	
+ld.param.b64 	
+selp.b64 	
+atom.cta.or.b64 	
+atom.shared.or.b64 	
+atom.global.or.b64 	
+atom.or.b64 	
+atom.sys.or.b64 	
+atom.cta.xor.b64 	
+atom.shared.xor.b64 	
+atom.global.xor.b64 	
+atom.xor.b64 	
+atom.sys.xor.b64 	
+atom.cta.cas.b64 	
+atom.sys.cas.b64 	
+not.b64 	
+brev.b64 	
+;
+	mad.lo.cc.u32 	%r0, %alo, %blo, %clo;
+	madc.hi.cc.u32 	%r1, %alo, %blo, %chi;
+	madc.hi.u32 	%r2, %alo, %bhi, 0;
+	mad.lo.cc.u32 	%r1, %alo, %bhi, %r1;
+	madc.hi.cc.u32 	%r2, %ahi, %blo, %r2;
+	madc.hi.u32 	%r3, %ahi, %bhi, 0;
+	mad.lo.cc.u32 	%r1, %ahi, %blo, %r1;
+	madc.lo.cc.u32 	%r2, %ahi, %bhi, %r2;
+	addc.u32 	%r3, %r3, 0;
+	mov.b64 	
+;
+	mul.lo.u32 	%r0, %alo, %blo;
+	mul.hi.u32 	%r1, %alo, %blo;
+	mad.lo.cc.u32 	%r1, %alo, %bhi, %r1;
+	madc.hi.u32 	%r2, %alo, %bhi, 0;
+	mad.lo.cc.u32 	%r1, %ahi, %blo, %r1;
+	madc.hi.cc.u32 	%r2, %ahi, %blo, %r2;
+	madc.hi.u32 	%r3, %ahi, %bhi, 0;
+	mad.lo.cc.u32 	%r2, %ahi, %bhi, %r2;
+	addc.u32 	%r3, %r3, 0;
+	mov.b64 	
+;
+	sub.cc.u32 	%r0, %a0, %b0;
+	subc.cc.u32 	%r1, %a1, %b1;
+	subc.cc.u32 	%r2, %a2, %b2;
+	subc.u32 	%r3, %a3, %b3;
+	mov.b64 	
+;
+	add.cc.u32 	%r0, %a0, %b0;
+	addc.cc.u32 	%r1, %a1, %b1;
+	addc.cc.u32 	%r2, %a2, %b2;
+	addc.u32 	%r3, %a3, %b3;
+	mov.b64 	
+, {%r0,%r1};
+	mov.b64 	
+// Real Callseq Start
+	{
+	mov.b64 	
+match.any.b64 	
+clz.b64 	
+.f32.f64 	
+.s32.f64 	
+.u32.f64 	
+.f64.f64 	
+.s64.f64 	
+.u64.f64 	
+.f16.f64 	
+.s16.f64 	
+.u16.f64 	
+.s8.f64 	
+.u8.f64 	
+sub.f64 	
+ld.global.nc.f64 	
+atom.cta.add.f64 	
+atom.shared.add.f64 	
+atom.global.add.f64 	
+atom.add.f64 	
+atom.sys.add.f64 	
+neg.f64 	
+ldu.global.f64 	
+mul.f64 	
+ld.param.f64 	
+fma.rm.f64 	
+add.rm.f64 	
+mul.rm.f64 	
+rcp.rm.f64 	
+sqrt.rm.f64 	
+div.rm.f64 	
+min.f64 	
+fma.rn.f64 	
+sub.rn.f64 	
+add.rn.f64 	
+mul.rn.f64 	
+rcp.rn.f64 	
+sqrt.rn.f64 	
+div.rn.f64 	
+selp.f64 	
+fma.rp.f64 	
+add.rp.f64 	
+mul.rp.f64 	
+rcp.rp.f64 	
+sqrt.rp.f64 	
+div.rp.f64 	
+abs.f64 	
+mov.f64 	
+max.f64 	
+lg2.approx.f64 	
+ex2.approx.f64 	
+rcp.approx.f64 	
+rsqrt.approx.f64 	
+fma.rz.f64 	
+add.rz.f64 	
+mul.rz.f64 	
+rcp.rz.f64 	
+sqrt.rz.f64 	
+div.rz.f64 	
+rcp.approx.ftz.f64 	
+rsqrt.approx.ftz.f64 	
+.f32.s64 	
+.s32.s64 	
+.u32.s64 	
+.f64.s64 	
+.s64.s64 	
+.u64.s64 	
+.f16.s64 	
+.s16.s64 	
+.u16.s64 	
+.s8.s64 	
+.u8.s64 	
+sub.s64 	
+sub.cc.s64 	
+subc.cc.s64 	
+addc.cc.s64 	
+add.cc.s64 	
+sad.s64 	
+add.s64 	
+bfe.s64 	
+neg.s64 	
+mul.hi.s64 	
+rem.s64 	
+atom.cta.min.s64 	
+atom.shared.min.s64 	
+atom.global.min.s64 	
+atom.min.s64 	
+atom.sys.min.s64 	
+mad.lo.s64 	
+mul.lo.s64 	
+selp.s64 	
+shr.s64 	
+abs.s64 	
+div.s64 	
+atom.cta.max.s64 	
+atom.shared.max.s64 	
+atom.global.max.s64 	
+atom.max.s64 	
+atom.sys.max.s64 	
+.f32.u64 	
+.s32.u64 	
+;
+	  cvt.u32.u64 	
+.f64.u64 	
+.s64.u64 	
+.u64.u64 	
+.f16.u64 	
+.s16.u64 	
+.u16.u64 	
+.s8.u64 	
+.u8.u64 	
+alloca.u64 	
+mapa.u64 	
+ld.global.nc.u64 	
+sad.u64 	
+, %amt2;
+	add.u64 	
+atom.cta.add.u64 	
+; 
+	atom.shared.add.u64 	
+; 
+	atom.global.add.u64 	
+; 
+	atom.add.u64 	
+atom.sys.add.u64 	
+;
+	  cvta.shared.u64 	
+cvta.to.shared.u64 	
+bfe.u64 	
+mul.hi.u64 	
+getctarank.u64 	
+;
+	  cvta.global.u64 	
+cvta.to.global.u64 	
+ldu.global.u64 	
+;
+	cvta.local.u64 	
+;
+	  cvta.local.u64 	
+cvta.to.local.u64 	
+cvta.param.u64 	
+rem.u64 	
+atom.cta.min.u64 	
+atom.shared.min.u64 	
+atom.global.min.u64 	
+atom.min.u64 	
+atom.sys.min.u64 	
+selp.u64 	
+shr.u64 	
+;
+	  cvta.const.u64 	
+cvta.to.const.u64 	
+div.u64 	
+mov.u64 	
+atom.cta.max.u64 	
+atom.shared.max.u64 	
+atom.global.max.u64 	
+atom.max.u64 	
+atom.sys.max.u64 	
+ld.global.nc.b16 	
+ldu.global.b16 	
+shl.b16 	
+ld.param.b16 	
+selp.b16 	
+not.b16 	
+mov.b16 	
+.f32.f16 	
+.s32.f16 	
+.u32.f16 	
+.f64.f16 	
+.s64.f16 	
+.u64.f16 	
+.f16.f16 	
+.s16.f16 	
+.u16.f16 	
+.s8.f16 	
+.u8.f16 	
+sub.f16 	
+add.f16 	
+mul.f16 	
+fma.rn.f16 	
+sub.rn.f16 	
+add.rn.f16 	
+mul.rn.f16 	
+mov.f16 	
+sub.ftz.f16 	
+add.ftz.f16 	
+mul.ftz.f16 	
+fma.rn.ftz.f16 	
+sub.rn.ftz.f16 	
+add.rn.ftz.f16 	
+mul.rn.ftz.f16 	
+.f32.s16 	
+cvt.s32.s16 	
+.u32.s16 	
+.f64.s16 	
+cvt.s64.s16 	
+.u64.s16 	
+.f16.s16 	
+.s16.s16 	
+.u16.s16 	
+.s8.s16 	
+.u8.s16 	
+sub.s16 	
+sad.s16 	
+add.s16 	
+mul.wide.s16 	
+neg.s16 	
+mul.hi.s16 	
+rem.s16 	
+min.s16 	
+mad.lo.s16 	
+mul.lo.s16 	
+selp.s16 	
+shr.s16 	
+abs.s16 	
+div.s16 	
+max.s16 	
+.f32.u16 	
+.s32.u16 	
+.u32.u16 	
+.f64.u16 	
+.s64.u16 	
+.u64.u16 	
+.f16.u16 	
+.s16.u16 	
+.u16.u16 	
+.s8.u16 	
+.u8.u16 	
+ld.global.nc.u16 	
+sad.u16 	
+mul.wide.u16 	
+mul.hi.u16 	
+ldu.global.u16 	
+rem.u16 	
+min.u16 	
+selp.u16 	
+shr.u16 	
+div.u16 	
+mov.u16 	
+max.u16 	
+mov.b128 	
+ld.param.b8 	
+.f32.s8 	
+cvt.s32.s8 	
+.u32.s8 	
+.f64.s8 	
+cvt.s64.s8 	
+.u64.s8 	
+.f16.s8 	
+cvt.s16.s8 	
+.u16.s8 	
+.s8.s8 	
+.u8.s8 	
+.f32.u8 	
+.s32.u8 	
+.u32.u8 	
+.f64.u8 	
+.s64.u8 	
+.u64.u8 	
+.f16.u8 	
+.s16.u8 	
+.u16.u8 	
+.s8.u8 	
+.u8.u8 	
+ld.global.nc.u8 	
+ldu.global.u8 	
+ bra 	
+bar.warp.sync 	
+bar.sync 	
+barrier.sync 	
+isspacep.shared 	
+vote.sync.uni.pred 	
+vote.uni.pred 	
+vote.sync.all.pred 	
+vote.all.pred 	
+xor.pred 	
+not.pred 	
+mov.pred 	
+vote.sync.any.pred 	
+vote.any.pred 	
+istypep.surfref 	
+istypep.samplerref 	
+istypep.texref 	
+bra.uni 	
+isspacep.global 	
+isspacep.local 	
+call 	
+isspacep.param 	
+isspacep.shared::cluster 	
+isspacep.const 	
+stackrestore.u32	
+stacksave.u32	
+pmevent.mask	
+;
+
+call.uni (retval0), 
+call (retval0), 
+call.uni (retval0, retval1), 
+call (retval0, retval1), 
+call.uni (retval0, retval1, retval2), 
+call (retval0, retval1, retval2), 
+call.uni (retval0, retval1, retval2, retval3), 
+call (retval0, retval1, retval2, retval3), 
+call.uni (retval0, retval1, retval2, retval3, retval4), 
+call (retval0, retval1, retval2, retval3, retval4), 
+call.uni (retval0, retval1, retval2, retval3, retval4, retval5), 
+call (retval0, retval1, retval2, retval3, retval4, retval5), 
+call.uni (retval0, retval1, retval2, retval3, retval4, retval5, retval6), 
+call (retval0, retval1, retval2, retval3, retval4, retval5, retval6), 
+call.uni (retval0, retval1, retval2, retval3, retval4, retval5, retval6, retval7), 
+call (retval0, retval1, retval2, retval3, retval4, retval5, retval6, retval7), 
+{ 
+	.reg .pred 	%p1; 
+	setp.ne.u32 	%p1, 
+{ 
+	.reg .pred 	%p1; 
+	.reg .pred 	%p2; 
+	setp.ne.u32 	%p1, 
+;
+	sub.s32 	%amt2, 32, 
+;
+	sub.u32 	%amt2, 64, 
+}], 
+__nv_ptx_builtin_suspend, 
+}.reverse, 
+{ .reg .b16 	%tmp_lo;
+	  mov.b32 	{%tmp_lo, 
+{
+	.reg .b64 %temp; 
+	.reg .pred %p; 
+	setp.eq.s32  %p, 
+{ 
+	.reg 	.s32 temp; 
+	neg.s32 	temp, 
+{ 
+	.reg 	.s64 temp; 
+	neg.s64 	temp, 
+{
+	.reg .b32 %temp; 
+	mov.b64 	{%temp, 
+{ .reg .b64 %tmp;
+	  cvt.u64.u32 	%tmp, 
+{ .reg .b64 %tmp;
+	  cvta.to.shared.u64 	%tmp, 
+{ .reg .b64 %tmp;
+	  cvta.to.global.u64 	%tmp, 
+{ .reg .b64 %tmp;
+	  cvta.to.local.u64 	%tmp, 
+{ .reg .b64 %tmp;
+	  cvta.to.const.u64 	%tmp, 
+{
+	.reg .b32 %lhs;
+	.reg .b32 %rhs;
+	.reg .b32 %amt2;
+	shl.b32 	%lhs, 
+{
+	.reg .b32 %lhs;
+	.reg .b32 %rhs;
+	shl.b32 	%lhs, 
+{
+	.reg .b32 %lhs;
+	.reg .b32 %rhs;
+	.reg .b32 %amt2;
+	shr.b32 	%lhs, 
+{
+	.reg .b64 %lhs;
+	.reg .b64 %rhs;
+	.reg .u32 %amt2;
+	shl.b64 	%lhs, 
+{
+	.reg .b64 %lhs;
+	.reg .b64 %rhs;
+	shl.b64 	%lhs, 
+{
+	.reg .b64 %lhs;
+	.reg .b64 %rhs;
+	.reg .u32 %amt2;
+	shr.b64 	%lhs, 
+;
+	shl.b32 	%rhs, 
+;
+	shr.b32 	%rhs, 
+;
+	shl.b64 	%rhs, 
+;
+	shr.b64 	%rhs, 
+{
+	.reg .u32 %r0, %r1, %r2, %r3, %a0, %a1, %a2, %a3, %b0, %b1, %b2, %b3;
+	mov.b64 	{%a0,%a1}, 
+;
+	mov.b64 	{%b0,%b1}, 
+;
+	mov.b64 	{%a2,%a3}, 
+;
+	mov.b64 	{%b2,%b3}, 
+, %tmp_hi}, 
+{
+	.reg .u32 %r0, %r1, %r2, %r3, %alo, %ahi, %blo, %bhi;
+	mov.b64 	{%alo,%ahi}, 
+{
+	.reg .u32 %r0, %r1, %r2, %r3, %alo, %ahi, %blo, %bhi, %clo, %chi;
+	mov.b64 	{%alo,%ahi}, 
+;
+	mov.b64 	{%blo,%bhi}, 
+;
+	mov.b64 	{%clo,%chi}, 
+, %temp}, 
+,%dummy}, 
+shfl.sync.down.b32 
+shfl.down.b32 
+shfl.sync.up.b32 
+shfl.up.b32 
+mov.b32 
+shfl.sync.idx.b32 
+shfl.idx.b32 
+shfl.sync.bfly.b32 
+shfl.bfly.b32 
+.f32 
+.u32 
+_ldsm.m8n32.x1.s4.s2 
+_ldsm.m8n32.x1.u4.u2 
+.f64 
+.u64 
+_ldsm.m8n16.x1.s8.s4 
+_ldsm.m8n16.x1.u8.u4 
+.u16 
+.u8 
+mov.pred 
+// Pseudo use of 
+call.uni 
+call 
+.param .align 
+{ // callseq 
+} // callseq 
+// { // fakecallseq 
+cp.async.wait 
+// Callseq Start 
+;
+	brx.idx 
+@!
+(
+// llvm.nvvm.compiler.warn()
+// llvm.nvvm.compiler.error()
+}, [retval0+
+st.param.v2.b32 	[func_retval0+
+st.param.v4.b32 	[func_retval0+
+st.param.b32 	[func_retval0+
+st.param.v2.f32 	[func_retval0+
+st.param.v4.f32 	[func_retval0+
+st.param.f32 	[func_retval0+
+st.param.v2.b64 	[func_retval0+
+st.param.b64 	[func_retval0+
+st.param.v2.f64 	[func_retval0+
+st.param.f64 	[func_retval0+
+st.param.v2.b16 	[func_retval0+
+st.param.v4.b16 	[func_retval0+
+st.param.b16 	[func_retval0+
+st.param.v2.b8 	[func_retval0+
+st.param.v4.b8 	[func_retval0+
+st.param.b8 	[func_retval0+
+{
+	.reg .b32 %dummy;
+	mov.b64 	{%dummy,
+.f32.
+.m8n8k32.s32.
+.m8n32k16.s32.
+.m16n16k16.s32.
+.m32n8k16.s32.
+.m8n8k128.s32.
+.f64.
+# XRay Function Patchable RET.
+wmma.mma.
+wmma.load.
+wmma.mma.sync.aligned.
+wmma.load.c.sync.aligned.
+.popc.sync.aligned.
+wmma.store.d.sync.aligned.
+wmma.store.
+# XRay Typed Event Log.
+# XRay Custom Event Log.
+# XRay Function Enter.
+# XRay Tail Call Exit.
+# XRay Function Exit.
+ldmatrix.sync.aligned.m8n8.x1
+.m8n8k32
+.s32
+ldmatrix.sync.aligned.m8n8.x2
+.f64
+tld4
+.2d.v4
+ldmatrix.sync.aligned.m8n8.x4
+.m8n32k16
+.m16n16k16
+.m32n8k16
+.m8n8k128
+:
+, (1);
+bar.sync 	0;
+, %pm0;
+, %pm1;
+, %pm2;
+, %pm3;
+, %clock64;
+, WARP_SZ;
+}];
+membar.cta;
+, %gridid;
+, %laneid;
+, %smid;
+, %nsmid;
+, %warpid;
+, %nwarpid;
+, %lanemask_ge;
+, %lanemask_le;
+
+	.reg .b32 temp_param_reg;
+, %clock;
+membar.gl;
+, %VAParam;
+trap;
+, %lanemask_eq;
+cp.async.wait.defer;
+membar.sys;
+ret;
+, %lanemask_gt;
+cp.async.wait;
+exit;
+, %lanemask_lt;
+, %ctaid.w;
+, %nctaid.w;
+, %tid.w;
+, %ntid.w;
+, %ctaid.x;
+, %nctaid.x;
+, %tid.x;
+, %ntid.x;
+, %ctaid.y;
+, %nctaid.y;
+, %tid.y;
+, %ntid.y;
+, %ctaid.z;
+, %nctaid.z;
+, %tid.z;
+, %ntid.z;
+};
+@
+LIFETIME_END
+BUNDLE
+DBG_VALUE
+DBG_LABEL
+LIFETIME_START
+wmma.store.d.sync.col.m8n32k16.f32 	[
+wmma.store.d.sync.row.m8n32k16.f32 	[
+wmma.store.d.sync.col.m16n16k16.f32 	[
+wmma.store.d.sync.row.m16n16k16.f32 	[
+wmma.store.d.sync.col.m32n8k16.f32 	[
+wmma.store.d.sync.row.m32n8k16.f32 	[
+wmma.store.d.sync.col.m8n32k16.shared.f32 	[
+wmma.store.d.sync.row.m8n32k16.shared.f32 	[
+wmma.store.d.sync.col.m16n16k16.shared.f32 	[
+wmma.store.d.sync.row.m16n16k16.shared.f32 	[
+wmma.store.d.sync.col.m32n8k16.shared.f32 	[
+wmma.store.d.sync.row.m32n8k16.shared.f32 	[
+wmma.store.d.sync.col.m8n32k16.global.f32 	[
+wmma.store.d.sync.row.m8n32k16.global.f32 	[
+wmma.store.d.sync.col.m16n16k16.global.f32 	[
+wmma.store.d.sync.row.m16n16k16.global.f32 	[
+wmma.store.d.sync.col.m32n8k16.global.f32 	[
+wmma.store.d.sync.row.m32n8k16.global.f32 	[
+.s32 	[
+wmma.store.d.sync.col.m8n32k16.f16 	[
+wmma.store.d.sync.row.m8n32k16.f16 	[
+wmma.store.d.sync.col.m16n16k16.f16 	[
+wmma.store.d.sync.row.m16n16k16.f16 	[
+wmma.store.d.sync.col.m32n8k16.f16 	[
+wmma.store.d.sync.row.m32n8k16.f16 	[
+wmma.store.d.sync.col.m8n32k16.shared.f16 	[
+wmma.store.d.sync.row.m8n32k16.shared.f16 	[
+wmma.store.d.sync.col.m16n16k16.shared.f16 	[
+wmma.store.d.sync.row.m16n16k16.shared.f16 	[
+wmma.store.d.sync.col.m32n8k16.shared.f16 	[
+wmma.store.d.sync.row.m32n8k16.shared.f16 	[
+wmma.store.d.sync.col.m8n32k16.global.f16 	[
+wmma.store.d.sync.row.m8n32k16.global.f16 	[
+wmma.store.d.sync.col.m16n16k16.global.f16 	[
+wmma.store.d.sync.row.m16n16k16.global.f16 	[
+wmma.store.d.sync.col.m32n8k16.global.f16 	[
+wmma.store.d.sync.row.m32n8k16.global.f16 	[
+sust.b.1d.v2.b32.zero 	[
+sust.b.a1d.v2.b32.zero 	[
+sust.b.2d.v2.b32.zero 	[
+sust.b.a2d.v2.b32.zero 	[
+sust.b.3d.v2.b32.zero 	[
+sust.b.1d_buffer.v2.b32.zero 	[
+sust.b.1d.v4.b32.zero 	[
+sust.b.a1d.v4.b32.zero 	[
+sust.b.2d.v4.b32.zero 	[
+sust.b.a2d.v4.b32.zero 	[
+sust.b.3d.v4.b32.zero 	[
+sust.b.1d_buffer.v4.b32.zero 	[
+sust.b.1d.b32.zero 	[
+sust.b.a1d.b32.zero 	[
+sust.b.2d.b32.zero 	[
+sust.b.a2d.b32.zero 	[
+sust.b.3d.b32.zero 	[
+sust.b.1d_buffer.b32.zero 	[
+sust.b.1d.v2.b64.zero 	[
+sust.b.a1d.v2.b64.zero 	[
+sust.b.2d.v2.b64.zero 	[
+sust.b.a2d.v2.b64.zero 	[
+sust.b.3d.v2.b64.zero 	[
+sust.b.1d_buffer.v2.b64.zero 	[
+sust.b.1d.b64.zero 	[
+sust.b.a1d.b64.zero 	[
+sust.b.2d.b64.zero 	[
+sust.b.a2d.b64.zero 	[
+sust.b.3d.b64.zero 	[
+sust.b.1d_buffer.b64.zero 	[
+sust.b.1d.v2.b16.zero 	[
+sust.b.a1d.v2.b16.zero 	[
+sust.b.2d.v2.b16.zero 	[
+sust.b.a2d.v2.b16.zero 	[
+sust.b.3d.v2.b16.zero 	[
+sust.b.1d_buffer.v2.b16.zero 	[
+sust.b.1d.v4.b16.zero 	[
+sust.b.a1d.v4.b16.zero 	[
+sust.b.2d.v4.b16.zero 	[
+sust.b.a2d.v4.b16.zero 	[
+sust.b.3d.v4.b16.zero 	[
+sust.b.1d_buffer.v4.b16.zero 	[
+sust.b.1d.b16.zero 	[
+sust.b.a1d.b16.zero 	[
+sust.b.2d.b16.zero 	[
+sust.b.a2d.b16.zero 	[
+sust.b.3d.b16.zero 	[
+sust.b.1d_buffer.b16.zero 	[
+sust.b.1d.v2.b8.zero 	[
+sust.b.a1d.v2.b8.zero 	[
+sust.b.2d.v2.b8.zero 	[
+sust.b.a2d.v2.b8.zero 	[
+sust.b.3d.v2.b8.zero 	[
+sust.b.1d_buffer.v2.b8.zero 	[
+sust.b.1d.v4.b8.zero 	[
+sust.b.a1d.v4.b8.zero 	[
+sust.b.2d.v4.b8.zero 	[
+sust.b.a2d.v4.b8.zero 	[
+sust.b.3d.v4.b8.zero 	[
+sust.b.1d_buffer.v4.b8.zero 	[
+sust.b.1d.b8.zero 	[
+sust.b.a1d.b8.zero 	[
+sust.b.2d.b8.zero 	[
+sust.b.a2d.b8.zero 	[
+sust.b.3d.b8.zero 	[
+sust.b.1d_buffer.b8.zero 	[
+sust.b.1d.v2.b32.trap 	[
+sust.p.1d.v2.b32.trap 	[
+sust.b.a1d.v2.b32.trap 	[
+sust.p.a1d.v2.b32.trap 	[
+sust.b.2d.v2.b32.trap 	[
+sust.p.2d.v2.b32.trap 	[
+sust.b.a2d.v2.b32.trap 	[
+sust.p.a2d.v2.b32.trap 	[
+sust.b.3d.v2.b32.trap 	[
+sust.p.3d.v2.b32.trap 	[
+sust.b.1d_buffer.v2.b32.trap 	[
+sust.p.1d_buffer.v2.b32.trap 	[
+sust.b.1d.v4.b32.trap 	[
+sust.p.1d.v4.b32.trap 	[
+sust.b.a1d.v4.b32.trap 	[
+sust.p.a1d.v4.b32.trap 	[
+sust.b.2d.v4.b32.trap 	[
+sust.p.2d.v4.b32.trap 	[
+sust.b.a2d.v4.b32.trap 	[
+sust.p.a2d.v4.b32.trap 	[
+sust.b.3d.v4.b32.trap 	[
+sust.p.3d.v4.b32.trap 	[
+sust.b.1d_buffer.v4.b32.trap 	[
+sust.p.1d_buffer.v4.b32.trap 	[
+sust.b.1d.b32.trap 	[
+sust.p.1d.b32.trap 	[
+sust.b.a1d.b32.trap 	[
+sust.p.a1d.b32.trap 	[
+sust.b.2d.b32.trap 	[
+sust.p.2d.b32.trap 	[
+sust.b.a2d.b32.trap 	[
+sust.p.a2d.b32.trap 	[
+sust.b.3d.b32.trap 	[
+sust.p.3d.b32.trap 	[
+sust.b.1d_buffer.b32.trap 	[
+sust.p.1d_buffer.b32.trap 	[
+sust.b.1d.v2.b64.trap 	[
+sust.b.a1d.v2.b64.trap 	[
+sust.b.2d.v2.b64.trap 	[
+sust.b.a2d.v2.b64.trap 	[
+sust.b.3d.v2.b64.trap 	[
+sust.b.1d_buffer.v2.b64.trap 	[
+sust.b.1d.b64.trap 	[
+sust.b.a1d.b64.trap 	[
+sust.b.2d.b64.trap 	[
+sust.b.a2d.b64.trap 	[
+sust.b.3d.b64.trap 	[
+sust.b.1d_buffer.b64.trap 	[
+sust.b.1d.v2.b16.trap 	[
+sust.p.1d.v2.b16.trap 	[
+sust.b.a1d.v2.b16.trap 	[
+sust.p.a1d.v2.b16.trap 	[
+sust.b.2d.v2.b16.trap 	[
+sust.p.2d.v2.b16.trap 	[
+sust.b.a2d.v2.b16.trap 	[
+sust.p.a2d.v2.b16.trap 	[
+sust.b.3d.v2.b16.trap 	[
+sust.p.3d.v2.b16.trap 	[
+sust.b.1d_buffer.v2.b16.trap 	[
+sust.p.1d_buffer.v2.b16.trap 	[
+sust.b.1d.v4.b16.trap 	[
+sust.p.1d.v4.b16.trap 	[
+sust.b.a1d.v4.b16.trap 	[
+sust.p.a1d.v4.b16.trap 	[
+sust.b.2d.v4.b16.trap 	[
+sust.p.2d.v4.b16.trap 	[
+sust.b.a2d.v4.b16.trap 	[
+sust.p.a2d.v4.b16.trap 	[
+sust.b.3d.v4.b16.trap 	[
+sust.p.3d.v4.b16.trap 	[
+sust.b.1d_buffer.v4.b16.trap 	[
+sust.p.1d_buffer.v4.b16.trap 	[
+sust.b.1d.b16.trap 	[
+sust.p.1d.b16.trap 	[
+sust.b.a1d.b16.trap 	[
+sust.p.a1d.b16.trap 	[
+sust.b.2d.b16.trap 	[
+sust.p.2d.b16.trap 	[
+sust.b.a2d.b16.trap 	[
+sust.p.a2d.b16.trap 	[
+sust.b.3d.b16.trap 	[
+sust.p.3d.b16.trap 	[
+sust.b.1d_buffer.b16.trap 	[
+sust.p.1d_buffer.b16.trap 	[
+sust.b.1d.v2.b8.trap 	[
+sust.p.1d.v2.b8.trap 	[
+sust.b.a1d.v2.b8.trap 	[
+sust.p.a1d.v2.b8.trap 	[
+sust.b.2d.v2.b8.trap 	[
+sust.p.2d.v2.b8.trap 	[
+sust.b.a2d.v2.b8.trap 	[
+sust.p.a2d.v2.b8.trap 	[
+sust.b.3d.v2.b8.trap 	[
+sust.p.3d.v2.b8.trap 	[
+sust.b.1d_buffer.v2.b8.trap 	[
+sust.p.1d_buffer.v2.b8.trap 	[
+sust.b.1d.v4.b8.trap 	[
+sust.p.1d.v4.b8.trap 	[
+sust.b.a1d.v4.b8.trap 	[
+sust.p.a1d.v4.b8.trap 	[
+sust.b.2d.v4.b8.trap 	[
+sust.p.2d.v4.b8.trap 	[
+sust.b.a2d.v4.b8.trap 	[
+sust.p.a2d.v4.b8.trap 	[
+sust.b.3d.v4.b8.trap 	[
+sust.p.3d.v4.b8.trap 	[
+sust.b.1d_buffer.v4.b8.trap 	[
+sust.p.1d_buffer.v4.b8.trap 	[
+sust.b.1d.b8.trap 	[
+sust.p.1d.b8.trap 	[
+sust.b.a1d.b8.trap 	[
+sust.p.a1d.b8.trap 	[
+sust.b.2d.b8.trap 	[
+sust.p.2d.b8.trap 	[
+sust.b.a2d.b8.trap 	[
+sust.p.a2d.b8.trap 	[
+sust.b.3d.b8.trap 	[
+sust.p.3d.b8.trap 	[
+sust.b.1d_buffer.b8.trap 	[
+sust.p.1d_buffer.b8.trap 	[
+sust.b.1d.v2.b32.clamp 	[
+sust.b.a1d.v2.b32.clamp 	[
+sust.b.2d.v2.b32.clamp 	[
+sust.b.a2d.v2.b32.clamp 	[
+sust.b.3d.v2.b32.clamp 	[
+sust.b.1d_buffer.v2.b32.clamp 	[
+sust.b.1d.v4.b32.clamp 	[
+sust.b.a1d.v4.b32.clamp 	[
+sust.b.2d.v4.b32.clamp 	[
+sust.b.a2d.v4.b32.clamp 	[
+sust.b.3d.v4.b32.clamp 	[
+sust.b.1d_buffer.v4.b32.clamp 	[
+sust.b.1d.b32.clamp 	[
+sust.b.a1d.b32.clamp 	[
+sust.b.2d.b32.clamp 	[
+sust.b.a2d.b32.clamp 	[
+sust.b.3d.b32.clamp 	[
+sust.b.1d_buffer.b32.clamp 	[
+sust.b.1d.v2.b64.clamp 	[
+sust.b.a1d.v2.b64.clamp 	[
+sust.b.2d.v2.b64.clamp 	[
+sust.b.a2d.v2.b64.clamp 	[
+sust.b.3d.v2.b64.clamp 	[
+sust.b.1d_buffer.v2.b64.clamp 	[
+sust.b.1d.b64.clamp 	[
+sust.b.a1d.b64.clamp 	[
+sust.b.2d.b64.clamp 	[
+sust.b.a2d.b64.clamp 	[
+sust.b.3d.b64.clamp 	[
+sust.b.1d_buffer.b64.clamp 	[
+sust.b.1d.v2.b16.clamp 	[
+sust.b.a1d.v2.b16.clamp 	[
+sust.b.2d.v2.b16.clamp 	[
+sust.b.a2d.v2.b16.clamp 	[
+sust.b.3d.v2.b16.clamp 	[
+sust.b.1d_buffer.v2.b16.clamp 	[
+sust.b.1d.v4.b16.clamp 	[
+sust.b.a1d.v4.b16.clamp 	[
+sust.b.2d.v4.b16.clamp 	[
+sust.b.a2d.v4.b16.clamp 	[
+sust.b.3d.v4.b16.clamp 	[
+sust.b.1d_buffer.v4.b16.clamp 	[
+sust.b.1d.b16.clamp 	[
+sust.b.a1d.b16.clamp 	[
+sust.b.2d.b16.clamp 	[
+sust.b.a2d.b16.clamp 	[
+sust.b.3d.b16.clamp 	[
+sust.b.1d_buffer.b16.clamp 	[
+sust.b.1d.v2.b8.clamp 	[
+sust.b.a1d.v2.b8.clamp 	[
+sust.b.2d.v2.b8.clamp 	[
+sust.b.a2d.v2.b8.clamp 	[
+sust.b.3d.v2.b8.clamp 	[
+sust.b.1d_buffer.v2.b8.clamp 	[
+sust.b.1d.v4.b8.clamp 	[
+sust.b.a1d.v4.b8.clamp 	[
+sust.b.2d.v4.b8.clamp 	[
+sust.b.a2d.v4.b8.clamp 	[
+sust.b.3d.v4.b8.clamp 	[
+sust.b.1d_buffer.v4.b8.clamp 	[
+sust.b.1d.b8.clamp 	[
+sust.b.a1d.b8.clamp 	[
+sust.b.2d.b8.clamp 	[
+sust.b.a2d.b8.clamp 	[
+sust.b.3d.b8.clamp 	[
+sust.b.1d_buffer.b8.clamp 	[
+.shared.global	[
+.shared.global.L2::cache_hint	[
+], [
+, 0; 
+	@%p bra SKIPADD; 
+	atom.global.add.u64 %temp, [
+128 	%dst, [
+}, [
+.v2.f32 [
+.v4.f32 [
+.v2.u32 [
+.v4.u32 [
+cp.async.mbarrier.arrive.shared.b64 [
+.v2.f64 [
+.v4.f64 [
+.v2.u64 [
+.v4.u64 [
+.v2.u16 [
+.v4.u16 [
+.v2.u8 [
+.v4.u8 [
+}]
+;
+$L__suspend_
+, $L__suspend_
+, prototype_
+, $L_brx_
+fma
+wmma.mma
+.reg .b
+.param .b
+sub
+redux.sync
+cp.async
+tex.grad
+add
+};
+	atom.shared
+ld
+bfind
+};
+	atom.global
+ .b8 retval
+# FEntry call
+mul
+ .b8 param
+st.param.v2.b32 	[param
+st.param.v4.b32 	[param
+st.param.b32 	[param
+st.param.v2.f32 	[param
+st.param.v4.f32 	[param
+st.param.f32 	[param
+st.param.v2.b64 	[param
+st.param.b64 	[param
+st.param.v2.f64 	[param
+st.param.f64 	[param
+st.param.v2.b16 	[param
+st.param.v4.b16 	[param
+st.param.b16 	[param
+st.param.v2.b8 	[param
+st.param.v4.b8 	[param
+st.param.b8 	[param
+};
+	atom
+setp
+: .branchtargets
+set
+, __local_depot
+st
+cvt
+tex
+}, 
+		{
+},
+		{
+wmma.mma.sync.col.col.m8n32k16.f32.f32
+		{
+wmma.mma.sync.row.col.m8n32k16.f32.f32
+		{
+wmma.mma.sync.col.row.m8n32k16.f32.f32
+		{
+wmma.mma.sync.row.row.m8n32k16.f32.f32
+		{
+wmma.mma.sync.col.col.m16n16k16.f32.f32
+		{
+wmma.mma.sync.row.col.m16n16k16.f32.f32
+		{
+wmma.mma.sync.col.row.m16n16k16.f32.f32
+		{
+wmma.mma.sync.row.row.m16n16k16.f32.f32
+		{
+wmma.mma.sync.col.col.m32n8k16.f32.f32
+		{
+wmma.mma.sync.row.col.m32n8k16.f32.f32
+		{
+wmma.mma.sync.col.row.m32n8k16.f32.f32
+		{
+wmma.mma.sync.row.row.m32n8k16.f32.f32
+		{
+wmma.mma.sync.col.col.m8n32k16.f16.f32
+		{
+wmma.mma.sync.row.col.m8n32k16.f16.f32
+		{
+wmma.mma.sync.col.row.m8n32k16.f16.f32
+		{
+wmma.mma.sync.row.row.m8n32k16.f16.f32
+		{
+wmma.mma.sync.col.col.m16n16k16.f16.f32
+		{
+wmma.mma.sync.row.col.m16n16k16.f16.f32
+		{
+wmma.mma.sync.col.row.m16n16k16.f16.f32
+		{
+wmma.mma.sync.row.row.m16n16k16.f16.f32
+		{
+wmma.mma.sync.col.col.m32n8k16.f16.f32
+		{
+wmma.mma.sync.row.col.m32n8k16.f16.f32
+		{
+wmma.mma.sync.col.row.m32n8k16.f16.f32
+		{
+wmma.mma.sync.row.row.m32n8k16.f16.f32
+		{
+wmma.mma.sync.col.col.m8n32k16.f32.f16
+		{
+wmma.mma.sync.row.col.m8n32k16.f32.f16
+		{
+wmma.mma.sync.col.row.m8n32k16.f32.f16
+		{
+wmma.mma.sync.row.row.m8n32k16.f32.f16
+		{
+wmma.mma.sync.col.col.m16n16k16.f32.f16
+		{
+wmma.mma.sync.row.col.m16n16k16.f32.f16
+		{
+wmma.mma.sync.col.row.m16n16k16.f32.f16
+		{
+wmma.mma.sync.row.row.m16n16k16.f32.f16
+		{
+wmma.mma.sync.col.col.m32n8k16.f32.f16
+		{
+wmma.mma.sync.row.col.m32n8k16.f32.f16
+		{
+wmma.mma.sync.col.row.m32n8k16.f32.f16
+		{
+wmma.mma.sync.row.row.m32n8k16.f32.f16
+		{
+wmma.mma.sync.col.col.m8n32k16.f16.f16
+		{
+wmma.mma.sync.row.col.m8n32k16.f16.f16
+		{
+wmma.mma.sync.col.row.m8n32k16.f16.f16
+		{
+wmma.mma.sync.row.row.m8n32k16.f16.f16
+		{
+wmma.mma.sync.col.col.m16n16k16.f16.f16
+		{
+wmma.mma.sync.row.col.m16n16k16.f16.f16
+		{
+wmma.mma.sync.col.row.m16n16k16.f16.f16
+		{
+wmma.mma.sync.row.row.m16n16k16.f16.f16
+		{
+wmma.mma.sync.col.col.m32n8k16.f16.f16
+		{
+wmma.mma.sync.row.col.m32n8k16.f16.f16
+		{
+wmma.mma.sync.col.row.m32n8k16.f16.f16
+		{
+wmma.mma.sync.row.row.m32n8k16.f16.f16
+		{
+wmma.mma.sync.col.col.m8n32k16.f32.f32.satfinite
+		{
+wmma.mma.sync.row.col.m8n32k16.f32.f32.satfinite
+		{
+wmma.mma.sync.col.row.m8n32k16.f32.f32.satfinite
+		{
+wmma.mma.sync.row.row.m8n32k16.f32.f32.satfinite
+		{
+wmma.mma.sync.col.col.m16n16k16.f32.f32.satfinite
+		{
+wmma.mma.sync.row.col.m16n16k16.f32.f32.satfinite
+		{
+wmma.mma.sync.col.row.m16n16k16.f32.f32.satfinite
+		{
+wmma.mma.sync.row.row.m16n16k16.f32.f32.satfinite
+		{
+wmma.mma.sync.col.col.m32n8k16.f32.f32.satfinite
+		{
+wmma.mma.sync.row.col.m32n8k16.f32.f32.satfinite
+		{
+wmma.mma.sync.col.row.m32n8k16.f32.f32.satfinite
+		{
+wmma.mma.sync.row.row.m32n8k16.f32.f32.satfinite
+		{
+wmma.mma.sync.col.col.m8n32k16.f16.f32.satfinite
+		{
+wmma.mma.sync.row.col.m8n32k16.f16.f32.satfinite
+		{
+wmma.mma.sync.col.row.m8n32k16.f16.f32.satfinite
+		{
+wmma.mma.sync.row.row.m8n32k16.f16.f32.satfinite
+		{
+wmma.mma.sync.col.col.m16n16k16.f16.f32.satfinite
+		{
+wmma.mma.sync.row.col.m16n16k16.f16.f32.satfinite
+		{
+wmma.mma.sync.col.row.m16n16k16.f16.f32.satfinite
+		{
+wmma.mma.sync.row.row.m16n16k16.f16.f32.satfinite
+		{
+wmma.mma.sync.col.col.m32n8k16.f16.f32.satfinite
+		{
+wmma.mma.sync.row.col.m32n8k16.f16.f32.satfinite
+		{
+wmma.mma.sync.col.row.m32n8k16.f16.f32.satfinite
+		{
+wmma.mma.sync.row.row.m32n8k16.f16.f32.satfinite
+		{
+wmma.mma.sync.col.col.m8n32k16.f32.f16.satfinite
+		{
+wmma.mma.sync.row.col.m8n32k16.f32.f16.satfinite
+		{
+wmma.mma.sync.col.row.m8n32k16.f32.f16.satfinite
+		{
+wmma.mma.sync.row.row.m8n32k16.f32.f16.satfinite
+		{
+wmma.mma.sync.col.col.m16n16k16.f32.f16.satfinite
+		{
+wmma.mma.sync.row.col.m16n16k16.f32.f16.satfinite
+		{
+wmma.mma.sync.col.row.m16n16k16.f32.f16.satfinite
+		{
+wmma.mma.sync.row.row.m16n16k16.f32.f16.satfinite
+		{
+wmma.mma.sync.col.col.m32n8k16.f32.f16.satfinite
+		{
+wmma.mma.sync.row.col.m32n8k16.f32.f16.satfinite
+		{
+wmma.mma.sync.col.row.m32n8k16.f32.f16.satfinite
+		{
+wmma.mma.sync.row.row.m32n8k16.f32.f16.satfinite
+		{
+wmma.mma.sync.col.col.m8n32k16.f16.f16.satfinite
+		{
+wmma.mma.sync.row.col.m8n32k16.f16.f16.satfinite
+		{
+wmma.mma.sync.col.row.m8n32k16.f16.f16.satfinite
+		{
+wmma.mma.sync.row.row.m8n32k16.f16.f16.satfinite
+		{
+wmma.mma.sync.col.col.m16n16k16.f16.f16.satfinite
+		{
+wmma.mma.sync.row.col.m16n16k16.f16.f16.satfinite
+		{
+wmma.mma.sync.col.row.m16n16k16.f16.f16.satfinite
+		{
+wmma.mma.sync.row.row.m16n16k16.f16.f16.satfinite
+		{
+wmma.mma.sync.col.col.m32n8k16.f16.f16.satfinite
+		{
+wmma.mma.sync.row.col.m32n8k16.f16.f16.satfinite
+		{
+wmma.mma.sync.col.row.m32n8k16.f16.f16.satfinite
+		{
+wmma.mma.sync.row.row.m32n8k16.f16.f16.satfinite
+		{
+},
+	{
+wgmma.mma_async.sync.aligned.m64n32k8.f32.tf32.tf32
+	{
+wgmma.mma_async.sync.aligned.m64n64k8.f32.tf32.tf32
+	{
+wgmma.mma_async.sync.aligned.m64n16k8.f32.tf32.tf32
+	{
+wgmma.mma_async.sync.aligned.m64n256k8.f32.tf32.tf32
+	{
+wgmma.mma_async.sync.aligned.m64n128k8.f32.tf32.tf32
+	{
+wgmma.mma_async.sync.aligned.m64n8k8.f32.tf32.tf32
+	{
+wgmma.mma_async.sync.aligned.m64n32k32.f32.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n64k32.f32.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n16k32.f32.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n256k32.f32.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n128k32.f32.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n8k32.f32.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n32k32.f16.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n64k32.f16.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n16k32.f16.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n256k32.f16.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n128k32.f16.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n8k32.f16.e5m2.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n32k32.f32.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n64k32.f32.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n16k32.f32.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n256k32.f32.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n128k32.f32.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n8k32.f32.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n32k32.f16.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n64k32.f16.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n16k32.f16.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n256k32.f16.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n128k32.f16.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n8k32.f16.e4m3.e5m2
+	{
+wgmma.mma_async.sync.aligned.m64n32k32.f32.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n64k32.f32.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n16k32.f32.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n256k32.f32.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n128k32.f32.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n8k32.f32.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n32k32.f16.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n64k32.f16.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n16k32.f16.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n256k32.f16.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n128k32.f16.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n8k32.f16.e5m2.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n32k32.f32.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n64k32.f32.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n16k32.f32.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n256k32.f32.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n128k32.f32.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n8k32.f32.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n32k32.f16.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n64k32.f16.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n16k32.f16.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n256k32.f16.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n128k32.f16.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n8k32.f16.e4m3.e4m3
+	{
+wgmma.mma_async.sync.aligned.m64n32k16.f32.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n64k16.f32.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n16k16.f32.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n256k16.f32.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n128k16.f32.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n8k16.f32.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n32k16.f16.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n64k16.f16.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n16k16.f16.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n256k16.f16.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n128k16.f16.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n8k16.f16.f16.f16
+	{
+wgmma.mma_async.sync.aligned.m64n32k16.f32.bf16.bf16
+	{
+wgmma.mma_async.sync.aligned.m64n64k16.f32.bf16.bf16
+	{
+wgmma.mma_async.sync.aligned.m64n16k16.f32.bf16.bf16
+	{
+wgmma.mma_async.sync.aligned.m64n256k16.f32.bf16.bf16
+	{
+wgmma.mma_async.sync.aligned.m64n128k16.f32.bf16.bf16
+	{
+wgmma.mma_async.sync.aligned.m64n8k16.f32.bf16.bf16
+	{
+ld.global.nc.v2.b32 	{
+ldu.global.v2.b32 	{
+ld.param.v2.b32 	{
+ld.global.nc.v4.b32 	{
+ldu.global.v4.b32 	{
+ld.param.v4.b32 	{
+r2p.b32 	{
+{ .reg .b16 	%tmp_hi;
+	  mov.b32 	{
+tex.grad.1d.v4.f32.f32 	{
+tex.level.1d.v4.f32.f32 	{
+tex.1d.v4.f32.f32 	{
+tex.grad.a1d.v4.f32.f32 	{
+tex.level.a1d.v4.f32.f32 	{
+tex.a1d.v4.f32.f32 	{
+tld4.a.2d.v4.f32.f32 	{
+tld4.b.2d.v4.f32.f32 	{
+tex.grad.2d.v4.f32.f32 	{
+tld4.g.2d.v4.f32.f32 	{
+tex.level.2d.v4.f32.f32 	{
+tld4.r.2d.v4.f32.f32 	{
+tex.2d.v4.f32.f32 	{
+tex.grad.a2d.v4.f32.f32 	{
+tex.level.a2d.v4.f32.f32 	{
+tex.a2d.v4.f32.f32 	{
+tex.grad.3d.v4.f32.f32 	{
+tex.level.3d.v4.f32.f32 	{
+tex.3d.v4.f32.f32 	{
+tex.level.cube.v4.f32.f32 	{
+tex.cube.v4.f32.f32 	{
+tex.level.acube.v4.f32.f32 	{
+tex.acube.v4.f32.f32 	{
+tex.grad.1d.v4.s32.f32 	{
+tex.level.1d.v4.s32.f32 	{
+tex.1d.v4.s32.f32 	{
+tex.grad.a1d.v4.s32.f32 	{
+tex.level.a1d.v4.s32.f32 	{
+tex.a1d.v4.s32.f32 	{
+tld4.a.2d.v4.s32.f32 	{
+tld4.b.2d.v4.s32.f32 	{
+tex.grad.2d.v4.s32.f32 	{
+tld4.g.2d.v4.s32.f32 	{
+tex.level.2d.v4.s32.f32 	{
+tld4.r.2d.v4.s32.f32 	{
+tex.2d.v4.s32.f32 	{
+tex.grad.a2d.v4.s32.f32 	{
+tex.level.a2d.v4.s32.f32 	{
+tex.a2d.v4.s32.f32 	{
+tex.grad.3d.v4.s32.f32 	{
+tex.level.3d.v4.s32.f32 	{
+tex.3d.v4.s32.f32 	{
+tex.level.cube.v4.s32.f32 	{
+tex.cube.v4.s32.f32 	{
+tex.level.acube.v4.s32.f32 	{
+tex.acube.v4.s32.f32 	{
+tex.grad.1d.v4.u32.f32 	{
+tex.level.1d.v4.u32.f32 	{
+tex.1d.v4.u32.f32 	{
+tex.grad.a1d.v4.u32.f32 	{
+tex.level.a1d.v4.u32.f32 	{
+tex.a1d.v4.u32.f32 	{
+tld4.a.2d.v4.u32.f32 	{
+tld4.b.2d.v4.u32.f32 	{
+tex.grad.2d.v4.u32.f32 	{
+tld4.g.2d.v4.u32.f32 	{
+tex.level.2d.v4.u32.f32 	{
+tld4.r.2d.v4.u32.f32 	{
+tex.2d.v4.u32.f32 	{
+tex.grad.a2d.v4.u32.f32 	{
+tex.level.a2d.v4.u32.f32 	{
+tex.a2d.v4.u32.f32 	{
+tex.grad.3d.v4.u32.f32 	{
+tex.level.3d.v4.u32.f32 	{
+tex.3d.v4.u32.f32 	{
+tex.level.cube.v4.u32.f32 	{
+tex.cube.v4.u32.f32 	{
+tex.level.acube.v4.u32.f32 	{
+tex.acube.v4.u32.f32 	{
+ld.global.nc.v2.f32 	{
+ldu.global.v2.f32 	{
+ld.param.v2.f32 	{
+ld.global.nc.v4.f32 	{
+ldu.global.v4.f32 	{
+ld.param.v4.f32 	{
+wmma.load.c.sync.col.m8n32k16.f32 	{
+wmma.load.c.sync.row.m8n32k16.f32 	{
+wmma.load.c.sync.col.m16n16k16.f32 	{
+wmma.load.c.sync.row.m16n16k16.f32 	{
+wmma.load.c.sync.col.m32n8k16.f32 	{
+wmma.load.c.sync.row.m32n8k16.f32 	{
+wmma.load.c.sync.col.m8n32k16.shared.f32 	{
+wmma.load.c.sync.row.m8n32k16.shared.f32 	{
+wmma.load.c.sync.col.m16n16k16.shared.f32 	{
+wmma.load.c.sync.row.m16n16k16.shared.f32 	{
+wmma.load.c.sync.col.m32n8k16.shared.f32 	{
+wmma.load.c.sync.row.m32n8k16.shared.f32 	{
+wmma.load.c.sync.col.m8n32k16.global.f32 	{
+wmma.load.c.sync.row.m8n32k16.global.f32 	{
+wmma.load.c.sync.col.m16n16k16.global.f32 	{
+wmma.load.c.sync.row.m16n16k16.global.f32 	{
+wmma.load.c.sync.col.m32n8k16.global.f32 	{
+wmma.load.c.sync.row.m32n8k16.global.f32 	{
+tex.1d.v4.f32.s32 	{
+tex.a1d.v4.f32.s32 	{
+tex.2d.v4.f32.s32 	{
+tex.a2d.v4.f32.s32 	{
+tex.3d.v4.f32.s32 	{
+tex.1d.v4.s32.s32 	{
+tex.a1d.v4.s32.s32 	{
+tex.2d.v4.s32.s32 	{
+tex.a2d.v4.s32.s32 	{
+tex.3d.v4.s32.s32 	{
+tex.1d.v4.u32.s32 	{
+tex.a1d.v4.u32.s32 	{
+tex.2d.v4.u32.s32 	{
+tex.a2d.v4.u32.s32 	{
+tex.3d.v4.u32.s32 	{
+ld.global.nc.v2.u32 	{
+ldu.global.v2.u32 	{
+ld.global.nc.v4.u32 	{
+ldu.global.v4.u32 	{
+ld.param.v2.b64 	{
+{
+	.reg .b32 %temp; 
+	mov.b64 	{
+{
+	.reg .b32 %dummy;
+	mov.b64 	{
+ld.global.nc.v2.f64 	{
+ldu.global.v2.f64 	{
+ld.param.v2.f64 	{
+ld.global.nc.v2.u64 	{
+ldu.global.v2.u64 	{
+ld.global.nc.v2.b16 	{
+ldu.global.v2.b16 	{
+ld.param.v2.b16 	{
+ld.global.nc.v4.b16 	{
+ldu.global.v4.b16 	{
+ld.param.v4.b16 	{
+wmma.load.a.sync.col.m8n32k16.f16 	{
+wmma.load.b.sync.col.m8n32k16.f16 	{
+wmma.load.c.sync.col.m8n32k16.f16 	{
+wmma.load.a.sync.row.m8n32k16.f16 	{
+wmma.load.b.sync.row.m8n32k16.f16 	{
+wmma.load.c.sync.row.m8n32k16.f16 	{
+wmma.load.a.sync.col.m16n16k16.f16 	{
+wmma.load.b.sync.col.m16n16k16.f16 	{
+wmma.load.c.sync.col.m16n16k16.f16 	{
+wmma.load.a.sync.row.m16n16k16.f16 	{
+wmma.load.b.sync.row.m16n16k16.f16 	{
+wmma.load.c.sync.row.m16n16k16.f16 	{
+wmma.load.a.sync.col.m32n8k16.f16 	{
+wmma.load.b.sync.col.m32n8k16.f16 	{
+wmma.load.c.sync.col.m32n8k16.f16 	{
+wmma.load.a.sync.row.m32n8k16.f16 	{
+wmma.load.b.sync.row.m32n8k16.f16 	{
+wmma.load.c.sync.row.m32n8k16.f16 	{
+wmma.load.a.sync.col.m8n32k16.shared.f16 	{
+wmma.load.b.sync.col.m8n32k16.shared.f16 	{
+wmma.load.c.sync.col.m8n32k16.shared.f16 	{
+wmma.load.a.sync.row.m8n32k16.shared.f16 	{
+wmma.load.b.sync.row.m8n32k16.shared.f16 	{
+wmma.load.c.sync.row.m8n32k16.shared.f16 	{
+wmma.load.a.sync.col.m16n16k16.shared.f16 	{
+wmma.load.b.sync.col.m16n16k16.shared.f16 	{
+wmma.load.c.sync.col.m16n16k16.shared.f16 	{
+wmma.load.a.sync.row.m16n16k16.shared.f16 	{
+wmma.load.b.sync.row.m16n16k16.shared.f16 	{
+wmma.load.c.sync.row.m16n16k16.shared.f16 	{
+wmma.load.a.sync.col.m32n8k16.shared.f16 	{
+wmma.load.b.sync.col.m32n8k16.shared.f16 	{
+wmma.load.c.sync.col.m32n8k16.shared.f16 	{
+wmma.load.a.sync.row.m32n8k16.shared.f16 	{
+wmma.load.b.sync.row.m32n8k16.shared.f16 	{
+wmma.load.c.sync.row.m32n8k16.shared.f16 	{
+wmma.load.a.sync.col.m8n32k16.global.f16 	{
+wmma.load.b.sync.col.m8n32k16.global.f16 	{
+wmma.load.c.sync.col.m8n32k16.global.f16 	{
+wmma.load.a.sync.row.m8n32k16.global.f16 	{
+wmma.load.b.sync.row.m8n32k16.global.f16 	{
+wmma.load.c.sync.row.m8n32k16.global.f16 	{
+wmma.load.a.sync.col.m16n16k16.global.f16 	{
+wmma.load.b.sync.col.m16n16k16.global.f16 	{
+wmma.load.c.sync.col.m16n16k16.global.f16 	{
+wmma.load.a.sync.row.m16n16k16.global.f16 	{
+wmma.load.b.sync.row.m16n16k16.global.f16 	{
+wmma.load.c.sync.row.m16n16k16.global.f16 	{
+wmma.load.a.sync.col.m32n8k16.global.f16 	{
+wmma.load.b.sync.col.m32n8k16.global.f16 	{
+wmma.load.c.sync.col.m32n8k16.global.f16 	{
+wmma.load.a.sync.row.m32n8k16.global.f16 	{
+wmma.load.b.sync.row.m32n8k16.global.f16 	{
+wmma.load.c.sync.row.m32n8k16.global.f16 	{
+ld.global.nc.v2.u16 	{
+ldu.global.v2.u16 	{
+ld.global.nc.v4.u16 	{
+ldu.global.v4.u16 	{
+mov.b128 	{
+ld.param.v2.b8 	{
+ld.param.v4.b8 	{
+ld.global.nc.v2.u8 	{
+ldu.global.v2.u8 	{
+ld.global.nc.v4.u8 	{
+ldu.global.v4.u8 	{
+tex.grad.cube.v4.f32.f32	{
+tex.grad.acube.v4.f32.f32	{
+tex.grad.cube.v4.s32.f32	{
+tex.grad.acube.v4.s32.f32	{
+tex.grad.cube.v4.u32.f32	{
+tex.grad.acube.v4.u32.f32	{
+}], {
+{
+	.reg .b128 %dst;
+	.reg .b128 %b;
+	mov.b128 %b, {
+{
+	.reg .b128 %dst;
+	.reg .b128 %b;
+	.reg .b128 %c;
+	mov.b128 %b, {
+};
+	mov.b128 %c, {
+}, {
+.m8n32k16.f32.f32 {
+.m16n16k16.f32.f32 {
+.m32n8k16.f32.f32 {
+.v2.f32 {
+.v4.f32 {
+.m8n32k16.f16.f32 {
+.m16n16k16.f16.f32 {
+.m32n8k16.f16.f32 {
+.s32 {
+.v2.u32 {
+.v4.u32 {
+_ldsm.m8n32.x2.s4.s2 {
+_ldsm.m8n32.x4.s4.s2 {
+_ldsm.m8n32.x2.u4.u2 {
+_ldsm.m8n32.x4.u4.u2 {
+.v2.f64 {
+.v4.f64 {
+.v2.u64 {
+.v4.u64 {
+_ldsm.m8n16.x2.s8.s4 {
+_ldsm.m8n16.x4.s8.s4 {
+_ldsm.m8n16.x2.u8.u4 {
+_ldsm.m8n16.x4.u8.u4 {
+.shared.b16 {
+.m8n32k16.f32.f16 {
+.m16n16k16.f32.f16 {
+.m32n8k16.f32.f16 {
+.m8n32k16.f16.f16 {
+.m16n16k16.f16.f16 {
+.m32n8k16.f16.f16 {
+.v2.u16 {
+.v4.u16 {
+], %b;
+	mov.b128 {
+], %b, %c;
+	mov.b128 {
+.v2.u8 {
+.v4.u8 {
+suld.b.1d.v2.b32.zero {
+suld.b.a1d.v2.b32.zero {
+suld.b.2d.v2.b32.zero {
+suld.b.a2d.v2.b32.zero {
+suld.b.3d.v2.b32.zero {
+suld.b.1d_buffer.v2.b32.zero {
+suld.b.1d.v4.b32.zero {
+suld.b.a1d.v4.b32.zero {
+suld.b.2d.v4.b32.zero {
+suld.b.a2d.v4.b32.zero {
+suld.b.3d.v4.b32.zero {
+suld.b.1d_buffer.v4.b32.zero {
+suld.b.1d.b32.zero {
+suld.b.a1d.b32.zero {
+suld.b.2d.b32.zero {
+suld.b.a2d.b32.zero {
+suld.b.3d.b32.zero {
+suld.b.1d_buffer.b32.zero {
+suld.b.1d.v2.b64.zero {
+suld.b.a1d.v2.b64.zero {
+suld.b.2d.v2.b64.zero {
+suld.b.a2d.v2.b64.zero {
+suld.b.3d.v2.b64.zero {
+suld.b.1d_buffer.v2.b64.zero {
+suld.b.1d.b64.zero {
+suld.b.a1d.b64.zero {
+suld.b.2d.b64.zero {
+suld.b.a2d.b64.zero {
+suld.b.3d.b64.zero {
+suld.b.1d_buffer.b64.zero {
+suld.b.1d.v2.b16.zero {
+suld.b.a1d.v2.b16.zero {
+suld.b.2d.v2.b16.zero {
+suld.b.a2d.v2.b16.zero {
+suld.b.3d.v2.b16.zero {
+suld.b.1d_buffer.v2.b16.zero {
+suld.b.1d.v4.b16.zero {
+suld.b.a1d.v4.b16.zero {
+suld.b.2d.v4.b16.zero {
+suld.b.a2d.v4.b16.zero {
+suld.b.3d.v4.b16.zero {
+suld.b.1d_buffer.v4.b16.zero {
+suld.b.1d.b16.zero {
+suld.b.a1d.b16.zero {
+suld.b.2d.b16.zero {
+suld.b.a2d.b16.zero {
+suld.b.3d.b16.zero {
+suld.b.1d_buffer.b16.zero {
+suld.b.1d.v2.b8.zero {
+suld.b.a1d.v2.b8.zero {
+suld.b.2d.v2.b8.zero {
+suld.b.a2d.v2.b8.zero {
+suld.b.3d.v2.b8.zero {
+suld.b.1d_buffer.v2.b8.zero {
+suld.b.1d.v4.b8.zero {
+suld.b.a1d.v4.b8.zero {
+suld.b.2d.v4.b8.zero {
+suld.b.a2d.v4.b8.zero {
+suld.b.3d.v4.b8.zero {
+suld.b.1d_buffer.v4.b8.zero {
+suld.b.1d.b8.zero {
+suld.b.a1d.b8.zero {
+suld.b.2d.b8.zero {
+suld.b.a2d.b8.zero {
+suld.b.3d.b8.zero {
+suld.b.1d_buffer.b8.zero {
+suld.b.1d.v2.b32.trap {
+suld.b.a1d.v2.b32.trap {
+suld.b.2d.v2.b32.trap {
+suld.b.a2d.v2.b32.trap {
+suld.b.3d.v2.b32.trap {
+suld.b.1d_buffer.v2.b32.trap {
+suld.b.1d.v4.b32.trap {
+suld.b.a1d.v4.b32.trap {
+suld.b.2d.v4.b32.trap {
+suld.b.a2d.v4.b32.trap {
+suld.b.3d.v4.b32.trap {
+suld.b.1d_buffer.v4.b32.trap {
+suld.b.1d.b32.trap {
+suld.b.a1d.b32.trap {
+suld.b.2d.b32.trap {
+suld.b.a2d.b32.trap {
+suld.b.3d.b32.trap {
+suld.b.1d_buffer.b32.trap {
+suld.b.1d.v2.b64.trap {
+suld.b.a1d.v2.b64.trap {
+suld.b.2d.v2.b64.trap {
+suld.b.a2d.v2.b64.trap {
+suld.b.3d.v2.b64.trap {
+suld.b.1d_buffer.v2.b64.trap {
+suld.b.1d.b64.trap {
+suld.b.a1d.b64.trap {
+suld.b.2d.b64.trap {
+suld.b.a2d.b64.trap {
+suld.b.3d.b64.trap {
+suld.b.1d_buffer.b64.trap {
+suld.b.1d.v2.b16.trap {
+suld.b.a1d.v2.b16.trap {
+suld.b.2d.v2.b16.trap {
+suld.b.a2d.v2.b16.trap {
+suld.b.3d.v2.b16.trap {
+suld.b.1d_buffer.v2.b16.trap {
+suld.b.1d.v4.b16.trap {
+suld.b.a1d.v4.b16.trap {
+suld.b.2d.v4.b16.trap {
+suld.b.a2d.v4.b16.trap {
+suld.b.3d.v4.b16.trap {
+suld.b.1d_buffer.v4.b16.trap {
+suld.b.1d.b16.trap {
+suld.b.a1d.b16.trap {
+suld.b.2d.b16.trap {
+suld.b.a2d.b16.trap {
+suld.b.3d.b16.trap {
+suld.b.1d_buffer.b16.trap {
+suld.b.1d.v2.b8.trap {
+suld.b.a1d.v2.b8.trap {
+suld.b.2d.v2.b8.trap {
+suld.b.a2d.v2.b8.trap {
+suld.b.3d.v2.b8.trap {
+suld.b.1d_buffer.v2.b8.trap {
+suld.b.1d.v4.b8.trap {
+suld.b.a1d.v4.b8.trap {
+suld.b.2d.v4.b8.trap {
+suld.b.a2d.v4.b8.trap {
+suld.b.3d.v4.b8.trap {
+suld.b.1d_buffer.v4.b8.trap {
+suld.b.1d.b8.trap {
+suld.b.a1d.b8.trap {
+suld.b.2d.b8.trap {
+suld.b.a2d.b8.trap {
+suld.b.3d.b8.trap {
+suld.b.1d_buffer.b8.trap {
+suld.b.1d.v2.b32.clamp {
+suld.b.a1d.v2.b32.clamp {
+suld.b.2d.v2.b32.clamp {
+suld.b.a2d.v2.b32.clamp {
+suld.b.3d.v2.b32.clamp {
+suld.b.1d_buffer.v2.b32.clamp {
+suld.b.1d.v4.b32.clamp {
+suld.b.a1d.v4.b32.clamp {
+suld.b.2d.v4.b32.clamp {
+suld.b.a2d.v4.b32.clamp {
+suld.b.3d.v4.b32.clamp {
+suld.b.1d_buffer.v4.b32.clamp {
+suld.b.1d.b32.clamp {
+suld.b.a1d.b32.clamp {
+suld.b.2d.b32.clamp {
+suld.b.a2d.b32.clamp {
+suld.b.3d.b32.clamp {
+suld.b.1d_buffer.b32.clamp {
+suld.b.1d.v2.b64.clamp {
+suld.b.a1d.v2.b64.clamp {
+suld.b.2d.v2.b64.clamp {
+suld.b.a2d.v2.b64.clamp {
+suld.b.3d.v2.b64.clamp {
+suld.b.1d_buffer.v2.b64.clamp {
+suld.b.1d.b64.clamp {
+suld.b.a1d.b64.clamp {
+suld.b.2d.b64.clamp {
+suld.b.a2d.b64.clamp {
+suld.b.3d.b64.clamp {
+suld.b.1d_buffer.b64.clamp {
+suld.b.1d.v2.b16.clamp {
+suld.b.a1d.v2.b16.clamp {
+suld.b.2d.v2.b16.clamp {
+suld.b.a2d.v2.b16.clamp {
+suld.b.3d.v2.b16.clamp {
+suld.b.1d_buffer.v2.b16.clamp {
+suld.b.1d.v4.b16.clamp {
+suld.b.a1d.v4.b16.clamp {
+suld.b.2d.v4.b16.clamp {
+suld.b.a2d.v4.b16.clamp {
+suld.b.3d.v4.b16.clamp {
+suld.b.1d_buffer.v4.b16.clamp {
+suld.b.1d.b16.clamp {
+suld.b.a1d.b16.clamp {
+suld.b.2d.b16.clamp {
+suld.b.a2d.b16.clamp {
+suld.b.3d.b16.clamp {
+suld.b.1d_buffer.b16.clamp {
+suld.b.1d.v2.b8.clamp {
+suld.b.a1d.v2.b8.clamp {
+suld.b.2d.v2.b8.clamp {
+suld.b.a2d.v2.b8.clamp {
+suld.b.3d.v2.b8.clamp {
+suld.b.1d_buffer.v2.b8.clamp {
+suld.b.1d.v4.b8.clamp {
+suld.b.a1d.v4.b8.clamp {
+suld.b.2d.v4.b8.clamp {
+suld.b.a2d.v4.b8.clamp {
+suld.b.3d.v4.b8.clamp {
+suld.b.1d_buffer.v4.b8.clamp {
+suld.b.1d.b8.clamp {
+suld.b.a1d.b8.clamp {
+suld.b.2d.b8.clamp {
+suld.b.a2d.b8.clamp {
+suld.b.3d.b8.clamp {
+suld.b.1d_buffer.b8.clamp {
+],{
+}|
+, 0, %p1; 
+	}
+, 1, 0, %p2; 
+	}
+], temp; 
+	}
+;
+	SKIPADD:
+	}
+, %lhs, %rhs;
+	}
+}, %dst;
+	}
+, {%r2,%r3};
+	}
+, %tmp; }
+
+	{
+	.reg .b32 temp_param_reg;
+	// <end>}
