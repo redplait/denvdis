@@ -2559,6 +2559,13 @@ sub inl_extract
   my($mask, $size) = c_get_mask($m);
   printf($fh "auto v%d = fn(%s, %d);\n", $n, $mask, $size);
 }
+# as inl_extract without tmp auto vXX
+sub inl_extract2
+{
+  my($fh, $m) = @_;
+  my($mask, $size) = c_get_mask($m);
+  printf($fh "fn(%s, %d);\n", $mask, $size);
+}
 sub bank_extract
 {
   my($fh, $m, $n) = @_;
@@ -2657,9 +2664,9 @@ sub gen_extr
         printf($fh "}\n");
         $index++; next;
       } else {
-        inl_extract($fh, $1, $index);
         printf($fh "// %s bad table %s %s\n", $1, $2, $3);
-        printf($fh "res[\"%s\"] = v%d;\n", $2, $index);
+        printf($fh "res[\"%s\"] = ", $2);
+        inl_extract2($fh, $1);
         $index++; next;
       }
     } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)(?:\s*SCALE\s+(\d+))?$/ ) {
@@ -2672,12 +2679,9 @@ sub gen_extr
       if ( defined $op->[18] && $2 ne 'req_bit_set' && exists $op->[18]->{$2} ) {
         $vw->{$2} = mask_len( $g_mnames{$1} ) + scale_len($3) if exists($g_mnames{$1});
       }
-      inl_extract($fh, $1, $index);
-      if ( defined $3 ) {
-        printf($fh "res[\"%s\"] = v%d * %s;\n", $2, $index, $3);
-      } else {
-        printf($fh "res[\"%s\"] = v%d;\n", $2, $index);
-      }
+      printf($fh "res[\"%s\"] = ", $2);
+      printf($fh "%s * ", $3) if ( defined $3 );
+      inl_extract2($fh, $1);
       $index++; next;
     } elsif ( $m=~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)\s+convertFloatType\s*\((.*)\s*\)/ ) {
       printf($fh "// convertFloatType %s\n", $3);
