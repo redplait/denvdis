@@ -2471,7 +2471,7 @@ sub gen_tabs
     foreach my $tkey ( sort keys %$t ) {
       my $pfx = sprintf("s_%d_%s", $tkey, $ename);
       push @cont, [ $tkey, $pfx];
-      printf($fh "static const int %s[] = {", $pfx);
+      printf($fh "static const unsigned short %s[] = {", $pfx);
       my $row = $t->{$tkey};
       if ( 'ARRAY' eq ref $row ) {
         printf($fh "%d", scalar @$row);

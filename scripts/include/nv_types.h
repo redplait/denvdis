@@ -10,7 +10,7 @@
 
 #define NV_MASK(name, size) static const std::pair<short, short> name[size]
 #define NV_ENUM(name)  static const std::unordered_map<int, const char *> name
-#define NV_TAB(name)   static const std::unordered_map<int, const int *> name
+#define NV_TAB(name)   static const std::unordered_map<int, const unsigned short *> name
 
 enum NV_Format {
   NV_BITSET,
@@ -73,7 +73,7 @@ struct nv_instr {
  const std::unordered_map<std::string_view, const nv_eattr *> eas;
  nv_filter filter;
  nv_extract extract;
-};
+} __attribute__ ((aligned (8)));
 
 // binary tree
 struct NV_bt_node {
