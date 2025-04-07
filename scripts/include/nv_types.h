@@ -30,6 +30,21 @@ enum NV_Brt {
  BRT_BRANCHOUT = 4,
 };
 
+enum NV_Scbd {
+ SOURCE_RD = 1,
+ SOURCE_WR = 2,
+ SINK = 3,
+ SOURCE_SINK_RD = 4,
+ SOURCE_SINK_WR = 5,
+ NON_BARRIER_INT_INST = 6,
+};
+
+enum NV_Scbd_Type {
+ BARRIER_INST = 1,
+ MEM_INST = 2,
+ BB_ENDING_INST = 3,
+};
+
 struct nv_vattr {
  enum NV_Format kind;
  bool has_ast; // final *
@@ -63,7 +78,9 @@ struct nv_instr {
  short n; // number for formatting
  char alt;
  short meaning_bits;
- char brt; // NV_Brt or 0
+ char brt,   // NV_Brt or 0
+  scbd,      // NV_Scbd or 0
+  scbd_type; // NV_Scbd_Type or 0
  const char *target_index;
  const char *cc_index;
  const char *sidl_name;

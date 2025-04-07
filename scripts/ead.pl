@@ -2948,13 +2948,15 @@ sub gen_instr
       if ( defined $op->[20] ) {
         my $brt = $op->[20];
         printf($fh "%s,", $brt->[0] || '0');
-        for ( my $bi = 1; $bi < 4; $bi++ ) {
+        printf($fh "%s,", $brt->[1] || '0'); # scbd
+        printf($fh "%s,", $brt->[2] || '0'); # scbd_type
+        for ( my $bi = 3; $bi < 6; $bi++ ) {
           if ( defined $brt->[$bi]) { printf($fh "\"%s\",", $brt->[$bi]); }
           else { printf($fh "nullptr,"); }
         }
         printf($fh "\n");
       } else {
-        printf($fh "0, nullptr, nullptr, nullptr,\n");
+        printf($fh "0, 0, 0, nullptr, nullptr, nullptr,\n");
       }
       # vf_conv
       if ( defined $conv_name ) { printf($fh "&%s,\n", $conv_name); }
@@ -3645,17 +3647,25 @@ while( $str = <$fh> ) {
       $b_props[0] = $1;
       next;
     }
+    if ( $str =~ /^\s*MEM_SCBD\s*=\s*(\S+)\s*;/ ) {
+      $b_props[1] = $1 if ( $1 ne 'NONE' );
+      next;
+    }
+    if ( $str =~ /^\s*MEM_SCBD_TYPE\s*=\s*(\S+)\s*;/ ) {
+      $b_props[2] = $1 if ( $1 ne 'ALL' );
+      next;
+    }
     if ( $str =~ /^\s*BRANCH_TARGET_INDEX = INDEX\(([^\)]+)\)/ ) {
-      $b_props[1] = $1;
+      $b_props[3] = $1;
       next;
     }
     if ( $str =~ /CC_INDEX = INDEX\(([^\)]+)\)/ ) {
-      $b_props[2] = $1;
+      $b_props[4] = $1;
       next;
     }
     # SIDL_NAME
     if ( $str =~ /SIDL_NAME\s*=\s*`SIDL_NAMES@(\w+)/ ) {
-      $b_props[3] = $1;
+      $b_props[5] = $1;
       next;
     }
   }
