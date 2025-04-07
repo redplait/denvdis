@@ -2232,7 +2232,7 @@ sub build_node
     #  if ( $b->[0] ) { $curr_idx = $i; last; }
     #  if ( $b->[1] ) { $curr_idx = $i; last; }
     # }
-    if ( -1 == $curr_idx ) {
+    # if ( -1 == $curr_idx ) {
       if ( defined $opt_v ) {
         printf("%d level %d %d cnt %d curr_max %f rem %d\n", $hand, $lvl, $i, $cnt, $curr_max, scalar @$rem);
         printf("%s MYMASK\n", join '', @$a);
@@ -2247,7 +2247,6 @@ sub build_node
 #        printf("%d bits %d %d %d\n", $i, $b->[0], $b->[1], $b->[2]);
 #      }
       return [ 'L', $rem ];
-    }
   }
   # 3) split to 3 array on bit $curr_idx
   my(@left, @right, @both);
@@ -2383,7 +2382,7 @@ sub traverse_btree
   if ( $n->[0] eq 'L' ) {
     return 'nullptr' unless defined($n->[1]); # empty leaf node - wtf?
     my $name = 'leaf_' . $$num++;
-    printf($fh "static const NV_bt_node %s = { true, {\n", $name);
+    printf($fh "static const NV_bt_node %s = { 0x10000, {\n", $name);
     # dump insts in $n->[1]
     dump_matched($fh, $n->[1]);
     printf($fh "} };\n");
@@ -2392,11 +2391,11 @@ sub traverse_btree
   my $left = traverse_btree( $fh, $n->[2], $num);
   my $right = traverse_btree( $fh, $n->[3], $num);
   my $name = 'node_' . $$num++;
-  printf($fh "static const NV_non_leaf %s = { false, {\n", $name);
+  printf($fh "static const NV_non_leaf %s = { %d, {\n", $name, $g_size - 1 - $n->[1]);
   # dump insts in $n->[4]
   dump_matched($fh, $n->[4]);
   # must invert bit position too
-  printf($fh "}, %d, %s, %s };\n", $g_size - 1 - $n->[1], $left, $right);
+  printf($fh "}, %s, %s };\n", $left, $right);
   return '&' . $name;
 }
 sub c_mask_name
@@ -2771,7 +2770,7 @@ sub gen_base
   else { $res .= '0'}
   $res;
 }
-# M1 & M2 used $f->[3] as format string
+# M1 & M2 use $f->[3] as format string
 sub gen_base2
 {
   my $f = shift;
@@ -2823,7 +2822,7 @@ sub rend_list
   printf($fh "{ // rend for %d idx %d\n", $vidx, $idx);
   my $li = 0;
   my $was = 0;
-  for ( my $i = $idx; $i < scalar @$f; $i++ ) {
+  for my $i ($idx .. scalar @$f) {
     next unless defined $f->[$i];
     if ( 'ARRAY' eq ref $f->[$i] ) { # make enum
       printf($fh " ve_base l%d{ %s };\n", $li, rend_enum($f->[$i]));

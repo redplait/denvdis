@@ -77,13 +77,14 @@ struct nv_instr {
 
 // binary tree
 struct NV_bt_node {
-  bool is_leaf;
+  int m_bit;
+  inline bool is_leaf() const { return m_bit & 0x10000; }
+  inline int bit() const { return m_bit & 0xffff; }
   std::list<const nv_instr *> ins;
 };
 
 struct NV_non_leaf: public NV_bt_node
 {
-  int bit;
   const NV_bt_node *left, *right;
 };
 
@@ -652,9 +653,6 @@ struct NV_disasm: public INV_disasm, T
     // traverse decode tree
     std::list<const struct nv_instr *> tmp;
     rec_find(m_root, tmp);
-    // boring repeating code but you can't just pass lambda to std::function ref
-    std::function<uint64_t(const std::pair<short, short> *, size_t)> extr_func =
-      [&](const std::pair<short, short> *m, size_t ms) { return T::extract(m, ms); };
     for ( auto i: tmp ) {
       if ( i->filter && !i->filter( extr_func ) ) continue;
       NV_extracted ex_data;
@@ -665,14 +663,17 @@ struct NV_disasm: public INV_disasm, T
   }
  protected:
   int m_cnt;
+  // boring repeating code but you can't just pass lambda to std::function ref
+  std::function<uint64_t(const std::pair<short, short> *, size_t)> extr_func =
+      [&](const std::pair<short, short> *m, size_t ms) { return T::extract(m, ms); };
   void rec_find(const NV_bt_node *curr, std::list<const nv_instr *> &res) {
     if ( curr == nullptr ) return;
     std::copy_if( curr->ins.begin(), curr->ins.end(), std::back_inserter(res),
      [&](const nv_instr *ins){ return T::check_mask(ins->mask); } );
-    if ( curr->is_leaf )
+    if ( curr->is_leaf() )
       return;
     const NV_non_leaf *b2 = (const NV_non_leaf *)curr;
-    if ( T::check_bit(b2->bit) ) rec_find(b2->right, res);
+    if ( T::check_bit(b2->bit()) ) rec_find(b2->right, res);
     else rec_find(b2->left, res);
   }
   const NV_non_leaf *m_root = nullptr;
