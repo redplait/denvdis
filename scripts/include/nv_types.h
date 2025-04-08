@@ -73,6 +73,7 @@ typedef void (*nv_extract)(std::function<uint64_t(const std::pair<short, short> 
 
 struct nv_instr {
  const char *mask;
+ const char *cname; // class
  const char *name;
  int line;
  short n; // number for formatting

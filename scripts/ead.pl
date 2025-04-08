@@ -2943,7 +2943,7 @@ sub gen_instr
       # dump instruction
       printf($fh "static const struct nv_instr %s_%d = {\n", $opt_C, $op->[19]);
       # name mask line n alt meaning_bits
-      printf($fh "\"%s\",\n \"%s\", %d, %d, %d, %d,\n", $m, $op->[1], $op->[4], $op->[19], $op->[7], $op->[14]);
+      printf($fh "\"%s\",\n \"%s\",\n \"%s\", %d, %d, %d, %d,\n", $m, $op->[0],$op->[1], $op->[4], $op->[19], $op->[7], $op->[14]);
       # brt properties
       if ( defined $op->[20] ) {
         my $brt = $op->[20];
