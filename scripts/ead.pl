@@ -2948,20 +2948,25 @@ sub gen_pred_func
     $args{$1}++;
   }
   # boring extract logic
+  my $copy = $str;
   foreach my $k ( keys %args ) {
+    my $kdot = $k;
+    if ( $k =~ /\./ ) {
+      $k =~ s/\./_/g;
+      $copy =~ s/$kdot/$k/g;
+    }
     my $iter_name = $k . '_iter';
     if ( defined($op->[18]) && exists $op->[18]->{$k} ) {
-     printf($fh " auto %s = kv.find(\"%s\"); if ( %s == kv.end() ) return -1;\n", $iter_name, $k, $iter_name);
+     printf($fh " auto %s = kv.find(\"%s\"); if ( %s == kv.end() ) return -1;\n", $iter_name, $kdot, $iter_name);
     } else {
-      my $e_name = pred_find_enum($op, $k);
-      printf($fh " auto %s = kv.find(\"%s\"); if ( %s == kv.end() ) {\n", $iter_name, $k, $iter_name);
+      my $e_name = pred_find_enum($op, $kdot);
+      printf($fh " auto %s = kv.find(\"%s\"); if ( %s == kv.end() ) {\n", $iter_name, $kdot, $iter_name);
       # find value with name
       printf($fh " %s = kv.find(\"%s\"); if ( %s == kv.end() ) return -1; }\n", $iter_name, $e_name, $iter_name);
     }
     # int value with name $k
     printf($fh " int %s = (int)%s->second;\n", $k, $iter_name);
   }
-  my $copy = $str;
   $copy =~ s/`(\w+)\@\"?([\w\.]+)\"?/pred_conv($1, $2)/eg;
   printf($fh " return %s;\n", $copy);
   printf($fh "}\n");
