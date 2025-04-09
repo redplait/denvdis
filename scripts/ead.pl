@@ -2896,6 +2896,99 @@ sub gen_render
   }
   printf($fh "}\n\n");
 }
+# predicates logic
+# cached functions
+my %g_predf;
+my $g_pred_n = 0;
+# convert enum @ value to int const
+sub pred_conv
+{
+  my($e, $v) = @_;
+  if ( !exists $g_enums{$e} ) {
+    carp("no enum $e");
+    return;
+  }
+  my $en = $g_enums{$e};
+  if ( !exists $en->{$v} ) {
+    carp("no $v in enum $e");
+    return;
+  }
+  $en->{$v};
+}
+# find enum by enc name
+sub pred_find_enum
+{
+  my($op, $e) = @_;
+  my $mae = $op->[17];
+  foreach my $ae ( values %$mae ) {
+    return $ae->[0] if ( $ae->[3] eq $e );
+  }
+  foreach my $ae ( values %$mae ) {
+    return $ae->[3] if ( $ae->[0] eq $e );
+  }
+  carp("cannot find enum $e");
+}
+# args: file handle, instruction, function body
+sub gen_pred_func
+{
+  my($fh, $op, $str) = @_;
+  return $g_predf{$str} if exists( $g_predf{$str} );
+  # make definition
+  my $res = 'smp_' . $g_pred_n++;
+  printf($fh "static int %s(const NV_extracted &kv) {\n", $res);
+  # check if str is just string
+  if ( $str =~ /^(\d+)$/ ) {
+    $g_predf{$str} = $res;
+    printf($fh " return %s;\n}\n", $str);
+    return $res;
+  }
+  # collect args
+  my %args;
+  while( $str =~ /\b([\w\.]+)\s*[><=\?\!]/g ) {
+    $args{$1}++;
+  }
+  # boring extract logic
+  foreach my $k ( keys %args ) {
+    my $iter_name = $k . '_iter';
+    if ( defined($op->[18]) && exists $op->[18]->{$k} ) {
+     printf($fh " auto %s = kv.find(\"%s\"); if ( %s == kv.end() ) return -1;\n", $iter_name, $k, $iter_name);
+    } else {
+      my $e_name = pred_find_enum($op, $k);
+      printf($fh " auto %s = kv.find(\"%s\"); if ( %s == kv.end() ) {\n", $iter_name, $k, $iter_name);
+      # find value with name
+      printf($fh " %s = kv.find(\"%s\"); if ( %s == kv.end() ) return -1; }\n", $iter_name, $e_name, $iter_name);
+    }
+    # int value with name $k
+    printf($fh " int %s = (int)%s->second;\n", $k, $iter_name);
+  }
+  my $copy = $str;
+  $copy =~ s/`(\w+)\@\"?([\w\.]+)\"?/pred_conv($1, $2)/eg;
+  printf($fh " return %s;\n", $copy);
+  printf($fh "}\n");
+  # store processed function in cache
+  $g_predf{$str} = $res;
+  $res;
+}
+
+sub gen_preds
+{
+  my($fh, $op) = @_;
+  return unless defined($op->[21]);
+  my $props = $op->[21];
+  my $res = 'preds_' . $op->[19];
+  my %body;
+  while ( my($name, $what) = each %$props ) {
+    $body{$name} = gen_pred_func($fh, $op, $what);
+  }
+  return unless keys(%body); # something went wrong
+  printf($fh "NV_PRED(%s) = {\n", $res);
+  while ( my($name, $what) = each %body ) {
+    printf($fh " // %s -> %s\n", $name, $props->{$name});
+    printf($fh " { \"%s\", %s },\n", $name, $what);
+  }
+  printf($fh "};\n");
+  $res;
+}
 sub gen_instr
 {
   my $fh = shift;
@@ -2910,6 +3003,8 @@ sub gen_instr
         gen_ae($fh, $ae, $ename);
         $cached_ae{$ename} = 1;
       }
+      # predicated
+      my $pred_name = gen_preds($fh, $op);
       # filter
       my $op_filter = gen_filter($op, $fh);
       # extractor
@@ -2959,6 +3054,9 @@ sub gen_instr
       } else {
         printf($fh "0, 0, 0, nullptr, nullptr, nullptr,\n");
       }
+      # predicates
+      if ( defined $pred_name ) { printf($fh "&%s,\n", $pred_name); }
+      else { printf($fh " nullptr,\n"); }
       # vf_conv
       if ( defined $conv_name ) { printf($fh "&%s,\n", $conv_name); }
       else { printf($fh " nullptr,\n"); }
@@ -3685,6 +3783,8 @@ while( $str = <$fh> ) {
     next if ( $str !~ /^\s*([\w\.]+)\s*=\s*([^;]+)\s*;/ );
     next if ( $1 eq 'VIRTUAL_QUEUE' );
     next if ( $2 eq '0' );
+    next if ( $2 eq '(0)' );
+    next if ( $2 =~ /\(\s*0\s*\)\s*\*\s*\d+$/ );
     $preds{$1} = $2;
   }
   # encoding

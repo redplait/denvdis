@@ -11,6 +11,7 @@
 #define NV_MASK(name, size) static const std::pair<short, short> name[size]
 #define NV_ENUM(name)  static const std::unordered_map<int, const char *> name
 #define NV_TAB(name)   static const std::unordered_map<int, const unsigned short *> name
+#define NV_PRED(name)  static const NV_Preds name
 
 enum NV_Format {
   NV_BITSET,
@@ -70,8 +71,8 @@ typedef std::unordered_map<std::string_view, uint64_t> NV_extracted;
 typedef std::unordered_map<std::string_view, short> NV_width;
 typedef std::unordered_map<std::string_view, nv_float_conv> NV_conv;
 typedef void (*nv_extract)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &, NV_extracted &);
-typedef int (*nv_prop)(const NV_extracted &);
-typedef std::unordered_map<std::string_view, nv_prop> NV_Props;
+typedef int (*nv_pred)(const NV_extracted &);
+typedef std::unordered_map<std::string_view, nv_pred> NV_Preds;
 
 struct nv_instr {
  const char *mask;
@@ -87,6 +88,7 @@ struct nv_instr {
  const char *target_index;
  const char *cc_index;
  const char *sidl_name;
+ const NV_Preds *predicated;
  const NV_conv *vf_conv;
  const NV_width *vwidth;
  // why vas is not pointer? well, while sm3 & 4 has lots of instructions with no values in general it looks like
