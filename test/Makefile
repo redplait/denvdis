@@ -5,6 +5,8 @@ FP16=-I ../../FP16/include
 # for release add -Os and remove -g
 SM_FLAGS=-shared -fpic -msse2avx -g -pthread $(IFLAGS)
 SM_LIBS=-lstdc++ -lpthread
+# ead.pl options
+EAD=-BFmrizp
 
 nvd: nvd.cc
 	gcc -g $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
@@ -55,50 +57,50 @@ sm3.so: sm3.cc
 	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm3.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm3 ../data/sm3_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm3 ../data/sm3_1.txt
 
 sm4.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm4 ../data/sm4_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm4 ../data/sm4_1.txt
 
 sm5.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm5 ../data/sm5_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm5 ../data/sm5_1.txt
 
 sm52.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm52 ../data/sm52_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm52 ../data/sm52_1.txt
 
 sm55.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm55 ../data/sm55_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm55 ../data/sm55_1.txt
 
 sm57.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm57 ../data/sm57_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm57 ../data/sm57_1.txt
 
 sm70.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm70 ../data/sm70_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm70 ../data/sm70_1.txt
 
 sm72.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm72 ../data/sm72_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm72 ../data/sm72_1.txt
 
 sm75.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm75 ../data/sm75_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm75 ../data/sm75_1.txt
 
 # in data12
 sm80.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm80 ../data12/sm80_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm80 ../data12/sm80_1.txt
 
 sm86.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm86 ../data12/sm86_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm86 ../data12/sm86_1.txt
 
 sm89.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm89 ../data12/sm89_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm89 ../data12/sm89_1.txt
 
 sm90.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm90 ../data12/sm90_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm90 ../data12/sm90_1.txt
 
 sm100.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm100 ../data12/sm100_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm100 ../data12/sm100_1.txt
 
 sm101.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm101 ../data12/sm101_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm101 ../data12/sm101_1.txt
 
 sm120.cc: ../scripts/ead.pl
-	perl -d:Confess ../scripts/ead.pl -BFmriz -C sm120 ../data12/sm120_1.txt
+	perl -d:Confess ../scripts/ead.pl $(EAD) -C sm120 ../data12/sm120_1.txt
