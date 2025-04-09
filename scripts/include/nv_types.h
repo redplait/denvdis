@@ -70,6 +70,8 @@ typedef std::unordered_map<std::string_view, uint64_t> NV_extracted;
 typedef std::unordered_map<std::string_view, short> NV_width;
 typedef std::unordered_map<std::string_view, nv_float_conv> NV_conv;
 typedef void (*nv_extract)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &, NV_extracted &);
+typedef int (*nv_prop)(const NV_extracted &);
+typedef std::unordered_map<std::string_view, nv_prop> NV_Props;
 
 struct nv_instr {
  const char *mask;
@@ -87,6 +89,16 @@ struct nv_instr {
  const char *sidl_name;
  const NV_conv *vf_conv;
  const NV_width *vwidth;
+ // why vas is not pointer? well, while sm3 & 4 has lots of instructions with no values in general it looks like
+ // grep -c "no values" sm*.cc
+ // sm100.cc:0
+ // sm120.cc:1
+ // sm3.cc:170
+ // sm4.cc:180
+ // sm55.cc:0
+ // sm5.cc:0
+ // sm86.cc:1
+ // sm90.cc:1
  const std::unordered_map<std::string_view, const nv_vattr> vas;
  const std::unordered_map<std::string_view, const nv_eattr *> eas;
  nv_filter filter;
@@ -681,7 +693,7 @@ struct NV_disasm: public INV_disasm, T
   }
  protected:
   int m_cnt;
-  // boring repeating code but you can't just pass lambda to std::function ref
+  // boring repeating code but you can't just pass lambda to argument std::function&
   std::function<uint64_t(const std::pair<short, short> *, size_t)> extr_func =
       [&](const std::pair<short, short> *m, size_t ms) { return T::extract(m, ms); };
   void rec_find(const NV_bt_node *curr, std::list<const nv_instr *> &res) {

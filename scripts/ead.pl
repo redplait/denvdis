@@ -11,7 +11,7 @@ use feature qw( switch );
 no warnings qw( experimental::smartmatch );
 
 # options
-use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_N $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_N $opt_p $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -29,6 +29,7 @@ Usage: $0 [options] md.txt
   -i - dump instructions formats
   -m - generate masks
   -N - test single bitmask from cmd-line
+  -p - parse predicated
   -r - fill in reverse order
   -t - dump tables
   -T - test file
@@ -1042,7 +1043,7 @@ sub gen_inst_mask
    $cp =~ s/\{\s*\}//g;
    # and $( )$
    $cp =~ s/\$\(\s*\)\$//g;
-   $op->[21] = $cp;
+   $op->[22] = $cp;
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
   # process remained encodings
@@ -2127,7 +2128,7 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
-      printf("   Unused %s\n", $op->[21]) if defined($op->[21]);
+      printf("   Unused %s\n", $op->[22]) if defined($op->[22]);
       # dump mask to enum mapping
       dump_mask2enum($op);
       dump_tenums($op->[13]) if defined($op->[13]);
@@ -3025,7 +3026,7 @@ sub gen_C
 }
 
 ### main
-my $status = getopts("abBcefFimrtvwzT:N:C:");
+my $status = getopts("abBcefFimprtvwzT:N:C:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -3056,7 +3057,8 @@ $state = $line = 0;
 # [17] - value names -> type hash
 # [18] - idx
 # [19] - BRT properties
-my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @cb, @flist, @b_props, %ae, $alt, %values, $format);
+# [20] - predicates
+my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @cb, @flist, @b_props, %ae, $alt, %values, %preds, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
 # tref is ref to hash with table content
@@ -3153,6 +3155,7 @@ my $reset = sub {
   @op = @enc = @nenc = @quoted = @cb = @flist = @b_props = ();
   %ae = ();
   %values = ();
+  %preds = ();
 };
 # insert copy of current instruction
 my $ins_op = sub {
@@ -3205,6 +3208,10 @@ my $ins_op = sub {
     $c[19] = \@cp;
   } else {
     $c[19] = undef;
+  }
+  if ( keys %preds ) {
+    my %cpreds = %preds;
+    $c[20] = \%cpreds;
   }
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
@@ -3621,7 +3628,7 @@ while( $str = <$fh> ) {
     $state = 2;
     next;
   }
-  if ( ($state == 2 || $state == 7) && $str =~ /OPCODES/ ) {
+  if ( ($state == 2 || $state >= 7) && $str =~ /OPCODES/ ) {
     $state = 3;
     next;
   }
@@ -3668,6 +3675,17 @@ while( $str = <$fh> ) {
       $b_props[5] = $1;
       next;
     }
+  }
+  # predicates
+  if ( defined($opt_p) && $str =~ /^\s*PREDICATES/ ) {
+    $state = 8;
+    next;
+  }
+  if ( 8 == $state ) {
+    next if ( $str !~ /^\s*([\w\.]+)\s*=\s*([^;]+)\s*;/ );
+    next if ( $1 eq 'VIRTUAL_QUEUE' );
+    next if ( $2 eq '0' );
+    $preds{$1} = $2;
   }
   # encoding
   if ( $str =~ /^\s*ENCODING/ ) {
