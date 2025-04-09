@@ -11,6 +11,7 @@
 int opt_e = 0,
     opt_h = 0,
     opt_t = 0,
+    opt_p = 0,
     opt_r = 0,
     opt_N = 0,
     opt_O = 0;
@@ -513,7 +514,9 @@ class nv_dis
    int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *);
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    void dump_ops(const struct nv_instr *, const NV_extracted &);
+   void dump_predicates(const struct nv_instr *, const NV_extracted &);
    int cmp(const std::string_view &, const char *) const;
+   void dump_sv(const std::string_view &) const;
    bool contain(const std::string_view &, char) const;
    int calc_miss(const struct nv_instr *, const NV_extracted &, int) const;
    int calc_index(const NV_res &, int) const;
@@ -536,6 +539,11 @@ class nv_dis
    long dis_notfound = 0;
    long dis_dups = 0;
 };
+
+void nv_dis::dump_sv(const std::string_view &sv) const
+{
+  std::for_each( sv.cbegin(), sv.cend(), [&](char c){ fputc(c, m_out); });
+}
 
 int nv_dis::cmp(const std::string_view &sv, const char *s) const
 {
@@ -956,6 +964,16 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
   return missed;
 }
 
+void nv_dis::dump_predicates(const struct nv_instr *i, const NV_extracted &kv)
+{
+  if ( !i->predicated ) return;
+  for ( auto &pred: *i->predicated ) {
+    fputs("P> ", m_out);
+    dump_sv(pred.first);
+    fprintf(m_out, ": %d\n", pred.second(kv));
+  }
+}
+
 void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv)
 {
   for ( auto kv1: kv )
@@ -1016,6 +1034,7 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
   } else
     fprintf(m_out, " NO_Render\n");
   if ( opt_O ) dump_ops( p.first, p.second );
+  if ( opt_p ) dump_predicates( p.first, p.second );
 }
 
 void nv_dis::try_dis(Elf_Word idx)
@@ -1270,6 +1289,7 @@ void usage(const char *prog)
   printf("-N - dump not found masks\n");
   printf("-o - output file\n");
   printf("-O - dump operands\n");
+  printf("-p - dump predicates\n");
   printf("-r - dump relocs\n");
   printf("-s index - disasm only single section withh index\n");
   printf("-t - dump symbols\n");
@@ -1282,13 +1302,14 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "ehrtNOs:o:");
+    c = getopt(argc, argv, "ehrtNOps:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'e': opt_e = 1; break;
       case 'h': opt_h = 1; break;
       case 't': opt_t = 1; break;
       case 'O': opt_O = 1; break;
+      case 'p': opt_p = 1; break;
       case 'r': opt_r = 1; break;
       case 'N': opt_N = 1; break;
       case 'o': o_fname = optarg; break;
