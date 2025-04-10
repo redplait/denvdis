@@ -2949,20 +2949,22 @@ sub gen_pred_func
   }
   # boring extract logic
   my $copy = $str;
+  my $a_idx = 0;
   foreach my $k ( keys %args ) {
     my $kdot = $k;
+    $a_idx++;
     if ( $k =~ /\./ ) {
       $k =~ s/\./_/g;
       $copy =~ s/$kdot/$k/g;
     }
     my $iter_name = $k . '_iter';
     if ( defined($op->[18]) && exists $op->[18]->{$k} ) {
-     printf($fh " auto %s = kv.find(\"%s\"); if ( %s == kv.end() ) return -1;\n", $iter_name, $kdot, $iter_name);
+     printf($fh " auto %s = kv.find(\"%s\"); if ( %s == kv.end() ) return -%d;\n", $iter_name, $kdot, $iter_name, $a_idx);
     } else {
       my $e_name = pred_find_enum($op, $kdot);
       printf($fh " auto %s = kv.find(\"%s\"); if ( %s == kv.end() ) {\n", $iter_name, $kdot, $iter_name);
       # find value with name
-      printf($fh " %s = kv.find(\"%s\"); if ( %s == kv.end() ) return -1; }\n", $iter_name, $e_name, $iter_name);
+      printf($fh " %s = kv.find(\"%s\"); if ( %s == kv.end() ) return -%d; }\n", $iter_name, $e_name, $iter_name, $a_idx);
     }
     # int value with name $k
     printf($fh " int %s = (int)%s->second;\n", $k, $iter_name);
