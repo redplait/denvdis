@@ -3133,21 +3133,99 @@ sub gen_C
 
 # group processing logic
 my %g_nops; # key - name, value - ref to instruction, can be shared from several names like Op, Oppipe1, Oppipe2 etc
+my %g_groups; # key - name, value - hashmap with (name, ref to instruction)
 
 sub add_ins
 {
   my($name, $ins) = @_;
+  return unless defined($name);
   unless ( exists $g_nops{$name} ) {
-    $g_nops{$name} = $ins;
+    $g_nops{$name} = [ $ins ];
     return;
   }
-  if ( 'ARRAY' eq ref $g_nops{$name} ) {
-    push @{ $g_nops{$name} }, $ins;
-    return;
+  my $v = $g_nops{$name};
+  push @$v, $ins;
+}
+
+sub merge_groups
+{
+  my($g1, $g2) = @_;
+  my %res = %$g1;
+  foreach my $i ( keys %$g2 ) {
+    $res{$i} = 1;
   }
-  my @op = $g_nops{$name};
-  push @op, $ins;
-  $g_nops{$name} = \@op;
+  return \%res;
+}
+
+sub parse_named_list
+{
+  my($l, $line) = @_;
+  my %res;
+  for my $name ( split /\s*,\s*/, $l ) {
+    $name =~ s/\s+$//;
+    next if ( $name eq '' );
+    unless( exists $g_nops{$name} ) {
+      printf("unknown instruction name %s, line %d\n", $name, $line);
+      next;
+    }
+    my $v = $g_nops{$name};
+    foreach my $i ( @$v ) {
+# print("bad $name size" . scalar(@$v) . ">" . Dumper($v)) unless defined($i);
+      $res{$i} = 1;
+    }
+  }
+  return \%res;
+}
+
+sub read_groups
+{
+  my($fh, $fname) = @_;
+  my($str, $part, $name);
+  my $state = 0;
+  my $line = 0;
+  while( $str = <$fh> ) {
+    chomp $str;
+    $line++;
+    next if ( $str eq '' );
+    if ( !$state ) {
+      $state = 1 if ( $str =~ /OPERATION SETS/ );
+      next;
+    }
+    if ( 1 == $state ) {
+      # seems that all sections start with symbol at column 0
+      if ( $str =~ /^\w/ ) {
+        $state = 0; next;
+      }
+    }
+    my $res;
+    # group_name = {op_names list separated with commas} |
+    #  another group name - then we can just make alias with the same value |
+    #  group + expr |
+    #  group - expr
+    if ( $str =~ /^\s+(\w+)\s*=\s*\{\s*(.*)\s*\}\s*;/ ) {
+      $name = $1;
+      $res = parse_named_list($2, $line);
+    } elsif ( $str =~ /^\s+(\w+)\s*=\s*\{\s*(.*)\s*$/ ) {
+      $name = $1;
+      $part = parse_named_list($2, $line);
+      next;
+    } elsif ( defined($part) && $str =~ /\s*(.*)\s*\}\s*;$/ ) {
+      $res = merge_groups($part, parse_named_list($1, $line));
+    } elsif ( defined($part) && $str =~ /\s*(.*)\s*$/ ) {
+      $part = merge_groups($part, parse_named_list($1, $line));
+      next;
+    } elsif ( $str =~ /^\s+(\w+)\s*=\s*(\w+)\s*;/ ) {
+      $name = $1;
+      carp("unknown group $2") unless exists $g_groups{$2};
+      $res = $g_groups{$2};
+    } else {
+      printf("dont know how to parse %s in %s line %d\n", substr($str, 0, 64), $fname, $line);
+      next;
+    }
+    $g_groups{$name} = $res;
+    undef $part;
+    next;
+  }
 }
 
 ### main
@@ -3337,6 +3415,8 @@ my $ins_op = sub {
   if ( keys %preds ) {
     my %cpreds = %preds;
     $c[20] = \%cpreds;
+  } else {
+    $c[20] = undef;
   }
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
@@ -3900,6 +3980,14 @@ $ins_op->() if ( $has_op );
 
 dump_enums() if ( defined $opt_e );
 dump_tabs() if ( defined $opt_t );
+
+if ( defined $opt_g ) {
+  my $fname = $ARGV[0];
+  $fname =~ s/_1\.([^\.]+)$/_2\.\1/;
+  open($fh, '<', $fname) or die("cannot open $fname, error $!");
+  read_groups($fh, $fname);
+  close $fh;
+}
 
 # dump trees
 if ( defined($opt_m) ) {
