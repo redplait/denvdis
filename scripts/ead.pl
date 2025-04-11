@@ -3261,7 +3261,8 @@ $state = $line = 0;
 # [18] - idx
 # [19] - BRT properties
 # [20] - predicates
-my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @pipes, @cb, @flist, @b_props, %ae, $alt, %values, %preds, $format);
+my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @multi_ops, @cb, @flist, @b_props,
+ %ae, $alt, %values, %pipes, %preds, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
 # tref is ref to hash with table content
@@ -3355,10 +3356,11 @@ my $parse_enum = sub {
 my $reset = sub {
   $format = $cname = '';
   $alt = $has_op = $op_line = 0;
-  @op = @enc = @nenc = @quoted = @cb = @flist = @b_props = @pipes = ();
+  @op = @enc = @nenc = @quoted = @cb = @flist = @b_props = @multi_ops = ();
   %ae = ();
   %values = ();
   %preds = ();
+  %pipes = ();
 };
 # insert copy of current instruction
 my $ins_op = sub {
@@ -3419,13 +3421,37 @@ my $ins_op = sub {
     $c[20] = undef;
   }
   if ( defined($opt_m) ) {
-    insert_mask($cname, \@c);
+    if ( @multi_ops ) {
+      foreach my $pair ( @multi_ops ) {
+        my @cc = @c; # shallow copy of original instruction
+        $cc[0] = $pair->[0];
+        $cc[1] = $pair->[1];
+        insert_mask($cname, \@cc);
+        if ( defined $opt_g ) { # add all other names for this opcode
+          add_ins($pair->[0], \@cc);
+          my $v = $pipes{$pair->[1]};
+          add_ins($_, \@cc) for @$v;
+        }
+      }
+      # insert last
+      insert_mask($cname, \@c);
+      if ( defined $opt_g ) { # add all other names for this opcode
+        add_ins($op[0], \@c);
+        my $v = $pipes{$op[1]};
+        add_ins($_, \@c) for @$v;
+      }
+    } else { # add single version of instruction
+      insert_mask($cname, \@c);
+      if ( defined($opt_g) ) {
+        add_ins($op[0], \@c);
+        # and it's pipes
+        foreach my $v ( values %pipes ) {
+          add_ins($_, \@c) for @$v;
+        }
+      }
+    }
   } else {
     insert_ins($cname, \@c);
-  }
-  if ( defined($opt_g) ) {
-    add_ins($op[0], \@c);
-    add_ins($_, \@c) for @pipes;
   }
 };
 # consume single enum from string, regex is slightly differs from used in while /g below
@@ -3850,11 +3876,18 @@ while( $str = <$fh> ) {
     else { $value = parse0b($vs); }
     # skip pipe version
     if ( $name =~ /_pipe/ ) {
-      push @pipes, $name; # I hope opcodes for pipes are the same as for normal opcode
+      if ( defined $pipes{$value} ) {
+        my $v = $pipes{$value};
+        push @$v, $name;
+      } else { $pipes{$value} = [ $name ]; }
       next;
     }
-    $op[0] = $name;
-    $op[1] = $value;
+    if ( !defined $op[1] ) {
+      $op[0] = $name;
+      $op[1] = $value;
+    } else { # we have several opcodes for 1 md - put pair [name value] into multi_ops
+      push @multi_ops, [ $name, $value ];
+    }
   }
   # properties
   if ( $str =~ /^\s*PROPERTIES/ ) {
@@ -4032,6 +4065,9 @@ if ( defined($opt_m) ) {
 #  compound enums
 # total          367 393 435 476  602  1110  1118  1041  1165
 # duplicated      82  82 112 112    7    19    20    20    27
+# 11 apr - 1 instruction md can have several different opcodes
+# total          383 405 436 481  597  1096  1104  1029  1127
+# duplicated      92  94 112 109   12    33    32    30    46
   if ( defined($opt_T) || defined($opt_N) ) {
     $g_dec_tree = build_tree() if ( defined($opt_B) );
     make_single_test() if defined($opt_N);
