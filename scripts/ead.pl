@@ -11,7 +11,7 @@ use feature qw( switch );
 no warnings qw( experimental::smartmatch );
 
 # options
-use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_i $opt_m $opt_N $opt_p $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_g $opt_i $opt_m $opt_N $opt_p $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -26,6 +26,7 @@ Usage: $0 [options] md.txt
   -e - dump enums
   -f - dump fully filled masks
   -F - filter by enums
+  -g - parse groups
   -i - dump instructions formats
   -m - generate masks
   -N - test single bitmask from cmd-line
@@ -3130,8 +3131,27 @@ sub gen_C
   close $fh;
 }
 
+# group processing logic
+my %g_nops; # key - name, value - ref to instruction, can be shared from several names like Op, Oppipe1, Oppipe2 etc
+
+sub add_ins
+{
+  my($name, $ins) = @_;
+  unless ( exists $g_nops{$name} ) {
+    $g_nops{$name} = $ins;
+    return;
+  }
+  if ( 'ARRAY' eq ref $g_nops{$name} ) {
+    push @{ $g_nops{$name} }, $ins;
+    return;
+  }
+  my @op = $g_nops{$name};
+  push @op, $ins;
+  $g_nops{$name} = \@op;
+}
+
 ### main
-my $status = getopts("abBcefFimprtvwzT:N:C:");
+my $status = getopts("abBcefFgimprtvwzT:N:C:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -3163,7 +3183,7 @@ $state = $line = 0;
 # [18] - idx
 # [19] - BRT properties
 # [20] - predicates
-my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @cb, @flist, @b_props, %ae, $alt, %values, %preds, $format);
+my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @pipes, @cb, @flist, @b_props, %ae, $alt, %values, %preds, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
 # tref is ref to hash with table content
@@ -3257,7 +3277,7 @@ my $parse_enum = sub {
 my $reset = sub {
   $format = $cname = '';
   $alt = $has_op = $op_line = 0;
-  @op = @enc = @nenc = @quoted = @cb = @flist = @b_props = ();
+  @op = @enc = @nenc = @quoted = @cb = @flist = @b_props = @pipes = ();
   %ae = ();
   %values = ();
   %preds = ();
@@ -3320,9 +3340,13 @@ my $ins_op = sub {
   }
   if ( defined($opt_m) ) {
     insert_mask($cname, \@c);
-   } else {
+  } else {
     insert_ins($cname, \@c);
-   }
+  }
+  if ( defined($opt_g) ) {
+    add_ins($op[0], \@c);
+    add_ins($_, \@c) for @pipes;
+  }
 };
 # consume single enum from string, regex is slightly differs from used in while /g below
 my $cons_single = sub {
@@ -3745,7 +3769,10 @@ while( $str = <$fh> ) {
     if ( $vs =~ /^(\d+)$/ ) { $value = int($1); }
     else { $value = parse0b($vs); }
     # skip pipe version
-    next if ( $name =~ /_pipe/ );
+    if ( $name =~ /_pipe/ ) {
+      push @pipes, $name; # I hope opcodes for pipes are the same as for normal opcode
+      next;
+    }
     $op[0] = $name;
     $op[1] = $value;
   }
