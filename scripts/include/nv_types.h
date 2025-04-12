@@ -712,3 +712,4 @@ struct NV_disasm: public INV_disasm, T
 };
 
 extern "C" INV_disasm *get_sm();
+extern "C" const char *get_vq_name(int);

@@ -320,6 +320,48 @@ sub parse_tab_keys
   }
 }
 
+# virtual queues logic
+# the problem is that VQ_XX has different values, like
+# VQ_BAR_EXCH = 26 in sm75 but in sm80:
+#  VQ_DMMA = 26
+#  VQ_BAR_EXCH = 31
+# key is number, value is string name
+my %g_vq;
+# produce 3 VQ related data:
+# 1) enum
+# 2) static array with names
+# 3) get_vq_name "C" exported function
+sub gen_vq
+{
+  my $fh = shift;
+  return unless keys %g_vq;
+  # enum
+  printf($fh "enum %s_vq {\n", $opt_C);
+  my $m = 0;
+  foreach my $k ( sort { $a <=> $b } keys %g_vq ) {
+    printf($fh " %s = %d,\n", $g_vq{$k}, $k);
+    $m = $k if ( $k > $m );
+  }
+  # string names
+  printf($fh "};\nstatic const char *vq_names[] = {\n");
+  foreach my $i (0..$m) {
+    printf($fh "/* %d */ ", $i);
+    if ( exists $g_vq{$i} ) {
+      printf($fh "\"%s\",\n", $g_vq{$i});
+    } else {
+      printf($fh "nullptr,\n");
+    }
+  }
+  # get_vq_name
+  print $fh <<EOF;
+};
+const char *get_vq_name(int idx) {
+  if ( idx < 0 || idx >= (sizeof(vq_names) / sizeof(vq_names[0])) ) return nullptr;
+  return vq_names[idx];
+}
+EOF
+}
+
 # ENCODING WIDTH
 my $g_size;
 my $g_min_len;
@@ -3109,6 +3151,8 @@ sub gen_C
   printf($fh "// Dont edit this file - it was generated %s with option %s\n", scalar(localtime), $opt_C);
   # for debugging only
   printf($fh "#include \"include/nv_types.h\"\n");
+  # virtual queues
+  gen_vq($fh);
   # dump masks
   gen_masks($fh);
   # dump used enums
@@ -3132,7 +3176,7 @@ sub gen_C
 }
 
 # group processing logic
-my %g_nops; # key - name, value - ref to instruction, can be shared from several names like Op, Oppipe1, Oppipe2 etc
+my %g_nops; # key - name, value - ref to instruction, can be shared from several names like Op, Op_pipe1, Op_pipe2 etc
 my %g_groups; # key - name, value - hashmap with (name, ref to instruction)
 
 sub add_ins
@@ -3147,12 +3191,24 @@ sub add_ins
   push @$v, $ins;
 }
 
+# g1 + g2
 sub merge_groups
 {
   my($g1, $g2) = @_;
   my %res = %$g1;
   foreach my $i ( keys %$g2 ) {
     $res{$i} = 1;
+  }
+  return \%res;
+}
+
+# g1 - g2
+sub minus_groups
+{
+  my($g1, $g2) = @_;
+  my %res = %$g1;
+  foreach my $i ( keys %$g2 ) {
+    delete $res{$i};
   }
   return \%res;
 }
@@ -3170,7 +3226,6 @@ sub parse_named_list
     }
     my $v = $g_nops{$name};
     foreach my $i ( @$v ) {
-# print("bad $name size" . scalar(@$v) . ">" . Dumper($v)) unless defined($i);
       $res{$i} = 1;
     }
   }
@@ -3722,6 +3777,10 @@ while( $str = <$fh> ) {
        $g_min_len = $g_size = int($1);
        $state = 1;
        next;
+    }
+    if ( !defined($g_size) && $str =~ /^\s+VQ_(\w+)\s*=\s*(\d+)/ ) {
+      $g_vq{int($2)} = 'VQ_' . $1;
+      next;
     }
     # check tables
     if ( $str =~ /^\s*OPERATION\s+PROPERTIES/ ) {
