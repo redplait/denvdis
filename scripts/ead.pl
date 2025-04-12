@@ -3180,6 +3180,26 @@ sub gen_C
 my %g_nops; # key - name, value - ref to instruction, can be shared from several names like Op, Op_pipe1, Op_pipe2 etc
 my %g_groups; # key - name, value - hashmap with (name, ref to instruction)
 
+# tables are arrays and can contain
+# [0] type - true/anti/output
+# [1] connector name
+# [2] list of columns with size N
+# [3] list of rows - first is group_name and then there can be 1 or N values
+my @g_gtabs;
+
+sub dump_group
+{
+  my $name = shift;
+  unless ( exists $g_groups{$name} ) {
+    printf("unknown group %s\n", $name);
+    return;
+  }
+  my $h = $g_groups{$name};
+  foreach my $ri ( values %$h ) {
+    printf(" %s line %d\n", $ri->[1], $ri->[4]);
+  }
+}
+
 sub add_ins
 {
   my($name, $ins) = @_;
@@ -3198,7 +3218,7 @@ sub merge_groups
   my($g1, $g2) = @_;
   my %res = %$g1;
   foreach my $i ( keys %$g2 ) {
-    $res{$i} = 1;
+    $res{$i} = $g2->{$i};
   }
   return \%res;
 }
@@ -3227,7 +3247,7 @@ sub parse_named_list
     }
     my $v = $g_nops{$name};
     foreach my $i ( @$v ) {
-      $res{$i} = 1;
+      $res{$i} = $i;
     }
   }
   return \%res;
@@ -3270,8 +3290,8 @@ sub parse_group_tail
 sub read_groups
 {
   my($fh, $fname) = @_;
-  my($str, $part, $name);
-  my $state = 0;
+  my($str, $part, $name, $ctab);
+  my $state = 0; # 1 - process op set, 2 - table
   my $line = 0;
   while( $str = <$fh> ) {
     chomp $str;
@@ -3279,6 +3299,23 @@ sub read_groups
     next if ( $str eq '' );
     if ( !$state ) {
       $state = 1 if ( $str =~ /OPERATION SETS/ );
+      if ( $str =~ /^TABLE_(\w+)\(([^\)]+)\)\s*:\s*(\w+)\`.*(?!;)/ ) {
+       # probably we should also collect data after ` ?
+        unless(exists $g_groups{$3}) {
+          printf("unknown group %s in tab at line %d\n", $3, $line);
+          next;
+        }
+        $ctab = [ $1, $2, [ $3 ] ];
+        $state = 2;
+        next;
+      }
+      next;
+    }
+    if ( 2 == $state ) {
+      if ( $str =~ /;$/ || $str =~ /^\w/ ) {
+        $state = 0; next;
+      }
+printf("tab line %s\n", $str);
       next;
     }
     if ( 1 == $state ) {
@@ -4146,6 +4183,7 @@ if ( defined $opt_g ) {
   open($fh, '<', $fname) or die("cannot open $fname, error $!");
   read_groups($fh, $fname);
   close $fh;
+  # dump_group('UPRED_OPS');
 }
 
 # dump trees
