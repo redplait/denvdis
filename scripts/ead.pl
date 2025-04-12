@@ -1,6 +1,7 @@
 #!perl -w
 # some nvdisasm encoding analysis
 # -CBFrm to produce c++
+# add -p to dump predicates: https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-6.html
 use strict;
 use warnings;
 use Getopt::Std;
@@ -3336,8 +3337,10 @@ sub read_groups
       printf("dont know how to parse %s in %s line %d\n", substr($str, 0, 64), $fname, $line);
       next;
     }
-    $g_groups{$name} = $res;
-    undef $part;
+    if ( defined $part ) {
+      $g_groups{$name} = $part;
+      undef $part;
+    } else { $g_groups{$name} = $res; }
     next;
   }
 }
