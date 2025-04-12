@@ -3232,6 +3232,40 @@ sub parse_named_list
   return \%res;
 }
 
+# I am too lazy to implement full-featured LR-parser, so
+# bcs expr can be +- or (expr) we can consider only 3 cases using regexps with /p modifier for tail storing
+# thus whole expression evaluates from left to right passing current set and tail to recursive calls of parse_group_tail
+# until tail empty
+# args: previous set, string, line number
+sub parse_group_tail
+{
+  my($pset, $str, $ln) = @_;
+  $str =~ s/^\s+//;
+  return $pset if ( $str eq '' );
+  return $pset if ( $str =~ /^;\s*/ );
+  if ( $str =~ /^(\+|\-)\s*(\w+)/p ) {
+    unless (exists $g_groups{$2}) {
+      carp("unknown group $2");
+      return $pset;
+    }
+    return parse_group_tail( $1 eq '+' ? merge_groups($pset, $g_groups{$2}) : minus_groups($pset, $g_groups{$2}),
+      ${^POSTMATCH}, $ln);
+  }
+  if ( $str =~ /^(\+|\-)\s*\(\s*(\w+)\s*([^\)]+)\)/p ) {
+    my $tail = ${^POSTMATCH};
+    my $op = $1;
+    unless (exists $g_groups{$2}) {
+      carp("unknown group $2");
+      return $pset;
+    }
+    my $tmp = parse_group_tail($g_groups{$2}, $3, $ln);
+    return parse_group_tail( $op eq '+' ? merge_groups($pset, $tmp) : minus_groups($pset, $tmp),
+      $tail, $ln);
+  }
+  printf("dont know how to parse tail %s, line %d\n", $str, $ln);
+  return $pset;
+}
+
 sub read_groups
 {
   my($fh, $fname) = @_;
@@ -3260,12 +3294,24 @@ sub read_groups
     if ( $str =~ /^\s+(\w+)\s*=\s*\{\s*(.*)\s*\}\s*;/ ) {
       $name = $1;
       $res = parse_named_list($2, $line);
+    } elsif ( $str =~ /^\s+(\w+)\s*=\s*\{\s*(.*)\s*\}\s*([^;]+)(;?)$/ ) {
+      $name = $1;
+      my $tail = $3;
+      my $end = defined($4);
+      $part = parse_group_tail(parse_named_list($2, $line), $tail, $line);
+      next if ( !$end );
     } elsif ( $str =~ /^\s+(\w+)\s*=\s*\{\s*(.*)\s*$/ ) {
       $name = $1;
       $part = parse_named_list($2, $line);
       next;
     } elsif ( defined($part) && $str =~ /\s*(.*)\s*\}\s*;$/ ) {
       $res = merge_groups($part, parse_named_list($1, $line));
+    } elsif ( defined($part) && $str =~ /\s*(.*)\}\s*([^;]+)(;?)$/ ) {
+      my $tail = $2;
+      my $end = defined($3);
+      $part = merge_groups($part, parse_named_list($1, $line));
+      $part = parse_group_tail($part, $tail, $line);
+      next if ( !$end );
     } elsif ( defined($part) && $str =~ /\s*(.*)\s*$/ ) {
       $part = merge_groups($part, parse_named_list($1, $line));
       next;
@@ -3273,6 +3319,19 @@ sub read_groups
       $name = $1;
       carp("unknown group $2") unless exists $g_groups{$2};
       $res = $g_groups{$2};
+    } elsif ( $str =~ /^\s+(\w+)\s*=\s*(\w+)\s*(.*)\s*;/ ) {
+      $name = $1;
+      carp("unknown group $2") unless exists $g_groups{$2};
+      $res = parse_group_tail($g_groups{$2}, $3, $line);
+      # name = (grp tail) tail ;?
+    } elsif ( $str =~ /^\s+(\w+)\s*=\s*\((\w+)\s*([^\)]+)\)\s*(.*)\s*(;?)/ ) {
+      $name = $1;
+      my $tail = $4;
+      my $end = defined($5);
+      carp("unknown group $2") unless exists $g_groups{$2};
+      $part = parse_group_tail($g_groups{$2}, $3, $line);
+      $part = parse_group_tail($part, $tail, $line);
+      next if ( !$end );
     } else {
       printf("dont know how to parse %s in %s line %d\n", substr($str, 0, 64), $fname, $line);
       next;
