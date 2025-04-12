@@ -3987,7 +3987,12 @@ while( $str = <$fh> ) {
   }
   if ( 8 == $state ) {
     next if ( $str !~ /^\s*([\w\.]+)\s*=\s*([^;]+)\s*;/ );
-    next if ( $1 eq 'VIRTUAL_QUEUE' );
+    if ( $1 eq 'VIRTUAL_QUEUE' ) {
+      my $s = $2;
+      $s =~ s/\$VQ/VQ/g;
+      $preds{'VQ'} = $s;
+      next;
+    }
     next if ( $2 eq '0' );
     next if ( $2 eq '(0)' );
     next if ( $2 =~ /\(\s*0\s*\)\s*\*\s*\d+$/ );
