@@ -422,6 +422,7 @@ static const char* get_cuda_reloc_name(unsigned t)
 }
 
 typedef INV_disasm *(*Dproto)(void);
+typedef const char *(*Dvq_name)(int);
 typedef std::unordered_set<uint32_t> NV_labels;
 
 // extracted from EIATTR_INDIRECT_BRANCH_TARGETS
@@ -468,6 +469,9 @@ class nv_dis
       fprintf(stderr, "cannot load %s, errno %d (%s)\n", sm_name.c_str(), errno, strerror(errno));
        return 0;
      }
+     m_vq = (Dvq_name)dlsym(dh, "get_vq_name");
+     if ( !m_vq )
+       fprintf(stderr, "cannot find get_vq_nam, errno %d (%s)\n", sm_name.c_str(), errno, strerror(errno));
      Dproto fn = (Dproto)dlsym(dh, "get_sm");
      if ( !fn ) {
       fprintf(stderr, "cannot find get_sm, errno %d (%s)\n", sm_name.c_str(), errno, strerror(errno));
@@ -531,6 +535,7 @@ class nv_dis
    Elf_Half n_sec;
    elfio reader;
    INV_disasm *m_dis = nullptr;
+   Dvq_name m_vq = nullptr;
    int m_width;
    // indirect branches
    std::unordered_map<Elf_Word, bt_per_section *> m_branches;
@@ -970,7 +975,16 @@ void nv_dis::dump_predicates(const struct nv_instr *i, const NV_extracted &kv)
   for ( auto &pred: *i->predicated ) {
     fputs("P> ", m_out);
     dump_sv(pred.first);
-    fprintf(m_out, ": %d\n", pred.second(kv));
+    int res = pred.second(kv);
+    if ( res >= 0 && m_vq && cmp(pred.first, "VQ") ) {
+     auto name = m_vq(res);
+     if ( name )
+       fprintf(m_out, ": %s (%d)", name, res);
+     else
+       fprintf(m_out, ": %d", res);
+    } else
+      fprintf(m_out, ": %d", res);
+    fputc('\n', m_out);
   }
 }
 
