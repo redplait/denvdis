@@ -3149,9 +3149,11 @@ sub gen_C
   my $fh;
   open($fh, '>', $fname) or die("Cannot create $fname, error $!");
   # make header
-  printf($fh "// Dont edit this file - it was generated %s with option %s\n", scalar(localtime), $opt_C);
-  # for debugging only
-  printf($fh "#include \"include/nv_types.h\"\n");
+  printf($fh "// Dont edit this file - it was generated %s with option %s", scalar(localtime), $opt_C);
+  printf($fh " with predicates") if ( defined $opt_p );
+  printf($fh " with groups") if ( defined $opt_g );
+  # include
+  printf($fh "\n#include \"include/nv_types.h\"\n");
   # virtual queues
   gen_vq($fh);
   # dump masks
@@ -3183,8 +3185,9 @@ my %g_groups; # key - name, value - hashmap with (name, ref to instruction)
 # tables are arrays and can contain
 # [0] type - true/anti/output
 # [1] connector name
-# [2] list of columns with size N
-# [3] list of rows - first is group_name and then there can be 1 or N values
+# [2] line number - for debugging
+# [3] list of columns with size N
+# [4] list of rows - first is group_name and then there can be 1 or N values
 my @g_gtabs;
 
 sub dump_group
@@ -3263,7 +3266,10 @@ sub parse_group_tail
   my($pset, $str, $ln) = @_;
   $str =~ s/^\s+//;
   return $pset if ( $str eq '' );
-  return $pset if ( $str =~ /^;\s*/ );
+  if ( $str =~ /^;\s*/ ) {
+    carp("$str contains ;");
+    return $pset;
+  }
   if ( $str =~ /^(\+|\-)\s*(\w+)/p ) {
     unless (exists $g_groups{$2}) {
       carp("unknown group $2");
@@ -3283,6 +3289,13 @@ sub parse_group_tail
     return parse_group_tail( $op eq '+' ? merge_groups($pset, $tmp) : minus_groups($pset, $tmp),
       $tail, $ln);
   }
+  if ( $str =~ /(\+|\-)\s*\{([^\}]+)\}/p ) {
+    my $op = $1;
+    my $tail = ${^POSTMATCH};
+    my $g = parse_named_list($2, $ln);
+    return parse_group_tail( $op eq '+' ? merge_groups($pset, $g) : minus_groups($pset, $g),
+      $tail, $ln);
+  }
   printf("dont know how to parse tail %s, line %d\n", $str, $ln);
   return $pset;
 }
@@ -3293,19 +3306,29 @@ sub read_groups
   my($str, $part, $name, $ctab);
   my $state = 0; # 1 - process op set, 2 - table
   my $line = 0;
+  my $opened = 0; # has non-closed }
   while( $str = <$fh> ) {
     chomp $str;
+    $str =~ s/\s*$//;
     $line++;
     next if ( $str eq '' );
     if ( !$state ) {
-      $state = 1 if ( $str =~ /OPERATION SETS/ );
-      if ( $str =~ /^TABLE_(\w+)\(([^\)]+)\)\s*:\s*(\w+)\`.*(?!;)/ ) {
+      if ( $str =~ /OPERATION SET(?:S?)/ ) {
+        $state = 1; next;
+      }
+      # table can be just table_type(connector): or
+      # table_type(connector): first_row
+      if ( $str =~ /^TABLE_(\w+)\(([^\)]+)\)\s*:\s*(?:(\w+)\`.*)?(?!;)/ ) {
        # probably we should also collect data after ` ?
-        unless(exists $g_groups{$3}) {
-          printf("unknown group %s in tab at line %d\n", $3, $line);
-          next;
+        if ( defined $3 ) {
+          unless(exists $g_groups{$3}) {
+            printf("unknown group %s in tab at line %d\n", $3, $line);
+            next;
+          }
+          $ctab = [ $1, $2, $line, [ $3 ] ];
+        } else {
+          $ctab = [ $1, $2, $line, [] ];
         }
-        $ctab = [ $1, $2, [ $3 ] ];
         $state = 2;
         next;
       }
@@ -3315,7 +3338,17 @@ sub read_groups
       if ( $str =~ /;$/ || $str =~ /^\w/ ) {
         $state = 0; next;
       }
-printf("tab line %s\n", $str);
+      if ( $str =~ /^\s*(\w+)\`.*(?!;)/ ) {
+        # probably we should also collect data after ` ?
+        unless(exists $g_groups{$1}) {
+          printf("unknown group %s in tab column at line %d\n", $1, $line);
+          next;
+        }
+        my $cols = $ctab->[3];
+        push @$cols, $1;
+        next;
+      }
+printf("tab line %d: %s\n", $line, substr($str, 0, 64));
       next;
     }
     if ( 1 == $state ) {
@@ -3324,14 +3357,14 @@ printf("tab line %s\n", $str);
         $state = 0; next;
       }
     }
-    my $res;
+# printf("%d: %s\n", $line, $str);
     # group_name = {op_names list separated with commas} |
     #  another group name - then we can just make alias with the same value |
     #  group + expr |
     #  group - expr
-    if ( $str =~ /^\s+(\w+)\s*=\s*\{\s*(.*)\s*\}\s*;/ ) {
+    if ( $str =~ /^\s+(\w+)\s*=\s*\{\s*(.*)\s*\}\s*;$/ ) {
       $name = $1;
-      $res = parse_named_list($2, $line);
+      $part = parse_named_list($2, $line);
     } elsif ( $str =~ /^\s+(\w+)\s*=\s*\{\s*(.*)\s*\}\s*([^;]+)(;?)$/ ) {
       $name = $1;
       my $tail = $3;
@@ -3341,31 +3374,35 @@ printf("tab line %s\n", $str);
     } elsif ( $str =~ /^\s+(\w+)\s*=\s*\{\s*(.*)\s*$/ ) {
       $name = $1;
       $part = parse_named_list($2, $line);
+      $opened = 1;
       next;
-    } elsif ( defined($part) && $str =~ /\s*(.*)\s*\}\s*;$/ ) {
-      $res = merge_groups($part, parse_named_list($1, $line));
-    } elsif ( defined($part) && $str =~ /\s*(.*)\}\s*([^;]+)(;?)$/ ) {
+    } elsif ( $opened && $str =~ /\s*(.*)\s*\}\s*;$/ ) {
+      $part = merge_groups($part, parse_named_list($1, $line));
+      $opened = 0;
+    } elsif ( $opened && $str =~ /\s*(.*)\}\s*([^;]+)(;?)$/ ) {
+      $opened = 0;
       my $tail = $2;
       my $end = defined($3);
       $part = merge_groups($part, parse_named_list($1, $line));
       $part = parse_group_tail($part, $tail, $line);
       next if ( !$end );
-    } elsif ( defined($part) && $str =~ /\s*(.*)\s*$/ ) {
+    } elsif ( $opened && $str =~ /\s*([^;]+)$/ ) {
       $part = merge_groups($part, parse_named_list($1, $line));
       next;
-    } elsif ( $str =~ /^\s+(\w+)\s*=\s*(\w+)\s*;/ ) {
+    } elsif ( $str =~ /^\s+(\w+)\s*=\s*(\w+)\s*;$/ ) {
       $name = $1;
       carp("unknown group $2") unless exists $g_groups{$2};
-      $res = $g_groups{$2};
+      $part = $g_groups{$2};
     } elsif ( $str =~ /^\s+(\w+)\s*=\s*(\w+)\s*(.*)\s*;/ ) {
       $name = $1;
       carp("unknown group $2") unless exists $g_groups{$2};
-      $res = parse_group_tail($g_groups{$2}, $3, $line);
-      # name = (grp tail) tail ;?
-    } elsif ( $str =~ /^\s+(\w+)\s*=\s*\((\w+)\s*([^\)]+)\)\s*(.*)\s*(;?)/ ) {
+      $part = parse_group_tail($g_groups{$2}, $3, $line);
+      # name = (grp tail) tail2 ;?
+    } elsif ( $str =~ /^\s+(\w+)\s*=\s*\((\w+)\s*([^\)]+)\)\s*([^;]*)\s*(;?)$/ ) {
       $name = $1;
       my $tail = $4;
       my $end = defined($5);
+#    printf("%s: end %d tail %s\n", $name, $end, $tail);
       carp("unknown group $2") unless exists $g_groups{$2};
       $part = parse_group_tail($g_groups{$2}, $3, $line);
       $part = parse_group_tail($part, $tail, $line);
@@ -3377,7 +3414,7 @@ printf("tab line %s\n", $str);
     if ( defined $part ) {
       $g_groups{$name} = $part;
       undef $part;
-    } else { $g_groups{$name} = $res; }
+    } else { carp("np result on line $line"); }
     next;
   }
 }
