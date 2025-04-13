@@ -3190,6 +3190,67 @@ my %g_groups; # key - name, value - hashmap with (name, ref to instruction)
 # [4] list of rows - first is group_name and then there can be 1 or N values
 my @g_gtabs;
 
+sub dump_gtab
+{
+  my $t = shift;
+  return unless defined($t);
+  my $cols = $t->[3];
+  printf("Tab_%s %s line %d %d columns\n", $t->[0], $t->[1], $t->[2], scalar @$cols);
+  printf(" col %s\n", $_) for @$cols;
+  my $size = scalar(@$t);
+  return if ( $size <= 4 );
+  printf("%d rows\n", $size - 4);
+  for my $i ( 4 .. $size - 1 ) {
+    my $r = $t->[$i];
+    my $rs = scalar @$r;
+    printf(" %s: ", $r->[0]);
+    # perl syntax is so mad when you need to carve subarray on array ref
+    foreach my $j ( 1 .. $rs - 1 ) {
+      if ( defined($r->[$j]) ) {
+        print ' ' . $r->[$j];
+      } else {
+        print ' _';
+      }
+    }
+    printf("\n");
+  }
+}
+
+sub dump_gtabs
+{
+  dump_gtab($_) for @g_gtabs;
+}
+
+# valid gtab should contain the same amount of values in each row
+# 1 either eq amount of colums
+# note - row[0] is group name
+sub check_gtab
+{
+  my $t = shift;
+  return 0 unless defined($t);
+  my $size = scalar(@$t);
+  return 0 if ( $size <= 4 );
+  # check size of first row
+  my $cols = $t->[3];
+  my $cs = scalar @$cols;
+  my $first = $t->[4];
+  my $rs = scalar @$first;
+  if ( $rs != 2 && $rs - 1 != $cs ) {
+    printf("bad size of first row: %d, cols %d, line %d\n", $rs - 1, $cs, $t->[2]);
+    return 0;
+  }
+  # check remaining rows
+  for my $i ( 5 .. $size - 1 ) {
+    my $r = $t->[$i];
+    my $rsize = scalar @$r;
+    if ( $rsize != $rs ) {
+      printf("size of row %d: %d, cols %d, line %d\n", $i, $rsize - 1, $cs, $t->[2]);
+      return 0;
+    }
+  }
+  1;
+}
+
 sub dump_group
 {
   my $name = shift;
@@ -3257,7 +3318,7 @@ sub parse_named_list
 }
 
 # I am too lazy to implement full-featured LR-parser, so
-# bcs expr can be +- or (expr) we can consider only 3 cases using regexps with /p modifier for tail storing
+# bcs expr can be +- {names list} or (expr) we can consider only 3 cases using regexps with /p modifier for tail storing
 # thus whole expression evaluates from left to right passing current set and tail to recursive calls of parse_group_tail
 # until tail empty
 # args: previous set, string, line number
@@ -3265,11 +3326,12 @@ sub parse_group_tail
 {
   my($pset, $str, $ln) = @_;
   $str =~ s/^\s+//;
-  return $pset if ( $str eq '' );
-  if ( $str =~ /^;\s*/ ) {
+  return $pset if ( $str eq '' ); # condition to stop recursion
+  if ( $str =~ /^;\s*/ ) { # tail cannot contain ;
     carp("$str contains ;");
     return $pset;
   }
+  # case1: exp +- exp
   if ( $str =~ /^(\+|\-)\s*(\w+)/p ) {
     unless (exists $g_groups{$2}) {
       carp("unknown group $2");
@@ -3278,6 +3340,7 @@ sub parse_group_tail
     return parse_group_tail( $1 eq '+' ? merge_groups($pset, $g_groups{$2}) : minus_groups($pset, $g_groups{$2}),
       ${^POSTMATCH}, $ln);
   }
+  # case2: exp +- (exp)
   if ( $str =~ /^(\+|\-)\s*\(\s*(\w+)\s*([^\)]+)\)/p ) {
     my $tail = ${^POSTMATCH};
     my $op = $1;
@@ -3289,6 +3352,7 @@ sub parse_group_tail
     return parse_group_tail( $op eq '+' ? merge_groups($pset, $tmp) : minus_groups($pset, $tmp),
       $tail, $ln);
   }
+  # case 3: exp +- {names list}
   if ( $str =~ /(\+|\-)\s*\{([^\}]+)\}/p ) {
     my $op = $1;
     my $tail = ${^POSTMATCH};
@@ -3414,7 +3478,7 @@ printf("tab line %d: %s\n", $line, substr($str, 0, 64));
     if ( defined $part ) {
       $g_groups{$name} = $part;
       undef $part;
-    } else { carp("np result on line $line"); }
+    } else { carp("no result on line $line"); }
     next;
   }
 }
