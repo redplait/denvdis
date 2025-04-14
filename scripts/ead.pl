@@ -3443,7 +3443,7 @@ sub read_groups
     }
     if ( 2 == $state || 3 == $state ) {
       if ( $str =~ /;$/ || $str =~ /^\w/ ) {
-        push @g_gtabs, $ctab if ( defined $ctab );
+        push @g_gtabs, $ctab if ( defined($ctab) && check_gtab($ctab) );
         $reset->(); next;
       }
       if ( 2 == $state && $str =~ /^\s*(\w+)(?:\`.*)?(?!;)/ ) {
