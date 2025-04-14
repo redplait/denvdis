@@ -4,6 +4,7 @@
 #include <list>
 #include <vector>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <stdio.h>
@@ -73,6 +74,24 @@ typedef std::unordered_map<std::string_view, nv_float_conv> NV_conv;
 typedef void (*nv_extract)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &, NV_extracted &);
 typedef int (*nv_pred)(const NV_extracted &);
 typedef std::unordered_map<std::string_view, nv_pred> NV_Preds;
+typedef std::vector<const char *> NV_gnames; // column or row names
+
+// tables
+struct NV_tab {
+  const char *name,
+   *connection;
+  NV_gnames cols, rows; // names of columns & rows
+  std::vector< std::initializer_list<short> > values;
+  std::optional<short> get(int col, int row) const {
+    if ( row >= values.size() ) return std::nullopt;
+    auto &r = values[row];
+    if ( r.size() == 1 ) return std::optional<short>(*r.begin());
+    if ( col >= r.size() ) return std::nullopt;
+    // initializer_list miss [], so dirty hack from
+    // https://stackoverflow.com/questions/17787394/why-doesnt-stdinitializer-list-provide-a-subscript-operator
+    return std::optional<short>( *(r.begin() + col) );
+  }
+};
 
 struct nv_instr {
  const char *mask;

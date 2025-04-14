@@ -3156,6 +3156,8 @@ sub gen_C
   printf($fh "\n#include \"include/nv_types.h\"\n");
   # virtual queues
   gen_vq($fh);
+  # tabs
+  gen_c_gtabs($fh) if defined($opt_g);
   # dump masks
   gen_masks($fh);
   # dump used enums
@@ -3189,6 +3191,63 @@ my %g_groups; # key - name, value - hashmap with (name, ref to instruction)
 # [3] list of columns with size N
 # [4] list of rows - first is group_name and then there can be 1 or N values
 my @g_gtabs;
+
+sub c_gtab_name
+{
+  my $t = shift;
+  return 's_tab_' . $t->[2];
+}
+
+# gen one table in NV_tab form
+sub gen_c_gtab
+{
+  my($fh, $t) = @_;
+  return unless defined($t);
+  my $name = c_gtab_name($t);
+  printf($fh "static const NV_tab %s = {\n", $name);
+  # name
+  printf($fh "\"%s\",\n", $t->[0]);
+  # connector
+  printf($fh "\"%s\",\n", $t->[1]);
+  # col names
+  my $cols = $t->[3];
+  printf($fh "// columns\n{");
+  foreach my $c ( @$cols ) {
+    printf($fh "\"%s\",", $c);
+  }
+  printf($fh "},\n");
+  # row names
+  my $size = scalar(@$t);
+  printf($fh "// rows\n{");
+  for my $i ( 4 .. $size - 1 ) {
+    my $r = $t->[$i];
+    printf($fh "\"%s\",", $r->[0]);
+  }
+  printf($fh "},\n{\n");
+  # body
+  for my $i ( 4 .. $size - 1 ) {
+    my $r = $t->[$i];
+    printf($fh " {");
+    my $rs = scalar @$r;
+    foreach my $j ( 1 .. $rs - 1 ) {
+      printf($fh ",") if ( $j > 1 );
+      if ( defined($r->[$j]) ) {
+        printf($fh "%d", $r->[$j]);
+      } else {
+        printf($fh '-1');
+      }
+    }
+    printf($fh " }, // row %d\n", $i - 4);
+  }
+  # end
+  printf($fh "} };\n");
+}
+
+sub gen_c_gtabs
+{
+  my $fh = shift;
+  gen_c_gtab($fh, $_) for @g_gtabs;
+}
 
 sub dump_gtab
 {
