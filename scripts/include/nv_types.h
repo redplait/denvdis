@@ -93,6 +93,14 @@ struct NV_tab {
   }
 };
 
+// refs from instruction to tabs
+struct NV_tabref {
+  const NV_tab *tab;
+  short idx;
+};
+
+typedef std::vector<NV_tabref> NV_tabrefs;
+
 struct nv_instr {
  const char *mask;
  const char *cname; // class
@@ -124,6 +132,9 @@ struct nv_instr {
  const std::unordered_map<std::string_view, const nv_eattr *> eas;
  nv_filter filter;
  nv_extract extract;
+ // table refs
+ const NV_tabrefs *rows;
+ const NV_tabrefs *cols;
 } __attribute__ ((aligned (8)));
 
 // binary tree

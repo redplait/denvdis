@@ -3062,6 +3062,9 @@ sub gen_instr
       my %vw;
       my %fc;
       my $op_extr = gen_extr($op, $fh, \%vw, \%fc);
+      # rows & cols
+      my $rname = check_tab_rows($fh, $op);
+      my $cname = check_tab_cols($fh, $op);
       # render
       gen_render($op, $fh);
       # vwidth
@@ -3131,7 +3134,13 @@ sub gen_instr
         my $ename = c_ae($ae);
         printf($fh "{ \"%s\", &%s },", $ae->[3], c_ae_name($ename));
       }
-      printf($fh "}, %s, %s\n", $op_filter, $op_extr);
+      printf($fh "}, %s, %s,\n", $op_filter, $op_extr);
+      # rows
+      if ( defined $rname ) { printf($fh "&%s,\n", $rname); }
+      else { printf($fh " nullptr,\n"); }
+      # cols
+      if ( defined $cname ) { printf($fh "&%s\n", $cname); }
+      else { printf($fh " nullptr\n"); }
       printf($fh " };\n");
     }
   }
@@ -3192,6 +3201,88 @@ my %g_groups; # key - name, value - hashmap with (name, ref to instruction)
 # [4] list of rows - first is group_name and then there can be 1 or N values
 my @g_gtabs;
 
+# to link instructions with tabs we need yet two maps - for columns & rows
+# key - instr ref, value - [ [ tab, index ], ... ]
+my %g_gtcols;
+my %g_gtrows;
+
+sub check_tab_cols
+{
+  my($fh, $i) = @_;
+  return unless exists $g_gtcols{$i};
+  my $res = 'tab_col_' . $i->[19];
+  printf($fh "static const NV_tabrefs %s = {\n", $res);
+  my $l = $g_gtcols{$i};
+  foreach my $i ( @$l ) {
+    printf($fh " { &%s, %d },\n", c_gtab_name($i->[0]), $i->[1]);
+  }
+  printf($fh "};\n");
+  $res;
+}
+
+sub check_tab_rows
+{
+  my($fh, $i) = @_;
+  return unless exists $g_gtrows{$i};
+  my $res = 'tab_row_' . $i->[19];
+  printf($fh "static const NV_tabrefs %s = {\n", $res);
+  my $l = $g_gtrows{$i};
+  foreach my $i ( @$l ) {
+    printf($fh " { &%s, %d },\n", c_gtab_name($i->[0]), $i->[1]);
+  }
+  printf($fh "};\n");
+  $res;
+}
+
+# args: name of group, ref to table, index
+sub mark_tab_col
+{
+  my($gname, $t, $cidx) = @_;
+  my $res = 0;
+  my $g = $g_groups{$gname};
+  foreach my $k ( keys %$g ) {
+    if ( !exists $g_gtcols{ $k } ) {
+      $g_gtcols{ $k } = [ [ $t, $cidx ] ];
+    } else {
+      my $c = $g_gtcols{ $k };
+      my $need = 1;
+      foreach my $curr ( @$c ) {
+        if ( $curr->[0]->[2] == $t->[2] && $curr->[1] == $cidx ) {
+          $need = 0;
+          last;
+        }
+      }
+      push @$c, [ $t, $cidx ] if ( $need );
+    }
+    $res++;
+  }
+  $res;
+}
+
+sub mark_tab_row
+{
+  my($gname, $t, $ridx) = @_;
+  my $res = 0;
+  my $g = $g_groups{$gname};
+  foreach my $k ( keys %$g ) {
+    if ( !exists $g_gtrows{ $k } ) {
+      $g_gtrows{ $k } = [ [ $t, $ridx ] ];
+    } else {
+      my $c = $g_gtrows{ $k };
+      my $need = 1;
+      foreach my $curr ( @$c ) {
+        if ( $curr->[0]->[2] == $t->[2] && $curr->[1] == $ridx ) {
+          $need = 0;
+          last;
+        }
+      }
+      push @$c, [ $t, $ridx ] if ( $need );
+    }
+    $res++;
+  }
+  $res;
+}
+
 sub c_gtab_name
 {
   my $t = shift;
@@ -3212,7 +3303,9 @@ sub gen_c_gtab
   # col names
   my $cols = $t->[3];
   printf($fh "// columns\n{");
+  my $cidx = 0;
   foreach my $c ( @$cols ) {
+    mark_tab_col($c, $t, $cidx++);
     printf($fh "\"%s\",", $c);
   }
   printf($fh "},\n");
@@ -3221,6 +3314,7 @@ sub gen_c_gtab
   printf($fh "// rows\n{");
   for my $i ( 4 .. $size - 1 ) {
     my $r = $t->[$i];
+    mark_tab_row($r->[0], $t, $i-4);
     printf($fh "\"%s\",", $r->[0]);
   }
   printf($fh "},\n{\n");
