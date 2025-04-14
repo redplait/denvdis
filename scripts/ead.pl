@@ -3251,6 +3251,45 @@ sub check_gtab
   1;
 }
 
+# parse one table row
+sub parse_grow
+{
+  my($tab, $str, $line) = @_;
+  $str =~ s/^\s*//;
+  return 1 if ( $str eq '' );
+  if ( $str !~ /^(\w+).*:\s*/p ) {
+    printf("bad table row %s, line %d\n", substr($str, 0, 64), $line);
+    return 0;
+  }
+  my $name = $1;
+  unless ( exists $g_groups{$name} ) {
+    printf("unknown group %s at line %d\n", $name, $line);
+    return 0;
+  }
+  $str = ${^POSTMATCH};
+  # {d + d}
+  if ( $str =~ /\{\s*(\d+)\s*\+\s*(\d+)\s*\}/ ) {
+    my $v = $1 + $2;
+    push @$tab, [ $name, $v ];
+    return 1;
+  }
+  my @res = ( $name );
+  foreach my $v ( split /\s+/, $str ) {
+    if ( $v eq '-' ) {
+      push @res, undef;
+      next;
+    }
+    if ( $v =~ /^\s*(\d+)\s*$/ ) {
+      push @res, int($1);
+      next;
+    }
+    printf("bad row format %s at line %d\n", $str, $line);
+    return 0;
+  }
+  push @$tab, \@res;
+  return 1;
+}
+
 sub dump_group
 {
   my $name = shift;
@@ -3371,6 +3410,10 @@ sub read_groups
   my $state = 0; # 1 - process op set, 2 - table
   my $line = 0;
   my $opened = 0; # has non-closed }
+  my $reset = sub {
+   undef $ctab;
+   $state = 0;
+  };
   while( $str = <$fh> ) {
     chomp $str;
     $str =~ s/\s*$//;
@@ -3382,7 +3425,7 @@ sub read_groups
       }
       # table can be just table_type(connector): or
       # table_type(connector): first_row
-      if ( $str =~ /^TABLE_(\w+)\(([^\)]+)\)\s*:\s*(?:(\w+)\`.*)?(?!;)/ ) {
+      if ( $str =~ /^TABLE_(\w+)\(([^\)]+)\)\s*:\s*(?:(\w+)(?:\`.*)?)?(?!;)/ ) {
        # probably we should also collect data after ` ?
         if ( defined $3 ) {
           unless(exists $g_groups{$3}) {
@@ -3398,21 +3441,30 @@ sub read_groups
       }
       next;
     }
-    if ( 2 == $state ) {
+    if ( 2 == $state || 3 == $state ) {
       if ( $str =~ /;$/ || $str =~ /^\w/ ) {
-        $state = 0; next;
+        push @g_gtabs, $ctab if ( defined $ctab );
+        $reset->(); next;
       }
-      if ( $str =~ /^\s*(\w+)\`.*(?!;)/ ) {
+      if ( 2 == $state && $str =~ /^\s*(\w+)(?:\`.*)?(?!;)/ ) {
         # probably we should also collect data after ` ?
         unless(exists $g_groups{$1}) {
           printf("unknown group %s in tab column at line %d\n", $1, $line);
+          $reset->();
           next;
         }
         my $cols = $ctab->[3];
         push @$cols, $1;
         next;
       }
-printf("tab line %d: %s\n", $line, substr($str, 0, 64));
+      if ( 2 == $state && $str =~ /^\s*\{/p ) {
+        $state = 3;
+        $reset->() if ( !parse_grow($ctab, ${^POSTMATCH}, $line) );
+        next;
+      }
+      if ( 3 == $state ) {
+        $reset->() if ( !parse_grow($ctab, $str, $line) );
+      }
       next;
     }
     if ( 1 == $state ) {
@@ -4285,6 +4337,7 @@ if ( defined $opt_g ) {
   read_groups($fh, $fname);
   close $fh;
   # dump_group('UPRED_OPS');
+  dump_gtabs();
 }
 
 # dump trees
