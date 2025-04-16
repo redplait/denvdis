@@ -233,6 +233,9 @@ struct NV_base_decoder {
     // visual studio has _bitset64
     return (v >> idx) & 1;
   }
+  inline uint64_t get_cword() const {
+    return 0;
+  }
  protected:
    inline size_t curr_off() const {
       return curr - start- 8;
@@ -316,6 +319,9 @@ struct nv88: public NV_base_decoder {
  protected:
   const int _width = 88;
   uint64_t *value, cqword, cword;
+  inline uint64_t get_cword() const {
+    return cword;
+  }
   inline int check_bit(int idx) const
   {
     if ( idx < 64 )
@@ -678,6 +684,7 @@ struct INV_disasm {
   virtual size_t off_next() const = 0;
   virtual int width() const = 0;
   virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const = 0;
+  virtual uint64_t get_cword() const = 0;
   virtual const NV_rlist *get_rend(int idx) const = 0;
   virtual ~INV_disasm() = default;
   int rz;
@@ -701,6 +708,9 @@ struct NV_disasm: public INV_disasm, T
   virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const {
    _op = T::opcode;
    _ctrl = T::ctrl;
+  }
+  virtual uint64_t get_cword() const {
+    return T::get_cword();
   }
   virtual int gen_mask(std::string &res) {
     return T::gen_mask(res);
