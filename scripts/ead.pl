@@ -3198,7 +3198,9 @@ my %g_groups; # key - name, value - hashmap with (name, ref to instruction)
 # [1] connector name
 # [2] line number - for debugging
 # [3] list of columns with size N
+#  item can be ref to array [ name, filter_func ]
 # [4] list of rows - first is group_name and then there can be 1 or N values
+#  first item can be ref to array [ name, filter_func ]
 my @g_gtabs;
 
 # connector conditions
@@ -3550,21 +3552,25 @@ sub dump_gtab
   return unless defined($t);
   my $cols = $t->[3];
   printf("Tab_%s %s line %d %d columns\n", $t->[0], $t->[1], $t->[2], scalar @$cols);
-  printf(" col %s\n", $_) for @$cols;
+  foreach my $c ( @$cols ) {
+    if ( 'ARRAY' eq ref $c ) { # 0 - name, 1 - filter
+      printf(" col %s filter %s\n", $c->[0], $c->[1]);
+    } else { printf(" col %s\n", $c); }
+  }
   my $size = scalar(@$t);
   return if ( $size <= 4 );
   printf("%d rows\n", $size - 4);
   for my $i ( 4 .. $size - 1 ) {
     my $r = $t->[$i];
     my $rs = scalar @$r;
-    printf(" %s: ", $r->[0]);
+    if ( 'ARRAY' eq ref $r->[0] ) { # 0 - name, 1 - filter
+      printf(" %s filter %s: ", $r->[0]->[0], $r->[0]->[1]);
+    } else { printf(" %s: ", $r->[0]); }
     # perl syntax is so mad when you need to carve subarray on array ref
     foreach my $j ( 1 .. $rs - 1 ) {
       if ( defined($r->[$j]) ) {
         print ' ' . $r->[$j];
-      } else {
-        print ' _';
-      }
+      } else { print ' _'; }
     }
     printf("\n");
   }
@@ -3792,7 +3798,7 @@ sub read_groups
       if ( $str =~ /^TABLE_(\w+)\(([^\)]+)\)\s*:\s*(?:(\w+)(?:\`.*)?)?(?!;)/ ) {
        # probably we should also collect data after ` ?
         if ( defined $3 ) {
-          unless(exists $g_groups{$3}) {
+          unless(is_known_group($3)) {
             printf("unknown group %s in tab at line %d\n", $3, $line);
             next;
           }
