@@ -3201,6 +3201,79 @@ my %g_groups; # key - name, value - hashmap with (name, ref to instruction)
 # [4] list of rows - first is group_name and then there can be 1 or N values
 my @g_gtabs;
 
+# connector sets
+my %g_csets; # key - name, value - list of groups
+
+sub process_cset
+{
+}
+
+# connector conditions
+# in old versions like sm3 is pure hell like ANNOTATED etc, so it works only since 5
+# we need two hashes - 1st for whole set and 2nd for really used
+my %g_ccond; # key - name, value - body
+my %g_used_ccond; # key - name, value - body in c++
+
+sub c_ccond_func
+{
+  my $name = shift;
+  return 's_ccond_' . $name;
+}
+
+sub try_convert_ccond
+{
+  my($name, $body) = @_;
+  return 1 if exists($g_used_ccond{$name} );
+  $body =~ s/_OR_/||/g;
+  $body =~ s/_AND_/&&/g;
+  # 1) lets collect predicates
+  my %preds;
+  while( $body =~ /(?:MD_)PRED\(([^\)]+)\)/pg ) {
+    $preds{$1}++;
+  }
+  foreach my $s ( keys %preds ) {
+    $body =~ s/(?:MD_)PRED\($s\)/$s/g;
+  }
+  # 2) call of other connection conditions
+  my %calls;
+  while( $body =~ /([A-Z0-9]+)/gp ) {
+    if ( exists $g_ccond{$1} ) {
+      $calls{$1}++;
+    } else {
+      printf("unknown CCond %s in %s\n", $1, $name);
+      return 0;
+    }
+  }
+  # 3) finally collect fields
+  my %fields;
+  while( $body =~ /\b(\w+)/gp ) {
+    next if ( exists $preds{$1} );
+    next if ( exists $calls{$1} );
+    $fields{$1}++;
+  }
+  # form result body
+  my $res = '';
+  $res = ' if ( !i->predicated ) return 0;' . "\n" if ( keys %preds );
+  my $idx = 0;
+  foreach my $k ( keys %preds ) {
+    $res .= sprintf(" auto p%d = i->predicated->find(\"%s\"); if ( p%d == i->predicated->end() ) return 0;\n auto %s = p%d.second(kv);\n",
+     $idx, $k, $idx, $k);
+    $idx++;
+  }
+  foreach my $k ( keys %calls ) {
+    $res .= sprintf("auto %s = %s(i, kv);\n", $k, c_ccond_func($k));
+  }
+  foreach my $f ( keys %fields ) {
+    $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s.second;\n",
+     $f, $f, $f);
+  }
+  $res .= 'return ' . $body;
+  # store body
+  $g_used_ccond{$name} = $res;
+  return 1;
+}
+
+
 # to link instructions with tabs we need yet two maps - for columns & rows
 # key - instr ref, value - [ [ tab, index ], ... ]
 my %g_gtcols;
@@ -3337,9 +3410,22 @@ sub gen_c_gtab
   printf($fh "} };\n");
 }
 
+my $m_ccond_fwd = '(const struct nv_instr *i, const NV_extracted &kv)';
+
 sub gen_c_gtabs
 {
   my $fh = shift;
+  if ( keys %g_used_ccond ) {
+    # first pass - form forward declarations bcs they can call each others
+    foreach my $cc ( keys %g_used_ccond ) {
+      printf($fh "statuc int %s%s;\n", c_ccond_func( $cc ), $m_ccond_fwd);
+    }
+    # second pass - put defunitions
+    foreach my $cc ( keys %g_used_ccond ) {
+     printf($fh "statuc int %s%s {\n", c_ccond_func( $cc ), $m_ccond_fwd);
+     printf($fh "%s\n}\n", $g_used_ccond{ $cc });
+    }
+  }
   gen_c_gtab($fh, $_) for @g_gtabs;
 }
 
@@ -3560,7 +3646,9 @@ sub read_groups
 {
   my($fh, $fname) = @_;
   my($str, $part, $name, $ctab);
-  my $state = 0; # 1 - process op set, 2 - table
+  my $state = 0; # 1 - process op set, 2 - table, 3 - table rows
+   # 4 - CONNECTOR CONDITION
+   # 5 - CONNECTOR SETS
   my $line = 0;
   my $opened = 0; # has non-closed }
   my $reset = sub {
@@ -3572,9 +3660,16 @@ sub read_groups
     $str =~ s/\s*$//;
     $line++;
     next if ( $str eq '' );
-    if ( !$state ) {
-      if ( $str =~ /OPERATION SET(?:S?)/ ) {
+    if ( $str =~ /OPERATION SET(?:S?)/ ) {
         $state = 1; next;
+    }
+    $state = 0 if ( $state > 3 && $str =~ /^TABLE_/ );
+    if ( !$state ) {
+      if ( $str =~ /CONNECTOR CONDITION(?:S?)/ ) {
+        $state = 4; next;
+      }
+      if ( $str =~ /CONNECTOR SET(?:S?)/ ) {
+        $state = 5; next;
       }
       # table can be just table_type(connector): or
       # table_type(connector): first_row
@@ -3592,7 +3687,27 @@ sub read_groups
         $state = 2;
         next;
       }
-      next;
+      next if ( !$state );
+    }
+    if ( 4 == $state ) {
+      if ( $str =~ /(\w+)\s*=\s*(.*)\s*;$/ ) {
+        $g_ccond{$1} = $2; next;
+      } elsif ( $str =~ /CONNECTOR SET(?:S?)/ ) {
+        $state = 5; next;
+      } else {
+        printf("bad CCond %s at line %d\n", substr($str, 0, 64), $line);
+        $state = 0;
+        next;
+      }
+    }
+    if ( 5 == $state ) {
+      if ( $str =~ /(\w+)\s*=\s*(.*)\s*;$/ ) {
+        process_cset($1, $2, $line);
+        next;
+      } else {
+        printf("bad CSet %s at line %d\n", substr($str, 0, 64), $line);
+        next;
+      }
     }
     if ( 2 == $state || 3 == $state ) {
       if ( $str =~ /;$/ || $str =~ /^\w/ ) {
@@ -3620,7 +3735,7 @@ sub read_groups
       }
       next;
     }
-    if ( 1 == $state ) {
+    if ( 1 == $state) {
       # seems that all sections start with symbol at column 0
       if ( $str =~ /^\w/ ) {
         $state = 0; next;
