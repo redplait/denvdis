@@ -3348,7 +3348,11 @@ sub check_tab_cols
   printf($fh "static const NV_tabrefs %s = {\n", $res);
   my $l = $g_gtcols{$i};
   foreach my $i ( @$l ) {
-    printf($fh " { &%s, %d },\n", c_gtab_name($i->[0]), $i->[1]);
+    if ( scalar(@$i) > 3 ) {
+      printf($fh " { &%s, &%s, %d }, // %s\n", c_gtab_name($i->[0]), $i->[3], $i->[1], $i->[2]);
+    } else {
+      printf($fh " { &%s, nullptr, %d }, // %s\n", c_gtab_name($i->[0]), $i->[1], $i->[2]);
+    }
   }
   printf($fh "};\n");
   $res;
@@ -3362,21 +3366,27 @@ sub check_tab_rows
   printf($fh "static const NV_tabrefs %s = {\n", $res);
   my $l = $g_gtrows{$i};
   foreach my $i ( @$l ) {
-    printf($fh " { &%s, %d },\n", c_gtab_name($i->[0]), $i->[1]);
+    if ( scalar(@$i) > 3 ) {
+      printf($fh " { &%s, &%s, %d }, // %s\n", c_gtab_name($i->[0]), $i->[3], $i->[1], $i->[2]);
+    } else {
+      printf($fh " { &%s, nullptr, %d }, // %s\n", c_gtab_name($i->[0]), $i->[1], $i->[2]);
+    }
   }
   printf($fh "};\n");
   $res;
 }
 
-# args: name of group, ref to table, index
+# args: name of group, ref to table, index, optional filter
 sub mark_tab_col
 {
-  my($gname, $t, $cidx) = @_;
+  my($gname, $t, $cidx, $filt) = @_;
   my $res = 0;
   my $g = $g_groups{$gname};
   foreach my $k ( keys %$g ) {
+    my @what = ( $t, $cidx, $gname );
+    push(@what, $filt) if defined($filt);
     if ( !exists $g_gtcols{ $k } ) {
-      $g_gtcols{ $k } = [ [ $t, $cidx ] ];
+      $g_gtcols{ $k } = [ \@what ];
     } else {
       my $c = $g_gtcols{ $k };
       my $need = 1;
@@ -3386,21 +3396,40 @@ sub mark_tab_col
           last;
         }
       }
-      push @$c, [ $t, $cidx ] if ( $need );
+      push @$c, \@what if ( $need );
     }
     $res++;
   }
   $res;
 }
 
+# args: name of connection set, ref to table, index
+sub mark_tab_col_cset
+{
+  my($gname, $t, $cidx) = @_;
+  my $res = 0;
+  my $cs = $g_csets{$gname};
+  foreach my $s ( @$cs ) {
+    if ( 'ARRAY' eq ref $s ) {
+      $res += mark_tab_col($s->[0], $t, $cidx, c_ccond_func($s->[1]));
+    } else {
+      $res += mark_tab_col($s, $t, $cidx);
+    }
+  }
+  $res;
+}
+
+# args: name of group, ref to table, index, optional filter
 sub mark_tab_row
 {
-  my($gname, $t, $ridx) = @_;
+  my($gname, $t, $ridx, $filt) = @_;
   my $res = 0;
   my $g = $g_groups{$gname};
   foreach my $k ( keys %$g ) {
+    my @what = ( $t, $ridx, $gname );
+    push(@what, $filt) if defined($filt);
     if ( !exists $g_gtrows{ $k } ) {
-      $g_gtrows{ $k } = [ [ $t, $ridx ] ];
+      $g_gtrows{ $k } = [ \@what ];
     } else {
       my $c = $g_gtrows{ $k };
       my $need = 1;
@@ -3410,9 +3439,25 @@ sub mark_tab_row
           last;
         }
       }
-      push @$c, [ $t, $ridx ] if ( $need );
+      push @$c, \@what if ( $need );
     }
     $res++;
+  }
+  $res;
+}
+
+# args: name of connection set, ref to table, index
+sub mark_tab_row_cset
+{
+  my($gname, $t, $ridx) = @_;
+  my $res = 0;
+  my $cs = $g_csets{$gname};
+  foreach my $s ( @$cs ) {
+    if ( 'ARRAY' eq ref $s ) {
+      $res += mark_tab_row($s->[0], $t, $ridx, c_ccond_func($s->[1]));
+    } else {
+      $res += mark_tab_row($s, $t, $ridx);
+    }
   }
   $res;
 }
@@ -3439,7 +3484,12 @@ sub gen_c_gtab
   printf($fh "// columns\n{");
   my $cidx = 0;
   foreach my $c ( @$cols ) {
-    mark_tab_col($c, $t, $cidx++);
+    if ( exists $g_groups{$c} ) {
+      mark_tab_col($c, $t, $cidx);
+    } else {
+      mark_tab_col_cset($c, $t, $cidx);
+    }
+    $cidx++;
     printf($fh "\"%s\",", $c);
   }
   printf($fh "},\n");
@@ -3448,7 +3498,11 @@ sub gen_c_gtab
   printf($fh "// rows\n{");
   for my $i ( 4 .. $size - 1 ) {
     my $r = $t->[$i];
-    mark_tab_row($r->[0], $t, $i-4);
+    if ( exists $g_groups{$r->[0]} ) {
+      mark_tab_row($r->[0], $t, $i-4);
+    } else {
+      mark_tab_row_cset($r->[0], $t, $i-4);
+    }
     printf($fh "\"%s\",", $r->[0]);
   }
   printf($fh "},\n{\n");
@@ -3731,7 +3785,7 @@ sub read_groups
         $state = 4; next;
     }
     $state = 0 if ( $state > 3 && $str =~ /^TABLE_/ );
-printf("%d %s\n", $state, substr($str, 0, 80)) if ( $state );
+# printf("%d %s\n", $state, substr($str, 0, 80)) if ( $state );
     if ( !$state ) {
       # table can be just table_type(connector): or
       # table_type(connector): first_row

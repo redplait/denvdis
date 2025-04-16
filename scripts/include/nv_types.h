@@ -75,6 +75,8 @@ typedef void (*nv_extract)(std::function<uint64_t(const std::pair<short, short> 
 typedef int (*nv_pred)(const NV_extracted &);
 typedef std::unordered_map<std::string_view, nv_pred> NV_Preds;
 typedef std::vector<const char *> NV_gnames; // column or row names
+struct nv_instr;
+typedef int (*nv_tabref)(const nv_instr *i, const NV_extracted &kv);
 
 // tables
 struct NV_tab {
@@ -96,6 +98,7 @@ struct NV_tab {
 // refs from instruction to tabs
 struct NV_tabref {
   const NV_tab *tab;
+  nv_tabref filter;
   short idx;
 };
 
