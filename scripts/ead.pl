@@ -3201,13 +3201,6 @@ my %g_groups; # key - name, value - hashmap with (name, ref to instruction)
 # [4] list of rows - first is group_name and then there can be 1 or N values
 my @g_gtabs;
 
-# connector sets
-my %g_csets; # key - name, value - list of groups
-
-sub process_cset
-{
-}
-
 # connector conditions
 # in old versions like sm3 is pure hell like ANNOTATED etc, so it works only since 5
 # we need two hashes - 1st for whole set and 2nd for really used
@@ -3236,7 +3229,7 @@ sub try_convert_ccond
   }
   # 2) call of other connection conditions
   my %calls;
-  while( $body =~ /([A-Z0-9]+)/gp ) {
+  while( $body =~ /([A-Z][A-Z0-9]+)/gp ) {
     if ( exists $g_ccond{$1} ) {
       $calls{$1}++;
     } else {
@@ -3246,10 +3239,23 @@ sub try_convert_ccond
   }
   # 3) finally collect fields
   my %fields;
-  while( $body =~ /\b(\w+)/gp ) {
+  while( $body =~ /\b([a-z]\w+)/gp ) {
     next if ( exists $preds{$1} );
     next if ( exists $calls{$1} );
     $fields{$1}++;
+  }
+  # check that all reffered calls can be converted
+  if ( keys %calls ) {
+    # to prevent endless recursion mark current function as ready
+    $g_used_ccond{$name} = '';
+    foreach my $k ( keys %calls ) {
+      if ( !try_convert_ccond($k, $g_ccond{$k}) ) {
+        delete $g_used_ccond{$name};
+        printf("cannot convert %s bcs dependent function %s failed\n", $name, $k);
+        return 0;
+      }
+    }
+    delete $g_used_ccond{$name};
   }
   # form result body
   my $res = '';
@@ -3264,15 +3270,70 @@ sub try_convert_ccond
     $res .= sprintf("auto %s = %s(i, kv);\n", $k, c_ccond_func($k));
   }
   foreach my $f ( keys %fields ) {
-    $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s.second;\n",
-     $f, $f, $f);
+    $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s->second;\n",
+     $f, $f, $f, $f, $f);
   }
-  $res .= 'return ' . $body;
+  $res .= 'return ' . $body . ';';
   # store body
   $g_used_ccond{$name} = $res;
   return 1;
 }
 
+# connector sets
+my %g_csets; # key - name, value - list of groups
+
+sub process_cset
+{
+  my($name, $body, $line) = @_;
+  if ( exists $g_csets{$name} ) {
+    printf("duplicated connector set %s at line %d\n", $name, $line);
+    return 0;
+  }
+  my @res;
+  foreach my $what ( split /\s*\+\s*/, $body ) {
+     # group[connector]
+    if ( $what =~ /\b(\w+)\[([^\]]+)\]/ ) {
+      if ( !exists $g_groups{$1} ) {
+        printf("unknown group %s in CSet %s\n", $1, $name);
+        return 0;
+      }
+      if ( !exists $g_ccond{$2} ) {
+        printf("unknown ccond %s in CSet %s\n", $2, $name);
+        return 0;
+      }
+      my $gname = $1;
+      my $ccname = $2;
+      if ( !try_convert_ccond($2, $g_ccond{$2}) ) {
+        printf("cannot make ccond %s in CSet %s\n", $ccname, $name);
+        return 0;
+      }
+      push @res, [ $gname, $ccname ];
+      next;
+    }
+    # just group
+    if ( $what =~ /\b(\w+)/ ) {
+      if ( !exists $g_groups{$1} ) {
+        printf("unknown group %s in CSet %s\n", $1, $name);
+        return 0;
+      }
+      push @res, $1;
+      next;
+    }
+    # wtf?
+    printf("dont know how to parse %s in CSet %s, line %d\n", substr($body, 0, 64), $name, $line);
+    return 0;
+  }
+  $g_csets{$name} = \@res;
+  return 1;
+}
+
+sub is_known_group
+{
+  my $n = shift;
+  return 1 if ( exists $g_groups{$n} );
+  return 1 if ( exists $g_csets{$n} );
+  return 0;
+}
 
 # to link instructions with tabs we need yet two maps - for columns & rows
 # key - instr ref, value - [ [ tab, index ], ... ]
@@ -3418,11 +3479,11 @@ sub gen_c_gtabs
   if ( keys %g_used_ccond ) {
     # first pass - form forward declarations bcs they can call each others
     foreach my $cc ( keys %g_used_ccond ) {
-      printf($fh "statuc int %s%s;\n", c_ccond_func( $cc ), $m_ccond_fwd);
+      printf($fh "static int %s%s;\n", c_ccond_func( $cc ), $m_ccond_fwd);
     }
     # second pass - put defunitions
     foreach my $cc ( keys %g_used_ccond ) {
-     printf($fh "statuc int %s%s {\n", c_ccond_func( $cc ), $m_ccond_fwd);
+     printf($fh "static int %s%s {\n", c_ccond_func( $cc ), $m_ccond_fwd);
      printf($fh "%s\n}\n", $g_used_ccond{ $cc });
     }
   }
@@ -3501,7 +3562,7 @@ sub parse_grow
     return 0;
   }
   my $name = $1;
-  unless ( exists $g_groups{$name} ) {
+  unless ( is_known_group($name) ) {
     printf("unknown group %s at line %d\n", $name, $line);
     return 0;
   }
@@ -3663,14 +3724,15 @@ sub read_groups
     if ( $str =~ /OPERATION SET(?:S?)/ ) {
         $state = 1; next;
     }
-    $state = 0 if ( $state > 3 && $str =~ /^TABLE_/ );
-    if ( !$state ) {
-      if ( $str =~ /CONNECTOR CONDITION(?:S?)/ ) {
-        $state = 4; next;
-      }
-      if ( $str =~ /CONNECTOR SET(?:S?)/ ) {
+    if ( $str =~ /CONNECTOR SET(?:S?)/ ) {
         $state = 5; next;
-      }
+    }
+    if ( $str =~ /CONNECTOR CONDITION(?:S?)/ ) {
+        $state = 4; next;
+    }
+    $state = 0 if ( $state > 3 && $str =~ /^TABLE_/ );
+printf("%d %s\n", $state, substr($str, 0, 80)) if ( $state );
+    if ( !$state ) {
       # table can be just table_type(connector): or
       # table_type(connector): first_row
       if ( $str =~ /^TABLE_(\w+)\(([^\)]+)\)\s*:\s*(?:(\w+)(?:\`.*)?)?(?!;)/ ) {
@@ -3716,7 +3778,7 @@ sub read_groups
       }
       if ( 2 == $state && $str =~ /^\s*(\w+)(?:\`.*)?(?!;)/ ) {
         # probably we should also collect data after ` ?
-        unless(exists $g_groups{$1}) {
+        unless( is_known_group($1) ) {
           printf("unknown group %s in tab column at line %d\n", $1, $line);
           $reset->();
           next;
