@@ -1089,9 +1089,8 @@ void nv_dis::try_dis(Elf_Word idx)
       m_dis->get_ctrl(op, ctrl);
       fprintf(m_out, "op %2.2X ctrl %2.2X ", op, ctrl);
     } else if ( m_width == 88 ) {
-      unsigned char op = 0, ctrl = 0;
-      m_dis->get_ctrl(op, ctrl);
-      fprintf(m_out, "ctrl %2.2X ", ctrl);
+      auto cword = m_dis->get_cword();
+      fprintf(m_out, "ctrl %X ", cword);
     }
     if ( res_idx == -1 ) fprintf(m_out, " DUPS ");
     fprintf(m_out, "*/\n");
