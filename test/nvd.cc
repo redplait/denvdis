@@ -13,6 +13,7 @@ int opt_e = 0,
     opt_t = 0,
     opt_p = 0,
     opt_r = 0,
+    opt_S = 0,
     opt_N = 0,
     opt_O = 0;
 
@@ -518,6 +519,8 @@ class nv_dis
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
    int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *);
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
+   int fill_sched(const struct nv_instr *, const NV_extracted &);
+   int dump_sched(const struct nv_instr *, const NV_extracted &) const;
    void dump_ops(const struct nv_instr *, const NV_extracted &);
    void dump_predicates(const struct nv_instr *, const NV_extracted &);
    int cmp(const std::string_view &, const char *) const;
@@ -543,6 +546,8 @@ class nv_dis
    // dual issues
    bool dual_first = false;
    bool dual_last = false;
+   // scheduling tracking, value - list of column indexes
+   std::map<const NV_tab *, std::list<short> > m_sched;
    // disasm stat
    long dis_total = 0;
    long dis_notfound = 0;
@@ -1034,6 +1039,47 @@ static const char *s_brts[4] = {
  "BRT_BRANCHOUT"
 };
 
+int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
+{
+  m_sched.clear();
+  if ( !i->cols ) return 0;
+  int res = 0;
+  for ( auto &titer: *i->cols ) {
+    if ( titer.filter ) {
+      if ( !titer.filter(i, kv) ) continue;
+    }
+    auto ct = m_sched.find(titer.tab);
+    if ( ct == m_sched.end() )
+      m_sched[titer.tab] = { titer.idx };
+    else
+      ct->second.push_back(titer.idx);
+    res++;
+  }
+  return res;
+}
+
+int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv) const
+{
+  if ( !i->cols ) return 0;
+  int res = 0;
+  for ( auto &titer: *i->rows ) {
+    auto ci = m_sched.find(titer.tab);
+    if ( ci == m_sched.end() ) continue;
+    if ( titer.filter ) {
+      if ( !titer.filter(i, kv) ) continue;
+    }
+    // we have titer.tab & titer.idx for row and
+    // ci->list of table columns
+    for ( auto ridx: ci->second ) {
+      auto value = ci->first->get(ridx, titer.idx);
+      if ( !value.has_value() ) continue;
+      printf("S> tab %s %s row %d col %d: %d\n", ci->first->name, ci->first->connection, titer.idx, ridx, value.value());
+      res++;
+    }
+  }
+  return res;
+}
+
 bool nv_dis::check_dual(const NV_extracted &kv)
 {
   if ( m_width != 88 ) return false;
@@ -1057,7 +1103,7 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
     // body of instruction
     fputc('>', m_out);
     if ( dual_first ) fputs(" {", m_out);
-    else if ( dual_last ) fputs(" ", m_out);
+    else if ( dual_last ) fputs("  ", m_out);
     if ( label )
      fprintf(m_out, " %s (* BRANCH_TARGET LABEL_%X *)", r.c_str(), label);
     else
@@ -1089,6 +1135,7 @@ void nv_dis::try_dis(Elf_Word idx)
       }
       fprintf(m_out, "\n");
       dual_first = dual_last = false;
+      m_sched.clear();
       continue;
     }
     int res_idx = 0;
@@ -1121,10 +1168,16 @@ void nv_dis::try_dis(Elf_Word idx)
       dual_first = dual_last = false;
       for ( auto &p: res ) dump_ins(p, 0, nullptr);
     } else {
+      if ( opt_S && !m_sched.empty() )
+        dump_sched(res[res_idx].first, res[res_idx].second);
       // dump single
       if ( m_width == 88 && !dual_first && !dual_last )
         dual_first = check_dual(res[res_idx].second);
       dump_ins(res[res_idx], curr_label, branches ? &branches->labels: nullptr);
+      if ( opt_S && res[res_idx].first->scbd_type != BB_ENDING_INST && !res[res_idx].first->brt ) // store sched rows of current instruction
+        fill_sched(res[res_idx].first, res[res_idx].second);
+      else
+        m_sched.clear();
     }
     if ( dual_first ) {
       dual_first = false;
@@ -1334,6 +1387,7 @@ void usage(const char *prog)
   printf("-p - dump predicates\n");
   printf("-r - dump relocs\n");
   printf("-s index - disasm only single section withh index\n");
+  printf("-S - dump sched info\n");
   printf("-t - dump symbols\n");
   exit(6);
 }
@@ -1344,7 +1398,7 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "ehrtNOps:o:");
+    c = getopt(argc, argv, "ehrtNOpSs:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'e': opt_e = 1; break;
@@ -1354,6 +1408,7 @@ int main(int argc, char **argv)
       case 'p': opt_p = 1; break;
       case 'r': opt_r = 1; break;
       case 'N': opt_N = 1; break;
+      case 'S': opt_S = 1; break;
       case 'o': o_fname = optarg; break;
       case 's': s = atoi(optarg); break;
       default: usage(argv[0]);
