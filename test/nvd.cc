@@ -514,6 +514,7 @@ class nv_dis
      m_branches[i] = res;
      return res;
    }
+   bool check_dual(const NV_extracted &);
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
    int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *);
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
@@ -539,6 +540,9 @@ class nv_dis
    int m_width;
    // indirect branches
    std::unordered_map<Elf_Word, bt_per_section *> m_branches;
+   // dual issues
+   bool dual_first = false;
+   bool dual_last = false;
    // disasm stat
    long dis_total = 0;
    long dis_notfound = 0;
@@ -1030,6 +1034,14 @@ static const char *s_brts[4] = {
  "BRT_BRANCHOUT"
 };
 
+bool nv_dis::check_dual(const NV_extracted &kv)
+{
+  if ( m_width != 88 ) return false;
+  auto kvi = kv.find("usched_info");
+  if ( kvi == kv.end() ) return false;
+  return kvi->second == 0x10; // floxy2
+}
+
 void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
 {
   fprintf(m_out, "%s line %d n %d", p.first->name, p.first->line, p.first->n);
@@ -1037,14 +1049,21 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
   if ( p.first->alt ) fprintf(m_out, " ALT");
   auto rend = m_dis->get_rend(p.first->n);
   if ( rend ) {
-    fprintf(m_out, " %d render items\n", rend->size());
+    fprintf(m_out, " %d render items", rend->size());
     std::string r;
     int miss = render(rend, r, p.first, p.second, l);
-    if ( miss ) fprintf(m_out, "%d", miss);
+    if ( miss ) fprintf(m_out, " %d missed\n", miss);
+    else fputc('\n', m_out);
+    // body of instruction
+    fputc('>', m_out);
+    if ( dual_first ) fputs(" {", m_out);
+    else if ( dual_last ) fputs(" ", m_out);
     if ( label )
-     fprintf(m_out, "> %s (* BRANCH_TARGET LABEL_%X *)\n", r.c_str(), label);
+     fprintf(m_out, " %s (* BRANCH_TARGET LABEL_%X *)", r.c_str(), label);
     else
-      fprintf(m_out, "> %s\n", r.c_str());
+      fprintf(m_out, " %s", r.c_str());
+    if ( dual_last ) fputs(" }", m_out);
+    fputc('\n', m_out);
   } else
     fprintf(m_out, " NO_Render\n");
   if ( opt_O ) dump_ops( p.first, p.second );
@@ -1054,6 +1073,7 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
 void nv_dis::try_dis(Elf_Word idx)
 {
   auto branches = get_branch(idx);
+  dual_first = dual_last = false;
   while(1) {
     NV_res res;
     int get_res = m_dis->get(res);
@@ -1068,6 +1088,7 @@ void nv_dis::try_dis(Elf_Word idx)
           fprintf(m_out, " %s", bstr.c_str());
       }
       fprintf(m_out, "\n");
+      dual_first = dual_last = false;
       continue;
     }
     int res_idx = 0;
@@ -1095,13 +1116,21 @@ void nv_dis::try_dis(Elf_Word idx)
     if ( res_idx == -1 ) fprintf(m_out, " DUPS ");
     fprintf(m_out, "*/\n");
     if ( res_idx == -1 ) {
-      // dump ins
+      // dump multiple ins
       dis_dups++;
+      dual_first = dual_last = false;
       for ( auto &p: res ) dump_ins(p, 0, nullptr);
     } else {
       // dump single
+      if ( m_width == 88 && !dual_first && !dual_last )
+        dual_first = check_dual(res[res_idx].second);
       dump_ins(res[res_idx], curr_label, branches ? &branches->labels: nullptr);
     }
+    if ( dual_first ) {
+      dual_first = false;
+      dual_last = true;
+    } else if ( dual_last )
+      dual_last = false;
   }
 }
 
