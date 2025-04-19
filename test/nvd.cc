@@ -499,6 +499,8 @@ class nv_dis
    {
      if ( dis_total )
        fprintf(m_out, "total %ld, not_found %ld, dups %ld\n", dis_total, dis_notfound, dis_dups);
+     if ( opt_S )
+       fprintf(m_out, "filters %ld success %ld\n", sfilters, sfilters_succ);
    }
   protected:
    typedef std::pair<const struct nv_instr *, NV_extracted> NV_pair;
@@ -552,6 +554,8 @@ class nv_dis
    long dis_total = 0;
    long dis_notfound = 0;
    long dis_dups = 0;
+   long sfilters = 0;
+   long sfilters_succ = 0;
 };
 
 void nv_dis::dump_sv(const std::string_view &sv) const
@@ -1046,7 +1050,9 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
   int res = 0;
   for ( auto &titer: *i->cols ) {
     if ( titer.filter ) {
+      sfilters++;
       if ( !titer.filter(i, kv) ) continue;
+      sfilters_succ++;
     }
     auto ct = m_sched.find(titer.tab);
     if ( ct == m_sched.end() )
@@ -1070,10 +1076,10 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv) const
     }
     // we have titer.tab & titer.idx for row and
     // ci->list of table columns
-    for ( auto ridx: ci->second ) {
-      auto value = ci->first->get(ridx, titer.idx);
-      if ( !value.has_value() ) continue;
-      printf("S> tab %s %s row %d col %d: %d\n", ci->first->name, ci->first->connection, titer.idx, ridx, value.value());
+    for ( auto cidx: ci->second ) {
+      auto value = ci->first->get(cidx, titer.idx);
+      if ( !value ) continue;
+      printf("S> tab %s %s row %d col %d: %d\n", ci->first->name, ci->first->connection, titer.idx, cidx, value.value());
       res++;
     }
   }
