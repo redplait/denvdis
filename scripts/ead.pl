@@ -3231,7 +3231,7 @@ sub try_convert_ccond
   }
   # 2) call of other connection conditions
   my %calls;
-  while( $body =~ /\b([A-Z][_A-Z0-9]+)/gp ) {
+  while( $body =~ /\b([A-Z][_A-Z0-9]+)\b/gp ) {
     next if ( exists $preds{$1} );
     if ( exists $g_ccond{$1} ) {
       $calls{$1}++;
@@ -3242,7 +3242,7 @@ sub try_convert_ccond
   }
   # 3) finally collect fields
   my %fields;
-  while( $body =~ /\b([a-z]\w+)/gp ) {
+  while( $body =~ /\b([A-Za-z]\w+)\b/gp ) {
     next if ( exists $preds{$1} );
     next if ( exists $calls{$1} );
     $fields{$1}++;
@@ -3273,8 +3273,11 @@ sub try_convert_ccond
     $res .= sprintf("auto %s = %s(i, kv);\n", $k, c_ccond_func($k));
   }
   foreach my $f ( keys %fields ) {
+    # fcomp should be mapped to Test
+    my $fname = $f;
+    $fname = 'Test' if ( $f eq 'fcomp' );
     $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s->second;\n",
-     $f, $f, $f, $f, $f);
+      $f, $fname, $f, $f, $f);
   }
   $res .= 'return ' . $body . ';';
   # store body
@@ -3414,7 +3417,7 @@ sub mark_tab_col
   my($gname, $t, $cidx, $filt) = @_;
   my $res = 0;
   if ( 'ARRAY' eq ref $gname ) {
-    $filt = $gname->[1];
+    $filt = c_ccond_func($gname->[1]);
     $gname = $gname->[0];
   }
   my $g = $g_groups{$gname};
@@ -3461,7 +3464,7 @@ sub mark_tab_row
   my($gname, $t, $ridx, $filt) = @_;
   my $res = 0;
   if ( 'ARRAY' eq ref $gname ) {
-    $filt = $gname->[1];
+    $filt = c_ccond_func($gname->[1]);
     $gname = $gname->[0];
   }
   my $g = $g_groups{$gname};
@@ -3524,13 +3527,19 @@ sub gen_c_gtab
   printf($fh "// columns\n{");
   my $cidx = 0;
   foreach my $c ( @$cols ) {
-    if ( exists $g_groups{$c} ) {
+    my $cname;
+    if ( 'ARRAY' eq ref $c ) {
+      $cname = $c->[0];
+    } else {
+      $cname = $c;
+    }
+    if ( exists $g_groups{$cname} ) {
       mark_tab_col($c, $t, $cidx);
     } else {
       mark_tab_col_cset($c, $t, $cidx);
     }
     $cidx++;
-    printf($fh "\"%s\",", $c);
+    printf($fh "\"%s\",", $cname);
   }
   printf($fh "},\n");
   # row names
@@ -3538,12 +3547,18 @@ sub gen_c_gtab
   printf($fh "// rows\n{");
   for my $i ( 4 .. $size - 1 ) {
     my $r = $t->[$i];
-    if ( exists $g_groups{$r->[0]} ) {
+    my $rname;
+    if ( 'ARRAY' eq ref $r->[0] ) {
+      $rname = $r->[0]->[0];
+    } else {
+      $rname = $r->[0];
+    }
+    if ( exists $g_groups{$rname} ) {
       mark_tab_row($r->[0], $t, $i-4);
     } else {
       mark_tab_row_cset($r->[0], $t, $i-4);
     }
-    printf($fh "\"%s\",", $r->[0]);
+    printf($fh "\"%s\",", $rname);
   }
   printf($fh "},\n{\n");
   # body
