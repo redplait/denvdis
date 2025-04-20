@@ -1079,7 +1079,13 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv) const
     for ( auto cidx: ci->second ) {
       auto value = ci->first->get(cidx, titer.idx);
       if ( !value ) continue;
-      printf("S> tab %s %s row %d col %d: %d\n", ci->first->name, ci->first->connection, titer.idx, cidx, value.value());
+      fprintf(m_out, "S> tab %s %s row %d", ci->first->name, ci->first->connection, titer.idx);
+      auto row_name = ci->first->rows[titer.idx];
+      if ( row_name ) fprintf(m_out, " (%s)", row_name);
+      fprintf(m_out, " col %d", cidx);
+      auto col_name = ci->first->cols[cidx];
+      if ( col_name ) fprintf(m_out, " (%s)", col_name);
+      fprintf(m_out, ": %d\n", value.value());
       res++;
     }
   }
