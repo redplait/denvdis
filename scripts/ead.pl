@@ -3383,6 +3383,10 @@ sub mark_tab_col
 {
   my($gname, $t, $cidx, $filt) = @_;
   my $res = 0;
+  if ( 'ARRAY' eq ref $gname ) {
+    $filt = $gname->[1];
+    $gname = $gname->[0];
+  }
   my $g = $g_groups{$gname};
   foreach my $k ( keys %$g ) {
     my @what = ( $t, $cidx, $gname );
@@ -3426,6 +3430,10 @@ sub mark_tab_row
 {
   my($gname, $t, $ridx, $filt) = @_;
   my $res = 0;
+  if ( 'ARRAY' eq ref $gname ) {
+    $filt = $gname->[1];
+    $gname = $gname->[0];
+  }
   my $g = $g_groups{$gname};
   foreach my $k ( keys %$g ) {
     my @what = ( $t, $ridx, $gname );
@@ -3795,19 +3803,12 @@ sub read_groups
     if ( !$state ) {
       # table can be just table_type(connector): or
       # table_type(connector): first_row
-      if ( $str =~ /^TABLE_(\w+)\(([^\)]+)\)\s*:\s*(?:(\w+)(?:\`.*)?)?(?!;)/ ) {
-       # probably we should also collect data after ` ?
-        if ( defined $3 ) {
-          unless(is_known_group($3)) {
-            printf("unknown group %s in tab at line %d\n", $3, $line);
-            next;
-          }
-          $ctab = [ $1, $2, $line, [ $3 ] ];
-        } else {
-          $ctab = [ $1, $2, $line, [] ];
-        }
+      if ( $str =~ /^TABLE_(\w+)\(([^\)]+)\)\s*:\s*(.*)\s*(?!;)/ ) {
+        $ctab = [ $1, $2, $line, [] ];
         $state = 2;
-        next;
+        next if ( $3 eq '' );
+        $str = ' ' . $3;
+        $str .= $4 if ( defined $4 );
       }
       next if ( !$state );
     }
@@ -3836,7 +3837,7 @@ sub read_groups
         push @g_gtabs, $ctab if ( defined($ctab) && check_gtab($ctab) );
         $reset->(); next;
       }
-      if ( 2 == $state && $str =~ /^\s*(\w+)(?:\`.*)?(?!;)/ ) {
+      if ( 2 == $state && $str =~ /^\s*(\w+)(?:\[([^\]]+)\])?.*(?!;)/ ) {
         # probably we should also collect data after ` ?
         unless( is_known_group($1) ) {
           printf("unknown group %s in tab column at line %d\n", $1, $line);
@@ -3844,7 +3845,31 @@ sub read_groups
           next;
         }
         my $cols = $ctab->[3];
-        push @$cols, $1;
+        my $name = $1;
+        # check condition
+        my $added = 0;
+        if ( defined $2 ) {
+          my $cond_name = $2;
+          if ( $cond_name eq '?writeCC' ) {
+            $cond_name = 'writeCC';
+            if ( !exists $g_used_ccond{$cond_name} ) {
+              # add body
+              if ( try_convert_ccond($cond_name, $cond_name) ) {
+                push @$cols, [ $name, $cond_name ];
+                $added++;
+              }
+            } else {
+              push @$cols, [ $name, $cond_name ];
+              $added++;
+            }
+          } elsif ( exists $g_used_ccond{$cond_name} ) {
+            push @$cols, [ $name, $cond_name ];
+            $added++;
+          } else {
+            printf("unknown condition expr %s for columt %s at line %d\n", $cond_name, $name, $line);
+          }
+        }
+        push(@$cols, $name) unless $added;
         next;
       }
       if ( 2 == $state && $str =~ /^\s*\{/p ) {
