@@ -3231,7 +3231,8 @@ sub try_convert_ccond
   }
   # 2) call of other connection conditions
   my %calls;
-  while( $body =~ /([A-Z][A-Z0-9]+)/gp ) {
+  while( $body =~ /\b([A-Z][_A-Z0-9]+)/gp ) {
+    next if ( exists $preds{$1} );
     if ( exists $g_ccond{$1} ) {
       $calls{$1}++;
     } else {
@@ -3264,8 +3265,8 @@ sub try_convert_ccond
   $res = ' if ( !i->predicated ) return 0;' . "\n" if ( keys %preds );
   my $idx = 0;
   foreach my $k ( keys %preds ) {
-    $res .= sprintf(" auto p%d = i->predicated->find(\"%s\"); if ( p%d == i->predicated->end() ) return 0;\n auto %s = p%d.second(kv);\n",
-     $idx, $k, $idx, $k);
+    $res .= sprintf(" auto p%d = i->predicated->find(\"%s\"); if ( p%d == i->predicated->end() ) return 0;\n auto %s = p%d->second(kv);\n",
+     $idx, $k, $idx, $k, $idx);
     $idx++;
   }
   foreach my $k ( keys %calls ) {
@@ -3279,6 +3280,35 @@ sub try_convert_ccond
   # store body
   $g_used_ccond{$name} = $res;
   return 1;
+}
+
+# try to parse column/row connection condition in square brackets
+# args: name of column/row, body, line number
+# return condition name if parsing was ok and condition was inserted into g_used_ccond
+sub parse_known_ccond
+{
+  my($name, $body, $line) = @_;
+  return $body if ( exists $g_used_ccond{$body} );
+  my $cond_name = $body;
+  if ( $cond_name eq '?writeCC' ) {
+    $cond_name = 'writeCC';
+    return $cond_name if ( exists $g_used_ccond{$cond_name} );
+    return $cond_name if try_convert_ccond($cond_name, $cond_name);
+  }
+  if ( $cond_name eq '?xmode' ) {
+    $cond_name = 'xmode';
+    return $cond_name if ( exists $g_used_ccond{$cond_name} );
+    my $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s->second;\n",
+     $cond_name, 'X', $cond_name, $cond_name, $cond_name);
+    $res .= 'return ' . $cond_name . ";\n";
+    $g_used_ccond{$cond_name} = $res;
+    return $cond_name;
+  }
+  if ( exists $g_ccond{$body} ) {
+    return $body if try_convert_ccond($body, $g_ccond{$body});
+  }
+  printf("unknown condition expr %s for %s at line %d\n", $body, $name, $line);
+  undef;
 }
 
 # connector sets
@@ -3847,29 +3877,14 @@ sub read_groups
         my $cols = $ctab->[3];
         my $name = $1;
         # check condition
-        my $added = 0;
         if ( defined $2 ) {
-          my $cond_name = $2;
-          if ( $cond_name eq '?writeCC' ) {
-            $cond_name = 'writeCC';
-            if ( !exists $g_used_ccond{$cond_name} ) {
-              # add body
-              if ( try_convert_ccond($cond_name, $cond_name) ) {
-                push @$cols, [ $name, $cond_name ];
-                $added++;
-              }
-            } else {
-              push @$cols, [ $name, $cond_name ];
-              $added++;
-            }
-          } elsif ( exists $g_used_ccond{$cond_name} ) {
+          my $cond_name = parse_known_ccond($name, $2, $line);
+          if ( defined $cond_name ) {
             push @$cols, [ $name, $cond_name ];
-            $added++;
-          } else {
-            printf("unknown condition expr %s for columt %s at line %d\n", $cond_name, $name, $line);
+            next;
           }
         }
-        push(@$cols, $name) unless $added;
+        push(@$cols, $name);
         next;
       }
       if ( 2 == $state && $str =~ /^\s*\{/p ) {
