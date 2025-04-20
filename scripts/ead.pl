@@ -3670,7 +3670,7 @@ sub parse_grow
   my($tab, $str, $line) = @_;
   $str =~ s/^\s*//;
   return 1 if ( $str eq '' );
-  if ( $str !~ /^(\w+).*:\s*/p ) {
+  if ( $str !~ /^(\w+)(?:\[([^\]]+)\])?.*:\s*/p ) {
     printf("bad table row %s, line %d\n", substr($str, 0, 64), $line);
     return 0;
   }
@@ -3680,13 +3680,19 @@ sub parse_grow
     return 0;
   }
   $str = ${^POSTMATCH};
+  my $head = $name;
+  # check condition
+  if ( defined $2 ) {
+    my $cond_name = parse_known_ccond($name, $2, $line);
+    $head = [ $name, $cond_name ] if ( defined $cond_name );
+  }
   # {d + d}
   if ( $str =~ /\{\s*(\d+)\s*\+\s*(\d+)\s*\}/ ) {
     my $v = $1 + $2;
-    push @$tab, [ $name, $v ];
+    push @$tab, [ $head, $v ];
     return 1;
   }
-  my @res = ( $name );
+  my @res = ( $head );
   foreach my $v ( split /\s+/, $str ) {
     if ( $v eq '-' ) {
       push @res, undef;
