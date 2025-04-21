@@ -3285,6 +3285,9 @@ sub try_convert_ccond
   return 1;
 }
 
+my %g_cc_pr; # hashamp for Pr conditions, key - body from [], value - name in g_used_ccond
+my $g_cc_pr_next = 0;
+
 # try to parse column/row connection condition in square brackets
 # args: name of column/row, body, line number
 # return condition name if parsing was ok and condition was inserted into g_used_ccond
@@ -3293,6 +3296,25 @@ sub parse_known_ccond
   my($name, $body, $line) = @_;
   return $body if ( exists $g_used_ccond{$body} );
   my $cond_name = $body;
+  if ( $cond_name =~ /^Pr\b(.*)$/ ) {
+    return $g_cc_pr{$cond_name} if ( exists $g_cc_pr{$cond_name} );
+    # make new ccond where Pr replaced with count_Pr static function
+    my $name = 'Pr' . $g_cc_pr_next++;
+    my $res = sprintf("return count_Pr(i) %s;", $1);
+    $g_used_ccond{$name} = $res;
+    $g_cc_pr{$cond_name} = $name;
+    return $name;
+  }
+  if ( $cond_name =~ /^vtgmode\b(.*)$/ ) {
+    return $g_cc_pr{$cond_name} if ( exists $g_cc_pr{$cond_name} );
+    # vtgmode has field VTGMode
+    my $res = " auto fivtg = kv.find(\"VTGMode\"); if ( fivtg == kv.end() ) return 0; auto vtgmode = fivtg->second;\n";
+    $res .= sprintf(" return vtgmode %s;", $1);
+    my $name = 'vtg' . $g_cc_pr_next++;
+    $g_used_ccond{$name} = $res;
+    $g_cc_pr{$cond_name} = $name;
+    return $name;
+  }
   if ( $cond_name eq '?writeCC' ) {
     $cond_name = 'writeCC';
     return $cond_name if ( exists $g_used_ccond{$cond_name} );

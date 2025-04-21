@@ -1,6 +1,7 @@
 #include <functional>
 #include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
 #include <list>
 #include <vector>
 #include <mutex>
@@ -139,6 +140,17 @@ struct nv_instr {
  const NV_tabrefs *rows;
  const NV_tabrefs *cols;
 } __attribute__ ((aligned (8)));
+
+// perhaps we should count only non-empty predicates?
+static int count_Pr(const nv_instr *i)
+{
+  static std::unordered_set<std::string_view> prs { "Pq", "Pp", "Pa", "Pb" ,"Pc" ," Ps" ,"Plg" };
+  for ( auto &ec: i->eas ) {
+    auto eic = prs.find(ec.first);
+    if ( eic != prs.end() ) return 1;
+  }
+  return 0;
+}
 
 // binary tree
 struct NV_bt_node {
