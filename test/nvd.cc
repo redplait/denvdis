@@ -472,10 +472,10 @@ class nv_dis
      }
      m_vq = (Dvq_name)dlsym(dh, "get_vq_name");
      if ( !m_vq )
-       fprintf(stderr, "cannot find get_vq_nam, errno %d (%s)\n", sm_name.c_str(), errno, strerror(errno));
+       fprintf(stderr, "cannot find get_vq_nam(%s), errno %d (%s)\n", sm_name.c_str(), errno, strerror(errno));
      Dproto fn = (Dproto)dlsym(dh, "get_sm");
      if ( !fn ) {
-      fprintf(stderr, "cannot find get_sm, errno %d (%s)\n", sm_name.c_str(), errno, strerror(errno));
+      fprintf(stderr, "cannot find get_sm(%s), errno %d (%s)\n", sm_name.c_str(), errno, strerror(errno));
       dlclose(dh);
        return 0;
      }
@@ -581,7 +581,6 @@ void nv_dis::dump_value(const struct nv_instr *ins, const NV_extracted &kv, cons
   std::string &res, const nv_vattr &a, uint64_t v) const
 {
   char buf[128];
-  auto copy = v;
   uint32_t f32;
   NV_Format kind = a.kind;
   if ( ins->vf_conv ) {
@@ -610,7 +609,7 @@ void nv_dis::dump_value(const struct nv_instr *ins, const NV_extracted &kv, cons
      break;
     default:
       if ( !v ) { res += '0'; return; }
-      snprintf(buf, 127, "0x%X", v);
+      snprintf(buf, 127, "0x%lX", v);
   }
   buf[127] = 0;
   res += buf;
@@ -639,10 +638,10 @@ int nv_dis::calc_miss(const struct nv_instr *ins, const NV_extracted &kv, int rz
     if ( kiter != ins->eas.end() ) { ea = kiter->second; }
     else { ea = try_by_ename(ins, ki.first); }
     if ( !ea ) continue;
-    if ( cmp(ki.first, "NonZeroRegister") && ki.second == rz ) {
+    if ( cmp(ki.first, "NonZeroRegister") && (int)ki.second == rz ) {
       res++; continue;
     }
-    if ( cmp(ki.first, "NonZeroUniformRegister") && ki.second == rz ) {
+    if ( cmp(ki.first, "NonZeroUniformRegister") && (int)ki.second == rz ) {
       res++; continue;
     }
     // check in enum
@@ -1020,19 +1019,19 @@ void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv)
     if ( ei != i->eas.end() ) { ea = ei->second; }
     else { ea = try_by_ename(i, kv1.first); }
     if ( ea ) {
-      fprintf(m_out, " E %s: %s %X", name.c_str(), ea->ename, kv1.second);
+      fprintf(m_out, " E %s: %s %lX", name.c_str(), ea->ename, kv1.second);
       auto eid = ea->em->find(kv1.second);
       if ( eid != ea->em->end() )
         fprintf(m_out, " %s\n", eid->second);
       else
-        fprintf(m_out," UNKNOWN_ENUM %X\n", kv1.second);
+        fprintf(m_out," UNKNOWN_ENUM %lX\n", kv1.second);
       continue;
     }
     if ( name.find('@') != std::string::npos ) {
-      fprintf(m_out, " @ %s: %X\n", name.c_str(), kv1.second);
+      fprintf(m_out, " @ %s: %lX\n", name.c_str(), kv1.second);
       continue;
     }
-    fprintf(m_out, " U %s: %X\n", name.c_str(), kv1.second);
+    fprintf(m_out, " U %s: %lX\n", name.c_str(), kv1.second);
   }
 }
 
@@ -1107,7 +1106,7 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
   if ( p.first->alt ) fprintf(m_out, " ALT");
   auto rend = m_dis->get_rend(p.first->n);
   if ( rend ) {
-    fprintf(m_out, " %d render items", rend->size());
+    fprintf(m_out, " %ld render items", rend->size());
     std::string r;
     int miss = render(rend, r, p.first, p.second, l);
     if ( miss ) fprintf(m_out, " %d missed\n", miss);
@@ -1135,11 +1134,11 @@ void nv_dis::try_dis(Elf_Word idx)
   while(1) {
     NV_res res;
     int get_res = m_dis->get(res);
-    if ( -1 == get_res ) { fprintf(m_out, "stop at %X\n", m_dis->offset()); break; }
+    if ( -1 == get_res ) { fprintf(m_out, "stop at %lX\n", m_dis->offset()); break; }
     dis_total++;
     if ( !get_res ) {
       dis_notfound++;
-      fprintf(m_out, "Not found at %X", m_dis->offset());
+      fprintf(m_out, "Not found at %lX", m_dis->offset());
       if ( opt_N ) {
         std::string bstr;
         if ( m_dis->gen_mask(bstr) )
@@ -1158,19 +1157,19 @@ void nv_dis::try_dis(Elf_Word idx)
     if ( branches ) {
       auto li = branches->labels.find(off);
       if ( li != branches->labels.end() )
-        fprintf(m_out, "LABEL_%X:\n", off);
+        fprintf(m_out, "LABEL_%lX:\n", off);
       auto bi = branches->branches.find(off);
       if ( bi != branches->branches.end() )
         curr_label = bi->second;
     }
-    fprintf(m_out, "/* res %d %X ", res.size(), off);
+    fprintf(m_out, "/* res %ld %lX ", res.size(), off);
     if ( m_width == 64 ) {
       unsigned char op = 0, ctrl = 0;
       m_dis->get_ctrl(op, ctrl);
       fprintf(m_out, "op %2.2X ctrl %2.2X ", op, ctrl);
     } else if ( m_width == 88 ) {
       auto cword = m_dis->get_cword();
-      fprintf(m_out, "ctrl %X ", cword);
+      fprintf(m_out, "ctrl %lX ", cword);
     }
     if ( res_idx == -1 ) fprintf(m_out, " DUPS ");
     fprintf(m_out, "*/\n");
@@ -1227,9 +1226,9 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
     unsigned short a_len;
     auto a_i = s_ei.find(attr);
     if ( a_i != s_ei.end() )
-      fprintf(m_out, "%X: %s", data - start, a_i->second);
+      fprintf(m_out, "%lX: %s", data - start, a_i->second);
     else
-      fprintf(m_out, "%X: UNKNOWN ATTR %X", data - start, attr);
+      fprintf(m_out, "%lX: UNKNOWN ATTR %X", data - start, attr);
     switch (format)
     {
       case 1: data += 2;
@@ -1259,14 +1258,14 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
             // offset c - address of label
             uint32_t addr = *(uint32_t *)(bcurr),
               lab = *(uint32_t *)(bcurr + 0xc);
- // fprintf(m_out, "addr %X label %X\n", addr, lab);
+ // fprintf(m_out, "addr %lX label %X\n", addr, lab);
             ib->labels.insert(lab);
             ib->branches[addr] = lab;
           }
         }
         data += 4 + a_len;
         break;
-      default: fprintf(stderr, "unknown format %d, section %d off %X (%s)\n",
+      default: fprintf(stderr, "unknown format %d, section %d off %lX (%s)\n",
         format, idx, data - start, sec->get_name().c_str());
          return;
     }
@@ -1289,7 +1288,7 @@ void nv_dis::dump_mrelocs(section *sec)
 {
   const_relocation_section_accessor rsa(reader, sec);
   auto n = rsa.get_entries_num();
-  fprintf(m_out, "%d relocs:\n", n);
+  fprintf(m_out, "%ld relocs:\n", n);
   if ( !n ) return;
   auto old_type = sec->get_type();
   sec->set_type(SHT_RELA);
@@ -1300,7 +1299,7 @@ void nv_dis::dump_mrelocs(section *sec)
     Elf_Sxword add;
     if ( rsa.get_entry(i, addr, sym, type, add) ) {
       auto tname = get_merc_reloc_name(type);
-      fprintf(m_out, " [%d] %X sym %d add %X", n, addr, sym, add);
+      fprintf(m_out, " [%ld] %lX sym %d add %lX", n, addr, sym, add);
       if ( tname )
        fprintf(m_out, " %s\n", tname);
       else
@@ -1315,7 +1314,7 @@ void nv_dis::dump_crelocs(section *sec)
   if ( !sec->get_size() ) return;
   const_relocation_section_accessor rsa(reader, sec);
   auto n = rsa.get_entries_num();
-  fprintf(m_out, "%d relocs:\n", n);
+  fprintf(m_out, "%ld relocs:\n", n);
   if ( !n ) return;
   for ( Elf_Xword i = 0; i < n; i++ ) {
     Elf64_Addr addr;
@@ -1324,7 +1323,7 @@ void nv_dis::dump_crelocs(section *sec)
     Elf_Sxword add;
     if ( rsa.get_entry(i, addr, sym, type, add) ) {
       auto tname = get_cuda_reloc_name(type);
-      fprintf(m_out, " [%d] %X sym %d add %X", n, addr, sym, add);
+      fprintf(m_out, " [%ld] %lX sym %d add %lX", n, addr, sym, add);
       if ( tname )
        fprintf(m_out, " %s\n", tname);
       else
@@ -1350,26 +1349,26 @@ void nv_dis::process()
     auto st_i = s_sht.find(st);
     auto sname = sec->get_name();
     if ( st_i != s_sht.end() ) {
-      fprintf(m_out, "[%d] %s type %X [%s] flags %X\n", i, sname.c_str(), st, st_i->second, sf);
+      fprintf(m_out, "[%d] %s type %X [%s] flags %lX\n", i, sname.c_str(), st, st_i->second, sf);
       if ( st == 0x70000000 ) parse_attrs(i, sec);
       else if ( st > 0x70000000 ) hdump_section(sec);
     } else {
       if ( st == SHT_REL || st == SHT_RELA ) {
-        fprintf(m_out, "[%d] %s type %X flags %X\n", i, sec->get_name().c_str(), st, sf);
+        fprintf(m_out, "[%d] %s type %X flags %lX\n", i, sec->get_name().c_str(), st, sf);
         if ( opt_r ) dump_crelocs(sec);
       } else if ( st == SHT_NOTE )
       {
         auto tf = sf & 0xFF00000;
         if ( tf == 0x1000000 ) {
-          fprintf(m_out, "[%d] %s type %X [NOTE] flags %X SHF_NOTE_NV_CUVER\n", i, sec->get_name().c_str(), st, sf);
+          fprintf(m_out, "[%d] %s type %X [NOTE] flags %lX SHF_NOTE_NV_CUVER\n", i, sec->get_name().c_str(), st, sf);
           hdump_section(sec);
         } else if ( tf == 0x2000000 ) {
-          fprintf(m_out, "[%d] %s type %X [NOTE] flags %X SHF_NOTE_NV_TKINFO\n", i, sec->get_name().c_str(), st, sf);
+          fprintf(m_out, "[%d] %s type %X [NOTE] flags %lX SHF_NOTE_NV_TKINFO\n", i, sec->get_name().c_str(), st, sf);
           hdump_section(sec);
         } else
-          fprintf(m_out, "[%d] %s type %X [NOTE] flags %X SHF_NOTE_NV_UNKNOWN\n", i, sec->get_name().c_str(), st, sf);
+          fprintf(m_out, "[%d] %s type %X [NOTE] flags %lX SHF_NOTE_NV_UNKNOWN\n", i, sec->get_name().c_str(), st, sf);
       } else {
-       fprintf(m_out, "[%d] %s type %X flags %X\n", i, sec->get_name().c_str(), st, sf);
+       fprintf(m_out, "[%d] %s type %X flags %lX\n", i, sec->get_name().c_str(), st, sf);
        if ( st == 0x70000083 ) parse_attrs(i, sec);
        else if ( st == 0x70000082 && opt_r ) dump_mrelocs(sec);
        else if ( st > 0x70000000 ) hdump_section(sec);
@@ -1378,7 +1377,7 @@ void nv_dis::process()
     if ( st == SHT_NOBITS ) continue;
     if ( !sec->get_size() ) continue;
     // dump addr, size & info
-    fprintf(m_out, "  addr %X size %X info %d link %d\n", sec->get_address(), sec->get_size(), sec->get_info(), sec->get_link());
+    fprintf(m_out, "  addr %lX size %lX info %d link %d\n", sec->get_address(), sec->get_size(), sec->get_info(), sec->get_link());
     if ( !strncmp(sname.c_str(), ".text.", 6) )
     {
       m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size() );
@@ -1389,7 +1388,7 @@ void nv_dis::process()
 
 void usage(const char *prog)
 {
-  printf("%s usage: [options] cubin(s)]n");
+  printf("%s usage: [options] cubin(s)]n", prog);
   printf("Options:\n");
   printf("-e - dump attributes\n");
   printf("-h - hex dump\n");
