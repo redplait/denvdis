@@ -3905,6 +3905,32 @@ sub read_groups
         next;
       }
     }
+    # one-line table definition like col[cond] = { row };
+    # 1 - col name, 2 - col cond, 3 - content inside { }
+    if ( 2 == $state && $str =~ /^\s*(\w+)(?:\[([^\]]+)\])?.*\s*=\s*\{\s*(.*)\}\s*;$/ ) {
+      unless( is_known_group($1) ) {
+        printf("unknown group %s in tab column at line %d\n", $1, $line);
+        $reset->();
+        next;
+      }
+      my $added = 0;
+      my $cols = $ctab->[3];
+      my $name = $1;
+      my $rest = $3;
+      # check condition
+      if ( defined $2 ) {
+         my $cond_name = parse_known_ccond($name, $2, $line);
+         if ( defined $cond_name ) {
+           push @$cols, [ $name, $cond_name ];
+           $added = 1;
+          }
+       }
+       push(@$cols, $name) unless $added;
+       if ( !parse_grow($ctab, $rest, $line) ) {
+         $reset->(); next;
+       }
+      # at end reset in next if
+    }
     if ( 2 == $state || 3 == $state ) {
       if ( $str =~ /;$/ || $str =~ /^\w/ ) {
         push @g_gtabs, $ctab if ( defined($ctab) && check_gtab($ctab) );
