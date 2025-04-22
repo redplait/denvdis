@@ -86,10 +86,10 @@ struct NV_tab {
   NV_gnames cols, rows; // names of columns & rows
   std::vector< std::initializer_list<short> > values;
   std::optional<short> get(int col, int row) const {
-    if ( row >= values.size() ) return std::nullopt;
+    if ( row < 0 || (size_t)row >= values.size() ) return std::nullopt;
     auto &r = values[row];
     if ( r.size() == 1 ) return std::optional<short>(*r.begin());
-    if ( col >= r.size() ) return std::nullopt;
+    if ( col < 0 || (size_t)col >= r.size() ) return std::nullopt;
     // initializer_list miss [], so dirty hack from
     // https://stackoverflow.com/questions/17787394/why-doesnt-stdinitializer-list-provide-a-subscript-operator
     return std::optional<short>( *(r.begin() + col) );
@@ -307,7 +307,7 @@ struct nv64: public NV_base_decoder {
       cqword = *(uint64_t *)curr;
       curr += 8;
       // 6 bit - 3f, << 2 = 0xfc
-      opcode = cqword & 0x3 | ((cqword >> (64 - 8)) & 0xfc);
+      opcode = (cqword & 0x3) | ((cqword >> (64 - 8)) & 0xfc);
     }
     // fill ctrl
     ctrl = (cqword >> (8 * m_idx + 2)) & 0xff;
@@ -321,7 +321,7 @@ struct nv64: public NV_base_decoder {
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
   {
     uint64_t res = 0L;
-    for ( int m = 0; m < mask_size; m++ )
+    for ( size_t m = 0; m < mask_size; m++ )
      res = (res << mask[m].second) | _extract(*value, mask[m].first, mask[m].second);
     return res;
   }
@@ -393,7 +393,7 @@ struct nv88: public NV_base_decoder {
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
   {
     uint64_t res = 0L;
-    for ( int m = 0; m < mask_size; m++ ) {
+    for ( size_t m = 0; m < mask_size; m++ ) {
      if ( mask[m].first + mask[m].second <= 64 ) {
        res = (res << mask[m].second) | _extract(*value, mask[m].first, mask[m].second);
        continue;
@@ -517,7 +517,7 @@ printf("stop0 %d\n", i);
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
   {
     uint64_t res = 0L;
-    for ( int m = 0; m < mask_size; m++ ) {
+    for ( size_t m = 0; m < mask_size; m++ ) {
 #ifdef __SIZEOF_INT128__
      res = (res << mask[m].second) | extract128(q, mask[m].first, mask[m].second);
 #else

@@ -357,7 +357,7 @@ sub gen_vq
   print $fh <<EOF;
 };
 const char *get_vq_name(int idx) {
-  if ( idx < 0 || idx >= (sizeof(vq_names) / sizeof(vq_names[0])) ) return nullptr;
+  if ( idx < 0 || (size_t)idx >= (sizeof(vq_names) / sizeof(vq_names[0])) ) return nullptr;
   return vq_names[idx];
 }
 EOF
