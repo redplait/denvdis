@@ -3392,6 +3392,55 @@ sub is_known_group
   return 0;
 }
 
+# key - merged conditions in {}
+# value - [ 0 - name, 1 - list ]
+my %g_cond_list;
+my $g_cond_list_idx = 0;
+
+sub parse_cond
+{
+  my($body, $line) = @_;
+  $body =~ s/\s+//g;
+  # return name if we already cache this condition
+  return $g_cond_list{$body}->[0] if exists($g_cond_list{$body});
+  # parse body
+  my @cond = split /,/, $body;
+  return undef unless @cond;
+  my @res;
+  foreach my $cond ( @cond ) {
+    # some are not fields - ignore them
+    next if ( $cond eq 'Ctl' or $cond eq 'sBoard' or $cond eq 'Mem' or $cond eq 'CgaBar' );
+    if ( $cond =~ /^(\w+)@(\w+)/ ) {
+      my $field = $1;
+      my $func = $2;
+      # check if have this function
+      if ( exists $g_used_ccond{$func} ) {
+        push @res, [ $field, $func ];
+        next;
+      }
+      unless( exists $g_ccond{$func} ) {
+        printf("unknown connection condition %s for %s on line %d\n", $func, $field, $line);
+        push @res, [ $field, undef ];
+        next;
+      }
+      my $fres = try_convert_ccond($func, $g_ccond{$func});
+      if ( !$fres ) {
+        printf("cannot make connection condition %s for %s on line %d\n", $func, $field, $line);
+        push @res, [ $field, undef ];
+        next;
+      }
+      push @res, [ $field, $func ];
+    } else { # just name
+      push @res, [ $cond, undef ];
+    }
+  }
+  return if !@res;
+  # make new cond list name
+  my $name = 'cond_list' . $g_cond_list_idx++;
+  $g_cond_list{$body} = [ $name, \@res ];
+  return $name;
+}
+
 # to link instructions with tabs we need yet two maps - for columns & rows
 # key - instr ref, value - [ [ tab, index ], ... ]
 my %g_gtcols;
@@ -3549,12 +3598,8 @@ sub gen_c_gtab
   printf($fh "// columns\n{");
   my $cidx = 0;
   foreach my $c ( @$cols ) {
-    my $cname;
-    if ( 'ARRAY' eq ref $c ) {
-      $cname = $c->[0];
-    } else {
-      $cname = $c;
-    }
+    my $cname = $c;
+    $cname = $c->[0] if ( 'ARRAY' eq ref $c );
     if ( exists $g_groups{$cname} ) {
       mark_tab_col($c, $t, $cidx);
     } else {
@@ -3569,12 +3614,8 @@ sub gen_c_gtab
   printf($fh "// rows\n{");
   for my $i ( 4 .. $size - 1 ) {
     my $r = $t->[$i];
-    my $rname;
-    if ( 'ARRAY' eq ref $r->[0] ) {
-      $rname = $r->[0]->[0];
-    } else {
-      $rname = $r->[0];
-    }
+    my $rname = $r->[0];
+    $rname = $r->[0]->[0] if ( 'ARRAY' eq ref $r->[0] );
     if ( exists $g_groups{$rname} ) {
       mark_tab_row($r->[0], $t, $i-4);
     } else {
