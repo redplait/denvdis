@@ -3397,6 +3397,26 @@ sub is_known_group
 my %g_cond_list;
 my $g_cond_list_idx = 0;
 
+sub gen_parse_conds
+{
+  my $fh = shift;
+  my $res = 0;
+  foreach my $v ( values %g_cond_list ) {
+    printf($fh "static const NV_cond_list %s = {\n", $v->[0]);
+    foreach my $field ( @{ $v->[1] } ) {
+      printf($fh " { \"%s\",", $field->[0]);
+      if ( defined $field->[1] ) {
+        printf($fh "%s", c_ccond_func($field->[1]));
+      } else {
+        printf($fh "nullptr");
+      }
+      printf($fh "},\n",);
+    }
+    printf($fh "};\n");
+  }
+  $res;
+}
+
 sub parse_cond
 {
   my($body, $line) = @_;
@@ -3534,8 +3554,8 @@ sub mark_tab_row
 {
   my($gname, $t, $ridx, $filt) = @_;
   my $res = 0;
-  if ( 'ARRAY' eq ref $gname ) {
-    $filt = c_ccond_func($gname->[1]);
+  if ( 'ARRAY' eq ref $gname) {
+    $filt = c_ccond_func($gname->[1]) if defined($gname->[1]);
     $gname = $gname->[0];
   }
   my $g = $g_groups{$gname};
@@ -3659,6 +3679,7 @@ sub gen_c_gtabs
      printf($fh "%s\n}\n", $g_used_ccond{ $cc });
     }
   }
+  gen_parse_conds($fh);
   gen_c_gtab($fh, $_) for @g_gtabs;
 }
 
@@ -3680,7 +3701,9 @@ sub dump_gtab
     my $r = $t->[$i];
     my $rs = scalar @$r;
     if ( 'ARRAY' eq ref $r->[0] ) { # 0 - name, 1 - filter
-      printf(" %s filter %s: ", $r->[0]->[0], $r->[0]->[1]);
+      if ( defined($r->[0]->[1]) ) {
+        printf(" %s filter %s: ", $r->[0]->[0], $r->[0]->[1]);
+      } else { printf(" %s: ", $r->[0]->[0]); }
     } else { printf(" %s: ", $r->[0]); }
     # perl syntax is so mad when you need to carve subarray on array ref
     foreach my $j ( 1 .. $rs - 1 ) {
@@ -3733,7 +3756,7 @@ sub parse_grow
   my($tab, $str, $line) = @_;
   $str =~ s/^\s*//;
   return 1 if ( $str eq '' );
-  if ( $str !~ /^(\w+)(?:\[([^\]]+)\])?.*:\s*/p ) {
+  if ( $str !~ /^(\w+)(?:\[([^\]]+)\])?(?:`\{([^\}]+)\})?.*:\s*/p ) { # put `{} in head[2]
     printf("bad table row %s, line %d\n", substr($str, 0, 64), $line);
     return 0;
   }
@@ -3743,11 +3766,22 @@ sub parse_grow
     return 0;
   }
   $str = ${^POSTMATCH};
+  my $cond = $3;
   my $head = $name;
   # check condition
   if ( defined $2 ) {
     my $cond_name = parse_known_ccond($name, $2, $line);
     $head = [ $name, $cond_name ] if ( defined $cond_name );
+  }
+  if ( defined $cond ) {
+    my $cres = parse_cond($cond, $line);
+    if ( $cres ) {
+      if ( 'ARRAY' eq ref $head ) {
+        push @$head, $cres;
+      } else {
+        $head = [ $name, undef, $cres ];
+      }
+    }
   }
   # {d + d}
   if ( $str =~ /\{\s*(\d+)\s*\+\s*(\d+)\s*\}/ ) {
