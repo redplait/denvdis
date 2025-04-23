@@ -3393,7 +3393,7 @@ sub is_known_group
 }
 
 # key - merged conditions in {}
-# value - [ 0 - name, 1 - list ]
+# value - [ 0 - name, 1 - list, 2 - line ]
 my %g_cond_list;
 my $g_cond_list_idx = 0;
 
@@ -3402,6 +3402,7 @@ sub gen_parse_conds
   my $fh = shift;
   my $res = 0;
   foreach my $v ( values %g_cond_list ) {
+    printf($fh "// line %d\n", $v->[2]);
     printf($fh "static const NV_cond_list %s = {\n", $v->[0]);
     foreach my $field ( @{ $v->[1] } ) {
       printf($fh " { \"%s\",", $field->[0]);
@@ -3430,6 +3431,7 @@ sub parse_cond
   foreach my $cond ( @cond ) {
     # some are not fields - ignore them
     next if ( $cond eq 'Ctl' or $cond eq 'sBoard' or $cond eq 'Mem' or $cond eq 'CgaBar' );
+    next if ( $cond =~ /_PRED$/ );
     if ( $cond =~ /^(\w+)@(\w+)/ ) {
       my $field = $1;
       my $func = $2;
@@ -3457,7 +3459,7 @@ sub parse_cond
   return if !@res;
   # make new cond list name
   my $name = 'cond_list' . $g_cond_list_idx++;
-  $g_cond_list{$body} = [ $name, \@res ];
+  $g_cond_list{$body} = [ $name, \@res, $line ];
   return $name;
 }
 
@@ -3690,8 +3692,10 @@ sub dump_gtab
   my $cols = $t->[3];
   printf("Tab_%s %s line %d %d columns\n", $t->[0], $t->[1], $t->[2], scalar @$cols);
   foreach my $c ( @$cols ) {
-    if ( 'ARRAY' eq ref $c ) { # 0 - name, 1 - filter
-      printf(" col %s filter %s\n", $c->[0], $c->[1]);
+    if ( 'ARRAY' eq ref $c ) { # 0 - name, 1 - filter, 2 - conn cond
+      if ( defined($c->[1]) ) {
+        printf(" col %s filter %s\n", $c->[0], $c->[1]);
+      } else { printf(" col %s\n", $c->[0]); }
     } else { printf(" col %s\n", $c); }
   }
   my $size = scalar(@$t);
@@ -3700,7 +3704,7 @@ sub dump_gtab
   for my $i ( 4 .. $size - 1 ) {
     my $r = $t->[$i];
     my $rs = scalar @$r;
-    if ( 'ARRAY' eq ref $r->[0] ) { # 0 - name, 1 - filter
+    if ( 'ARRAY' eq ref $r->[0] ) { # 0 - name, 1 - filter, 2 - conn cond
       if ( defined($r->[0]->[1]) ) {
         printf(" %s filter %s: ", $r->[0]->[0], $r->[0]->[1]);
       } else { printf(" %s: ", $r->[0]->[0]); }
@@ -3917,6 +3921,23 @@ sub parse_group_tail
   }
   printf("dont know how to parse tail %s, line %d\n", $str, $ln);
   return $pset;
+}
+
+# add column $name to $cols, also process $filter and $cond
+sub parse_col_cond
+{
+  my($name, $cols, $filter, $cond, $line) = @_;
+  # process filter
+  my $f;
+  $f = parse_known_ccond($name, $filter, $line) if ( defined $filter );
+  # condition
+  my $c;
+  $c = parse_cond($cond, $line) if ( defined $cond );
+  if ( defined($f) || defined($c) ) {
+    push @$cols, [ $name, $f, $c ];
+  } else {
+    push @$cols, $name;
+  }
 }
 
 sub read_groups
