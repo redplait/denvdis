@@ -3300,7 +3300,7 @@ sub parse_known_ccond
     return $g_cc_pr{$cond_name} if ( exists $g_cc_pr{$cond_name} );
     # make new ccond where Pr replaced with count_Pr static function
     my $name = 'Pr' . $g_cc_pr_next++;
-    my $res = sprintf("return count_Pr(i) %s;", $1);
+    my $res = sprintf("return i->count_Pr() %s;", $1);
     $g_used_ccond{$name} = $res;
     $g_cc_pr{$cond_name} = $name;
     return $name;

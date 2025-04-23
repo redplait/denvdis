@@ -139,18 +139,17 @@ struct nv_instr {
  // table refs
  const NV_tabrefs *rows;
  const NV_tabrefs *cols;
-} __attribute__ ((aligned (8)));
-
-// perhaps we should count only non-empty predicates?
-static int count_Pr(const nv_instr *i)
-{
+ // methods
+ int count_Pr() const
+ {
   static std::unordered_set<std::string_view> prs { "Pq", "Pp", "Pa", "Pb" ,"Pc" ," Ps" ,"Plg" };
-  for ( auto &ec: i->eas ) {
+  for ( auto &ec: eas ) {
     auto eic = prs.find(ec.first);
     if ( eic != prs.end() ) return 1;
   }
   return 0;
-}
+ }
+} __attribute__ ((aligned (8)));
 
 // binary tree
 struct NV_bt_node {
