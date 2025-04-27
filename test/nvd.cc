@@ -523,6 +523,7 @@ class nv_dis
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    int fill_sched(const struct nv_instr *, const NV_extracted &);
    int dump_sched(const struct nv_instr *, const NV_extracted &) const;
+   bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist);
    void dump_ops(const struct nv_instr *, const NV_extracted &);
    void dump_predicates(const struct nv_instr *, const NV_extracted &);
    int cmp(const std::string_view &, const char *) const;
@@ -556,6 +557,8 @@ class nv_dis
    long dis_dups = 0;
    long sfilters = 0;
    long sfilters_succ = 0;
+   long scond_count = 0;
+   long scond_succ = 0;
 };
 
 void nv_dis::dump_sv(const std::string_view &sv) const
@@ -1042,6 +1045,23 @@ static const char *s_brts[4] = {
  "BRT_BRANCHOUT"
 };
 
+bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist)
+{
+  if ( !clist.second || clist.second->empty() ) return true;
+  std::map<std::string_view, int> tmp;
+  for ( auto &cond: *clist.second ) {
+    if ( cond.second ) {
+      scond_count++;
+      if ( !cond.second(i, kv) ) continue;
+      scond_succ++;
+    }
+    auto kiter = kv.find(cond.first);
+    if ( kiter == kv.end() ) continue;
+    tmp[cond.first] = (int)kiter->second;
+  }
+  return !tmp.empty();
+}
+
 int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
 {
   m_sched.clear();
@@ -1053,6 +1073,7 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
       if ( !titer.filter(i, kv) ) continue;
       sfilters_succ++;
     }
+    // check tab.cols[titer.idx].second for condition
     auto ct = m_sched.find(titer.tab);
     if ( ct == m_sched.end() )
       m_sched[titer.tab] = { titer.idx };
@@ -1065,7 +1086,7 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
 
 int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv) const
 {
-  if ( !i->cols ) return 0;
+  if ( !i->rows ) return 0;
   int res = 0;
   for ( auto &titer: *i->rows ) {
     auto ci = m_sched.find(titer.tab);

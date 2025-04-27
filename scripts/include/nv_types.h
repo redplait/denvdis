@@ -78,7 +78,8 @@ typedef std::unordered_map<std::string_view, nv_pred> NV_Preds;
 struct nv_instr;
 typedef int (*nv_tabref)(const nv_instr *i, const NV_extracted &kv);
 typedef std::list< std::pair<std::string_view, nv_tabref> > NV_cond_list;
-typedef std::vector< std::pair<const char *, const NV_cond_list *> > NV_gnames; // column or row names
+typedef std::pair<const char *, const NV_cond_list *> NV_one_cond;
+typedef std::vector<NV_one_cond> NV_gnames; // column or row names
 
 // tables
 struct NV_tab {
