@@ -3216,6 +3216,7 @@ sub c_ccond_func
   return 's_ccond_' . $name;
 }
 
+# try translate condition function to c++
 sub try_convert_ccond
 {
   my($name, $body) = @_;
@@ -3243,10 +3244,17 @@ sub try_convert_ccond
   }
   # 3) finally collect fields
   my %fields;
-  while( $body =~ /\b([A-Za-z]\w+)\b/gp ) {
-    next if ( exists $preds{$1} );
-    next if ( exists $calls{$1} );
-    $fields{$1}++;
+  # 3.1) - collect ?field
+  while( $body =~ /\?([A-Za-z]\w*)\b/gp ) {
+    $fields{$1} = 1;
+  }
+  foreach my $cf ( keys %fields ) {
+    $body =~ s/\?$cf/$cf/g;
+  }
+  # 3.2) - collect remained fields
+  while( $body =~ /\b([A-Za-z]\w*)\b/gp ) {
+    next if ( exists $preds{$1} || exists $calls{$1} || exists $fields{$1} );
+    $fields{$1} = 0;
   }
   # check that all reffered calls can be converted
   if ( keys %calls ) {
@@ -3274,11 +3282,16 @@ sub try_convert_ccond
     $res .= sprintf("auto %s = %s(i, kv);\n", $k, c_ccond_func($k));
   }
   foreach my $f ( keys %fields ) {
-    # fcomp should be mapped to Test
+    # fcomp should be mapped to Test, ms to MS
     my $fname = $f;
     $fname = 'Test' if ( $f eq 'fcomp' );
-    $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s->second;\n",
-      $f, $fname, $f, $f, $f);
+    $fname = 'MS' if ( $f eq 'ms' );
+    if ( $fields{$f} > 0 ) {
+      # optional ?field - can be missed
+      $res .= sprintf(" int %s = 0; auto fi%s = kv.find(\"%s\"); if ( fi%s != kv.end() ) %s = fi%s->second;\n", $f, $f, $fname, $f, $f, $f);
+    } else {
+      $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s->second;\n", $f, $fname, $f, $f, $f);
+    }
   }
   $res .= 'return ' . $body . ';';
   # store body
@@ -3419,6 +3432,8 @@ sub gen_parse_conds
   $res;
 }
 
+# try to parse connection condition in $body at $line
+# returns name of new inserted condition
 sub parse_cond
 {
   my($body, $line) = @_;
