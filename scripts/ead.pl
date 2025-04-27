@@ -3249,7 +3249,7 @@ sub try_convert_ccond
     $fields{$1} = 1;
   }
   foreach my $cf ( keys %fields ) {
-    $body =~ s/\?$cf/$cf/g;
+    $body =~ s/\?$cf\b/$cf/g;
   }
   # 3.2) - collect remained fields
   while( $body =~ /\b([A-Za-z]\w*)\b/gp ) {
