@@ -1079,10 +1079,10 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv) const
       auto value = ci->first->get(cidx, titer.idx);
       if ( !value ) continue;
       fprintf(m_out, "S> tab %s %s row %d", ci->first->name, ci->first->connection, titer.idx);
-      auto row_name = ci->first->rows[titer.idx];
+      auto row_name = ci->first->rows[titer.idx].first;
       if ( row_name ) fprintf(m_out, " (%s)", row_name);
       fprintf(m_out, " col %d", cidx);
-      auto col_name = ci->first->cols[cidx];
+      auto col_name = ci->first->cols[cidx].first;
       if ( col_name ) fprintf(m_out, " (%s)", col_name);
       fprintf(m_out, ": %d\n", value.value());
       res++;
