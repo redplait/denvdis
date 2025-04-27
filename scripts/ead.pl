@@ -3212,6 +3212,7 @@ my %g_used_ccond; # key - name, value - body in c++
 sub c_ccond_func
 {
   my $name = shift;
+  return unless $name;
   return 's_ccond_' . $name;
 }
 
@@ -3628,7 +3629,11 @@ sub gen_c_gtab
       mark_tab_col_cset($c, $t, $cidx);
     }
     $cidx++;
-    printf($fh "\"%s\",", $cname);
+    printf($fh " { \"%s\",", $cname);
+    # cond_list
+    if ( 'ARRAY' eq ref($c) and $c->[2] ) {
+      printf($fh "&%s},\n", $c->[2]);
+    } else { printf($fh "nullptr },\n"); }
   }
   printf($fh "},\n");
   # row names
@@ -3643,7 +3648,11 @@ sub gen_c_gtab
     } else {
       mark_tab_row_cset($r->[0], $t, $i-4);
     }
-    printf($fh "\"%s\",", $rname);
+    printf($fh " { \"%s\",", $rname);
+    # cond list
+    if ( 'ARRAY' eq ref($r->[0]) and $r->[0]->[2] ) {
+      printf($fh "&%s},\n", $r->[0]->[2]);
+    } else { printf($fh "nullptr },\n"); }
   }
   printf($fh "},\n{\n");
   # body
@@ -4001,30 +4010,19 @@ sub read_groups
         next;
       }
     }
-    # one-line table definition like col[cond] = { row };
-    # 1 - col name, 2 - col cond, 3 - content inside { }
-    if ( 2 == $state && $str =~ /^\s*(\w+)(?:\[([^\]]+)\])?.*\s*=\s*\{\s*(.*)\}\s*;$/ ) {
+    # one-line table definition like col[cond]`{} = { row };
+    # 1 - col name, 2 - col cond, 3 - cond list, 4 - content inside { }
+    if ( 2 == $state && $str =~ /^\s*(\w+)(?:\[([^\]]+)\])?(?:`\{([^\}]+)\})?\s*=\s*\{\s*(.*)\}\s*;$/ ) {
       unless( is_known_group($1) ) {
         printf("unknown group %s in tab column at line %d\n", $1, $line);
         $reset->();
         next;
       }
-      my $added = 0;
-      my $cols = $ctab->[3];
-      my $name = $1;
-      my $rest = $3;
-      # check condition
-      if ( defined $2 ) {
-         my $cond_name = parse_known_ccond($name, $2, $line);
-         if ( defined $cond_name ) {
-           push @$cols, [ $name, $cond_name ];
-           $added = 1;
-          }
-       }
-       push(@$cols, $name) unless $added;
-       if ( !parse_grow($ctab, $rest, $line) ) {
+      my $rest = $4;
+      parse_col_cond($1, $ctab->[3], $2, $3, $line);
+      if ( !parse_grow($ctab, $rest, $line) ) {
          $reset->(); next;
-       }
+      }
       # at end reset in next if
     }
     if ( 2 == $state || 3 == $state ) {
@@ -4032,24 +4030,14 @@ sub read_groups
         push @g_gtabs, $ctab if ( defined($ctab) && check_gtab($ctab) );
         $reset->(); next;
       }
-      if ( 2 == $state && $str =~ /^\s*(\w+)(?:\[([^\]]+)\])?.*(?!;)/ ) {
-        # probably we should also collect data after ` ?
+      if ( 2 == $state && $str =~ /^\s*(\w+)(?:\[([^\]]+)\])?(?:`\{([^\}]+)\})?.*(?!;)/ ) {
+        # 1 column name,  2 [filter] 3 ` { condition }
         unless( is_known_group($1) ) {
           printf("unknown group %s in tab column at line %d\n", $1, $line);
           $reset->();
           next;
         }
-        my $cols = $ctab->[3];
-        my $name = $1;
-        # check condition
-        if ( defined $2 ) {
-          my $cond_name = parse_known_ccond($name, $2, $line);
-          if ( defined $cond_name ) {
-            push @$cols, [ $name, $cond_name ];
-            next;
-          }
-        }
-        push(@$cols, $name);
+        parse_col_cond($1, $ctab->[3], $2, $3, $line);
         next;
       }
       if ( 2 == $state && $str =~ /^\s*\{/p ) {
