@@ -500,7 +500,7 @@ class nv_dis
      if ( dis_total )
        fprintf(m_out, "total %ld, not_found %ld, dups %ld\n", dis_total, dis_notfound, dis_dups);
      if ( opt_S )
-       fprintf(m_out, "filters %ld success %ld\n", sfilters, sfilters_succ);
+       fprintf(m_out, "filters %ld success %ld, conditions %ld (%ld)\n", sfilters, sfilters_succ, scond_count, scond_succ);
    }
   protected:
    typedef std::pair<const struct nv_instr *, NV_extracted> NV_pair;
@@ -524,6 +524,7 @@ class nv_dis
    int fill_sched(const struct nv_instr *, const NV_extracted &);
    int dump_sched(const struct nv_instr *, const NV_extracted &) const;
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist);
+   bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, std::map<std::string_view, int> &);
    void dump_ops(const struct nv_instr *, const NV_extracted &);
    void dump_predicates(const struct nv_instr *, const NV_extracted &);
    int cmp(const std::string_view &, const char *) const;
@@ -1047,8 +1048,14 @@ static const char *s_brts[4] = {
 
 bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist)
 {
-  if ( !clist.second || clist.second->empty() ) return true;
   std::map<std::string_view, int> tmp;
+  return check_sched_cond(i, kv, clist, tmp);
+}
+
+bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist,
+ std::map<std::string_view, int> &out_res)
+{
+  if ( !clist.second || clist.second->empty() ) return true;
   for ( auto &cond: *clist.second ) {
     if ( cond.second ) {
       scond_count++;
@@ -1057,9 +1064,9 @@ bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, 
     }
     auto kiter = kv.find(cond.first);
     if ( kiter == kv.end() ) continue;
-    tmp[cond.first] = (int)kiter->second;
+    out_res[cond.first] = (int)kiter->second;
   }
-  return !tmp.empty();
+  return !out_res.empty();
 }
 
 int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
@@ -1074,6 +1081,7 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
       sfilters_succ++;
     }
     // check tab.cols[titer.idx].second for condition
+    if ( !check_sched_cond(i, kv, titer.tab->cols[titer.idx]) ) continue;
     auto ct = m_sched.find(titer.tab);
     if ( ct == m_sched.end() )
       m_sched[titer.tab] = { titer.idx };
