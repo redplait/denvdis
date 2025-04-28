@@ -522,7 +522,7 @@ class nv_dis
    int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *);
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    int fill_sched(const struct nv_instr *, const NV_extracted &);
-   int dump_sched(const struct nv_instr *, const NV_extracted &) const;
+   int dump_sched(const struct nv_instr *, const NV_extracted &);
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist);
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, std::map<std::string_view, int> &);
    void dump_ops(const struct nv_instr *, const NV_extracted &);
@@ -1092,7 +1092,7 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
   return res;
 }
 
-int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv) const
+int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
 {
   if ( !i->rows ) return 0;
   int res = 0;
@@ -1100,8 +1100,11 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv) const
     auto ci = m_sched.find(titer.tab);
     if ( ci == m_sched.end() ) continue;
     if ( titer.filter ) {
+      sfilters++;
       if ( !titer.filter(i, kv) ) continue;
+      sfilters_succ++;
     }
+    if ( !check_sched_cond(i, kv, titer.tab->rows[titer.idx]) ) continue;
     // we have titer.tab & titer.idx for row and
     // ci->list of table columns
     for ( auto cidx: ci->second ) {
