@@ -523,6 +523,7 @@ class nv_dis
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    int fill_sched(const struct nv_instr *, const NV_extracted &);
    int dump_sched(const struct nv_instr *, const NV_extracted &);
+   void dump_cond_list(const std::map<std::string_view, int> &) const;
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist);
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, std::map<std::string_view, int> &);
    void dump_ops(const struct nv_instr *, const NV_extracted &);
@@ -1056,6 +1057,7 @@ bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, 
  std::map<std::string_view, int> &out_res)
 {
   if ( !clist.second || clist.second->empty() ) return true;
+  int res = 0;
   for ( auto &cond: *clist.second ) {
     if ( cond.second ) {
       scond_count++;
@@ -1065,8 +1067,9 @@ bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, 
     auto kiter = kv.find(cond.first);
     if ( kiter == kv.end() ) continue;
     out_res[cond.first] = (int)kiter->second;
+    res++;
   }
-  return !out_res.empty();
+  return res != 0;
 }
 
 int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
@@ -1092,6 +1095,20 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
   return res;
 }
 
+void nv_dis::dump_cond_list(const std::map<std::string_view, int> &cset) const
+{
+  if ( cset.empty() ) return;
+  int latch = 0;
+  fputc('{', m_out);
+  for ( auto &i: cset ) {
+    if ( latch ) fputc(' ', m_out);
+    latch |= 1;
+    dump_sv(i.first);
+    fprintf(m_out, ":%d", i.second);
+  }
+  fputc('}', m_out);
+}
+
 int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
 {
   if ( !i->rows ) return 0;
@@ -1104,7 +1121,8 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
       if ( !titer.filter(i, kv) ) continue;
       sfilters_succ++;
     }
-    if ( !check_sched_cond(i, kv, titer.tab->rows[titer.idx]) ) continue;
+    std::map<std::string_view, int> row_res;
+    if ( !check_sched_cond(i, kv, titer.tab->rows[titer.idx], row_res) ) continue;
     // we have titer.tab & titer.idx for row and
     // ci->list of table columns
     for ( auto cidx: ci->second ) {
@@ -1113,6 +1131,7 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
       fprintf(m_out, "S> tab %s %s row %d", ci->first->name, ci->first->connection, titer.idx);
       auto row_name = ci->first->rows[titer.idx].first;
       if ( row_name ) fprintf(m_out, " (%s)", row_name);
+      dump_cond_list(row_res);
       fprintf(m_out, " col %d", cidx);
       auto col_name = ci->first->cols[cidx].first;
       if ( col_name ) fprintf(m_out, " (%s)", col_name);
