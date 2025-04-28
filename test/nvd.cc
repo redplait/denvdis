@@ -552,7 +552,7 @@ class nv_dis
    bool dual_first = false;
    bool dual_last = false;
    // scheduling tracking, value - list of column indexes
-   std::map<const NV_tab *, std::list<short> > m_sched;
+   std::map<const NV_tab *, std::list< std::pair<short, std::map<std::string_view, int> > > > m_sched;
    // disasm stat
    long dis_total = 0;
    long dis_notfound = 0;
@@ -1084,12 +1084,13 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
       sfilters_succ++;
     }
     // check tab.cols[titer.idx].second for condition
-    if ( !check_sched_cond(i, kv, titer.tab->cols[titer.idx]) ) continue;
+    std::map<std::string_view, int> row_res;
+    if ( !check_sched_cond(i, kv, titer.tab->cols[titer.idx], row_res) ) continue;
     auto ct = m_sched.find(titer.tab);
     if ( ct == m_sched.end() )
-      m_sched[titer.tab] = { titer.idx };
+      m_sched[titer.tab] = { { titer.idx, std::move(row_res) } };
     else
-      ct->second.push_back(titer.idx);
+      ct->second.push_back( { titer.idx, std::move(row_res) });
     res++;
   }
   return res;
@@ -1126,15 +1127,16 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
     // we have titer.tab & titer.idx for row and
     // ci->list of table columns
     for ( auto cidx: ci->second ) {
-      auto value = ci->first->get(cidx, titer.idx);
+      auto value = ci->first->get(cidx.first, titer.idx);
       if ( !value ) continue;
       fprintf(m_out, "S> tab %s %s row %d", ci->first->name, ci->first->connection, titer.idx);
       auto row_name = ci->first->rows[titer.idx].first;
       if ( row_name ) fprintf(m_out, " (%s)", row_name);
       dump_cond_list(row_res);
-      fprintf(m_out, " col %d", cidx);
-      auto col_name = ci->first->cols[cidx].first;
+      fprintf(m_out, " col %d", cidx.first);
+      auto col_name = ci->first->cols[cidx.first].first;
       if ( col_name ) fprintf(m_out, " (%s)", col_name);
+      dump_cond_list(cidx.second);
       fprintf(m_out, ": %d\n", value.value());
       res++;
     }
