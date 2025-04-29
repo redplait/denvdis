@@ -10,6 +10,7 @@
 
 int opt_e = 0,
     opt_h = 0,
+    opt_m = 0,
     opt_t = 0,
     opt_p = 0,
     opt_r = 0,
@@ -546,6 +547,8 @@ class nv_dis
    INV_disasm *m_dis = nullptr;
    Dvq_name m_vq = nullptr;
    int m_width;
+   // missed fields
+   mutable std::unordered_set<std::string> m_missed;
    // indirect branches
    std::unordered_map<Elf_Word, bt_per_section *> m_branches;
    // dual issues
@@ -698,7 +701,7 @@ int nv_dis::check_mod(char c, const NV_extracted &kv, const char* name, std::str
     default: return 0;
   }
   auto kvi = kv.find(mod_name);
-  if ( kvi == kv.end() ) return 0;
+  if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(mod_name); return 0; }
   if ( !kvi->second ) return 0;
   r += c;
   return 1;
@@ -710,7 +713,7 @@ int nv_dis::render_ve(const ve_base &ve, const struct nv_instr *i, const NV_extr
   if ( ve.type == R_value )
   {
     auto kvi = kv.find(ve.arg);
-    if ( kvi == kv.end() ) return 1;
+    if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(ve.arg); return 1; }
     auto vi = i->vas.find(ve.arg);
     if ( vi == i->vas.end() ) return 1;
     dump_value(i, kv, ve.arg, res, vi->second, kvi->second);
@@ -721,7 +724,7 @@ int nv_dis::render_ve(const ve_base &ve, const struct nv_instr *i, const NV_extr
   if ( ei == i->eas.end() ) return 1;
   const nv_eattr *ea = ei->second;
   auto kvi = kv.find(ve.arg);
-  if ( kvi == kv.end() ) return 1;
+  if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(ve.arg); return 1; }
   auto eid = ea->em->find(kvi->second);
   if ( eid != ea->em->end() )
     res += eid->second;
@@ -741,7 +744,7 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
     if ( ve.type == R_value )
     {
       auto kvi = kv.find(ve.arg);
-      if ( kvi == kv.end() ) { missed++; idx++; continue; }
+      if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(ve.arg); missed++; idx++; continue; }
       auto vi = i->vas.find(ve.arg);
       if ( vi == i->vas.end() ) { missed++; idx++; continue; }
       std::string tmp;
@@ -766,6 +769,7 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
     if ( kvi == kv.end() ) {
       kvi = kv.find(ea->ename);
       if ( kvi == kv.end() ) {
+        if ( opt_m ) m_missed.insert(ve.arg);
         missed++;
         continue;
       }
@@ -829,6 +833,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
         const render_named *rn = (const render_named *)ri;
         auto kvi = kv.find(rn->name);
         if ( kvi == kv.end() ) {
+          if ( opt_m ) m_missed.insert(rn->name);
           missed++;
           break;
         }
@@ -869,6 +874,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
          if ( kvi == kv.end() ) {
            kvi = kv.find(ea->ename);
            if ( kvi == kv.end() ) {
+             if ( opt_m ) m_missed.insert(rn->name);
              missed++;
              idx++;
              continue;
@@ -910,6 +916,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
          const nv_eattr *ea = ei->second;
          auto kvi = kv.find(rn->name);
          if ( kvi == kv.end() ) {
+           if ( opt_m ) m_missed.insert(rn->name);
            missed++;
            break;
          }
@@ -1065,7 +1072,7 @@ bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, 
       scond_succ++;
     }
     auto kiter = kv.find(cond.first);
-    if ( kiter == kv.end() ) continue;
+    if ( kiter == kv.end() ) { if ( opt_m ) m_missed.insert({cond.first.begin(), cond.first.end()}); continue; }
     out_res[cond.first] = (int)kiter->second;
     res++;
   }
@@ -1154,6 +1161,7 @@ bool nv_dis::check_dual(const NV_extracted &kv)
 
 void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
 {
+  m_missed.clear();
   fprintf(m_out, "%s line %d n %d", p.first->name, p.first->line, p.first->n);
   if ( p.first->brt ) fprintf(m_out, " %s", s_brts[p.first->brt-1]);
   if ( p.first->alt ) fprintf(m_out, " ALT");
@@ -1162,8 +1170,14 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
     fprintf(m_out, " %ld render items", rend->size());
     std::string r;
     int miss = render(rend, r, p.first, p.second, l);
-    if ( miss ) fprintf(m_out, " %d missed\n", miss);
-    else fputc('\n', m_out);
+    if ( miss ) {
+      fprintf(m_out, " %d missed", miss);
+      if ( opt_m ) {
+        fputc(':', m_out);
+        for ( auto &ms: m_missed ) fprintf(m_out, " %s", ms.c_str());
+      }
+    }
+    fputc('\n', m_out);
     // body of instruction
     fputc('>', m_out);
     if ( dual_first ) fputs(" {", m_out);
@@ -1445,6 +1459,7 @@ void usage(const char *prog)
   printf("Options:\n");
   printf("-e - dump attributes\n");
   printf("-h - hex dump\n");
+  printf("-m - dump missed fields\n");
   printf("-N - dump not found masks\n");
   printf("-o - output file\n");
   printf("-O - dump operands\n");
@@ -1462,11 +1477,12 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "ehrtNOpSs:o:");
+    c = getopt(argc, argv, "ehmrtNOpSs:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'e': opt_e = 1; break;
       case 'h': opt_h = 1; break;
+      case 'm': opt_m = 1; break;
       case 't': opt_t = 1; break;
       case 'O': opt_O = 1; break;
       case 'p': opt_p = 1; break;
