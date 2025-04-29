@@ -3216,6 +3216,30 @@ sub c_ccond_func
   return 's_ccond_' . $name;
 }
 
+# fcomp should be mapped to Test, ms to MS etc
+my %g_faliases = (
+  fcomp => 'Test',
+  ms => 'MS',
+  dc => 'DC',
+  paramA => 'ParamA',
+  cctlop => 'CCTLOp',
+  toff => 'TOFF1',
+  rgba => 'RGBA_NONE',
+  lod => 'LOD',
+  query => 'TXQMode',
+  ndp => 'NODEP',
+  vtgmode => 'VTGMode',
+);
+
+sub gen_aliased_extract
+{
+  my($f, $alias, $opt) = @_;
+  my $res = sprintf("int %s = 0; auto fi%s = kv.find(\"%s\"); if ( fi%s != kv.end() ) %s = fi%s->second; else\n", $f, $f, $f, $f, $f, $f);
+  $res .= sprintf(" { fi%s = kv.find(\"%s\"); if ( fi%s != kv.end() ) %s = fi%s->second;", $f, $alias, $f, $f, $f);
+  $res .= ' else return 0;' unless $opt;
+  return $res . "}\n";
+}
+
 # try translate condition function to c++
 sub try_convert_ccond
 {
@@ -3282,12 +3306,7 @@ sub try_convert_ccond
     $res .= sprintf("auto %s = %s(i, kv);\n", $k, c_ccond_func($k));
   }
   foreach my $f ( keys %fields ) {
-    # fcomp should be mapped to Test, ms to MS
-    my $fname = $f;
-    $fname = 'Test' if ( $f eq 'fcomp' );
-    $fname = 'MS' if ( $f eq 'ms' );
     if ( $fields{$f} > 0 ) {
-      $fname = 'DC' if ( $f eq 'dc' );
       # optional ?field - can be missed
       # e is very special case - there is no such encoding
       # instead they have enum E & LDG_E
@@ -3295,11 +3314,17 @@ sub try_convert_ccond
         $res .= " int e = 0; auto fie = kv.find(\"e\"); if ( fie != kv.end() ) e = fie->second;\n" .
 "else { fie = kv.find(\"E\"); if ( fie != kv.end() ) e = fie->second; \n" .
 "else { fie = kv.find(\"LDG_E\"); if ( fie != kv.end() ) e = fie->second; } }\n";
+      } elsif ( exists $g_faliases{$f} ) {
+        $res .= gen_aliased_extract($f, $g_faliases{$f}, 1);
       } else {
-        $res .= sprintf(" int %s = 0; auto fi%s = kv.find(\"%s\"); if ( fi%s != kv.end() ) %s = fi%s->second;\n", $f, $f, $fname, $f, $f, $f);
+        $res .= sprintf(" int %s = 0; auto fi%s = kv.find(\"%s\"); if ( fi%s != kv.end() ) %s = fi%s->second;\n", $f, $f, $f, $f, $f, $f);
       }
     } else {
-      $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s->second;\n", $f, $fname, $f, $f, $f);
+      if ( exists $g_faliases{$f} ) {
+        $res .= gen_aliased_extract($f, $g_faliases{$f}, 0);
+      } else {
+        $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s->second;\n", $f, $f, $f, $f, $f);
+      }
     }
   }
   $res .= 'return ' . $body . ';';
