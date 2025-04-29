@@ -466,6 +466,7 @@ class nv_dis
      std::string sm_name = "./";
      sm_name += smi->second.second ? smi->second.second : smi->second.first;
      sm_name += ".so";
+     printf("load %s\n", sm_name.c_str());
      void *dh = dlopen(sm_name.c_str(), RTLD_NOW);
      if ( !dh ) {
       fprintf(stderr, "cannot load %s, errno %d (%s)\n", sm_name.c_str(), errno, strerror(errno));
@@ -520,15 +521,15 @@ class nv_dis
    }
    bool check_dual(const NV_extracted &);
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
-   int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *);
+   int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *) const;
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    int fill_sched(const struct nv_instr *, const NV_extracted &);
    int dump_sched(const struct nv_instr *, const NV_extracted &);
    void dump_cond_list(const std::map<std::string_view, int> &) const;
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist);
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, std::map<std::string_view, int> &);
-   void dump_ops(const struct nv_instr *, const NV_extracted &);
-   void dump_predicates(const struct nv_instr *, const NV_extracted &);
+   void dump_ops(const struct nv_instr *, const NV_extracted &) const;
+   void dump_predicates(const struct nv_instr *, const NV_extracted &) const;
    int cmp(const std::string_view &, const char *) const;
    void dump_sv(const std::string_view &) const;
    bool contain(const std::string_view &, char) const;
@@ -557,13 +558,14 @@ class nv_dis
    // scheduling tracking, value - list of column indexes
    std::map<const NV_tab *, std::list< std::pair<short, std::map<std::string_view, int> > > > m_sched;
    // disasm stat
-   long dis_total = 0;
-   long dis_notfound = 0;
-   long dis_dups = 0;
-   long sfilters = 0;
-   long sfilters_succ = 0;
-   long scond_count = 0;
-   long scond_succ = 0;
+   mutable long
+    dis_total = 0,
+    dis_notfound = 0,
+    dis_dups = 0,
+    sfilters = 0,
+    sfilters_succ = 0,
+    scond_count = 0,
+    scond_succ = 0;
 };
 
 void nv_dis::dump_sv(const std::string_view &sv) const
@@ -815,7 +817,7 @@ bool nv_dis::check_branch(const struct nv_instr *i, const NV_extracted::const_it
   return true;
 }
 
-int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv, NV_labels *l)
+int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv, NV_labels *l) const
 {
   int idx = 0;
   int missed = 0;
@@ -993,7 +995,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
   return missed;
 }
 
-void nv_dis::dump_predicates(const struct nv_instr *i, const NV_extracted &kv)
+void nv_dis::dump_predicates(const struct nv_instr *i, const NV_extracted &kv) const
 {
   if ( !i->predicated ) return;
   for ( auto &pred: *i->predicated ) {
@@ -1012,7 +1014,7 @@ void nv_dis::dump_predicates(const struct nv_instr *i, const NV_extracted &kv)
   }
 }
 
-void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv)
+void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv) const
 {
   for ( auto kv1: kv )
   {
