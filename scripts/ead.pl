@@ -1543,7 +1543,7 @@ sub dump_values
       } else {
         dump_plain_value(extract_value($a, $mask), $mask, $op->[11], $kv);
       }
-    } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)(?:\s*SCALE\s+(\d+))?$/ ) {
+    } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)\s*(?:MULTIPLY\s+\d+)?(?:\s*SCALE\s+(\d+))?$/ ) {
       my $mask = $g_mnames{$1};
       my $scale;
       $scale = int($3) if defined($3);
@@ -2713,7 +2713,7 @@ sub gen_extr
         inl_extract2($fh, $1);
         $index++; next;
       }
-    } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)(?:\s*SCALE\s+(\d+))?$/ ) {
+    } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)\s*(?:MULTIPLY\s+\d+)?(?:\s*SCALE\s+(\d+))?$/ ) {
       if ( defined $3 ) {
         printf($fh "// %s to %s scale %s\n", $1, $2, $3);
       } else {
@@ -2757,6 +2757,8 @@ sub gen_extr
         }
       }
       $index++; next;
+    } else {
+      printf("unknown encoding %s\n", $m);
     }
   }
   # const bank
