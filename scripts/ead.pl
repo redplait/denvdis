@@ -3287,8 +3287,17 @@ sub try_convert_ccond
     $fname = 'Test' if ( $f eq 'fcomp' );
     $fname = 'MS' if ( $f eq 'ms' );
     if ( $fields{$f} > 0 ) {
+      $fname = 'DC' if ( $f eq 'dc' );
       # optional ?field - can be missed
-      $res .= sprintf(" int %s = 0; auto fi%s = kv.find(\"%s\"); if ( fi%s != kv.end() ) %s = fi%s->second;\n", $f, $f, $fname, $f, $f, $f);
+      # e is very special case - there is no such encoding
+      # instead they have enum E & LDG_E
+      if ( $f eq 'e' ) {
+        $res .= " int e = 0; auto fie = kv.find(\"e\"); if ( fie != kv.end() ) e = fie->second;\n" .
+"else { fie = kv.find(\"E\"); if ( fie != kv.end() ) e = fie->second; \n" .
+"else { fie = kv.find(\"LDG_E\"); if ( fie != kv.end() ) e = fie->second; } }\n";
+      } else {
+        $res .= sprintf(" int %s = 0; auto fi%s = kv.find(\"%s\"); if ( fi%s != kv.end() ) %s = fi%s->second;\n", $f, $f, $fname, $f, $f, $f);
+      }
     } else {
       $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s->second;\n", $f, $fname, $f, $f, $f);
     }
