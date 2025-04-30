@@ -12,7 +12,7 @@ use feature qw( switch );
 no warnings qw( experimental::smartmatch );
 
 # options
-use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_g $opt_i $opt_m $opt_N $opt_p $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_g $opt_i $opt_m $opt_N $opt_p $opt_P $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -31,7 +31,8 @@ Usage: $0 [options] md.txt
   -i - dump instructions formats
   -m - generate masks
   -N - test single bitmask from cmd-line
-  -p - parse predicated
+  -p - parse predicates
+  -P - use count_Pr for Pr field
   -r - fill in reverse order
   -t - dump tables
   -T - test file
@@ -3231,6 +3232,7 @@ my %g_faliases = (
   query => 'TXQMode',
   ndp => 'NODEP',
   vtgmode => 'VTGMode',
+  Pr => 'CCPR',
 );
 
 sub gen_aliased_extract
@@ -3346,11 +3348,17 @@ sub parse_known_ccond
   my($name, $body, $line) = @_;
   return $body if ( exists $g_used_ccond{$body} );
   my $cond_name = $body;
+  my $res;
   if ( $cond_name =~ /^Pr\b(.*)$/ ) {
     return $g_cc_pr{$cond_name} if ( exists $g_cc_pr{$cond_name} );
     # make new ccond where Pr replaced with count_Pr static function
     my $name = 'Pr' . $g_cc_pr_next++;
-    my $res = sprintf("return i->count_Pr() %s;", $1);
+    if ( defined($opt_P) ) {
+      $res = sprintf("return i->count_Pr() %s;", $1);
+    } else {
+      $res = " auto fiPr = kv.find(\"CCPR\"); if ( fiPr == kv.end() ) return 0; auto Pr = fiPr->second;\n";
+      $res .= sprintf(" return Pr %s;", $1);
+    }
     $g_used_ccond{$name} = $res;
     $g_cc_pr{$cond_name} = $name;
     return $name;
@@ -3358,7 +3366,7 @@ sub parse_known_ccond
   if ( $cond_name =~ /^vtgmode\b(.*)$/ ) {
     return $g_cc_pr{$cond_name} if ( exists $g_cc_pr{$cond_name} );
     # vtgmode has field VTGMode
-    my $res = " auto fivtg = kv.find(\"VTGMode\"); if ( fivtg == kv.end() ) return 0; auto vtgmode = fivtg->second;\n";
+    $res = " auto fivtg = kv.find(\"VTGMode\"); if ( fivtg == kv.end() ) return 0; auto vtgmode = fivtg->second;\n";
     $res .= sprintf(" return vtgmode %s;", $1);
     my $name = 'vtg' . $g_cc_pr_next++;
     $g_used_ccond{$name} = $res;
@@ -3373,7 +3381,7 @@ sub parse_known_ccond
   if ( $cond_name eq '?xmode' ) {
     $cond_name = 'xmode';
     return $cond_name if ( exists $g_used_ccond{$cond_name} );
-    my $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s->second;\n",
+    $res .= sprintf(" auto fi%s = kv.find(\"%s\"); if ( fi%s == kv.end() ) return 0; auto %s = fi%s->second;\n",
      $cond_name, 'X', $cond_name, $cond_name, $cond_name);
     $res .= 'return ' . $cond_name . ";\n";
     $g_used_ccond{$cond_name} = $res;
@@ -4170,7 +4178,7 @@ sub read_groups
 }
 
 ### main
-my $status = getopts("abBcefFgimprtvwzT:N:C:");
+my $status = getopts("abBcefFgimpPrtvwzT:N:C:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
