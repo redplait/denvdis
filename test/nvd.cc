@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <map>
+#include <list>
 #include <unordered_map>
 #include <unordered_set>
 #include <dlfcn.h>
@@ -503,7 +504,8 @@ class nv_dis
      if ( dis_total )
        fprintf(m_out, "total %ld, not_found %ld, dups %ld\n", dis_total, dis_notfound, dis_dups);
      if ( opt_S )
-       fprintf(m_out, "filters %ld success %ld, conditions %ld (%ld)\n", sfilters, sfilters_succ, scond_count, scond_succ);
+       fprintf(m_out, "filters %ld success %ld, conditions %ld (%ld) cached %ld\n",
+         sfilters, sfilters_succ, scond_count, scond_succ, scond_hits);
    }
   protected:
    typedef std::pair<const struct nv_instr *, NV_extracted> NV_pair;
@@ -527,7 +529,7 @@ class nv_dis
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    int fill_sched(const struct nv_instr *, const NV_extracted &);
    int dump_sched(const struct nv_instr *, const NV_extracted &);
-   void dump_cond_list(const NV_Tabset &) const;
+   void dump_cond_list(const NV_Tabset *) const;
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist);
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, NV_Tabset &);
    void dump_ops(const struct nv_instr *, const NV_extracted &) const;
@@ -558,7 +560,8 @@ class nv_dis
    bool dual_first = false;
    bool dual_last = false;
    // scheduling tracking, value - list of column indexes
-   std::map<const NV_tab *, std::list< std::pair<short, NV_Tabset> > > m_sched;
+   std::unordered_map<const NV_tab *, std::list< std::pair<short, NV_Tabset *> > > m_sched;
+   std::list<NV_Tabset> m_cached_tabsets;
    // disasm stat
    mutable long
     dis_total = 0,
@@ -567,7 +570,8 @@ class nv_dis
     sfilters = 0,
     sfilters_succ = 0,
     scond_count = 0,
-    scond_succ = 0;
+    scond_succ = 0,
+    scond_hits = 0;
 };
 
 void nv_dis::dump_sv(const std::string_view &sv) const
@@ -1086,6 +1090,8 @@ bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, 
 int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
 {
   m_sched.clear();
+  m_cached_tabsets.clear();
+  std::unordered_map< const NV_cond_list *, NV_Tabset *> cached;
   if ( !i->cols ) return 0;
   int res = 0;
   for ( auto &titer: *i->cols ) {
@@ -1094,25 +1100,43 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
       if ( !titer.filter(i, kv) ) continue;
       sfilters_succ++;
     }
-    // check tab.cols[titer.idx].second for condition
-    NV_Tabset row_res;
-    if ( !check_sched_cond(i, kv, titer.tab->cols[titer.idx], row_res) ) continue;
+    NV_Tabset *tset = nullptr;
+    // check in cache
+    auto cres = cached.find( titer.tab->cols[titer.idx].second );
+    if ( cres != cached.end() ) {
+      scond_hits++;
+      if ( !cres->second ) continue;
+      tset = cres->second;
+    } else {
+      // check tab.cols[titer.idx].second for condition
+      NV_Tabset row_res;
+      if ( !check_sched_cond(i, kv, titer.tab->cols[titer.idx], row_res) ) {
+        if ( titer.tab->cols[titer.idx].second )
+          cached[ titer.tab->cols[titer.idx].second ] = nullptr; // store bad result in cache too
+        continue;
+      }
+      // put row_res to m_cached_tabsets
+      m_cached_tabsets.push_back( std::move(row_res) );
+      tset = &m_cached_tabsets.back();
+      if ( titer.tab->cols[titer.idx].second )
+        cached[ titer.tab->cols[titer.idx].second ] = tset; // store res in cache
+    }
     auto ct = m_sched.find(titer.tab);
     if ( ct == m_sched.end() )
-      m_sched[titer.tab] = { { titer.idx, std::move(row_res) } };
+      m_sched[titer.tab] = { { titer.idx, tset } };
     else
-      ct->second.push_back( { titer.idx, std::move(row_res) });
+      ct->second.push_back( { titer.idx, tset });
     res++;
   }
   return res;
 }
 
-void nv_dis::dump_cond_list(const NV_Tabset &cset) const
+void nv_dis::dump_cond_list(const NV_Tabset *cset) const
 {
-  if ( cset.empty() ) return;
+  if ( cset->empty() ) return;
   int latch = 0;
   fputc('{', m_out);
-  for ( auto &i: cset ) {
+  for ( auto &i: *cset ) {
     if ( latch ) fputc(' ', m_out);
     latch |= 1;
     dump_sv(i.first);
@@ -1125,6 +1149,7 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
 {
   if ( !i->rows ) return 0;
   int res = 0;
+  std::unordered_map< const NV_cond_list *, NV_Tabset *> cached;
   for ( auto &titer: *i->rows ) {
     auto ci = m_sched.find(titer.tab);
     if ( ci == m_sched.end() ) continue;
@@ -1133,8 +1158,26 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
       if ( !titer.filter(i, kv) ) continue;
       sfilters_succ++;
     }
-    NV_Tabset row_res;
-    if ( !check_sched_cond(i, kv, titer.tab->rows[titer.idx], row_res) ) continue;
+    NV_Tabset *tset = nullptr;
+    // check in cache
+    auto cres = cached.find( titer.tab->rows[titer.idx].second );
+    if ( cres != cached.end() ) {
+      scond_hits++;
+      if ( !cres->second ) continue;
+      tset = cres->second;
+    } else {
+      NV_Tabset row_res;
+      if ( !check_sched_cond(i, kv, titer.tab->rows[titer.idx], row_res) ) {
+        if ( titer.tab->rows[titer.idx].second )
+          cached[ titer.tab->rows[titer.idx].second ] = nullptr; // store bad result in cache too
+        continue;
+      }
+      // put row_res to m_cached_tabsets
+      m_cached_tabsets.push_back( std::move(row_res) );
+      tset = &m_cached_tabsets.back();
+      if ( titer.tab->rows[titer.idx].second )
+        cached[ titer.tab->rows[titer.idx].second ] = tset; // store res in cache
+    }
     // we have titer.tab & titer.idx for row and
     // ci->list of table columns
     for ( auto cidx: ci->second ) {
@@ -1143,7 +1186,7 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
       fprintf(m_out, "S> tab %s %s row %d", ci->first->name, ci->first->connection, titer.idx);
       auto row_name = ci->first->rows[titer.idx].first;
       if ( row_name ) fprintf(m_out, " (%s)", row_name);
-      dump_cond_list(row_res);
+      dump_cond_list(tset);
       fprintf(m_out, " col %d", cidx.first);
       auto col_name = ci->first->cols[cidx.first].first;
       if ( col_name ) fprintf(m_out, " (%s)", col_name);
