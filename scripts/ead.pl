@@ -2759,7 +2759,7 @@ sub gen_extr
       }
       $index++; next;
     } else {
-      printf("unknown encoding %s\n", $m);
+      printf("unknown encoding %s for %s line %d\n", $m, $op->[1], $op->[4]);
     }
   }
   # const bank
@@ -3359,6 +3359,16 @@ sub parse_known_ccond
       $res = " auto fiPr = kv.find(\"CCPR\"); if ( fiPr == kv.end() ) return 0; auto Pr = fiPr->second;\n";
       $res .= sprintf(" return Pr %s;", $1);
     }
+    $g_used_ccond{$name} = $res;
+    $g_cc_pr{$cond_name} = $name;
+    return $name;
+  }
+  if ( $cond_name =~ /^xmode\b(.*)$/ ) {
+    return $g_cc_pr{$cond_name} if ( exists $g_cc_pr{$cond_name} );
+    # xmode has field X
+    $res = " auto fix = kv.find(\"X\"); if ( fix == kv.end() ) return 0; auto xmode = fix->second;\n";
+    $res .= sprintf(" return xmode %s;", $1);
+    my $name = 'xmode' . $g_cc_pr_next++;
     $g_used_ccond{$name} = $res;
     $g_cc_pr{$cond_name} = $name;
     return $name;
