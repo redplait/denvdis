@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <map>
+#include <unordered_map>
 #include <unordered_set>
 #include <dlfcn.h>
 #include <getopt.h>
@@ -507,6 +508,7 @@ class nv_dis
   protected:
    typedef std::pair<const struct nv_instr *, NV_extracted> NV_pair;
    typedef std::vector<NV_pair> NV_res;
+   typedef std::unordered_map<std::string_view, int> NV_Tabset;
    void try_dis(Elf_Word idx);
    void hdump_section(section *);
    void dump_mrelocs(section *);
@@ -525,9 +527,9 @@ class nv_dis
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    int fill_sched(const struct nv_instr *, const NV_extracted &);
    int dump_sched(const struct nv_instr *, const NV_extracted &);
-   void dump_cond_list(const std::map<std::string_view, int> &) const;
+   void dump_cond_list(const NV_Tabset &) const;
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist);
-   bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, std::map<std::string_view, int> &);
+   bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, NV_Tabset &);
    void dump_ops(const struct nv_instr *, const NV_extracted &) const;
    void dump_predicates(const struct nv_instr *, const NV_extracted &) const;
    int cmp(const std::string_view &, const char *) const;
@@ -556,7 +558,7 @@ class nv_dis
    bool dual_first = false;
    bool dual_last = false;
    // scheduling tracking, value - list of column indexes
-   std::map<const NV_tab *, std::list< std::pair<short, std::map<std::string_view, int> > > > m_sched;
+   std::map<const NV_tab *, std::list< std::pair<short, NV_Tabset> > > m_sched;
    // disasm stat
    mutable long
     dis_total = 0,
@@ -1058,12 +1060,12 @@ static const char *s_brts[4] = {
 
 bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist)
 {
-  std::map<std::string_view, int> tmp;
+  NV_Tabset tmp;
   return check_sched_cond(i, kv, clist, tmp);
 }
 
 bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist,
- std::map<std::string_view, int> &out_res)
+ NV_Tabset &out_res)
 {
   if ( !clist.second || clist.second->empty() ) return true;
   int res = 0;
@@ -1093,7 +1095,7 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
       sfilters_succ++;
     }
     // check tab.cols[titer.idx].second for condition
-    std::map<std::string_view, int> row_res;
+    NV_Tabset row_res;
     if ( !check_sched_cond(i, kv, titer.tab->cols[titer.idx], row_res) ) continue;
     auto ct = m_sched.find(titer.tab);
     if ( ct == m_sched.end() )
@@ -1105,7 +1107,7 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
   return res;
 }
 
-void nv_dis::dump_cond_list(const std::map<std::string_view, int> &cset) const
+void nv_dis::dump_cond_list(const NV_Tabset &cset) const
 {
   if ( cset.empty() ) return;
   int latch = 0;
@@ -1131,7 +1133,7 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
       if ( !titer.filter(i, kv) ) continue;
       sfilters_succ++;
     }
-    std::map<std::string_view, int> row_res;
+    NV_Tabset row_res;
     if ( !check_sched_cond(i, kv, titer.tab->rows[titer.idx], row_res) ) continue;
     // we have titer.tab & titer.idx for row and
     // ci->list of table columns
