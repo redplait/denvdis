@@ -105,6 +105,8 @@ my %Tabs = (
 
 # global enums hash map - like Tabs but readed dynamically
 my %g_enums;
+# reverse enums, key is int value, value is string name
+my %g_renums;
 # enums with only value
 my %g_single_enums;
 # used enums
@@ -167,30 +169,45 @@ sub get_enc_enum
   $er->{$vname};
 }
 
-# args: ref to currently constructed enum, name of enum, line
+# args: ref to currently constructed enum, ref to reverse enum, name of enum to add, line
 sub merge_enum
 {
-  my($er, $name, $line) = @_;
+  my($er, $err, $name, $line) = @_;
   if ( !exists $g_enums{$name} ) {
     printf("unknown enum %s to merge on line %d\n", $name, $line);
     return 0;
   }
+  if ( !exists $g_renums{$name} ) {
+    printf("unknown reverse enum %s to merge on line %d\n", $name, $line);
+    return 0;
+  }
+  # add to er
   my $em = $g_enums{$name};
   keys %$em;
   while( my($n, $v) = each %$em ) {
     $er->{$n} //= $v;
   }
+  # add to err
+  $em = $g_renums{$name};
+  keys %$em;
+  while( my($n, $v) = each %$em ) {
+    $err->{$n} //= $v;
+  }
   return 1;
 }
 
-# in parallel universe we could make reverse hash value->name
-# args: ref to enum hashmap, value to find
+# args: ref to enum hashmap or name of enum, value to find
 sub enum_by_value
 {
   my($hr, $val) = @_;
-  keys %$hr;
-  while( my($n, $v) = each %$hr ) {
-    return $n if ( $val == $v );
+  if ( !ref $hr ) {
+    my $err = $g_renums{$hr};
+    return $err->{$val} if exists $err->{$val};
+  } else {
+    keys %$hr;
+    while( my($n, $v) = each %$hr ) {
+      return $n if ( $val == $v );
+    }
   }
   undef;
 }
@@ -1294,13 +1311,11 @@ sub filter_ins
       if ( 'ARRAY' eq ref($row) ) {
         for ( my $i = 0; $i < scalar @$row; $i++ ) {
           next unless defined($f->[4 + $i]);
-          my $e = $g_enums{ $f->[4 + $i] };
           # check that enum in row[$i] exists
-          return 0 unless ( defined enum_by_value($e, $row->[$i]) );
+          return 0 unless ( defined enum_by_value($f->[4 + $i], $row->[$i]) );
         }
       } else {
-        my $e = $g_enums{ $f->[4] };
-        return 0 unless ( defined enum_by_value($e, $row) );
+        return 0 unless ( defined enum_by_value($f->[4], $row) );
       }
     }
   }
@@ -1459,7 +1474,7 @@ sub dump_plain_value
     printf("   %s(", $mask->[0]);
     if ( exists $mae->{$mask->[0]} ) {
       my $e = $mae->{$mask->[0]};
-      my $s = enum_by_value($g_enums{$e->[0]}, $v);
+      my $s = enum_by_value($e->[0], $v);
       if ( defined $s ) {
         printf("%X) %s\n", $v,$s);
         $kv->{$fn} = [ $v, $s ] if defined($fn);
@@ -1621,7 +1636,7 @@ sub ignore_enum
   if ( 'ARRAY' ne ref $v ) {
   printf("%s %d: single %d vs %d\n", $ae->[0], $ae->[1], $v, $ae->[2]) if defined($opt_v);
     return [ 0, '' ] if ( $v == $ae->[2] ); # default value
-    my $ev = enum_by_value($g_enums{$ae->[0]}, $v);
+    my $ev = enum_by_value($ae->[0], $v);
     return [ 1, $res . $ev ] if ( defined ( $ev ) );
     return;
   }
@@ -1713,7 +1728,7 @@ sub format_enum
     if ( defined($v) ) {
       $sv = '.' if $ae->[1];
       return $sv . $v->[1] if ( 'ARRAY' eq ref $v );
-      my $ev = enum_by_value($g_enums{$ae->[0]}, $v);
+      my $ev = enum_by_value($ae->[0], $v);
       if ( defined $ev ) { $sv .= $ev; }
       else { $sv = ''; }
     }
@@ -1812,7 +1827,7 @@ sub make_inst
          }
         }
         if ( 'ARRAY' ne ref $v ) {
-          my $ev = enum_by_value($g_enums{$ae->[0]}, $v);
+          my $ev = enum_by_value($ae->[0], $v);
           if ( defined $ev ) { $res .= $ev; }
           else {
             printf("cannot find value %d for enum %s\n", $v, $ae->[0]);
@@ -2488,14 +2503,9 @@ sub gen_enums
   printf($fh "// ---- enums\n");
   foreach my $ename ( keys %g_used_enums ) {
     printf($fh "NV_ENUM(%s) = {\n", c_enum_name($ename));
-    my %cenum;
-    # make copy
-    my $oe = $g_enums{$ename};
-    while( my($k, $v) = each %$oe ) {
-      $cenum{$v} = $k;
-    }
-    foreach my $i ( sort keys %cenum ) {
-      printf($fh " { %d, \"%s\" },\n", $i, $cenum{$i} );
+    my $renum = $g_renums{$ename};
+    foreach my $i ( sort {$a <=> $b} keys %$renum ) {
+      printf($fh " { %d, \"%s\" },\n", $i, $renum->{$i} );
     }
     printf($fh "};\n");
   }
@@ -4227,8 +4237,8 @@ my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @multi_ops, @cb, @flist
 # tref is ref to hash with table content
 my($curr_tab, $tref);
 
-# enum state
-my($curr_enum, $eref, $e_name);
+# enum state, erref - ref to reverse enum hash
+my($curr_enum, $eref, $erref, $e_name);
 # 0 - don't parse, 1 - expect start of enum, 2 - continue with next line, 3 - expect start of table, 4 - next line for table
 my $estate = 0;
 
@@ -4252,20 +4262,26 @@ my $parse_pair = sub {
   return 0 if ( $s eq '' );
   # simplest case - just some enum
   if ( $s =~ /^\"?([\w\.]+)\"?$/ ) {
-    $eref->{$1} = $curr_enum++;
+    $eref->{$1} = $curr_enum;
+    $erref->{$curr_enum} //= $1;
+    $curr_enum++;
     return 1;
   }
   # enum = 0b
   if ( $s =~ /^\"?([\w\.]+)\"?\s*=\s*0b(\w+)$/ ) {
     my $name = $1;
     $curr_enum = parse0b($2);
-    $eref->{$1} = $curr_enum++;
+    $eref->{$1} = $curr_enum;
+    $erref->{$curr_enum} //= $1;
+    $curr_enum++;
     return 1;
   }
   # enum = number
   if ( $s =~ /^\"?([\w\.]+)\"?\s*=\s*(\d+)$/ ) {
     $curr_enum = int($2);
-    $eref->{$1} = $curr_enum++;
+    $eref->{$1} = $curr_enum;
+    $erref->{$curr_enum} //= $1;
+    $curr_enum++;
     return 1;
   }
   # enum $1 (from $2 .. to $3)
@@ -4275,7 +4291,9 @@ my $parse_pair = sub {
     my $to = int($3);
     for ( my $i = $from; $i <= $to; $i++ ) {
       my $ename = $name . $i;
-      $eref->{$ename} = $curr_enum++;
+      $eref->{$ename} = $curr_enum;
+      $erref->{$curr_enum} //= $ename;
+      $curr_enum++;
     }
     return 1;
   }
@@ -4293,12 +4311,14 @@ my $parse_pair = sub {
     $curr_enum = $ifrom;
     for ( my $i = $from; $i <= $to; $i++ ) {
       my $ename = $name . $i;
-      $eref->{$ename} = $curr_enum++;
+      $eref->{$ename} = $curr_enum;
+      $erref->{$curr_enum} //= $ename;
+      $curr_enum++;
     }
     return 1;
   }
- printf("bad enum %s on line %d\n", $s, $line);
- 0;
+  printf("bad enum %s on line %d\n", $s, $line);
+  0;
 };
 my $parse_enum = sub {
   my $s = shift;
@@ -4737,29 +4757,32 @@ while( $str = <$fh> ) {
     if ( 1 == $estate ) {
       $str =~ s/^\s*//; $str =~ s/\s*$//;
       if ( $str =~ /^([\w\.]+)$/ ) {
-        my %tmp;
+        my(%tmp, %rtmp);
         $e_name = $1;
         $eref = $g_enums{$1} = \%tmp;
+        $erref = $g_renums{$1} = \%rtmp;
         $estate = 2;
         next;
       }
       # compound enum like name = e1 + ...;
       if ( $str =~ /^(\w+)\s*=(.*);$/ ) {
-        my %tmp;
+        my(%tmp, %rtmp);
         $e_name = $1;
         $eref = $g_enums{$1} = \%tmp;
+        $erref = $g_renums{$1} = \%rtmp;
         $str = $2;
         foreach my $cname ( split /\s*\+\s*/, $str ) {
           $cname =~ s/^\s*//;
-          merge_enum($eref, $cname, $line);
+          merge_enum($eref, $erref, $cname, $line);
         }
         $reset_enum->();
         next;
       }
       if ( $str =~ /^([\w\.]+)\s+(.*)\s*;?/ ) {
-        my %tmp;
+        my(%tmp, %rtmp);
         $e_name = $1;
         $eref = $g_enums{$1} = \%tmp;
+        $erref = $g_renums{$1} = \%rtmp;
         $parse_enum->($2);
         if ( $str =~ /\;$/ ) {
           $reset_enum->();
