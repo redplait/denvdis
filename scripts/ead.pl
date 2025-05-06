@@ -3056,6 +3056,11 @@ sub gen_preds
 sub gen_instr
 {
   my $fh = shift;
+  my $write = sub {
+    my $what = shift;
+    if ( defined $what ) { printf($fh "&%s,\n", $what); }
+    else { printf($fh " nullptr,\n"); }
+  };
   my %cached_ae;
   while( my($m, $list) = each %g_masks) {
     printf($fh "//%s\n", $m);
@@ -3067,7 +3072,7 @@ sub gen_instr
         gen_ae($fh, $ae, $ename);
         $cached_ae{$ename} = 1;
       }
-      # predicated
+      # predicates
       my $pred_name = gen_preds($fh, $op);
       # filter
       my $op_filter = gen_filter($op, $fh);
@@ -3122,14 +3127,11 @@ sub gen_instr
         printf($fh "0, 0, 0, nullptr, nullptr, nullptr,\n");
       }
       # predicates
-      if ( defined $pred_name ) { printf($fh "&%s,\n", $pred_name); }
-      else { printf($fh " nullptr,\n"); }
+      $write->($pred_name);
       # vf_conv
-      if ( defined $conv_name ) { printf($fh "&%s,\n", $conv_name); }
-      else { printf($fh " nullptr,\n"); }
+      $write->($conv_name);
       # vwidth
-      if ( defined $width_name ) { printf($fh "&%s,\n", $width_name); }
-      else { printf($fh " nullptr,\n"); }
+      $write->($width_name);
       # vas
       if ( defined $op->[18] ) {
         printf($fh " {");
@@ -3149,8 +3151,7 @@ sub gen_instr
       }
       printf($fh "}, %s, %s,\n", $op_filter, $op_extr);
       # rows
-      if ( defined $rname ) { printf($fh "&%s,\n", $rname); }
-      else { printf($fh " nullptr,\n"); }
+      $write->($rname);
       # cols
       if ( defined $cname ) { printf($fh "&%s\n", $cname); }
       else { printf($fh " nullptr\n"); }
