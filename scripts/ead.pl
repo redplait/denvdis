@@ -3034,6 +3034,50 @@ sub gen_pred_func
   $res;
 }
 
+my(%cached_vas, %cached_width);
+sub form_vas
+{
+  my($fh, $op) = @_;
+  return unless defined($op->[18]);
+  my $vlist = $op->[18];
+  my $res; # form key string
+  foreach my $vv ( sort keys %$vlist ) {
+    my $vas = $vlist->{$vv};
+    $res .= $vv . '@' . $vas->[0];
+    if ( defined $vas->[1] ) { $res .= '_1' };
+  }
+  return $cached_vas{$res} if exists($cached_vas{$res});
+  # make name of new vas
+  my $name = 's_vas' . $op->[19];
+  # store it in cache
+  $cached_vas{$res} = $name;
+  # dump vas
+  printf($fh "const std::unordered_map<std::string_view, const nv_vattr> %s = {\n", $name);
+  while( my($v, $vf) = each %$vlist ) {
+    printf($fh " {\"%s\", { %s, %s}},", $v, 'NV_' . $vf->[0], defined($vf->[1]) ? 'true' : 'false');
+  }
+  printf($fh "};\n");
+  $name;
+}
+sub form_width
+{
+  my($fh, $op, $vw) = @_;
+  return unless ( keys %$vw );
+  my $res; # form key string
+  foreach my $w ( sort keys %$vw ) {
+    $res .= $w . $vw->{$w};
+  }
+  return $cached_width{$res} if exists($cached_width{$res});
+  my $width_name = 's_width_' . $op->[19];
+  # store it in cache
+  $cached_width{$res} = $width_name;
+  printf($fh "static const NV_width %s = { // %d widths\n", $width_name, scalar keys %$vw);
+  while( my($v, $w) = each %$vw ) {
+    printf($fh " {\"%s\", %d },\n", $v, $w);
+  }
+  printf($fh "};\n");
+  $width_name;
+}
 sub gen_preds
 {
   my($fh, $op) = @_;
@@ -3072,6 +3116,8 @@ sub gen_instr
         gen_ae($fh, $ae, $ename);
         $cached_ae{$ename} = 1;
       }
+      # vas
+      my $vas = form_vas($fh, $op);
       # predicates
       my $pred_name = gen_preds($fh, $op);
       # filter
@@ -3086,15 +3132,7 @@ sub gen_instr
       # render
       gen_render($op, $fh);
       # vwidth
-      my $width_name;
-      if ( keys %vw ) {
-        $width_name = 'width_' . $op->[19];
-        printf($fh "static const NV_width %s = { // %d widths\n", $width_name, scalar keys %vw);
-        while( my($v, $w) = each %vw ) {
-          printf($fh " {\"%s\", %d },\n", $v, $w);
-        }
-        printf($fh "};\n");
-      }
+      my $width_name = form_width($fh, $op, \%vw);
       # vf_conv
       my $conv_name;
       my @fconv = keys %fc;
@@ -3133,16 +3171,7 @@ sub gen_instr
       # vwidth
       $write->($width_name);
       # vas
-      if ( defined $op->[18] ) {
-        printf($fh " {");
-        my $vlist = $op->[18];
-        while( my($v, $vf) = each %$vlist ) {
-          printf($fh " {\"%s\", { %s, %s}},", $v, 'NV_' . $vf->[0], defined($vf->[1]) ? 'true' : 'false');
-        }
-        printf($fh "}, // values formats\n");
-      } else {
-        printf($fh " {}, // no values\n");
-      }
+      $write->($vas);
       # dump enum attrs
       printf($fh " {");
       foreach my $ae ( values %{ $op->[17] } ) {

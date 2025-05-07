@@ -124,17 +124,7 @@ struct nv_instr {
  const NV_Preds *predicated;
  const NV_conv *vf_conv;
  const NV_width *vwidth;
- // why vas is not pointer? well, while sm3 & 4 has lots of instructions with no values in general it looks like
- // grep -c "no values" sm*.cc
- // sm100.cc:0
- // sm120.cc:1
- // sm3.cc:170
- // sm4.cc:180
- // sm55.cc:0
- // sm5.cc:0
- // sm86.cc:1
- // sm90.cc:1
- const std::unordered_map<std::string_view, const nv_vattr> vas;
+ const std::unordered_map<std::string_view, const nv_vattr> *vas;
  const std::unordered_map<std::string_view, const nv_eattr *> eas;
  nv_filter filter;
  nv_extract extract;
