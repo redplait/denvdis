@@ -508,6 +508,7 @@ class nv_dis
          sfilters, sfilters_succ, scond_count, scond_succ, scond_hits);
    }
   protected:
+   typedef const NV_tabrefs * nv_instr::*Tab_field;
    typedef std::pair<const struct nv_instr *, NV_extracted> NV_pair;
    typedef std::vector<NV_pair> NV_res;
    typedef std::unordered_map<std::string_view, int> NV_Tabset;
@@ -637,8 +638,10 @@ const nv_eattr *nv_dis::try_by_ename(const struct nv_instr *ins, const std::stri
 {
   if ( contain(sv, '@') ) return nullptr;
   // check in values
-  auto vi = ins->vas.find(sv);
-  if ( vi != ins->vas.end() ) return nullptr;
+  if ( ins->vas ) {
+    auto vi = ins->vas->find(sv);
+    if ( vi != ins->vas->end() ) return nullptr;
+  }
   for ( auto ei: ins->eas ) {
     if ( cmp(sv, ei.second->ename) ) return ei.second;
   }
@@ -722,8 +725,9 @@ int nv_dis::render_ve(const ve_base &ve, const struct nv_instr *i, const NV_extr
   {
     auto kvi = kv.find(ve.arg);
     if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(ve.arg); return 1; }
-    auto vi = i->vas.find(ve.arg);
-    if ( vi == i->vas.end() ) return 1;
+    if ( !i->vas ) return 1;
+    auto vi = i->vas->find(ve.arg);
+    if ( vi == i->vas->end() ) return 1;
     dump_value(i, kv, ve.arg, res, vi->second, kvi->second);
     return 0;
   }
@@ -753,8 +757,9 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
     {
       auto kvi = kv.find(ve.arg);
       if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(ve.arg); missed++; idx++; continue; }
-      auto vi = i->vas.find(ve.arg);
-      if ( vi == i->vas.end() ) { missed++; idx++; continue; }
+      if ( !i->vas ) { missed++; idx++; continue; }
+      auto vi = i->vas->find(ve.arg);
+      if ( vi == i->vas->end() ) { missed++; idx++; continue; }
       std::string tmp;
       dump_value(i, kv, ve.arg, tmp, vi->second, kvi->second);
       if ( tmp == "0" && idx ) { idx++; continue; } // ignore +0
@@ -804,8 +809,9 @@ bool nv_dis::check_branch(const struct nv_instr *i, const NV_extracted::const_it
 {
   if ( !i->brt || !i->target_index ) {
     // BSSY has type RSImm
-    auto vi = i->vas.find(kvi->first);
-    if ( vi == i->vas.end() ) return false;
+    if ( !i->vas ) return false;
+    auto vi = i->vas->find(kvi->first);
+    if ( vi == i->vas->end() ) return false;
     if ( vi->second.kind != NV_RSImm ) return false;
   } else {
     if ( kvi->first != i->target_index ) return false;
@@ -845,11 +851,9 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
           missed++;
           break;
         }
-        auto vi = i->vas.find(rn->name);
-        if ( vi == i->vas.end() ) {
-          missed++;
-          break;
-        }
+        if ( !i->vas ) { missed++; break; }
+        auto vi = i->vas->find(rn->name);
+        if ( vi == i->vas->end() ) { missed++; break; }
         if ( vi->second.kind == NV_BITSET && !strncmp(rn->name, "req_", 4) ) was_bs = 1;
         long branch_off = 0;
         if ( check_branch(i, kvi, branch_off) ) {
@@ -1026,12 +1030,14 @@ void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv) const
   {
     std::string name(kv1.first.begin(), kv1.first.end());
     // check in values
-    auto vi = i->vas.find(kv1.first);
-    if ( vi != i->vas.end() ) {
-      std::string buf;
-      dump_value(i, kv, kv1.first, buf, vi->second, kv1.second);
-      fprintf(m_out, " V %s: %s type %d\n", name.c_str(), buf.c_str(), vi->second.kind);
-      continue;
+    if ( i->vas ) {
+      auto vi = i->vas->find(kv1.first);
+      if ( vi != i->vas->end() ) {
+        std::string buf;
+        dump_value(i, kv, kv1.first, buf, vi->second, kv1.second);
+        fprintf(m_out, " V %s: %s type %d\n", name.c_str(), buf.c_str(), vi->second.kind);
+        continue;
+      }
     }
     // check in enums
     const nv_eattr *ea = nullptr;
