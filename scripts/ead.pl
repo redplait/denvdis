@@ -3073,8 +3073,8 @@ sub form_width
   # store it in cache
   $cached_width{$res} = $width_name;
   printf($fh "static const NV_width %s = { // %d widths\n", $width_name, scalar keys %$vw);
-  while( my($v, $w) = each %$vw ) {
-    printf($fh " {\"%s\", %d },\n", $v, $w);
+  foreach my $v ( sort keys %$vw ) {
+    printf($fh " {\"%s\", %d },\n", $v, $vw->{$v});
   }
   printf($fh "};\n");
   $width_name;

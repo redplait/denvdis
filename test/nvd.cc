@@ -839,11 +839,11 @@ bool nv_dis::check_branch(const struct nv_instr *i, const NV_extracted::const_it
   // find width
 //printf("try to find target_index %s value %lX\n", i->target_index, kvi->second);
   if ( !i->vwidth ) return false;
-  auto wi = i->vwidth->find(kvi->first);
-  if ( wi == i->vwidth->end() ) return false;
+  auto wi = find(*i->vwidth, kvi->first);
+  if ( !wi ) return false;
   // yes, this is some imm for branch, check if it negative
-  if ( kvi->second & (1L << (wi->second - 1)) )
-    res = kvi->second - (1L << wi->second);
+  if ( kvi->second & (1L << (wi->w - 1)) )
+    res = kvi->second - (1L << wi->w);
   else
     res = (long)kvi->second;
   return true;
