@@ -3052,7 +3052,7 @@ sub form_vas
   # store it in cache
   $cached_vas{$res} = $name;
   # dump vas
-  printf($fh "const std::unordered_map<std::string_view, const nv_vattr> %s = {\n", $name);
+  printf($fh "static const std::unordered_map<std::string_view, const nv_vattr> %s = {\n", $name);
   while( my($v, $vf) = each %$vlist ) {
     printf($fh " {\"%s\", { %s, %s}},", $v, 'NV_' . $vf->[0], defined($vf->[1]) ? 'true' : 'false');
   }

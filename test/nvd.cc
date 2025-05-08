@@ -524,6 +524,10 @@ class nv_dis
      m_branches[i] = res;
      return res;
    }
+   template <typename T, typename I>
+   const T& get_it(const std::initializer_list<T>& list, I index) {
+     return *(list.begin() + index);
+   }
    bool check_dual(const NV_extracted &);
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
    int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *) const;
@@ -1108,7 +1112,7 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
     }
     NV_Tabset *tset = nullptr;
     // check in cache
-    auto cres = cached.find( titer.tab->cols[titer.idx].second );
+    auto cres = cached.find( get_it(titer.tab->cols, titer.idx).second );
     if ( cres != cached.end() ) {
       scond_hits++;
       if ( !cres->second ) continue;
@@ -1116,16 +1120,16 @@ int nv_dis::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
     } else {
       // check tab.cols[titer.idx].second for condition
       NV_Tabset row_res;
-      if ( !check_sched_cond(i, kv, titer.tab->cols[titer.idx], row_res) ) {
-        if ( titer.tab->cols[titer.idx].second )
-          cached[ titer.tab->cols[titer.idx].second ] = nullptr; // store bad result in cache too
+      if ( !check_sched_cond(i, kv, get_it(titer.tab->cols, titer.idx), row_res) ) {
+        if ( get_it(titer.tab->cols, titer.idx).second )
+          cached[ get_it(titer.tab->cols, titer.idx).second ] = nullptr; // store bad result in cache too
         continue;
       }
       // put row_res to m_cached_tabsets
       m_cached_tabsets.push_back( std::move(row_res) );
       tset = &m_cached_tabsets.back();
-      if ( titer.tab->cols[titer.idx].second )
-        cached[ titer.tab->cols[titer.idx].second ] = tset; // store res in cache
+      if ( get_it(titer.tab->cols, titer.idx).second )
+        cached[ get_it(titer.tab->cols, titer.idx).second ] = tset; // store res in cache
     }
     auto ct = m_sched.find(titer.tab);
     if ( ct == m_sched.end() )
@@ -1166,23 +1170,23 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
     }
     NV_Tabset *tset = nullptr;
     // check in cache
-    auto cres = cached.find( titer.tab->rows[titer.idx].second );
+    auto cres = cached.find( get_it(titer.tab->rows, titer.idx).second );
     if ( cres != cached.end() ) {
       scond_hits++;
       if ( !cres->second ) continue;
       tset = cres->second;
     } else {
       NV_Tabset row_res;
-      if ( !check_sched_cond(i, kv, titer.tab->rows[titer.idx], row_res) ) {
-        if ( titer.tab->rows[titer.idx].second )
-          cached[ titer.tab->rows[titer.idx].second ] = nullptr; // store bad result in cache too
+      if ( !check_sched_cond(i, kv, get_it(titer.tab->rows, titer.idx), row_res) ) {
+        if ( get_it(titer.tab->rows, titer.idx).second )
+          cached[ get_it(titer.tab->rows, titer.idx).second ] = nullptr; // store bad result in cache too
         continue;
       }
       // put row_res to m_cached_tabsets
       m_cached_tabsets.push_back( std::move(row_res) );
       tset = &m_cached_tabsets.back();
-      if ( titer.tab->rows[titer.idx].second )
-        cached[ titer.tab->rows[titer.idx].second ] = tset; // store res in cache
+      if ( get_it(titer.tab->rows, titer.idx).second )
+        cached[ get_it(titer.tab->rows, titer.idx).second ] = tset; // store res in cache
     }
     // we have titer.tab & titer.idx for row and
     // ci->list of table columns
@@ -1190,11 +1194,11 @@ int nv_dis::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
       auto value = ci->first->get(cidx.first, titer.idx);
       if ( !value ) continue;
       fprintf(m_out, "S> tab %s %s row %d", ci->first->name, ci->first->connection, titer.idx);
-      auto row_name = ci->first->rows[titer.idx].first;
+      auto row_name = get_it(ci->first->rows, titer.idx).first;
       if ( row_name ) fprintf(m_out, " (%s)", row_name);
       dump_cond_list(tset);
       fprintf(m_out, " col %d", cidx.first);
-      auto col_name = ci->first->cols[cidx.first].first;
+      auto col_name = get_it(ci->first->cols, cidx.first).first;
       if ( col_name ) fprintf(m_out, " (%s)", col_name);
       dump_cond_list(cidx.second);
       fprintf(m_out, ": %d\n", value.value());

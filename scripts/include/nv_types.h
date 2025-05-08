@@ -79,7 +79,7 @@ struct nv_instr;
 typedef int (*nv_tabref)(const nv_instr *i, const NV_extracted &kv);
 typedef std::list< std::pair<std::string_view, nv_tabref> > NV_cond_list;
 typedef std::pair<const char *, const NV_cond_list *> NV_one_cond;
-typedef std::vector<NV_one_cond> NV_gnames; // column or row names
+typedef std::initializer_list<NV_one_cond> NV_gnames; // column or row names
 
 // tables
 struct NV_tab {
@@ -105,7 +105,7 @@ struct NV_tabref {
   short idx;
 };
 
-typedef std::vector<NV_tabref> NV_tabrefs;
+typedef std::initializer_list<NV_tabref> NV_tabrefs;
 
 struct nv_instr {
  const char *mask;
