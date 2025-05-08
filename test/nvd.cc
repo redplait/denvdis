@@ -525,8 +525,24 @@ class nv_dis
      return res;
    }
    template <typename T, typename I>
-   const T& get_it(const std::initializer_list<T>& list, I index) {
+   const T& get_it(const std::initializer_list<T>& list, I index) const {
      return *(list.begin() + index);
+   }
+   template <typename T>
+   const T *find(const std::initializer_list<T>& list, const std::string_view &what) const {
+     if ( !list.size() ) return nullptr;
+     int low = 0, high = list.size() - 1;
+     while (low <= high) {
+       size_t mid = low + (high - low) / 2;
+       auto mid_e = list.begin() + mid;
+       if ( mid_e->name == what )
+            return mid_e;
+        if ( mid_e->name < what )
+            low = mid + 1;
+        else
+            high = mid - 1;
+     }
+     return nullptr;
    }
    bool check_dual(const NV_extracted &);
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
@@ -643,8 +659,8 @@ const nv_eattr *nv_dis::try_by_ename(const struct nv_instr *ins, const std::stri
   if ( contain(sv, '@') ) return nullptr;
   // check in values
   if ( ins->vas ) {
-    auto vi = ins->vas->find(sv);
-    if ( vi != ins->vas->end() ) return nullptr;
+    auto vi = find(*ins->vas, sv);
+    if ( vi ) return nullptr;
   }
   for ( auto ei: ins->eas ) {
     if ( cmp(sv, ei.second->ename) ) return ei.second;
@@ -730,9 +746,9 @@ int nv_dis::render_ve(const ve_base &ve, const struct nv_instr *i, const NV_extr
     auto kvi = kv.find(ve.arg);
     if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(ve.arg); return 1; }
     if ( !i->vas ) return 1;
-    auto vi = i->vas->find(ve.arg);
-    if ( vi == i->vas->end() ) return 1;
-    dump_value(i, kv, ve.arg, res, vi->second, kvi->second);
+    auto vi = find(*i->vas, ve.arg);
+    if ( !vi ) return 1;
+    dump_value(i, kv, ve.arg, res, *vi, kvi->second);
     return 0;
   }
   // enum
@@ -762,10 +778,10 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
       auto kvi = kv.find(ve.arg);
       if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(ve.arg); missed++; idx++; continue; }
       if ( !i->vas ) { missed++; idx++; continue; }
-      auto vi = i->vas->find(ve.arg);
-      if ( vi == i->vas->end() ) { missed++; idx++; continue; }
+      auto vi = find(*i->vas, ve.arg);
+      if ( !vi ) { missed++; idx++; continue; }
       std::string tmp;
-      dump_value(i, kv, ve.arg, tmp, vi->second, kvi->second);
+      dump_value(i, kv, ve.arg, tmp, *vi, kvi->second);
       if ( tmp == "0" && idx ) { idx++; continue; } // ignore +0
       if ( ve.pfx ) res += ve.pfx;
       else if ( idx ) res += '+';
@@ -814,9 +830,9 @@ bool nv_dis::check_branch(const struct nv_instr *i, const NV_extracted::const_it
   if ( !i->brt || !i->target_index ) {
     // BSSY has type RSImm
     if ( !i->vas ) return false;
-    auto vi = i->vas->find(kvi->first);
-    if ( vi == i->vas->end() ) return false;
-    if ( vi->second.kind != NV_RSImm ) return false;
+    auto vi = find(*i->vas, kvi->first);
+    if ( !vi ) return false;
+    if ( vi->kind != NV_RSImm ) return false;
   } else {
     if ( kvi->first != i->target_index ) return false;
   }
@@ -856,9 +872,9 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
           break;
         }
         if ( !i->vas ) { missed++; break; }
-        auto vi = i->vas->find(rn->name);
-        if ( vi == i->vas->end() ) { missed++; break; }
-        if ( vi->second.kind == NV_BITSET && !strncmp(rn->name, "req_", 4) ) was_bs = 1;
+        auto vi = find(*i->vas, rn->name);
+        if ( !vi ) { missed++; break; }
+        if ( vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4) ) was_bs = 1;
         long branch_off = 0;
         if ( check_branch(i, kvi, branch_off) ) {
           char buf[128];
@@ -869,7 +885,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
           if ( l ) l->insert(branch_off + m_dis->off_next());
           tmp += buf;
         } else
-          dump_value(i, kv, rn->name, tmp, vi->second, kvi->second);
+          dump_value(i, kv, rn->name, tmp, *vi, kvi->second);
         if ( rn->pfx ) { if ( prev != R_opcode ) res += rn->pfx; res += ' '; }
         else if ( was_bs ) res += " &";
         res += tmp;
@@ -1035,11 +1051,11 @@ void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv) const
     std::string name(kv1.first.begin(), kv1.first.end());
     // check in values
     if ( i->vas ) {
-      auto vi = i->vas->find(kv1.first);
-      if ( vi != i->vas->end() ) {
+      auto vi = find(*i->vas, kv1.first);
+      if ( vi ) {
         std::string buf;
-        dump_value(i, kv, kv1.first, buf, vi->second, kv1.second);
-        fprintf(m_out, " V %s: %s type %d\n", name.c_str(), buf.c_str(), vi->second.kind);
+        dump_value(i, kv, kv1.first, buf, *vi, kv1.second);
+        fprintf(m_out, " V %s: %s type %d\n", name.c_str(), buf.c_str(), vi->kind);
         continue;
       }
     }
@@ -1081,7 +1097,7 @@ bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, 
 bool nv_dis::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist,
  NV_Tabset &out_res)
 {
-  if ( !clist.second || clist.second->empty() ) return true;
+  if ( !clist.second || !clist.second->size() ) return true;
   int res = 0;
   for ( auto &cond: *clist.second ) {
     if ( cond.second ) {

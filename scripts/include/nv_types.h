@@ -49,6 +49,7 @@ enum NV_Scbd_Type {
 };
 
 struct nv_vattr {
+ std::string_view name;
  enum NV_Format kind;
  bool has_ast; // final *
 };
@@ -77,7 +78,7 @@ typedef int (*nv_pred)(const NV_extracted &);
 typedef std::unordered_map<std::string_view, nv_pred> NV_Preds;
 struct nv_instr;
 typedef int (*nv_tabref)(const nv_instr *i, const NV_extracted &kv);
-typedef std::list< std::pair<std::string_view, nv_tabref> > NV_cond_list;
+typedef std::initializer_list< std::pair<std::string_view, nv_tabref> > NV_cond_list;
 typedef std::pair<const char *, const NV_cond_list *> NV_one_cond;
 typedef std::initializer_list<NV_one_cond> NV_gnames; // column or row names
 
@@ -124,7 +125,7 @@ struct nv_instr {
  const NV_Preds *predicated;
  const NV_conv *vf_conv;
  const NV_width *vwidth;
- const std::unordered_map<std::string_view, const nv_vattr> *vas;
+ const std::initializer_list<const nv_vattr> *vas;
  const std::unordered_map<std::string_view, const nv_eattr *> eas;
  nv_filter filter;
  nv_extract extract;
@@ -148,7 +149,7 @@ struct NV_bt_node {
   int m_bit;
   inline bool is_leaf() const { return m_bit & 0x10000; }
   inline int bit() const { return m_bit & 0xffff; }
-  std::list<const nv_instr *> ins;
+  std::initializer_list<const nv_instr *> ins;
 };
 
 struct NV_non_leaf: public NV_bt_node
