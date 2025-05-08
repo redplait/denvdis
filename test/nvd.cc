@@ -621,14 +621,14 @@ void nv_dis::dump_value(const struct nv_instr *ins, const NV_extracted &kv, cons
   uint32_t f32;
   NV_Format kind = a.kind;
   if ( ins->vf_conv ) {
-    auto convi = ins->vf_conv->find(var_name);
-    if ( convi != ins->vf_conv->end() ) {
-      auto vi = kv.find(convi->second.fmt_var);
+    auto convi = find(*ins->vf_conv, var_name);
+    if ( convi ) {
+      auto vi = kv.find(convi->fmt_var);
 // printf("ins %s line %d  value fmt_var %d\n", ins->name, ins->line, (int)vi->second);
-      if ( vi != kv.end() && ((short)vi->second == convi->second.v1 || (short)vi->second == convi->second.v2) )
+      if ( vi != kv.end() && ((short)vi->second == convi->v1 || (short)vi->second == convi->v2) )
       {
 // printf("ins %s line %d: change kind to %d bcs value fmt_var %d\n", ins->name, ins->line, convi->second.format, (int)vi->second);
-        kind = (NV_Format)convi->second.format;
+        kind = (NV_Format)convi->format;
       }
     }
   }

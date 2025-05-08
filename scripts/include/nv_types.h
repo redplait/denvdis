@@ -69,6 +69,7 @@ struct nv_named_eattr {
 };
 
 struct nv_float_conv {
+ std::string_view name;
  std::string_view fmt_var;
  short format; // NV_Format
  short v1, v2; // -1 means no value for fmt_var
@@ -81,7 +82,7 @@ struct nv_width {
   short w;
 };
 typedef std::initializer_list<nv_width> NV_width;
-typedef std::unordered_map<std::string_view, nv_float_conv> NV_conv;
+typedef std::initializer_list<nv_float_conv> NV_conv;
 typedef void (*nv_extract)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &, NV_extracted &);
 typedef int (*nv_pred)(const NV_extracted &);
 typedef std::unordered_map<std::string_view, nv_pred> NV_Preds;

@@ -3140,10 +3140,10 @@ sub gen_instr
       if ( scalar @fconv ) {
         $conv_name = 'conv_' . $op->[19];
         printf($fh "static const NV_conv %s = { // %d conversions\n", $conv_name, scalar @fconv);
-        foreach my $c1 ( @fconv ) {
-          printf($fh " { \"%s\", {", $c1);
+        foreach my $c1 ( sort @fconv ) {
+          printf($fh " { \"%s\", ", $c1);
           my $ca = $fc{$c1};
-          printf($fh "\"%s\", NV_%s, %d, %d} },\n", $ca->[0], $ca->[1], $ca->[2], $ca->[3]);
+          printf($fh "\"%s\", NV_%s, %d, %d },\n", $ca->[0], $ca->[1], $ca->[2], $ca->[3]);
         }
         printf($fh "};\n");
       }
