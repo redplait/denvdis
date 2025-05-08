@@ -3175,7 +3175,7 @@ sub gen_instr
       $write->($vas);
       # dump enum attrs
       printf($fh " {");
-      foreach my $ae ( values %{ $op->[17] } ) {
+      foreach my $ae ( sort { $a->[3] cmp $b->[3] } values %{ $op->[17] } ) {
         my $ename = c_ae($ae);
         printf($fh "{ \"%s\", &%s },", $ae->[3], c_ae_name($ename));
       }

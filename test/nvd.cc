@@ -662,8 +662,8 @@ const nv_eattr *nv_dis::try_by_ename(const struct nv_instr *ins, const std::stri
     auto vi = find(*ins->vas, sv);
     if ( vi ) return nullptr;
   }
-  for ( auto ei: ins->eas ) {
-    if ( cmp(sv, ei.second->ename) ) return ei.second;
+  for ( auto &ei: ins->eas ) {
+    if ( cmp(sv, ei.ea->ename) ) return ei.ea;
   }
   return nullptr;
 }
@@ -673,8 +673,8 @@ int nv_dis::calc_miss(const struct nv_instr *ins, const NV_extracted &kv, int rz
   int res = 0;
   for ( auto ki: kv ) {
     const nv_eattr *ea = nullptr;
-    auto kiter = ins->eas.find(ki.first);
-    if ( kiter != ins->eas.end() ) { ea = kiter->second; }
+    auto kiter = find(ins->eas, ki.first);
+    if ( kiter ) { ea = kiter->ea; }
     else { ea = try_by_ename(ins, ki.first); }
     if ( !ea ) continue;
     if ( cmp(ki.first, "NonZeroRegister") && (int)ki.second == rz ) {
@@ -752,9 +752,9 @@ int nv_dis::render_ve(const ve_base &ve, const struct nv_instr *i, const NV_extr
     return 0;
   }
   // enum
-  auto ei = i->eas.find(ve.arg);
-  if ( ei == i->eas.end() ) return 1;
-  const nv_eattr *ea = ei->second;
+  auto ei = find(i->eas, ve.arg);
+  if ( !ei ) return 1;
+  const nv_eattr *ea = ei->ea;
   auto kvi = kv.find(ve.arg);
   if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(ve.arg); return 1; }
   auto eid = ea->em->find(kvi->second);
@@ -791,8 +791,8 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
     }
     // this is (optional) enum
     const nv_eattr *ea = nullptr;
-    auto ei = i->eas.find(ve.arg);
-    if ( ei != i->eas.end() ) { ea = ei->second; }
+    auto ei = find(i->eas, ve.arg);
+    if ( ei ) { ea = ei->ea; }
     else { ea = try_by_ename(i, ve.arg); }
     if ( !ea ) {
       missed++;
@@ -894,8 +894,8 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
       case R_enum: {
          const render_named *rn = (const render_named *)ri;
          const nv_eattr *ea = nullptr;
-         auto ei = i->eas.find(rn->name);
-         if ( ei != i->eas.end() ) { ea = ei->second; }
+         auto ei = find(i->eas, rn->name);
+         if ( ei ) { ea = ei->ea; }
          else { ea = try_by_ename(i, rn->name); }
          if ( !ea ) {
            missed++;
@@ -940,12 +940,12 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
 
       case R_predicate: { // like enum but can be ignored if has default value
          const render_named *rn = (const render_named *)ri;
-         auto ei = i->eas.find(rn->name);
-         if ( ei == i->eas.end() ) {
+         auto ei = find(i->eas, rn->name);
+         if ( !ei ) {
            missed++;
            break;
          }
-         const nv_eattr *ea = ei->second;
+         const nv_eattr *ea = ei->ea;
          auto kvi = kv.find(rn->name);
          if ( kvi == kv.end() ) {
            if ( opt_m ) m_missed.insert(rn->name);
@@ -1061,8 +1061,8 @@ void nv_dis::dump_ops(const struct nv_instr *i, const NV_extracted &kv) const
     }
     // check in enums
     const nv_eattr *ea = nullptr;
-    auto ei = i->eas.find(kv1.first);
-    if ( ei != i->eas.end() ) { ea = ei->second; }
+    auto ei = find(i->eas, kv1.first);
+    if ( ei ) { ea = ei->ea; }
     else { ea = try_by_ename(i, kv1.first); }
     if ( ea ) {
       fprintf(m_out, " E %s: %s %lX", name.c_str(), ea->ename, kv1.second);

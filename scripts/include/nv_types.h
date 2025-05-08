@@ -63,6 +63,11 @@ struct nv_eattr {
  const std::unordered_map<int, const char *> *em;
 };
 
+struct nv_named_eattr {
+ std::string_view name;
+ const nv_eattr *ea;
+};
+
 struct nv_float_conv {
  std::string_view fmt_var;
  short format; // NV_Format
@@ -126,13 +131,13 @@ struct nv_instr {
  const NV_conv *vf_conv;
  const NV_width *vwidth;
  const std::initializer_list<const nv_vattr> *vas;
- const std::unordered_map<std::string_view, const nv_eattr *> eas;
+ const std::initializer_list<const nv_named_eattr> eas;
  nv_filter filter;
  nv_extract extract;
  // table refs
  const NV_tabrefs *rows;
  const NV_tabrefs *cols;
- // methods
+ /* methods
  int count_Pr() const
  {
   static std::unordered_set<std::string_view> prs { "Pq", "Pp", "Pa", "Pb" ,"Pc" ," Ps" ,"Plg" };
@@ -141,7 +146,7 @@ struct nv_instr {
     if ( eic != prs.end() ) return 1;
   }
   return 0;
- }
+ } */
 } __attribute__ ((aligned (8)));
 
 // binary tree
