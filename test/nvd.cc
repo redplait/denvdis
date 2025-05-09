@@ -544,6 +544,11 @@ class nv_dis
      }
      return nullptr;
    }
+   template <typename T>
+   const T *find(const std::initializer_list<T>* list, const std::string_view &what) const {
+     if ( !list ) return nullptr;
+     return find(*list, what);
+   }
    bool check_dual(const NV_extracted &);
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
    int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *) const;
@@ -658,10 +663,7 @@ const nv_eattr *nv_dis::try_by_ename(const struct nv_instr *ins, const std::stri
 {
   if ( contain(sv, '@') ) return nullptr;
   // check in values
-  if ( ins->vas ) {
-    auto vi = find(*ins->vas, sv);
-    if ( vi ) return nullptr;
-  }
+  if ( find(ins->vas, sv) ) return nullptr;
   for ( auto &ei: ins->eas ) {
     if ( cmp(sv, ei.ea->ename) ) return ei.ea;
   }
@@ -745,8 +747,7 @@ int nv_dis::render_ve(const ve_base &ve, const struct nv_instr *i, const NV_extr
   {
     auto kvi = kv.find(ve.arg);
     if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(ve.arg); return 1; }
-    if ( !i->vas ) return 1;
-    auto vi = find(*i->vas, ve.arg);
+    auto vi = find(i->vas, ve.arg);
     if ( !vi ) return 1;
     dump_value(i, kv, ve.arg, res, *vi, kvi->second);
     return 0;
@@ -777,8 +778,7 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
     {
       auto kvi = kv.find(ve.arg);
       if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(ve.arg); missed++; idx++; continue; }
-      if ( !i->vas ) { missed++; idx++; continue; }
-      auto vi = find(*i->vas, ve.arg);
+      auto vi = find(i->vas, ve.arg);
       if ( !vi ) { missed++; idx++; continue; }
       std::string tmp;
       dump_value(i, kv, ve.arg, tmp, *vi, kvi->second);
@@ -829,8 +829,7 @@ bool nv_dis::check_branch(const struct nv_instr *i, const NV_extracted::const_it
 {
   if ( !i->brt || !i->target_index ) {
     // BSSY has type RSImm
-    if ( !i->vas ) return false;
-    auto vi = find(*i->vas, kvi->first);
+    auto vi = find(i->vas, kvi->first);
     if ( !vi ) return false;
     if ( vi->kind != NV_RSImm ) return false;
   } else {
@@ -838,8 +837,7 @@ bool nv_dis::check_branch(const struct nv_instr *i, const NV_extracted::const_it
   }
   // find width
 //printf("try to find target_index %s value %lX\n", i->target_index, kvi->second);
-  if ( !i->vwidth ) return false;
-  auto wi = find(*i->vwidth, kvi->first);
+  auto wi = find(i->vwidth, kvi->first);
   if ( !wi ) return false;
   // yes, this is some imm for branch, check if it negative
   if ( kvi->second & (1L << (wi->w - 1)) )
@@ -871,8 +869,7 @@ int nv_dis::render(const NV_rlist *rl, std::string &res, const struct nv_instr *
           missed++;
           break;
         }
-        if ( !i->vas ) { missed++; break; }
-        auto vi = find(*i->vas, rn->name);
+        auto vi = find(i->vas, rn->name);
         if ( !vi ) { missed++; break; }
         if ( vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4) ) was_bs = 1;
         long branch_off = 0;
