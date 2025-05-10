@@ -92,12 +92,19 @@ typedef std::initializer_list< std::pair<std::string_view, nv_tabref> > NV_cond_
 typedef std::pair<const char *, const NV_cond_list *> NV_one_cond;
 typedef std::initializer_list<NV_one_cond> NV_gnames; // column or row names
 
+struct NV_field {
+  std::string_view name;
+  const std::pair<short, short> *mask;
+  int mask_size;
+  int scale = 0;
+};
+
 // tables
 struct NV_tab {
   const char *name,
    *connection;
-  NV_gnames cols, rows; // names of columns & rows
-  std::vector< std::initializer_list<short> > values;
+  const NV_gnames cols, rows; // names of columns & rows
+  const std::vector< std::initializer_list<short> > values;
   std::optional<short> get(int col, int row) const {
     if ( row < 0 || (size_t)row >= values.size() ) return std::nullopt;
     auto &r = values[row];
@@ -142,6 +149,9 @@ struct nv_instr {
  // table refs
  const NV_tabrefs *rows;
  const NV_tabrefs *cols;
+ // patch info
+ // field directly translating into some mask (value / scale if presents) sorted by name
+ const std::initializer_list<const NV_field> fields;
  /* methods
  int count_Pr() const
  {

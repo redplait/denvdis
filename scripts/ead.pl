@@ -2686,7 +2686,7 @@ sub parse_conv_float
 # IComp = ICmpAll - so we must check if second arg is enum
 sub gen_extr
 {
-  my($op, $fh, $vw, $fc) = @_;
+  my($op, $fh, $vw, $fc, $ff) = @_;
   my $enc = $op->[5];
   return 'nullptr' unless defined($enc);
   my $name = sprintf("%s_%d_extr", $opt_C, $op->[19]);
@@ -2697,10 +2697,12 @@ sub gen_extr
     if ( $m =~ /^([\w\.]+)\s*=\*?\s*IDENTICAL\(([^\)]+)\)/ ) {
       my $ids = $2;
       printf($fh "// %s identical %s\n", $1, $2);
-      inl_extract($fh, $1, $index);
+      my $mask = $1;
+      inl_extract($fh, $mask, $index);
       # fill
       foreach my $a ( split /\s*,\s*/, $ids ) {
         printf($fh "res[\"%s\"] = v%d;\n", $a, $index);
+        $ff->{$a} = [ $mask, 0 ] if ( defined $ff );
       }
       $index++; next;
     } elsif ( $m =~ /^([\w\.]+)\s*=\*?\s*(\S+)\s*\(\s*([^\)]+)\s*\)/ ) {
@@ -2737,10 +2739,12 @@ sub gen_extr
       printf($fh "res[\"%s\"] = ", $2);
       printf($fh "%s * ", $3) if ( defined $3 );
       inl_extract2($fh, $1);
+      $ff->{$2} = [ $1, defined($3) ? $3 : 0 ] if defined($ff);
       $index++; next;
     } elsif ( $m=~ /^([\w\.]+)\s*=\*?\s*([\w\.\@]+)\s+convertFloatType\s*\((.*)\s*\)/ ) {
       printf($fh "// convertFloatType %s\n", $3);
       inl_extract($fh, $1, $index);
+      $ff->{$2} = [ $1, 0 ] if defined($ff);
       my $field = $2;
       printf($fh "res[\"%s\"] = v%d;\n", $2, $index);
       if ( defined $fc ) {
@@ -3124,9 +3128,8 @@ sub gen_instr
       # filter
       my $op_filter = gen_filter($op, $fh);
       # extractor
-      my %vw;
-      my %fc;
-      my $op_extr = gen_extr($op, $fh, \%vw, \%fc);
+      my(%vw, %fc, %fields);
+      my $op_extr = gen_extr($op, $fh, \%vw, \%fc, \%fields);
       # rows & cols
       my $rname = check_tab_rows($fh, $op);
       my $cname = check_tab_cols($fh, $op);
@@ -3183,9 +3186,15 @@ sub gen_instr
       # rows
       $write->($rname);
       # cols
-      if ( defined $cname ) { printf($fh "&%s\n", $cname); }
-      else { printf($fh " nullptr\n"); }
-      printf($fh " };\n");
+      $write->($cname);
+      # fields
+      printf($fh "{ // %d fields\n", scalar keys %fields);
+      foreach my $fn ( sort keys %fields ) {
+        my $fr = $fields{$fn};
+        my($mask, $msize) = c_get_mask($fr->[0]);
+        printf($fh "{ \"%s\", %s, %d, %d},\n", $fn, $mask, $msize, $fr->[1]);
+      }
+      printf($fh "} };\n");
     }
   }
 }
