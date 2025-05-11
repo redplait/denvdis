@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <climits>
 #include <stdio.h>
 
 #define NV_MASK(name, size) static const std::pair<short, short> name[size]
@@ -99,15 +100,23 @@ struct NV_field {
   int scale = 0;
 };
 
+struct NV_tab_fields {
+  const std::pair<short, short> *mask;
+  int mask_size;
+  // use nv_instr->check_tab for reverse lookup in tab
+  const std::unordered_map<int, const unsigned short *> *tab;
+  std::initializer_list<std::string_view> fields;
+};
+
 // tables
 struct NV_tab {
   const char *name,
    *connection;
   const NV_gnames cols, rows; // names of columns & rows
-  const std::vector< std::initializer_list<short> > values;
+  const std::initializer_list< const std::initializer_list<short> > values;
   std::optional<short> get(int col, int row) const {
     if ( row < 0 || (size_t)row >= values.size() ) return std::nullopt;
-    auto &r = values[row];
+    auto &r = *( values.begin() + row );
     if ( r.size() == 1 ) return std::optional<short>(*r.begin());
     if ( col < 0 || (size_t)col >= r.size() ) return std::nullopt;
     // initializer_list miss [], so dirty hack from
@@ -152,16 +161,36 @@ struct nv_instr {
  // patch info
  // field directly translating into some mask (value / scale if presents) sorted by name
  const std::initializer_list<const NV_field> fields;
- /* methods
+ const std::initializer_list<const NV_tab_fields *> tab_fields;
+ /* methods */
+ // check values against some tab, put resulting value in res_val
+ static bool check_tab(const std::unordered_map<int, const unsigned short *> *tab,
+   const std::vector<unsigned short> &curr, int &res_val)
+ {
+   if ( !tab || !curr.size() || curr.size() > USHRT_MAX ) return false;
+   auto curr_size = (unsigned short)curr.size();
+   for ( auto &ti: *tab ) {
+     auto &ct = ti.second;
+     if ( ct[0] != curr_size ) continue;
+     int idx = 0;
+     for ( auto c: curr ) {
+       if ( c != ct[1+idx] ) continue;
+       ++idx;
+     }
+     res_val = ti.first;
+     return true;
+   }
+   return false;
+ }
  int count_Pr() const
  {
   static std::unordered_set<std::string_view> prs { "Pq", "Pp", "Pa", "Pb" ,"Pc" ," Ps" ,"Plg" };
   for ( auto &ec: eas ) {
-    auto eic = prs.find(ec.first);
+    auto eic = prs.find(ec.name);
     if ( eic != prs.end() ) return 1;
   }
   return 0;
- } */
+ }
 } __attribute__ ((aligned (8)));
 
 // binary tree

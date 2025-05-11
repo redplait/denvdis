@@ -2681,18 +2681,21 @@ sub parse_conv_float
   $fc->{$fname} = \@res;
   1;
 }
+my %g_cached_tab_fields;
+my $g_tab_fields_idx = 0;
 # example from sm3:
 # /ICmpAll:icomp but there is no encoder for icomp, instead we have
 # IComp = ICmpAll - so we must check if second arg is enum
 sub gen_extr
 {
-  my($op, $fh, $vw, $fc, $ff) = @_;
+  my($op, $fh, $vw, $fc, $ff, $ftab) = @_;
   my $enc = $op->[5];
   return 'nullptr' unless defined($enc);
   my $name = sprintf("%s_%d_extr", $opt_C, $op->[19]);
   printf($fh "\nstatic void %s(std::function<uint64_t(const std::pair<short, short> *, size_t)>  &fn, NV_extracted &res) {\n", $name);
   # c++ impl of dump_values
   my $index = 0;
+  my @cached_tabs;
   foreach my $m ( @$enc ) {
     if ( $m =~ /^([\w\.]+)\s*=\*?\s*IDENTICAL\(([^\)]+)\)/ ) {
       my $ids = $2;
@@ -2710,6 +2713,9 @@ sub gen_extr
         printf($fh "// %s table %s %s\n", $1, $2, $3);
         inl_extract($fh, $1, $index);
         my $tab_name = c_tab_name($2);
+        # form key for g_cached_tab_fields
+        my $ckey = $1 . '<' . $tab_name . '>';
+        my @cf_tab = ( $1, $tab_name );
         printf($fh "auto i%d = %s.find(v%d); if ( i%d != %s.end() ) {\n", $index, $tab_name, $index, $index, $tab_name);
         printf($fh " auto &ctab = i%d->second;\n", $index);
         my @fa = split /\s*,\s*/, $3;
@@ -2717,8 +2723,17 @@ sub gen_extr
           $fa[$i] =~ s/\s+$//;
           next if ( $fa[$i] =~ /^\d+$/ ); # skip constant
           printf($fh " res[\"%s\"] = ctab[%d];\n", $fa[$i], $i+1);
+          push @cf_tab, $fa[$i];
+          $ckey .= '.' . $fa[$i];
         }
         printf($fh "}\n");
+        unless ( exists $g_cached_tab_fields{$ckey} ) {
+          # add new entry
+          my $tname = 'ctabf_' . $g_tab_fields_idx++;
+          push @cached_tabs, [ \@cf_tab, $tname ];
+          $g_cached_tab_fields{$ckey} = $tname;
+        }
+        push @$ftab, $g_cached_tab_fields{$ckey};
         $index++; next;
       } else {
         printf($fh "// %s bad table %s %s\n", $1, $2, $3);
@@ -2815,6 +2830,20 @@ sub gen_extr
     }
   }
   printf($fh "\n}\n");
+  # dump cached tab fields
+  foreach my $tf ( @cached_tabs ) {
+    printf($fh "static const NV_tab_fields %s = { ", $tf->[1]);
+    my $ar = $tf->[0];
+    # 0 mask
+    # 1 tab
+    # 2 - ... fields
+    my($mask, $size) = c_get_mask($ar->[0]);
+    printf($fh "%s, %d, &%s, { /* %d */ ", $mask, $size, $ar->[1], scalar(@$ar) - 2);
+    for ( my $i = 2; $i < scalar @$ar; $i++ ) {
+      printf($fh "\"%s\",", $ar->[$i]);
+    }
+    printf($fh "} };\n");
+  }
   $name;
 }
 sub gen_base
@@ -3128,8 +3157,8 @@ sub gen_instr
       # filter
       my $op_filter = gen_filter($op, $fh);
       # extractor
-      my(%vw, %fc, %fields);
-      my $op_extr = gen_extr($op, $fh, \%vw, \%fc, \%fields);
+      my(%vw, %fc, %fields, @tab_fields);
+      my $op_extr = gen_extr($op, $fh, \%vw, \%fc, \%fields, \@tab_fields);
       # rows & cols
       my $rname = check_tab_rows($fh, $op);
       my $cname = check_tab_cols($fh, $op);
@@ -3193,6 +3222,11 @@ sub gen_instr
         my $fr = $fields{$fn};
         my($mask, $msize) = c_get_mask($fr->[0]);
         printf($fh "{ \"%s\", %s, %d, %d},\n", $fn, $mask, $msize, $fr->[1]);
+      }
+      # tab fields
+      printf($fh "},\n{ ");
+      foreach my $tf ( @tab_fields ) {
+        printf($fh "&%s,", $tf);
       }
       printf($fh "} };\n");
     }
