@@ -1083,7 +1083,7 @@ sub gen_inst_mask
         push @pos, [ $p - length(${^MATCH}), $p ];
         mask_value(\@res, $value, $what);
       }
-  } }
+  }
   # and again check for ZeroRegister(RZ) in format - in worst case just assign it yet one more time
   while ( $op->[8] =~ /\bZeroRegister\(\"?RZ\"?\)\:([\w\.]+)/pg ) {
     my $what = check_enc($op->[5], $1, $1);
@@ -1093,7 +1093,7 @@ sub gen_inst_mask
       push @pos, [ $p - length(${^MATCH}), $p ];
       mask_value(\@res, $g_rz, $what);
     }
-  }
+  } }
   # remove used formats and put new string at index 10
   if ( scalar @pos ) {
    my $cp = $op->[8];
@@ -1116,6 +1116,13 @@ sub gen_inst_mask
 # printf("%s line %d\n", $op->[1], $op->[4]);
 # printf("%s\n", join('', @res));
   foreach my $emask ( @{ $op->[5] } ) {
+    if ( $emask =~ /^([\w\.]+)\s*=\*?\s*\`(\S+)/ ) {
+      if ( $2 eq 'Predicate@PT' ) {
+        $rem{$1} = 1;
+        mask_value(\@res, 7, $g_mnames{$1});
+        next;
+      }
+    }
     next if ( $emask !~ /^([\w\.]+)\s*=(\*?)\s*([\w\.]+)/ ); # wtf? bad encoding?
     my $what = $g_mnames{$1};
     my $ast = $2 ne '';
