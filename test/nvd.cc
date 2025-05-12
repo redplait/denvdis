@@ -808,7 +808,11 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
       }
     }
     if ( !ea->ignore ) idx++;
-    if ( ea->has_def_value && ea->def_value == (int)kvi->second && ea->ignore && !ea->print ) continue;
+    if ( ea->has_def_value && ea->def_value == (int)kvi->second ) {
+      if ( ea->ignore && !ea->print ) continue;
+      // ignore zero register even without ea->ignore
+      if ( !strcmp(ea->ename, "ZeroRegister") ) { idx--; continue; }
+    }
     if ( ea->ignore ) res += '.';
     else {
       if ( ve.pfx ) res += ve.pfx;
