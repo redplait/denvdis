@@ -2688,14 +2688,15 @@ sub parse_conv_float
   $fc->{$fname} = \@res;
   1;
 }
-my %g_cached_tab_fields;
+my(%g_cached_tab_fields, %g_cbanks);
 my $g_tab_fields_idx = 0;
+my $g_cbanks_idx = 0;
 # example from sm3:
 # /ICmpAll:icomp but there is no encoder for icomp, instead we have
 # IComp = ICmpAll - so we must check if second arg is enum
 sub gen_extr
 {
-  my($op, $fh, $vw, $fc, $ff, $ftab) = @_;
+  my($op, $fh, $vw, $fc, $ff, $ftab, $cb_name) = @_;
   my $enc = $op->[5];
   return 'nullptr' unless defined($enc);
   my $name = sprintf("%s_%d_extr", $opt_C, $op->[19]);
@@ -2798,12 +2799,16 @@ sub gen_extr
       printf("unknown encoding %s for %s line %d\n", $m, $op->[1], $op->[4]);
     }
   }
+  my($cb_key, $cb, $cb_len, $cb_scale, @fcb);
   # const bank
   if ( defined $op->[10] ) {
-    my $cb = $op->[10];
+    $cb = $op->[10];
     printf($fh "// const bank %s\n", $cb->[0]);
-    my $cb_len = scalar @$cb;
-    my @fcb;
+    $cb_key = $cb->[0];
+    $cb_len = scalar @$cb;
+    for ( my $i = 1; $i < $cb_len; $i++ ) {
+      $cb_key .= ',' . $cb->[$i];
+    }
     if ( $cb->[0] =~ /\(\s*(.*),\s*(.*)\)/ ) {
       push @fcb, $1; push @fcb, $2;
     } else {
@@ -2811,6 +2816,7 @@ sub gen_extr
     }
     # scale for Address2
     my $pfx = substr($op->[10]->[0], 0, 1);
+    $cb_scale = 4 if ( $pfx eq '2' );
     # special case for sm3:
     # BcbankHi,BcbankLo,Bcaddr =  ConstBankAddress2(constBank,immConstOffset)
     # here constBank = BcbankLo | (BcbankHi << size(BcbankLo)
@@ -2850,6 +2856,27 @@ sub gen_extr
       printf($fh "\"%s\",", $ar->[$i]);
     }
     printf($fh "} };\n");
+  }
+  # dump const bank
+  if ( defined($cb_key) ) {
+    unless ( exists $g_cbanks{$cb_key} ) {
+      my $name = $opt_C . '_cbank' . $g_cbanks_idx++;
+      $g_cbanks{$cb_key} = $name;
+      printf($fh "// const bank %s\n", $cb->[0]);
+      printf($fh "static const NV_cbank %s = {\n", $name);
+      my @m;
+      for ( my $i = 1; $i < $cb_len; $i++ ) {
+        my($mask, $size) = c_get_mask($cb->[$i]);
+        push @m, [ $mask, $size];
+      }
+      push @m, ['nullptr', 0] if ( $cb_len == 3 );
+      # dump masks
+      printf($fh "%s,", $_->[0]) foreach @m;
+      printf($fh "%d,", $_->[1]) foreach @m;
+      # fields
+      printf($fh "%d, \"%s\", \"%s\"};\n", $cb_scale || 0, $fcb[0], $fcb[1]);
+    }
+    $$cb_name = $g_cbanks{$cb_key};
   }
   $name;
 }
@@ -3164,8 +3191,8 @@ sub gen_instr
       # filter
       my $op_filter = gen_filter($op, $fh);
       # extractor
-      my(%vw, %fc, %fields, @tab_fields);
-      my $op_extr = gen_extr($op, $fh, \%vw, \%fc, \%fields, \@tab_fields);
+      my(%vw, %fc, %fields, @tab_fields, $cb_name);
+      my $op_extr = gen_extr($op, $fh, \%vw, \%fc, \%fields, \@tab_fields, \$cb_name);
       # rows & cols
       my $rname = check_tab_rows($fh, $op);
       my $cname = check_tab_cols($fh, $op);
@@ -3235,7 +3262,11 @@ sub gen_instr
       foreach my $tf ( @tab_fields ) {
         printf($fh "&%s,", $tf);
       }
-      printf($fh "} };\n");
+      if ( defined $cb_name ) {
+        printf($fh "}, &%s };\n", $cb_name);
+      } else {
+        printf($fh "} };\n");
+      }
     }
   }
 }

@@ -93,11 +93,20 @@ typedef std::initializer_list< std::pair<std::string_view, nv_tabref> > NV_cond_
 typedef std::pair<const char *, const NV_cond_list *> NV_one_cond;
 typedef std::initializer_list<NV_one_cond> NV_gnames; // column or row names
 
+// fields to patch
 struct NV_field {
   std::string_view name;
   const std::pair<short, short> *mask;
   int mask_size;
   int scale = 0;
+};
+
+// const bank - can have 2 or 3 masks and always 2 fields
+struct NV_cbank {
+  const std::pair<short, short> *mask1, *mask2, *mask3;
+  int mask1_size, mask2_size, mask3_size;
+  unsigned short scale;
+  std::string_view f1, f2;
 };
 
 struct NV_tab_fields {
@@ -162,6 +171,7 @@ struct nv_instr {
  // field directly translating into some mask (value / scale if presents) sorted by name
  const std::initializer_list<const NV_field> fields;
  const std::initializer_list<const NV_tab_fields *> tab_fields;
+ const NV_cbank *cb_field = nullptr; // const bank can be 0 or 1
  /* methods */
  // check values against some tab, put resulting value in res_val
  static bool check_tab(const std::unordered_map<int, const unsigned short *> *tab,
