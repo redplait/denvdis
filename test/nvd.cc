@@ -807,12 +807,12 @@ int nv_dis::render_ve_list(const std::list<ve_base> &l, const struct nv_instr *i
         continue;
       }
     }
-    if ( !ea->ignore ) idx++;
     if ( ea->has_def_value && ea->def_value == (int)kvi->second ) {
       if ( ea->ignore && !ea->print ) continue;
       // ignore zero register even without ea->ignore
-      if ( !strcmp(ea->ename, "ZeroRegister") ) { idx--; continue; }
+      if ( !strcmp(ea->ename, "ZeroRegister") ) continue;
     }
+    if ( !ea->ignore ) idx++;
     if ( ea->ignore ) res += '.';
     else {
       if ( ve.pfx ) res += ve.pfx;
@@ -1375,6 +1375,7 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
       case 1: data += 2;
         // check align
         if ( (data - start) & 0x3 ) data += 4 - ((data - start) & 0x3);
+        fputc('\n', m_out);
         break;
       case 2:
         fprintf(m_out, " %2.2X\n", data[2]);

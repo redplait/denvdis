@@ -194,12 +194,11 @@ struct nv_instr {
  }
  int count_Pr() const
  {
-  static std::unordered_set<std::string_view> prs { "Pq", "Pp", "Pa", "Pb" ,"Pc" ," Ps" ,"Plg" };
-  for ( auto &ec: eas ) {
+  static const std::unordered_set<std::string_view> prs { "Pq", "Pp", "Pa", "Pb" ,"Pc" ," Ps" ,"Plg" };
+  return std::count_if(eas.begin(), eas.end(), [](const nv_named_eattr &ec) {
     auto eic = prs.find(ec.name);
-    if ( eic != prs.end() ) return 1;
-  }
-  return 0;
+    return ( eic != prs.end() );
+   });
  }
 } __attribute__ ((aligned (8)));
 
