@@ -736,6 +736,8 @@ struct NV_one_render
 // https://stackoverflow.com/questions/936446/is-it-possible-to-forward-declare-a-static-array
 extern NV_one_render ins_render[];
 
+typedef std::initializer_list<std::pair<const std::string_view, const std::initializer_list<const nv_instr *> > > NV_sorted;
+
 // disasm interface
 struct INV_disasm {
   virtual void init(const unsigned char *buf, size_t size) = 0;
@@ -748,6 +750,7 @@ struct INV_disasm {
   virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const = 0;
   virtual uint64_t get_cword() const = 0;
   virtual const NV_rlist *get_rend(int idx) const = 0;
+  virtual const NV_sorted *get_instrs() const = 0;
   virtual ~INV_disasm() = default;
   int rz;
 };
@@ -755,11 +758,12 @@ struct INV_disasm {
 template <typename T>
 struct NV_disasm: public INV_disasm, T
 {
-  NV_disasm(const NV_non_leaf *root, int _rz, int cnt)
+  NV_disasm(const NV_non_leaf *root, int _rz, int cnt, const NV_sorted *ins)
   {
     rz = _rz;
     m_root = root;
     m_cnt = cnt;
+    m_instr = ins;
   }
   virtual int width() const { return T::_width; }
   virtual size_t offset() const { return T::curr_off(); }
@@ -798,6 +802,9 @@ struct NV_disasm: public INV_disasm, T
     }
     return !res.empty();
   }
+  virtual const NV_sorted *get_instrs() const {
+    return m_instr;
+  }
  protected:
   int m_cnt;
   // boring repeating code but you can't just pass lambda to argument std::function&
@@ -814,6 +821,7 @@ struct NV_disasm: public INV_disasm, T
     else rec_find(b2->left, res);
   }
   const NV_non_leaf *m_root = nullptr;
+  const NV_sorted *m_instr = nullptr;
 };
 
 extern "C" INV_disasm *get_sm();

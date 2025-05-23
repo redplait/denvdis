@@ -3173,7 +3173,7 @@ sub gen_instr
     if ( defined $what ) { printf($fh "&%s,\n", $what); }
     else { printf($fh " nullptr,\n"); }
   };
-  my %cached_ae;
+  my(%cached_ae, %res);
   while( my($m, $list) = each %g_masks) {
     printf($fh "//%s\n", $m);
     foreach my $op ( @$list ) {
@@ -3183,6 +3183,13 @@ sub gen_instr
         next if exists $cached_ae{$ename};
         gen_ae($fh, $ae, $ename);
         $cached_ae{$ename} = 1;
+      }
+      my $iname = $opt_C .'_' . $op->[19];
+      # add to res current instruction
+      if ( exists $res{$op->[1]} ) {
+        push @{ $res{$op->[1]} }, $iname;
+      } else {
+        $res{$op->[1]} = [ $iname ];
       }
       # vas
       my $vas = form_vas($fh, $op);
@@ -3214,9 +3221,9 @@ sub gen_instr
         printf($fh "};\n");
       }
       # dump instruction
-      printf($fh "static const struct nv_instr %s_%d = {\n", $opt_C, $op->[19]);
+      printf($fh "static const struct nv_instr %s = {\n", $iname);
       # name mask line n alt meaning_bits
-      printf($fh "\"%s\",\n \"%s\",\n \"%s\", %d, %d, %d, %d,\n", $m, $op->[0],$op->[1], $op->[4], $op->[19], $op->[7], $op->[14]);
+      printf($fh "\"%s\",\n \"%s\",\n \"%s\", %d, %d, %d, %d,\n", $m,$op->[0],$op->[1],$op->[4], $op->[19], $op->[7], $op->[14]);
       # brt properties
       if ( defined $op->[20] ) {
         my $brt = $op->[20];
@@ -3269,6 +3276,7 @@ sub gen_instr
       }
     }
   }
+  return \%res;
 }
 
 sub gen_C
@@ -3299,7 +3307,7 @@ sub gen_C
   # dump used tabs
   gen_tabs($fh);
   # dump instructions
-  gen_instr($fh);
+  my $ins = gen_instr($fh);
   # ins_render
   printf($fh "NV_one_render ins_render[%d] = {\n", $n);
   printf($fh " { fill_rend_%d },\n", $_) for ( 0 .. $n - 1);
@@ -3308,9 +3316,21 @@ sub gen_C
   printf($fh "\n// binary tree\n");
   my $num = 0;
   my $root = traverse_btree($fh, $g_dec_tree, \$num);
+  # dump sorted instructions
+  my $s_name = $opt_C . '_sorted';
+  printf($fh "\nstatic const NV_sorted %s = {\n", $s_name);
+  foreach my $in ( sort keys %$ins ) {
+    printf($fh " {\"%s\", {", $in);
+    my $aref = $ins->{$in};
+    foreach my $a ( @$aref ) {
+      printf($fh "&%s,", $a);
+    }
+    printf($fh "} },\n");
+  }
+  printf($fh "};\n");
   # finally gen get_sm
   printf($fh "\nINV_disasm *get_sm() {\n");
-  printf($fh " return new NV_disasm<nv%d>(%s, %d, %d); }\n", $g_size, $root, $g_rz, $n);
+  printf($fh " return new NV_disasm<nv%d>(%s, %d, %d, &%s); }\n", $g_size, $root, $g_rz, $n, $s_name);
   close $fh;
 }
 
