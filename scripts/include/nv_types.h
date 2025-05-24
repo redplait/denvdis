@@ -300,7 +300,7 @@ struct NV_base_decoder {
   }
  protected:
    inline size_t curr_off() const {
-      return curr - start- 8;
+      return curr - start - 8;
    }
    inline size_t offset_next() const {
      return curr - start;
@@ -346,6 +346,16 @@ struct nv64: public NV_base_decoder {
   {
     if ( !is_inited() ) return 0;
     to_str(*value, res);
+    return 1;
+  }
+  int set_mask(const char *mask) {
+    if ( !is_inited() ) return 0;
+    *value = 0L;
+    uint64_t m = 1L;
+    for ( int i = 63; i >= 0; i-- ) {
+      if ( '1' == mask[i] ) *value |= m;
+      m <<= 1;
+    }
     return 1;
   }
   // if idx == 0 - read control word, then first opcode
@@ -395,6 +405,23 @@ struct nv88: public NV_base_decoder {
     if ( !is_inited() ) return 0;
     to_str(cword, res, 23);
     to_str(*value, res);
+    return 1;
+  }
+  int set_mask(const char *mask)
+  {
+    if ( !is_inited() ) return 0;
+    int j, i = 87;
+    uint64_t m = 1L;
+    *value = 0; cword = 0;
+    for ( j = 0; j < 64; i--, j++ ) {
+      if ( '1' == mask[i] ) *value |= m;
+      m <<= 1;
+    }
+    m = 1L;
+    for ( j = 0; j < 24; i--, j++ ) {
+      if ( '1' == mask[i] ) cword |= m;
+      m <<= 1;
+    }
     return 1;
   }
   int check_mask(const char *mask) const
@@ -505,6 +532,33 @@ struct nv128: public NV_base_decoder {
 #else
     to_str(q2, res);
     to_str(q1, res);
+#endif
+    return 1;
+  }
+  int set_mask(const char *mask)
+  {
+    if ( !is_inited() ) return 0;
+#ifdef __SIZEOF_INT128__
+    __uint128_t m = 1L;
+    q = 0L;
+    int i = 127;
+    for ( int j = 0; j < 128; i--, j++ ) {
+      if ( '1' == mask[i] ) q |= m;
+      m <<= 1L;
+    }
+#else
+    q1 = q2 = 0L;
+    uint64_t m = 1L;
+    int j, i = 127;
+    for ( j = 0; j < 64; i--, j++ ) {
+      if ( '1' == mask[i] ) q1 |= m;
+      m <<= 1;
+    }
+    m = 1L;
+    for ( j = 0; j < 64; j++, i-- ) {
+      if ( '1' == mask[i] ) q2 |= m;
+      m <<= 1;
+    }
 #endif
     return 1;
   }
@@ -751,6 +805,8 @@ struct INV_disasm {
   virtual uint64_t get_cword() const = 0;
   virtual const NV_rlist *get_rend(int idx) const = 0;
   virtual const NV_sorted *get_instrs() const = 0;
+  // patch methods
+  virtual int set_mask(const char *) = 0;
   virtual ~INV_disasm() = default;
   int rz;
 };
@@ -804,6 +860,9 @@ struct NV_disasm: public INV_disasm, T
   }
   virtual const NV_sorted *get_instrs() const {
     return m_instr;
+  }
+  virtual int set_mask(const char *mask) {
+    return T::set_mask(mask);
   }
  protected:
   int m_cnt;
