@@ -298,6 +298,15 @@ struct NV_base_decoder {
   inline uint64_t get_cword() const {
     return 0;
   }
+  template <typename T>
+  inline T bit_set(T number, int n, int x) {
+    return (number & ~(1L << n)) | ((T)x << n);
+  }
+  inline uint64_t _put(uint64_t v, uint64_t what, short pos, short len) {
+    what = what & (~(s_masks[len - 1] << pos)); // zero all bits in mask
+    v &= s_masks[len - 1]; // make new value
+    return what | (v << pos);
+  }
  protected:
    inline size_t curr_off() const {
       return curr - start - 8;
@@ -385,6 +394,16 @@ struct nv64: public NV_base_decoder {
      res = (res << mask[m].second) | _extract(*value, mask[m].first, mask[m].second);
     return res;
   }
+  int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v)
+  {
+    if ( !is_inited() ) return 0;
+    for ( size_t m = 0; m < mask_size; m++ )
+    {
+     *value = _put(v, *value, mask[m].first, mask[m].second);
+     v >>= mask[m].second;
+    }
+    return 1;
+  }
 };
 
 struct nv88: public NV_base_decoder {
@@ -467,6 +486,33 @@ struct nv88: public NV_base_decoder {
     if ( 3 == m_idx ) m_idx = 0;
     return 1;
   }
+  int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v)
+  {
+    if ( !is_inited() ) return 0;
+    for ( size_t m = 0; m < mask_size; m++ ) {
+     if ( mask[m].first + mask[m].second <= 64 ) {
+       *value = _put(v, *value, mask[m].first, mask[m].second);
+       v >>= mask[m].second;
+       continue;
+     }
+     if ( mask[m].first > 63 ) {
+       cword = _put(v, cword, mask[m].first - 64, mask[m].second);
+       v >>= mask[m].second;
+       continue;
+     }
+     // some value splitted on both value & cword
+     for ( int i = 0; i < mask[m].second; ++i )
+     {
+       int idx = i + mask[m].first;
+       if ( idx < 64 )
+        *value = bit_set(*value, idx, v & 1);
+       else
+        cword = bit_set(cword, idx - 64, v & 1);
+       v >>= 1;
+     }
+    }
+    return 1;
+  }
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
   {
     uint64_t res = 0L;
@@ -499,6 +545,12 @@ struct nv128: public NV_base_decoder {
   __uint128_t q;
   inline uint64_t extract128(__uint128_t v, short pos, short len) const {
     return (v >> pos) & s_masks[len - 1];
+  }
+  inline __uint128_t _put128(uint64_t v, __uint128_t what, short pos, short len)
+  {
+    what = what & (~(s_masks[len - 1] << pos)); // zero all bits in mask
+    v &= s_masks[len - 1]; // make new value
+    return what | (v << pos);
   }
 #else
   uint64_t q1, q2;
@@ -616,6 +668,40 @@ printf("stop0 %d\n", i);
     q2 = *(uint64_t *)curr;
     curr += 8;
 #endif
+    return 1;
+  }
+  int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v)
+  {
+    if ( !is_inited() ) return 0;
+    for ( size_t m = 0; m < mask_size; m++ ) {
+#ifdef __SIZEOF_INT128__
+     q = _put128(v, q, mask[m].first, mask[m].second);
+     v >>= mask[m].second;
+#else
+     if ( mask[m].first > 63 ) {
+       q2 = _put(v, q2, mask[m].first - 64, mask[m].second);
+       v >>= mask[m].second;
+       if ( !v ) break;
+       continue;
+     }
+     if ( mask[m].first + mask[m].second <= 64 ) {
+       q1 = _put(v, q1, mask[m].first, mask[m].second);
+       v >>= mask[m].second;
+       if ( !v ) break;
+       continue;
+     }
+     // some value splitted on both q2 & q1
+     for ( int i = 0; i < mask[m].second; ++i )
+     {
+       int idx = i + mask[m].first;
+       if ( idx < 64 )
+        q1 = bit_set(q1, idx, v & 1);
+       else
+        q2 = bit_set(q2, idx - 64, v & 1);
+       v >>= 1;
+     }
+#endif
+    }
     return 1;
   }
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
@@ -807,6 +893,7 @@ struct INV_disasm {
   virtual const NV_sorted *get_instrs() const = 0;
   // patch methods
   virtual int set_mask(const char *) = 0;
+  virtual int put(const std::pair<short, short> *, size_t, uint64_t v) = 0;
   virtual ~INV_disasm() = default;
   int rz;
 };
@@ -863,6 +950,9 @@ struct NV_disasm: public INV_disasm, T
   }
   virtual int set_mask(const char *mask) {
     return T::set_mask(mask);
+  }
+  virtual int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v) {
+    return T::put(mask, mask_size, v);
   }
  protected:
   int m_cnt;
