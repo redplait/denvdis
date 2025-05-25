@@ -458,13 +458,12 @@ class nv_dis: public NV_renderer
    }
    void process();
    int single_section(int idx);
-   void dis_stat() const
+   void dump_total() const
    {
-     if ( dis_total )
-       fprintf(m_out, "total %ld, not_found %ld, dups %ld\n", dis_total, dis_notfound, dis_dups);
-     if ( opt_S )
-       fprintf(m_out, "filters %ld success %ld, conditions %ld (%ld) cached %ld\n",
-         sfilters, sfilters_succ, scond_count, scond_succ, scond_hits);
+    dis_stat();
+    if ( opt_S )
+      fprintf(m_out, "filters %ld success %ld, conditions %ld (%ld) cached %ld\n",
+        sfilters, sfilters_succ, scond_count, scond_succ, scond_hits);
    }
   protected:
    void try_dis(Elf_Word idx);
@@ -846,6 +845,6 @@ int main(int argc, char **argv)
       else
         dis.process();
     }
-    dis.dis_stat();
+    dis.dump_total();
   }
 }

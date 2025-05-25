@@ -20,6 +20,7 @@ class NV_renderer {
   }
   int load(std::string &);
   int load(const char *);
+  void dis_stat() const;
   void open_log(const char *of) {
      if ( m_out && m_out != stdout ) {
        fclose(m_out);
