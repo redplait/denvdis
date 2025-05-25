@@ -7,6 +7,8 @@
 #include <unordered_set>
 #include "include/nv_types.h"
 
+typedef std::unordered_set<uint32_t> NV_labels;
+
 class NV_renderer {
  public:
    NV_renderer() {
@@ -17,6 +19,7 @@ class NV_renderer {
     if ( m_out && m_out != stdout) fclose(m_out);
   }
   int load(std::string &);
+  int load(const char *);
   void open_log(const char *of) {
      if ( m_out && m_out != stdout ) {
        fclose(m_out);
@@ -29,7 +32,6 @@ class NV_renderer {
    }
    typedef INV_disasm *(*Dproto)(void);
    typedef const char *(*Dvq_name)(int);
-   typedef std::unordered_set<uint32_t> NV_labels;
    typedef const NV_tabrefs * nv_instr::*Tab_field;
    typedef std::pair<const struct nv_instr *, NV_extracted> NV_pair;
    typedef std::vector<NV_pair> NV_res;

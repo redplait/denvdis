@@ -6,17 +6,22 @@ extern int opt_m;
 
 int NV_renderer::load(std::string &sm_name)
 {
-     void *dh = dlopen(sm_name.c_str(), RTLD_NOW);
+  return load(sm_name.c_str());
+}
+
+int NV_renderer::load(const char *sm_name)
+{
+     void *dh = dlopen(sm_name, RTLD_NOW);
      if ( !dh ) {
-      fprintf(stderr, "cannot load %s, errno %d (%s)\n", sm_name.c_str(), errno, strerror(errno));
+      fprintf(stderr, "cannot load %s, errno %d (%s)\n", sm_name, errno, strerror(errno));
        return 0;
      }
      m_vq = (Dvq_name)dlsym(dh, "get_vq_name");
      if ( !m_vq )
-       fprintf(stderr, "cannot find get_vq_nam(%s), errno %d (%s)\n", sm_name.c_str(), errno, strerror(errno));
+       fprintf(stderr, "cannot find get_vq_nam(%s), errno %d (%s)\n", sm_name, errno, strerror(errno));
      Dproto fn = (Dproto)dlsym(dh, "get_sm");
      if ( !fn ) {
-      fprintf(stderr, "cannot find get_sm(%s), errno %d (%s)\n", sm_name.c_str(), errno, strerror(errno));
+      fprintf(stderr, "cannot find get_sm(%s), errno %d (%s)\n", sm_name, errno, strerror(errno));
       dlclose(dh);
        return 0;
      }
