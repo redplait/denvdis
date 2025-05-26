@@ -876,12 +876,12 @@ struct NV_one_render
 // https://stackoverflow.com/questions/936446/is-it-possible-to-forward-declare-a-static-array
 extern NV_one_render ins_render[];
 
-typedef std::initializer_list<std::pair<const std::string_view, const std::initializer_list<const nv_instr *> > > NV_sorted;
+typedef std::vector<std::pair<const std::string_view, const std::vector<const nv_instr *> > > NV_sorted;
 
 // disasm interface
 struct INV_disasm {
   virtual void init(const unsigned char *buf, size_t size) = 0;
-  virtual int get(std::vector< std::pair<const struct nv_instr *, NV_extracted> > &) = 0;
+  virtual int get(std::vector< std::pair<const struct nv_instr *, NV_extracted> > &, int do_next = 1) = 0;
   // reverse method of check_mask - generate mask from currently instruction, for -N option
   virtual int gen_mask(std::string &) = 0;
   virtual size_t offset() const = 0;
@@ -931,9 +931,13 @@ struct NV_disasm: public INV_disasm, T
     std::call_once(ins_render[idx].once, ins_render[idx].fill, res);
     return res;
   }
-  virtual int get(std::vector< std::pair<const struct nv_instr *, NV_extracted> > &res)
+  virtual int get(std::vector< std::pair<const struct nv_instr *, NV_extracted> > &res, int do_next = 1)
   {
-    if ( !T::next() ) return -1;
+    if ( do_next ) {
+      if ( !T::next() ) return -1;
+    } else {
+      if ( !T::is_inited() ) return -1;
+    }
     // traverse decode tree
     std::list<const struct nv_instr *> tmp;
     rec_find(m_root, tmp);

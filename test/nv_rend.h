@@ -68,7 +68,7 @@ class NV_renderer {
    }
    // monadic version for std::pairs
    template <typename T, typename S>
-   const T *find_il(const std::initializer_list<std::pair<const std::string_view, T> > *list, const S &what) const {
+   const T *find_il(const std::vector<std::pair<const std::string_view, T> > *list, const S &what) const {
      if ( !list || !list->size() ) return nullptr;
      int low = 0, high = list->size() - 1;
      while (low <= high) {

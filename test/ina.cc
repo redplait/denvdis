@@ -11,9 +11,9 @@ int opt_m = 0,
 
 static const NV_sorted *g_sorted = nullptr;
 static int g_sorted_idx = -1;
-static const std::initializer_list<const nv_instr *> *g_found;
+static const std::vector<const nv_instr *> *g_found;
 // mess of globals for readline interface
-static std::string g_prompt;
+static std::string g_prompt, s_opcode;
 
 // completiton logic stolen from https://prateek.page/post/gnu-readline-for-tab-autocomplete-and-bash-like-history/
 char *null_generator(const char *text, int state) {
@@ -24,7 +24,7 @@ char *instr_generator(const char *text, int state) {
   if ( -1 == g_sorted_idx || g_sorted_idx >= (int)g_sorted->size() ) return nullptr;
   std::string textstr(text);
   std::transform(textstr.begin(), textstr.end(), textstr.begin(), ::toupper);
-  auto *row = g_sorted->begin() + g_sorted_idx;
+  auto row = &g_sorted->at(g_sorted_idx);
   if ( !row->first.starts_with(textstr) ) {
     g_sorted_idx = -1;
     return nullptr;
@@ -90,14 +90,28 @@ struct INA: public NV_renderer {
       std::transform(what.begin(), what.end(), what.begin(), ::toupper);
       g_found = find_il( g_sorted, what );
       if ( !g_found ) continue;
-      g_prompt = what;
+      g_prompt = s_opcode = what;
       g_prompt += " ";
       if ( g_found->size() > 1 ) return &mnem_idx;
+      auto ins = g_found->at(0);
+      printf("ins %d\n", ins->n);
     }
     return nullptr;
   } };
   inapply mnem_idx{ [&]() -> ptrApply {
     // dump renderers
+    int rsize = (int)g_found->size();
+    printf("%d forms:\n", rsize);
+    for ( int i = 0; i < rsize; i++ ) {
+      auto ins = g_found->at(i);
+      if ( !ins ) continue;
+      auto rend = m_dis->get_rend(ins->n);
+      if ( !rend ) continue;
+      std::string form;
+      if ( rend_renderer( rend, s_opcode, form ) ) {
+        printf("%d) %s\n", 1+i, form.c_str());
+      }
+    }
     char *buf;
     rl_attempted_completion_function = nullptr;
     while( nullptr != (buf = readline(g_prompt.c_str())) ) {
@@ -115,11 +129,119 @@ struct INA: public NV_renderer {
   unsigned char buf[64];
   size_t block_size = 0;
  protected:
+  void r_ve(const ve_base &, std::string &res);
+  void r_velist(const std::list<ve_base> &l, std::string &res);
+  int rend_renderer(const NV_rlist *, const std::string &opcode, std::string &res);
   void process_buf();
   void dump_ins(const NV_pair &p, size_t off);
   FILE *ifp = nullptr;
   unsigned char *ibuf = nullptr;
+  NV_extracted m_kv;
 } g_ina;
+
+int INA::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res)
+{
+  for ( auto r: *rlist ) {
+    switch(r->type) {
+      case R_value:
+      case R_predicate: {
+        const render_named *rn = (const render_named *)r;
+        if ( r->pfx ) res += r->pfx;
+        res += rn->name;
+       }
+       break;
+      case R_enum:{
+        const render_named *rn = (const render_named *)r;
+        res += "E:";
+        res += rn->name;
+       }
+       break;
+      case R_opcode:
+        res += opcode;
+       break;
+      case R_C:
+      case R_CX: {
+         const render_C *rn = (const render_C *)r;
+         res += "c:[";
+         r_ve(rn->left, res);
+         res += "][";
+         r_velist(rn->right, res);
+         res += ']';
+       } break;
+       case R_TTU: {
+         const render_TTU *rt = (const render_TTU *)r;
+         if ( rt->pfx ) res += rt->pfx;
+         else res += ' ';
+         res += "ttu:[";
+         r_ve(rt->left, res);
+         res += ']';
+       }
+       break;
+     case R_M1: {
+         const render_M1 *rt = (const render_M1 *)r;
+         if ( rt->pfx ) res += rt->pfx;
+         res += rt->name;
+         res += ":[";
+         r_ve(rt->left, res);
+         res += ']';
+       } break;
+
+      case R_desc: {
+         const render_desc *rt = (const render_desc *)r;
+         if ( rt->pfx ) res += rt->pfx;
+         res += "desc:[";
+         r_ve(rt->left, res);
+         res += "],[";
+         r_velist(rt->right, res);
+         res += ']';
+       } break;
+
+      case R_mem: {
+         const render_mem *rt = (const render_mem *)r;
+         if ( rt->pfx ) res += rt->pfx;
+         res += "[";
+         r_velist(rt->right, res);
+         res += ']';
+       } break;
+
+//      default: fprintf(stderr, "unknown rend type %d at index %d for inst %s\n", r->type, idx, opcode.c_str());
+    }
+    res += ' ';
+  }
+  res.pop_back(); // remove last space
+  return !res.empty();
+}
+
+void INA::r_ve(const ve_base &ve, std::string &res)
+{
+  if ( ve.type == R_enum ) res += "E:";
+  res += ve.arg;
+}
+
+void INA::r_velist(const std::list<ve_base> &l, std::string &res)
+{
+  auto size = l.size();
+  if ( 1 == size ) {
+    r_ve(*l.begin(), res);
+    return;
+  }
+  int idx = 0;
+  for ( auto ve: l ) {
+    if ( ve.type == R_value )
+    {
+      if ( ve.pfx ) res += ve.pfx;
+      else if ( idx ) res += '+';
+      res += ve.arg;
+      idx++;
+      continue;
+    }
+    // enum
+    res += "E:";
+    res += ve.arg;
+    res += " ";
+  }
+  if ( res.back() == ' ' ) res.pop_back();
+}
 
 int INA::init(int dump)
 {
