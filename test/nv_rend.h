@@ -18,8 +18,10 @@ class NV_renderer {
     if ( m_dis != nullptr ) delete m_dis;
     if ( m_out && m_out != stdout) fclose(m_out);
   }
-  int load(std::string &);
   int load(const char *);
+  int load(std::string &s) {
+    return load(s.c_str());
+  }
   void dis_stat() const;
   void open_log(const char *of) {
      if ( m_out && m_out != stdout ) {
@@ -65,8 +67,8 @@ class NV_renderer {
      return find(*list, what);
    }
    // monadic version for std::pairs
-   template <typename T>
-   const T *find(const std::initializer_list<std::pair<const std::string_view, T> > *list, const std::string_view &what) const {
+   template <typename T, typename S>
+   const T *find_il(const std::initializer_list<std::pair<const std::string_view, T> > *list, const S &what) const {
      if ( !list || !list->size() ) return nullptr;
      int low = 0, high = list->size() - 1;
      while (low <= high) {
@@ -74,7 +76,7 @@ class NV_renderer {
        auto mid_e = list->begin() + mid;
        auto cmp_res = (mid_e->first <=> what);
        if ( cmp_res == std::strong_ordering::equal )
-            return mid_e->second;
+            return &mid_e->second;
         if ( cmp_res == std::strong_ordering::less )
             low = mid + 1;
         else

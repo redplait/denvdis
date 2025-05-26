@@ -10,11 +10,6 @@ void NV_renderer::dis_stat() const
     fprintf(m_out, "total %ld, not_found %ld, dups %ld\n", dis_total, dis_notfound, dis_dups);
 }
 
-int NV_renderer::load(std::string &sm_name)
-{
-  return load(sm_name.c_str());
-}
-
 int NV_renderer::load(const char *sm_name)
 {
      void *dh = dlopen(sm_name, RTLD_NOW);

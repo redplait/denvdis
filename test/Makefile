@@ -10,6 +10,11 @@ PERL_OPTS=-d:Confess
 EAD=../scripts/ead.pl
 EAD_OPTS=-BFmgrizp
 
+all: ina nvd
+
+ina: nv_rend.cc ina.cc
+	gcc -Wall -std=c++20 -g $(IFLAGS) $(FP16) -o $@ $^ -lreadline -lstdc++ -ldl
+
 nvd: nv_rend.cc nvd.cc
 	gcc -Wall -std=c++20 -g $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
 
