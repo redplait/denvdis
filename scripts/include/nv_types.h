@@ -321,12 +321,12 @@ struct NV_base_decoder {
        else res.push_back('0');
      }
    }
-   const unsigned char *start = nullptr, *curr = nullptr, *end;
+   const unsigned char *start = nullptr, *curr = nullptr, *end, *block_start;
    int m_idx = 0;
    inline int is_inited() const
    { return (curr != nullptr) && (curr < end); }
    void _init(const unsigned char *buf, size_t size) {
-     curr = buf;
+     block_start = curr = buf;
      start = curr;
      end = buf + size;
      m_idx = 0;
@@ -368,6 +368,22 @@ struct nv64: public NV_base_decoder {
     }
     return 1;
   }
+  int flush() {
+    // make cqword
+    cqword |= (ctrl & 0xff) << (8 * m_idx + 2);
+    curr += 8;
+    value++;
+    m_idx++;
+    if ( 7 == m_idx ) {
+      *(uint64_t *)curr = cqword;
+      value = nullptr;
+      m_idx = 0;
+      curr += 8 * 8;
+      block_start = curr;
+      return (curr >= end);
+    }
+    return 0;
+  }
   // if idx == 0 - read control word, then first opcode
   int next() {
     if ( !is_inited() ) return 0;
@@ -375,6 +391,7 @@ struct nv64: public NV_base_decoder {
       // check that we have space for least 8 64 qwords
       if ( end - curr < 8 * 8 ) return 0;
       cqword = *(uint64_t *)curr;
+      block_start = curr;
       curr += 8;
       // 6 bit - 3f, << 2 = 0xfc
       opcode = (cqword & 0x3) | ((cqword >> (64 - 8)) & 0xfc);
@@ -462,6 +479,20 @@ struct nv88: public NV_base_decoder {
     }
     return 1;
   }
+  int flush() {
+    cqword |= (cword & 0x1fffff) << (21 * m_idx);
+    value++;
+    m_idx++;
+    if ( 3 == m_idx ) {
+      *(uint64_t *)curr = cqword;
+      m_idx = 0;
+      value = nullptr;
+      curr += 4 * 8;
+      block_start = curr;
+      return (curr >= end);
+    }
+    return 0;
+  }
   // if idx == 0 - read control word, then first opcode
   int next() {
     if ( !is_inited() ) return 0;
@@ -469,6 +500,7 @@ struct nv88: public NV_base_decoder {
       // check that we have space for least 8 64 qwords
       if ( end - curr < 4 * 8 ) return 0;
       cqword = *(uint64_t *)curr;
+      block_start = curr;
       curr += 8;
     }
     // fill cword - 21 bit = 1fffff
@@ -564,7 +596,11 @@ struct nv128: public NV_base_decoder {
   inline int check_bit(int idx) const
   {
 #ifdef __SIZEOF_INT128__
-    return (q >> idx) & 1;
+    int res = (q >> idx) & 1L;
+#ifdef DEBUG
+ printf("check_bit %d: %d\n", idx, res);
+#endif
+    return res;
 #else
     if ( idx < 64 )
       return _check_bit(q1, idx);
@@ -665,6 +701,19 @@ printf("stop0 %d\n", i);
     }
 #endif
     return 1;
+  }
+  int flush() {
+    if ( curr >= end ) return -2;
+#ifdef __SIZEOF_INT128__
+    *(__uint128_t *)curr = q;
+    curr += 16;
+#else
+    *(uint64_t *)curr = q1;
+    curr += 8;
+    *(uint64_t *)curr = q2;
+    curr += 8;
+#endif
+    return (curr >= end);
   }
   int next() {
     if ( !is_inited() ) return 0;
@@ -904,8 +953,22 @@ struct INV_disasm {
   // patch methods
   virtual int set_mask(const char *) = 0;
   virtual int put(const std::pair<short, short> *, size_t, uint64_t v) = 0;
+  virtual int put_ctrl(uint8_t op) { return 0; } // has sense only for 64bit opcodes
+  virtual int put_opcode(uint8_t op) { return 0; } // has sense only for 64bit opcodes
+  virtual int flush() = 0; // warning - it's like next, so use eiter get(.., 1) or chain of put & finally flush
+    // it return 1 if you need to really store you buffer and negative number on error
   virtual ~INV_disasm() = default;
   int rz;
+};
+
+template <typename T>
+struct dirty_trait {
+ static const bool value = false;
+};
+
+template <>
+struct dirty_trait<nv64> {
+ static const bool value = true;
 };
 
 template <typename T>
@@ -968,6 +1031,26 @@ struct NV_disasm: public INV_disasm, T
   virtual int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v) {
     return T::put(mask, mask_size, v);
   }
+  virtual int flush()
+  {
+    if ( !T::is_inited() ) return -1;
+    return T::flush();
+  }
+  // these two has sense for 64bit opcodes only
+  virtual int put_ctrl(uint8_t op) override {
+    if constexpr ( dirty_trait<T>::value ) {
+      T::ctrl = op;
+      return 1;
+    }
+    return 0;
+  }
+  virtual int put_opcode(uint8_t op) override {
+    if constexpr ( dirty_trait<T>::value ) {
+      T::opcode = op;
+      return 1;
+    }
+    return 0;
+  }
  protected:
   int m_cnt;
   // boring repeating code but you can't just pass lambda to argument std::function&
@@ -986,6 +1069,7 @@ struct NV_disasm: public INV_disasm, T
   const NV_non_leaf *m_root = nullptr;
   const NV_sorted *m_instr = nullptr;
 };
+
 
 extern "C" INV_disasm *get_sm();
 extern "C" const char *get_vq_name(int);
