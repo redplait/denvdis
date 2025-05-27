@@ -337,7 +337,7 @@ struct NV_base_decoder {
 struct nv64: public NV_base_decoder {
  protected:
   const int _width = 64;
-  uint64_t *value, cqword;
+  uint64_t *value = nullptr, cqword;
   inline int check_bit(int idx) const {
     return _check_bit(*value, idx);
   }
@@ -359,6 +359,7 @@ struct nv64: public NV_base_decoder {
   }
   int set_mask(const char *mask) {
     if ( !is_inited() ) return 0;
+    if ( !value ) value = (uint64_t *)(curr + 8);
     *value = 0L;
     uint64_t m = 1L;
     for ( int i = 63; i >= 0; i-- ) {
@@ -409,7 +410,7 @@ struct nv64: public NV_base_decoder {
 struct nv88: public NV_base_decoder {
  protected:
   const int _width = 88;
-  uint64_t *value, cqword, cword;
+  uint64_t *value = nullptr, cqword, cword;
   inline uint64_t get_cword() const {
     return cword;
   }
@@ -429,6 +430,7 @@ struct nv88: public NV_base_decoder {
   int set_mask(const char *mask)
   {
     if ( !is_inited() ) return 0;
+    if ( !value ) value = (uint64_t *)(curr + 8);
     int j, i = 87;
     uint64_t m = 1L;
     *value = 0; cword = 0;
@@ -548,9 +550,9 @@ struct nv128: public NV_base_decoder {
   }
   inline __uint128_t _put128(uint64_t v, __uint128_t what, short pos, short len)
   {
-    what = what & (~(s_masks[len - 1] << pos)); // zero all bits in mask
+    what = what & ~((__uint128_t)s_masks[len - 1] << pos); // zero all bits in mask
     v &= s_masks[len - 1]; // make new value
-    return what | (v << pos);
+    return what | ((__uint128_t)v << pos);
   }
 #else
   uint64_t q1, q2;
@@ -587,6 +589,11 @@ struct nv128: public NV_base_decoder {
 #endif
     return 1;
   }
+  void print_int128(const char *mask) {
+    uint64_t high = q >> 64;
+    uint64_t low = q & 0xFFFFFFFFFFFFFFFF;
+    printf("q 0x%016lx%016lx %d\n", high, low, check_mask(mask));
+  }
   int set_mask(const char *mask)
   {
     if ( !is_inited() ) return 0;
@@ -598,6 +605,9 @@ struct nv128: public NV_base_decoder {
       if ( '1' == mask[i] ) q |= m;
       m <<= 1L;
     }
+#ifdef DEBUG
+ print_int128(mask);
+#endif
 #else
     q1 = q2 = 0L;
     uint64_t m = 1L;
