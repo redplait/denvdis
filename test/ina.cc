@@ -14,16 +14,34 @@ static int g_sorted_idx = -1;
 static const std::vector<const nv_instr *> *g_found;
 // mess of globals for readline interface
 static std::string g_prompt, s_opcode;
+static const nv_instr *g_instr = nullptr;
 
 // completiton logic stolen from https://prateek.page/post/gnu-readline-for-tab-autocomplete-and-bash-like-history/
 char *null_generator(const char *text, int state) {
   return nullptr;
 };
 
+// string helpers
+static std::string& rstrip(std::string &s)
+{
+  while(!s.empty()) {
+    auto c = s.back();
+    if ( !isspace(c) ) break;
+    s.pop_back();
+  }
+  return s;
+}
+
+static std::string& to_up(std::string &s)
+{
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+  return s;
+}
+
 char *instr_generator(const char *text, int state) {
   if ( -1 == g_sorted_idx || g_sorted_idx >= (int)g_sorted->size() ) return nullptr;
   std::string textstr(text);
-  std::transform(textstr.begin(), textstr.end(), textstr.begin(), ::toupper);
+  to_up(textstr);
   auto row = &g_sorted->at(g_sorted_idx);
   if ( !row->first.starts_with(textstr) ) {
     g_sorted_idx = -1;
@@ -41,7 +59,7 @@ static char **instr_completion(const char *text, int start, int end) {
   rl_attempted_completion_over = 1;
   g_sorted_idx = -1;
   std::string what( text + start, text + end);
-  std::transform(what.begin(), what.end(), what.begin(), ::toupper);
+  to_up(what);
 #ifdef DEBUG
   printf("instr_completion: %s\n", what.c_str());
 #endif
@@ -78,6 +96,11 @@ struct INA: public NV_renderer {
     inapply(FApply cl): clos(cl) {}
     virtual Apply *next() override { return clos(); }
   };
+  /* state machine, for each q is exit
+    0 - start - mnem_name
+    1 - choose form of mnemonic - mnem_idx
+    2 - edit fields - ops_fill
+   */
   inapply mnem_name{ [&]() -> ptrApply {
     g_prompt = "> ";
     rl_attempted_completion_function = instr_completion;
@@ -86,15 +109,19 @@ struct INA: public NV_renderer {
       if ( !strcmp(buf, "q") ) { free(buf); return nullptr; } // q - quit
       // check if we have such instruction
       std::string what(buf);
+      to_up(rstrip(what));
       free(buf);
-      std::transform(what.begin(), what.end(), what.begin(), ::toupper);
       g_found = find_il( g_sorted, what );
       if ( !g_found ) continue;
       g_prompt = s_opcode = what;
       g_prompt += " ";
+      add_history(s_opcode.c_str());
       if ( g_found->size() > 1 ) return &mnem_idx;
       auto ins = g_found->at(0);
+#ifdef DEBUG
       printf("ins %d\n", ins->n);
+#endif
+      if ( pre_build(ins) ) return &ops_fill;
     }
     return nullptr;
   } };
@@ -109,7 +136,9 @@ struct INA: public NV_renderer {
       if ( !rend ) continue;
       std::string form;
       if ( rend_renderer( rend, s_opcode, form ) ) {
-        printf("%d) %s\n", 1+i, form.c_str());
+        printf("%d) ", 1 + i);
+        if ( opt_v ) printf("n %d line %d ", ins->n, ins->line);
+        printf("%s\n", form.c_str());
       }
     }
     char *buf;
@@ -117,8 +146,29 @@ struct INA: public NV_renderer {
     while( nullptr != (buf = readline(g_prompt.c_str())) ) {
       if ( !strcmp(buf, "q") ) { free(buf); return nullptr; } // q - quit
       if ( !strcmp(buf, "b") ) { free(buf); g_found = nullptr; return &mnem_name; } // b - back to instruction selection
+      char *end = nullptr;
+      auto idx = strtol(buf, &end, 10);
+      if ( *end ) { printf("bad index %s\n", buf); free(buf); continue; }
+      free(buf);
+      if ( idx < 1 || idx > rsize ) { printf("invalid index %ld\n", idx); continue; }
+      if ( pre_build( g_found->at(idx - 1) ) ) return &ops_fill;
     }
     return nullptr;
+  } };
+  inapply ops_fill { [&]() -> ptrApply {
+    char *buf;
+    // TODO: render prompt
+    while( nullptr != (buf = readline(g_prompt.c_str())) ) {
+      if ( !strcmp(buf, "q") ) { free(buf); return nullptr; } // q - quit
+      if ( !strcmp(buf, "b") ) { free(buf); break; } // b - back to instruction selection
+      if ( !strcmp(buf, "w") ) { free(buf); if ( flush() ) break;
+       fprintf(stderr, "cannot flush\n"); continue;
+      }
+      if ( !strcmp(buf, "r") ) { free(buf); dump_curr_rend(); continue; }
+    }
+    g_instr = nullptr;
+    g_found = nullptr;
+    return &mnem_name;
   } };
   int init(int dump);
   int open_binary(const char *);
@@ -131,13 +181,113 @@ struct INA: public NV_renderer {
  protected:
   void r_ve(const ve_base &, std::string &res);
   void r_velist(const std::list<ve_base> &l, std::string &res);
+  void dump_curr_rend();
   int rend_renderer(const NV_rlist *, const std::string &opcode, std::string &res);
+  // instruction builders
+  int pre_build(const nv_instr *ins);
+  // disasm input file
   void process_buf();
   void dump_ins(const NV_pair &p, size_t off);
+  // flush output file, return 1 if all ok
+  int flush() {
+    int res = m_dis->flush();
+printf("flush res %d\n", res);
+    if ( !res ) { dirty = true; return 1; }
+    if ( res < 0 ) return 0;
+    if ( ifp ) {
+      if ( 1 != fwrite(buf, block_size, 1, ifp) ) {
+        fprintf(stderr, "fwrute failed, errno %d (%s)\n", errno, strerror(errno));
+        return 0;
+      }
+    }
+    // renew buffer
+    memset(buf, 0, block_size);
+    m_dis->init(buf, block_size);
+    dirty = false;
+    return 1;
+  }
+  // members
   FILE *ifp = nullptr;
   unsigned char *ibuf = nullptr;
+  bool dirty = false;
   NV_extracted m_kv;
 } g_ina;
+
+int INA::pre_build(const nv_instr *ins)
+{
+  m_kv.clear();
+  // try apply mask
+  if ( !m_dis->set_mask(ins->mask) ) {
+    printf("set_mask for %d failed\n", ins->n);
+    return 0;
+  }
+  // for all tables put first row
+  if ( ins->tab_fields.size() ) {
+    std::string curr_mask;
+    m_dis->gen_mask(curr_mask);
+#ifdef DEBUG
+ printf("check tabs: %s\n", curr_mask.c_str());
+#endif
+    for ( auto t: ins->tab_fields ) {
+      auto tab = t->tab;
+      auto first_row = tab->find(0); // first - value, second - array for fields
+      if ( first_row == tab->end() ) first_row = tab->begin();
+      if ( !m_dis->put(t->mask, t->mask_size, first_row->first) ) return 0;
+      auto arr = first_row->second;
+      if ( arr[0] != t->fields.size() ) return 0;
+      int i = 1;
+      for ( auto &f: t->fields ) m_kv[f] = arr[i++];
+    }
+  }
+  // for all enums with default add those default values
+  if ( ins->fields.size() ) {
+    std::string curr_mask;
+    m_dis->gen_mask(curr_mask);
+#ifdef DEBUG
+ printf("check fields: %s\n", curr_mask.c_str());
+#endif
+    for ( auto &f: ins->fields ) {
+      auto fiter = find(ins->eas, f.name);
+      if ( !fiter ) continue;
+      if ( !fiter->ea->has_def_value ) continue;
+      if ( !m_dis->put(f.mask, f.mask_size, fiter->ea->def_value) ) return 0;
+      m_kv[f.name] = fiter->ea->def_value;
+    }
+  }
+  // check if we can extract our instruction back
+  NV_res res;
+  auto gres = m_dis->get(res, 0);
+  if ( gres < 1 ) {
+    std::string curr_mask;
+    m_dis->gen_mask(curr_mask);
+    printf("get failed: %d, mask %s\n", gres, curr_mask.c_str());
+    return 0;
+  }
+  for ( auto &p: res ) {
+   if ( p.first == ins )
+   {
+     auto rend = m_dis->get_rend(ins->n);
+     if ( !rend ) return 0;
+     std::string res;
+     render(rend, res, ins, p.second, nullptr);
+     g_prompt = res;
+     g_prompt += " ";
+     // finally set g_instr
+     g_instr = ins;
+     return 1;
+   }
+  }
+  printf("Oops: not found\n");
+  return 0;
+}
+
+void INA::dump_curr_rend()
+{
+  auto rend = m_dis->get_rend(g_instr->n);
+  if ( !rend ) return;
+  std::string form;
+  if ( rend_renderer( rend, s_opcode, form ) ) printf("%s\n", form.c_str());
+}
 
 int INA::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res)
 {
