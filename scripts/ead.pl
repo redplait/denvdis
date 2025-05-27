@@ -324,7 +324,7 @@ sub parse_tab_keys
   # remove trailing spaces
   $s =~ s/\s+$//;
   if ( $s =~ /\s+/ ) {
-    # this is compond key - must return ref to array
+    # this is compound key - must return ref to array
     my @res;
     foreach my $v ( split /\s+/, $s ) {
       my $next = parse_tab_key($v, $line);
@@ -2021,7 +2021,7 @@ sub make_single_test
   my @fout;
   if ( defined $opt_B ) {
     my @res;
-    find_in_dectree($g_dec_tree, \@nb, \@res);
+    find_in_dectree($g_dec_tree, \@nb, \@res, 1);
     # dump results
     printf("found %d\n", scalar @res);
     foreach my $r ( @res ) {
@@ -2396,19 +2396,20 @@ sub build_tree
 # main horror - try to find mask array b in decision tree starting from node n, curr is result set
 sub find_in_dectree
 {
-  my($n, $b, $curr) = @_;
+  my($n, $b, $curr, $verb) = @_;
   if ( $n->[0] eq 'L' ) {
     push @$curr, @{ $n->[1] } if ( scalar @{ $n->[1] } );
     return 1;
   }
   push @$curr, @{ $n->[4] } if ( scalar @{ $n->[4] } );
   my $bit = $b->[$n->[1]];
+  printf("check_bit %d: %d\n", $g_size - 1 - $n->[1], $bit) if defined($verb);
   if ( !$bit ) {
     return 0 if ( !defined $n->[2] );
-    return find_in_dectree($n->[2], $b, $curr);
+    return find_in_dectree($n->[2], $b, $curr, $verb);
   } else {
     return 0 if ( !defined $n->[3] );
-    return find_in_dectree($n->[3], $b, $curr);
+    return find_in_dectree($n->[3], $b, $curr, $verb);
   }
 }
 
