@@ -9,12 +9,58 @@
 int opt_m = 0,
     opt_v = 0;
 
+enum kv_type {
+  KV_FIELD,
+  KV_TAB,
+  KV_CBANK,
+  KV_CTRL,
+};
+
+struct kv_field {
+  kv_type type;
+  union {
+    const NV_field *f;
+    const NV_tab_fields *t;
+    const NV_cbank *cb;
+  };
+  const nv_eattr *ea = nullptr;
+  const nv_vattr *va = nullptr;
+  // constructors
+  kv_field(const NV_field *_f) {
+    type = KV_FIELD;
+    f = _f;
+  }
+  kv_field(const NV_tab_fields *_t) {
+    type = KV_TAB;
+    t = _t;
+  }
+  kv_field(const NV_cbank *_cb) {
+    type = KV_CBANK;
+    cb = _cb;
+  }
+  kv_field(kv_type k) { // mostly for KV_CTRL
+    type = k;
+  }
+  inline int has_format(int &v) const {
+    if ( !va ) return 0;
+    v = va->kind;
+    return 1;
+  }
+  // for inserting to std::map
+  kv_field& operator=(kv_field&& other) = default;
+  kv_field(kv_field&& other) = default;
+  kv_field& operator=(kv_field& other) = default;
+  kv_field(const kv_field& other) = default;
+};
+
 static const NV_sorted *g_sorted = nullptr;
+// mess of globals for readline interface
 static int g_sorted_idx = -1;
 static const std::vector<const nv_instr *> *g_found;
-// mess of globals for readline interface
 static std::string g_prompt, s_opcode;
 static const nv_instr *g_instr = nullptr;
+static std::map<std::string, kv_field> s_fields;
+static std::map<std::string, kv_field>::const_iterator s_fields_iter;
 
 // completiton logic stolen from https://prateek.page/post/gnu-readline-for-tab-autocomplete-and-bash-like-history/
 char *null_generator(const char *text, int state) {
@@ -38,6 +84,15 @@ static std::string& to_up(std::string &s)
   return s;
 }
 
+template <typename T>
+char *copy_str(const T &what) {
+  auto sv_size = what->first.size();
+  char *res = (char *)malloc(sv_size + 1);
+  memcpy(res, what->first.data(), sv_size);
+  res[sv_size] = 0;
+  return res;
+}
+
 char *instr_generator(const char *text, int state) {
   if ( -1 == g_sorted_idx || g_sorted_idx >= (int)g_sorted->size() ) return nullptr;
   std::string textstr(text);
@@ -47,18 +102,14 @@ char *instr_generator(const char *text, int state) {
     g_sorted_idx = -1;
     return nullptr;
   }
-  auto sv_size = row->first.size();
-  char *res = (char *)malloc(sv_size + 1);
-  memcpy(res, row->first.data(), sv_size);
-  res[sv_size] = 0;
   g_sorted_idx++;
-  return res;
+  return copy_str(row);
 }
 
 static char **instr_completion(const char *text, int start, int end) {
   rl_attempted_completion_over = 1;
   g_sorted_idx = -1;
-  std::string what( text + start, text + end);
+  std::string what(text + start, text + end);
   to_up(what);
 #ifdef DEBUG
   printf("instr_completion: %s\n", what.c_str());
@@ -78,6 +129,46 @@ static char **instr_completion(const char *text, int start, int end) {
  return rl_completion_matches(text, instr_generator);
 }
 
+static char *fields_generator(const char *text, int state) {
+  if ( s_fields_iter == s_fields.end() )
+    return nullptr;
+  if ( !s_fields_iter->first.starts_with(text) ) {
+    s_fields_iter = s_fields.end();
+    return nullptr;
+  }
+  auto res = copy_str(s_fields_iter);
+  ++s_fields_iter;
+  return res;
+}
+
+static char **fill_completion(const char *text, int start, int end) {
+  rl_attempted_completion_over = 1;
+  // we can have "i field" or just field (without spaces)
+  std::string what(text + start, text + end);
+  if ( what.starts_with("i ") ) {
+    // find next
+    auto next = what.begin() + 2;
+    while( isspace(*next) ) {
+      ++next;
+      if ( next == what.end() ) break;
+    }
+    if ( next == what.end() ) {
+      s_fields_iter = s_fields.cbegin();
+      rl_completion_matches("", fields_generator);
+    }
+    std::string name(next, what.end());
+    s_fields_iter = s_fields.lower_bound(name);
+    if ( s_fields_iter == s_fields.cend() ) return rl_completion_matches(text, null_generator);
+printf("i %s\n", name.c_str());
+    return rl_completion_matches(name.c_str(), fields_generator);
+  }
+  // if we don't have spaces - this is field name
+  if ( std::any_of(what.cbegin(), what.cend(), isspace) ) return rl_completion_matches(text, null_generator);
+  s_fields_iter = s_fields.lower_bound(what);
+  if ( s_fields_iter == s_fields.cend() ) return rl_completion_matches(text, null_generator);
+  return rl_completion_matches(text + start, fields_generator);
+}
+
 struct Apply {
   virtual Apply *next() = 0;
 };
@@ -86,7 +177,10 @@ typedef Apply *ptrApply;
 struct INA: public NV_renderer {
   ~INA() {
     if ( ibuf ) free(ibuf);
-    if ( ifp ) fclose(ifp);
+    if ( ifp ) {
+     if ( dirty ) fwrite(buf, block_size, 1, ifp);
+     fclose(ifp);
+    }
   }
   INA(): NV_renderer()
   { }
@@ -157,7 +251,7 @@ struct INA: public NV_renderer {
   } };
   inapply ops_fill { [&]() -> ptrApply {
     char *buf;
-    // TODO: render prompt
+    rl_attempted_completion_function = fill_completion;
     while( nullptr != (buf = readline(g_prompt.c_str())) ) {
       if ( !strcmp(buf, "q") ) { free(buf); return nullptr; } // q - quit
       if ( !strcmp(buf, "b") ) { free(buf); break; } // b - back to instruction selection
@@ -216,6 +310,7 @@ printf("flush res %d\n", res);
 int INA::pre_build(const nv_instr *ins)
 {
   m_kv.clear();
+  s_fields.clear();
   // try apply mask
   if ( !m_dis->set_mask(ins->mask) ) {
     printf("set_mask for %d failed\n", ins->n);
@@ -223,10 +318,10 @@ int INA::pre_build(const nv_instr *ins)
   }
   // for all tables put first row
   if ( ins->tab_fields.size() ) {
+#ifdef DEBUG
     std::string curr_mask;
     m_dis->gen_mask(curr_mask);
-#ifdef DEBUG
- printf("check tabs: %s\n", curr_mask.c_str());
+    printf("check tabs: %s\n", curr_mask.c_str());
 #endif
     for ( auto t: ins->tab_fields ) {
       auto tab = t->tab;
@@ -236,23 +331,39 @@ int INA::pre_build(const nv_instr *ins)
       auto arr = first_row->second;
       if ( arr[0] != t->fields.size() ) return 0;
       int i = 1;
-      for ( auto &f: t->fields ) m_kv[f] = arr[i++];
+      for ( auto &f: t->fields ) {
+        m_kv[f] = arr[i++];
+        kv_field curr_field(t);
+        s_fields.insert_or_assign(std::string(f), curr_field);
+      }
     }
   }
   // for all enums with default add those default values
   if ( ins->fields.size() ) {
+#ifdef DEBUG
     std::string curr_mask;
     m_dis->gen_mask(curr_mask);
-#ifdef DEBUG
- printf("check fields: %s\n", curr_mask.c_str());
+    printf("check fields: %s\n", curr_mask.c_str());
 #endif
     for ( auto &f: ins->fields ) {
+      kv_field curr_field(&f);
       auto fiter = find(ins->eas, f.name);
-      if ( !fiter ) continue;
+      if ( !fiter ) {
+        s_fields.insert_or_assign(std::string(f.name), curr_field);
+        continue;
+      }
+      curr_field.ea = fiter->ea;
+      s_fields.insert_or_assign(std::string(f.name), curr_field);
       if ( !fiter->ea->has_def_value ) continue;
       if ( !m_dis->put(f.mask, f.mask_size, fiter->ea->def_value) ) return 0;
       m_kv[f.name] = fiter->ea->def_value;
     }
+  }
+  // const bank
+  if ( ins->cb_field ) {
+    kv_field f1(ins->cb_field), f2(ins->cb_field);
+    s_fields.insert_or_assign(std::string(ins->cb_field->f1), f1);
+    s_fields.insert_or_assign(std::string(ins->cb_field->f2), f2);
   }
   // check if we can extract our instruction back
   NV_res res;
