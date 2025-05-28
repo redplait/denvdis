@@ -112,6 +112,7 @@ class NV_renderer {
    INV_disasm *m_dis = nullptr;
    Dvq_name m_vq = nullptr;
    int m_width;
+   static const char *s_fmts[];
    // missed fields
    mutable std::unordered_set<std::string> m_missed;
    // dual issues

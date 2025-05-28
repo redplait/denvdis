@@ -4,6 +4,17 @@
 
 extern int opt_m;
 
+const char *NV_renderer::s_fmts[] = {
+ "BITSET",
+ "UImm",
+ "SImm",
+ "SSImm",
+ "RSImm",
+ "f64",
+ "f16",
+ "f32"
+};
+
 void NV_renderer::dis_stat() const
 {
   if ( dis_total )

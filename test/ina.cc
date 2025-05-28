@@ -1,6 +1,7 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 #include "nv_rend.h"
+#include <numeric>
 // for stat & getopt
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -47,6 +48,28 @@ struct kv_field {
     v = va->kind;
     return 1;
   }
+  int mask_len(const std::pair<short, short> *m, int size) const
+  {
+    if ( !m ) return 0;
+    return std::accumulate(m, m + size, 0, [](int res, const std::pair<short, short> &item)
+     { return res + item.second; } );
+  }
+  template <typename T>
+  int mask_len(const T *what) const
+  {
+    return std::accumulate(what->mask, what->mask + what->mask_size, 0, [](int res, const std::pair<short, short> &item)
+     { return res + item.second; } );
+  }
+  int mask_len() const
+  {
+    switch(type) {
+      case KV_FIELD: return mask_len(f);
+      case KV_TAB: return mask_len(t);
+      case KV_CBANK: return mask_len(cb->mask1, cb->mask1_size) + mask_len(cb->mask2, cb->mask2_size) + mask_len(cb->mask3, cb->mask3_size);
+      default: return 0;
+    }
+    return 0;
+  }
   // for inserting to std::map
   kv_field& operator=(kv_field&& other) = default;
   kv_field(kv_field&& other) = default;
@@ -60,8 +83,8 @@ static int g_sorted_idx = -1;
 static const std::vector<const nv_instr *> *g_found;
 static std::string g_prompt, s_opcode;
 static const nv_instr *g_instr = nullptr;
-static std::map<std::string, kv_field> s_fields;
-static std::map<std::string, kv_field>::const_iterator s_fields_iter;
+static std::map<std::string_view, kv_field> s_fields;
+static std::map<std::string_view, kv_field>::const_iterator s_fields_iter;
 
 // completiton logic stolen from https://prateek.page/post/gnu-readline-for-tab-autocomplete-and-bash-like-history/
 char *null_generator(const char *text, int state) {
@@ -85,6 +108,26 @@ static std::string& to_up(std::string &s)
   return s;
 }
 
+static char *rstrip(char *s)
+{
+  auto size = strlen(s);
+  if ( !size ) return s;
+  for ( char *p = s + size - 1; p >= s; ++p )
+    if ( !isspace(*p) ) break;
+    else *p = 0;
+  return s;
+}
+
+static const char *lfind(const char *s)
+{
+  while( *s ) {
+    if ( !isspace(*s) ) break;
+    ++s;
+  }
+  if ( !*s ) return nullptr;
+  return s;
+}
+
 template <typename T>
 char *copy_str(const T &what) {
   auto sv_size = what->first.size();
@@ -94,6 +137,7 @@ char *copy_str(const T &what) {
   return res;
 }
 
+// readlne completitions
 char *instr_generator(const char *text, int state) {
   if ( -1 == g_sorted_idx || g_sorted_idx >= (int)g_sorted->size() ) return nullptr;
   std::string textstr(text);
@@ -260,6 +304,15 @@ struct INA: public NV_renderer {
       }
       if ( !strcmp(buf, "r") ) { free(buf); dump_curr_rend(); continue; }
       if ( !strcmp(buf, "kv") ) { free(buf); dump_kv(); continue; }
+      // i field
+      if ( buf[0] == 'i' && isspace(buf[1]) ) {
+        // find first non-space symbol
+        const char *what = lfind(rstrip(buf + 2));
+        if ( !what ) { free(buf); continue; }
+        if ( dump_i(what) ) add_history(buf);
+        free(buf);
+        continue;
+      }
     }
     g_instr = nullptr;
     g_found = nullptr;
@@ -274,12 +327,14 @@ struct INA: public NV_renderer {
   unsigned char buf[64];
   size_t block_size = 0;
  protected:
+  int dump_i(const char *);
   void dump_kv();
   void r_ve(const ve_base &, std::string &res);
   void r_velist(const std::list<ve_base> &l, std::string &res);
   void dump_curr_rend();
   int rend_renderer(const NV_rlist *, const std::string &opcode, std::string &res);
   // instruction builders
+  int check_vas(const nv_instr *, kv_field &, const std::string_view &);
   int pre_build(const nv_instr *ins);
   // disasm input file
   void process_buf();
@@ -309,10 +364,21 @@ printf("flush res %d\n", res);
   NV_extracted m_kv;
 } g_ina;
 
+int INA::dump_i(const char *fname)
+{
+  auto what = s_fields.find(fname);
+  if ( what == s_fields.end() ) { printf("unknown field %s (%ld)\n", fname, s_fields.size()); return 0; }
+  printf("MaskLen %d", what->second.mask_len());
+  // check what is it
+  if ( what->second.va ) printf(" Format %s", s_fmts[what->second.va->kind]);
+  fputc('\n', stdout);
+  return 1;
+}
+
 void INA::dump_kv()
 {
   for ( auto &p: m_kv ) {
-    auto fiter = s_fields.find(std::string(p.first));
+    auto fiter = s_fields.find(p.first);
     if ( fiter == s_fields.end() ) continue;
     switch(fiter->second.type) {
       case KV_CTRL:  fputs("Ctrl  ", stdout); break;
@@ -320,16 +386,18 @@ void INA::dump_kv()
       case KV_TAB: printf("Tab%d  ", fiter->second.tab_idx); break;
       default:       fputs("      ", stdout); break;
     }
-    if ( fiter->second.type != KV_CTRL ) printf("%s:", fiter->first.c_str());
-    else puts(": ");
+    if ( fiter->second.type != KV_CTRL ) {
+      std::for_each( fiter->first.cbegin(), fiter->first.cend(), [&](char c){ putc(c, stdout); });
+      putc(':', stdout);
+    } else fputs(": ", stdout);
     if ( fiter->second.ea ) {
       printf("%d", (int)p.second);
       auto eiter = fiter->second.ea->em->find((int)p.second);
       if ( eiter == fiter->second.ea->em->end() ) {
-        printf(" (Invalid)");
+        fputs(" (Invalid)", stdout);
       } else {
         printf(" (%s)", eiter->second);
-        if ( fiter->second.ea->has_def_value && fiter->second.ea->def_value == (int)p.second ) printf(" DEF");
+        if ( fiter->second.ea->has_def_value && fiter->second.ea->def_value == (int)p.second ) fputs(" DEF", stdout);
       }
       putc('\n', stdout);
       continue;
@@ -343,6 +411,15 @@ void INA::dump_kv()
     // wtf?
     printf("%d\n", (int)p.second);
   }
+}
+
+int INA::check_vas(const nv_instr *ins, kv_field &kf, const std::string_view &s)
+{
+  if ( !ins->vas ) return 0;
+  auto viter = find(ins->vas, s);
+  if ( !viter ) return 0;
+  kf.va = viter;
+  return 1;
 }
 
 int INA::pre_build(const nv_instr *ins)
@@ -374,7 +451,8 @@ int INA::pre_build(const nv_instr *ins)
       for ( auto &f: t->fields ) {
         m_kv[f] = arr[i++];
         kv_field curr_field(t, tab_idx);
-        s_fields.insert_or_assign(std::string(f), curr_field);
+        check_vas(ins, curr_field, f);
+        s_fields.insert_or_assign(f, curr_field);
       }
     }
   }
@@ -387,13 +465,14 @@ int INA::pre_build(const nv_instr *ins)
 #endif
     for ( auto &f: ins->fields ) {
       kv_field curr_field(&f);
+      check_vas(ins, curr_field, f.name);
       auto fiter = find(ins->eas, f.name);
       if ( !fiter ) {
-        s_fields.insert_or_assign(std::string(f.name), curr_field);
+        s_fields.insert_or_assign(f.name, curr_field);
         continue;
       }
       curr_field.ea = fiter->ea;
-      s_fields.insert_or_assign(std::string(f.name), curr_field);
+      s_fields.insert_or_assign(f.name, curr_field);
       if ( !fiter->ea->has_def_value ) continue;
       if ( !m_dis->put(f.mask, f.mask_size, fiter->ea->def_value) ) return 0;
       m_kv[f.name] = fiter->ea->def_value;
@@ -402,8 +481,10 @@ int INA::pre_build(const nv_instr *ins)
   // const bank
   if ( ins->cb_field ) {
     kv_field f1(ins->cb_field), f2(ins->cb_field);
-    s_fields.insert_or_assign(std::string(ins->cb_field->f1), f1);
-    s_fields.insert_or_assign(std::string(ins->cb_field->f2), f2);
+    check_vas(ins, f1, ins->cb_field->f1);
+    check_vas(ins, f2, ins->cb_field->f2);
+    s_fields.insert_or_assign(ins->cb_field->f1, f1);
+    s_fields.insert_or_assign(ins->cb_field->f2, f2);
   }
   // check if we can extract our instruction back
   NV_res res;
