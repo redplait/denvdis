@@ -367,11 +367,39 @@ printf("flush res %d\n", res);
 int INA::dump_i(const char *fname)
 {
   auto what = s_fields.find(fname);
-  if ( what == s_fields.end() ) { printf("unknown field %s (%ld)\n", fname, s_fields.size()); return 0; }
+  if ( what == s_fields.end() ) {
+    // ok, check in ins->eas
+    auto ea = find(g_instr->eas, fname);
+    if ( ea )
+      what = s_fields.find(ea->ea->ename);
+    if ( what == s_fields.end() ) {
+      printf("unknown field %s (%ld)\n", fname, s_fields.size()); return 0;
+    }
+  }
   printf("MaskLen %d", what->second.mask_len());
   // check what is it
+  int need_nl = 1;
   if ( what->second.va ) printf(" Format %s", s_fmts[what->second.va->kind]);
-  fputc('\n', stdout);
+  if ( what->second.type == KV_FIELD && what->second.f->scale ) printf(" scale %d", what->second.f->scale);
+  if ( what->second.ea ) {
+   const auto ea = what->second.ea;
+   if ( ea->ignore )
+    printf(" .Enum %s", ea->ename);
+   else
+    printf(" Enum %s", ea->ename);
+   if ( ea->has_def_value ) printf(" DefVal %d", ea->def_value);
+   // skip too long enumes with registers
+   bool skip = !strcmp(ea->ename, "NonZeroRegister") || !strcmp(ea->ename, "NonZeroUniformRegister") ||
+    !strcmp(ea->ename, "RegisterFAU") || strcmp(ea->ename, "NonZeroRegisterFAU");
+   if ( !skip ) {
+     fputs(":\n", stdout);
+     need_nl = 0;
+     for ( auto &ei: *ea->em ) {
+       printf(" %d\t%s\n", ei.first, ei.second);
+     }
+   }
+  }
+  if ( need_nl ) fputc('\n', stdout);
   return 1;
 }
 
@@ -452,6 +480,12 @@ int INA::pre_build(const nv_instr *ins)
         m_kv[f] = arr[i++];
         kv_field curr_field(t, tab_idx);
         check_vas(ins, curr_field, f);
+        // field in tabs can be enum also
+        const nv_eattr *ea = nullptr;
+        auto fiter = find(ins->eas, f);
+        if ( fiter ) { ea = fiter->ea; }
+        else { ea = try_by_ename(g_instr, f); }
+        if ( ea ) curr_field.ea = ea;
         s_fields.insert_or_assign(f, curr_field);
       }
     }
@@ -466,15 +500,18 @@ int INA::pre_build(const nv_instr *ins)
     for ( auto &f: ins->fields ) {
       kv_field curr_field(&f);
       check_vas(ins, curr_field, f.name);
+      const nv_eattr *ea = nullptr;
       auto fiter = find(ins->eas, f.name);
-      if ( !fiter ) {
+      if ( fiter ) { ea = fiter->ea; }
+      else { ea = try_by_ename(g_instr, f.name); }
+      if ( !ea ) {
         s_fields.insert_or_assign(f.name, curr_field);
         continue;
       }
-      curr_field.ea = fiter->ea;
+      curr_field.ea = ea;
       s_fields.insert_or_assign(f.name, curr_field);
-      if ( !fiter->ea->has_def_value ) continue;
-      if ( !m_dis->put(f.mask, f.mask_size, fiter->ea->def_value) ) return 0;
+      if ( !ea->has_def_value ) continue;
+      if ( !m_dis->put(f.mask, f.mask_size, ea->def_value) ) return 0;
       m_kv[f.name] = fiter->ea->def_value;
     }
   }
