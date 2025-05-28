@@ -23,6 +23,7 @@ struct kv_field {
     const NV_tab_fields *t;
     const NV_cbank *cb;
   };
+  int tab_idx = 0;
   const nv_eattr *ea = nullptr;
   const nv_vattr *va = nullptr;
   // constructors
@@ -30,9 +31,9 @@ struct kv_field {
     type = KV_FIELD;
     f = _f;
   }
-  kv_field(const NV_tab_fields *_t) {
+  kv_field(const NV_tab_fields *_t, int idx) {
     type = KV_TAB;
-    t = _t;
+    t = _t; tab_idx = idx;
   }
   kv_field(const NV_cbank *_cb) {
     type = KV_CBANK;
@@ -144,7 +145,7 @@ static char *fields_generator(const char *text, int state) {
 static char **fill_completion(const char *text, int start, int end) {
   rl_attempted_completion_over = 1;
   // we can have "i field" or just field (without spaces)
-  std::string what(text + start, text + end);
+  std::string what(text, text + end);
   if ( what.starts_with("i ") ) {
     // find next
     auto next = what.begin() + 2;
@@ -159,14 +160,13 @@ static char **fill_completion(const char *text, int start, int end) {
     std::string name(next, what.end());
     s_fields_iter = s_fields.lower_bound(name);
     if ( s_fields_iter == s_fields.cend() ) return rl_completion_matches(text, null_generator);
-printf("i %s\n", name.c_str());
     return rl_completion_matches(name.c_str(), fields_generator);
   }
   // if we don't have spaces - this is field name
   if ( std::any_of(what.cbegin(), what.cend(), isspace) ) return rl_completion_matches(text, null_generator);
   s_fields_iter = s_fields.lower_bound(what);
   if ( s_fields_iter == s_fields.cend() ) return rl_completion_matches(text, null_generator);
-  return rl_completion_matches(text + start, fields_generator);
+  return rl_completion_matches(text, fields_generator);
 }
 
 struct Apply {
@@ -259,6 +259,7 @@ struct INA: public NV_renderer {
        fprintf(stderr, "cannot flush\n"); continue;
       }
       if ( !strcmp(buf, "r") ) { free(buf); dump_curr_rend(); continue; }
+      if ( !strcmp(buf, "kv") ) { free(buf); dump_kv(); continue; }
     }
     g_instr = nullptr;
     g_found = nullptr;
@@ -273,6 +274,7 @@ struct INA: public NV_renderer {
   unsigned char buf[64];
   size_t block_size = 0;
  protected:
+  void dump_kv();
   void r_ve(const ve_base &, std::string &res);
   void r_velist(const std::list<ve_base> &l, std::string &res);
   void dump_curr_rend();
@@ -307,6 +309,42 @@ printf("flush res %d\n", res);
   NV_extracted m_kv;
 } g_ina;
 
+void INA::dump_kv()
+{
+  for ( auto &p: m_kv ) {
+    auto fiter = s_fields.find(std::string(p.first));
+    if ( fiter == s_fields.end() ) continue;
+    switch(fiter->second.type) {
+      case KV_CTRL:  fputs("Ctrl  ", stdout); break;
+      case KV_CBANK: fputs("CBank ", stdout); break;
+      case KV_TAB: printf("Tab%d  ", fiter->second.tab_idx); break;
+      default:       fputs("      ", stdout); break;
+    }
+    if ( fiter->second.type != KV_CTRL ) printf("%s:", fiter->first.c_str());
+    else puts(": ");
+    if ( fiter->second.ea ) {
+      printf("%d", (int)p.second);
+      auto eiter = fiter->second.ea->em->find((int)p.second);
+      if ( eiter == fiter->second.ea->em->end() ) {
+        printf(" (Invalid)");
+      } else {
+        printf(" (%s)", eiter->second);
+        if ( fiter->second.ea->has_def_value && fiter->second.ea->def_value == (int)p.second ) printf(" DEF");
+      }
+      putc('\n', stdout);
+      continue;
+    }
+    if ( fiter->second.va ) {
+      std::string fs;
+      dump_value(g_instr, m_kv, p.first, fs, *fiter->second.va, p.second);
+      printf("%s\n", fs.c_str());
+      continue;
+    }
+    // wtf?
+    printf("%d\n", (int)p.second);
+  }
+}
+
 int INA::pre_build(const nv_instr *ins)
 {
   m_kv.clear();
@@ -323,7 +361,9 @@ int INA::pre_build(const nv_instr *ins)
     m_dis->gen_mask(curr_mask);
     printf("check tabs: %s\n", curr_mask.c_str());
 #endif
+    int tab_idx = 0;
     for ( auto t: ins->tab_fields ) {
+      tab_idx++;
       auto tab = t->tab;
       auto first_row = tab->find(0); // first - value, second - array for fields
       if ( first_row == tab->end() ) first_row = tab->begin();
@@ -333,7 +373,7 @@ int INA::pre_build(const nv_instr *ins)
       int i = 1;
       for ( auto &f: t->fields ) {
         m_kv[f] = arr[i++];
-        kv_field curr_field(t);
+        kv_field curr_field(t, tab_idx);
         s_fields.insert_or_assign(std::string(f), curr_field);
       }
     }
