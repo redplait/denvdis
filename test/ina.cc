@@ -36,9 +36,9 @@ struct kv_field {
     type = KV_TAB;
     t = _t; tab_idx = idx;
   }
-  kv_field(const NV_cbank *_cb) {
+  kv_field(const NV_cbank *_cb, int idx) {
     type = KV_CBANK;
-    cb = _cb;
+    cb = _cb; tab_idx = idx;
   }
   kv_field(kv_type k) { // mostly for KV_CTRL
     type = k;
@@ -70,11 +70,32 @@ struct kv_field {
     }
     return 0;
   }
+  int patch(uint64_t v, INV_disasm *dis) const
+  {
+    switch(type) {
+      case KV_FIELD: return dis->put(f->mask, f->mask_size, v);
+      case KV_TAB:   return dis->put(t->mask, t->mask_size, v);
+      case KV_CTRL:  return dis->put_ctrl((uint8_t)v);
+      case KV_CBANK:
+        if ( tab_idx == 1 ) {
+          if ( cb->scale ) v /= cb->scale;
+          return 3 == cb_size() ? dis->put(cb->mask3, cb->mask3_size, v) : dis->put(cb->mask2, cb->mask2_size, v);
+        }
+        if ( !tab_idx && 2 == cb_size() ) return dis->put(cb->mask1, cb->mask1_size, v);
+    }
+    return 0;
+  }
   // for inserting to std::map
   kv_field& operator=(kv_field&& other) = default;
   kv_field(kv_field&& other) = default;
   kv_field& operator=(kv_field& other) = default;
   kv_field(const kv_field& other) = default;
+
+  int cb_size() const {
+    if ( type != KV_CBANK ) return 0;
+    if ( cb->mask3 ) return 3;
+    return 2;
+  }
 };
 
 static const NV_sorted *g_sorted = nullptr;
@@ -125,6 +146,15 @@ static const char *lfind(const char *s)
     ++s;
   }
   if ( !*s ) return nullptr;
+  return s;
+}
+
+static const char *lspace(const char *s)
+{
+  while( *s ) {
+    if ( isspace(*s) ) break;
+    ++s;
+  }
   return s;
 }
 
@@ -313,6 +343,32 @@ struct INA: public NV_renderer {
         free(buf);
         continue;
       }
+      // field value - let's first try to find field
+      std::string_view sv;
+      char *text = rstrip(buf);
+      if ( !extract_sv(text, sv) ) {
+        printf("cannot extract field name\n"); free(buf); continue;
+      }
+      // find field by name sv
+      const char *rest = lfind(text + sv.size());
+      if ( !rest ) {
+        printf("invalid format\n"); free(buf); continue;
+      }
+      auto what = s_fields.find(sv);
+      if ( what == s_fields.end() ) {
+        // ok, check in ins->eas
+        auto ea = find(g_instr->eas, sv);
+        if ( ea )
+          what = s_fields.find(ea->ea->ename);
+      }
+      if ( what == s_fields.end() ) {
+        printf("unknown field ");
+        std::for_each(sv.cbegin(), sv.cend(), [&](char c){ putc(c, stdout); });
+        fputc('\n', stdout);
+        free(buf); continue;
+      }
+      if ( patch(what, rest) ) add_history(text);
+      free(buf); continue;
     }
     g_instr = nullptr;
     g_found = nullptr;
@@ -327,6 +383,7 @@ struct INA: public NV_renderer {
   unsigned char buf[64];
   size_t block_size = 0;
  protected:
+  int extract_sv(const char *, std::string_view &);
   int dump_i(const char *);
   void dump_kv();
   void r_ve(const ve_base &, std::string &res);
@@ -336,6 +393,9 @@ struct INA: public NV_renderer {
   // instruction builders
   int check_vas(const nv_instr *, kv_field &, const std::string_view &);
   int pre_build(const nv_instr *ins);
+  int patch(std::map<std::string_view, kv_field>::const_iterator, const char *);
+  int patch_internal(std::map<std::string_view, kv_field>::const_iterator *, const char *, uint64_t &v);
+  int parse_arg(const char *, uint64_t &v);
   // disasm input file
   void process_buf();
   void dump_ins(const NV_pair &p, size_t off);
@@ -363,6 +423,112 @@ printf("flush res %d\n", res);
   bool dirty = false;
   NV_extracted m_kv;
 } g_ina;
+
+int INA::extract_sv(const char *s, std::string_view &sv)
+{
+  const char *end = lspace(s);
+  if ( !end ) return 0;
+  sv = { s, end };
+  return 1;
+}
+
+int INA::parse_arg(const char *s, uint64_t &v)
+{
+  if ( s[0] == 0 && s[1] == 'b' ) { // 0b
+    v = 0;
+    for ( int i = 2; s[i]; i++ ) {
+      if ( s[i] == '1' ) v = (v << 1) | 1;
+      else if ( s[i] == '0' ) v <<= 1;
+      else {
+        printf("bad binary const %s\n", s);
+        return 0;
+      }
+    }
+    return 1;
+  }
+  char *end = nullptr;
+  // check hex
+  if ( s[0] == '0' && s[1] == 'x' ) { // 0x
+    v = strtoull(s + 2, &end, 16);
+    if ( *end ) {
+      printf("bad hex const %s\n", s);
+      return 0;
+    }
+    return 1;
+  }
+  v = strtoull(s, &end, 10);
+  if ( *end ) {
+    printf("bad const %s\n", s);
+    return 0;
+  }
+  return 1;
+}
+
+int INA::patch(std::map<std::string_view, kv_field>::const_iterator what, const char *s)
+{
+  uint64_t v = 0L;
+  int pres = patch_internal(&what, s, v);
+  if ( !pres ) return 0;
+  // add to kv
+  m_kv[what->first] = v;
+  // try to patch
+  if ( pres & 1 ) {
+    if ( !what->second.patch(v, m_dis) ) {
+      printf("patch failed\n");
+      return 0;
+    }
+  }
+  // and get new render
+  NV_res res;
+  auto gres = m_dis->get(res, 0);
+  if ( gres < 1 ) {
+    std::string curr_mask;
+    m_dis->gen_mask(curr_mask);
+    printf("get failed: %d, mask %s\n", gres, curr_mask.c_str());
+    return 0;
+  }
+  for ( auto &p: res ) {
+   if ( p.first == g_instr )
+   {
+     auto rend = m_dis->get_rend(g_instr->n);
+     if ( !rend ) {
+       printf("rend failed\n");
+       return 0;
+     }
+     std::string res;
+     render(rend, res, g_instr, p.second, nullptr);
+     g_prompt = res;
+     g_prompt += " ";
+     return 1;
+   }
+  }
+  return 0;
+}
+
+// return: 1 if need to patch & add to kv store
+//   2 if need just to add to kv store
+//   0 if fails
+int INA::patch_internal(std::map<std::string_view, kv_field>::const_iterator *what, const char *s, uint64_t &v)
+{
+  const kv_field *f = &(*what)->second;
+  int mask_size = f->mask_len();
+  if ( mask_size == 1 && f->type == KV_FIELD && !f->ea && !f->va ) {
+    if ( *s == '0' ) v = 0;
+    else v = 1;
+    return 1;
+  }
+  if ( f->ea ) {
+    // check that value exists for this enum
+    if ( !parse_arg(s, v) ) return 0;
+    auto ei = f->ea->em->find(v);
+    if ( ei == f->ea->em->end() ) {
+      printf("bad value %ld for enum %s\n", v, f->ea->ename);
+      return 0;
+    }
+    if ( !f->va ) return 1;
+  }
+  return 0;
+}
 
 int INA::dump_i(const char *fname)
 {
@@ -547,7 +713,7 @@ int INA::pre_build(const nv_instr *ins)
   }
   // const bank
   if ( ins->cb_field ) {
-    kv_field f1(ins->cb_field), f2(ins->cb_field);
+    kv_field f1(ins->cb_field, 0), f2(ins->cb_field, 1);
     check_vas(ins, f1, ins->cb_field->f1);
     check_vas(ins, f2, ins->cb_field->f2);
     s_fields.insert_or_assign(ins->cb_field->f1, f1);
