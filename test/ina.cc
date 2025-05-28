@@ -381,7 +381,7 @@ int INA::dump_i(const char *fname)
   int need_nl = 1;
   if ( what->second.va ) printf(" Format %s", s_fmts[what->second.va->kind]);
   if ( what->second.type == KV_FIELD && what->second.f->scale ) printf(" scale %d", what->second.f->scale);
-  if ( what->second.ea ) {
+  if ( what->second.ea ) { // enum
    const auto ea = what->second.ea;
    if ( ea->ignore )
     printf(" .Enum %s", ea->ename);
@@ -390,7 +390,8 @@ int INA::dump_i(const char *fname)
    if ( ea->has_def_value ) printf(" DefVal %d", ea->def_value);
    // skip too long enumes with registers
    bool skip = !strcmp(ea->ename, "NonZeroRegister") || !strcmp(ea->ename, "NonZeroUniformRegister") ||
-    !strcmp(ea->ename, "RegisterFAU") || strcmp(ea->ename, "NonZeroRegisterFAU");
+    !strcmp(ea->ename, "RegisterFAU") || !strcmp(ea->ename, "NonZeroRegisterFAU") ||
+    !strcmp(ea->ename, "Register") || !strcmp(ea->ename, "SpecialRegister");
    if ( !skip ) {
      fputs(":\n", stdout);
      need_nl = 0;
@@ -398,6 +399,35 @@ int INA::dump_i(const char *fname)
        printf(" %d\t%s\n", ei.first, ei.second);
      }
    }
+  }
+  if ( what->second.type == KV_TAB ) { // tab
+    fputs(" TAB(", stdout);
+    std::for_each( what->first.cbegin(), what->first.cend(), [&](char c){ putc(c, stdout); });
+    fputs("):\n\t", stdout);
+    need_nl = 0;
+    // make offsets of fields names
+    std::vector<int> offsets;
+    int prev = 8;
+    for ( size_t i = 0; i < what->second.t->fields.size(); ++i ) {
+      auto fn = get_it(what->second.t->fields, i);
+      offsets.push_back(prev);
+      prev += fn.size() + 1;
+      std::for_each( fn.cbegin(), fn.cend(), [&](char c){ putc(c, stdout); });
+      fputc(' ', stdout);
+    }
+    fputc('\n', stdout);
+    // dump whole tab
+    auto tab = what->second.t->tab;
+    for ( auto &titer: *tab ) {
+      printf(" %d\t", titer.first);
+      auto ar = titer.second;
+      prev = 8;
+      for ( int i = 1; i <= ar[0]; ++i ) {
+        for ( int p = prev; p < offsets.at(i - 1); ++p ) fputc(' ', stdout);
+        prev = offsets.at(i - 1) + printf("%d", ar[i]);
+      }
+      fputc('\n', stdout);
+    }
   }
   if ( need_nl ) fputc('\n', stdout);
   return 1;
@@ -484,7 +514,7 @@ int INA::pre_build(const nv_instr *ins)
         const nv_eattr *ea = nullptr;
         auto fiter = find(ins->eas, f);
         if ( fiter ) { ea = fiter->ea; }
-        else { ea = try_by_ename(g_instr, f); }
+        else { ea = try_by_ename(ins, f); }
         if ( ea ) curr_field.ea = ea;
         s_fields.insert_or_assign(f, curr_field);
       }
@@ -503,7 +533,7 @@ int INA::pre_build(const nv_instr *ins)
       const nv_eattr *ea = nullptr;
       auto fiter = find(ins->eas, f.name);
       if ( fiter ) { ea = fiter->ea; }
-      else { ea = try_by_ename(g_instr, f.name); }
+      else { ea = try_by_ename(ins, f.name); }
       if ( !ea ) {
         s_fields.insert_or_assign(f.name, curr_field);
         continue;
