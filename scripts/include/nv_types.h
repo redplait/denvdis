@@ -415,7 +415,7 @@ struct nv64: public NV_base_decoder {
   int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v)
   {
     if ( !is_inited() ) return 0;
-    for ( size_t m = 0; m < mask_size; m++ )
+    for ( int m = (int)mask_size - 1; m >= 0; --m )
     {
      *value = _put(v, *value, mask[m].first, mask[m].second);
      v >>= mask[m].second;
@@ -523,7 +523,7 @@ struct nv88: public NV_base_decoder {
   int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v)
   {
     if ( !is_inited() ) return 0;
-    for ( size_t m = 0; m < mask_size; m++ ) {
+    for ( int m = (int)mask_size - 1; m >= 0; --m ) {
      if ( mask[m].first + mask[m].second <= 64 ) {
        *value = _put(v, *value, mask[m].first, mask[m].second);
        v >>= mask[m].second;
@@ -582,7 +582,7 @@ struct nv128: public NV_base_decoder {
   }
   inline __uint128_t _put128(uint64_t v, __uint128_t what, short pos, short len)
   {
-    what = what & ~((__uint128_t)s_masks[len - 1] << pos); // zero all bits in mask
+    what &= ~((__uint128_t)s_masks[len - 1] << pos); // zero all bits in mask
     v &= s_masks[len - 1]; // make new value
     return what | ((__uint128_t)v << pos);
   }
@@ -732,7 +732,7 @@ printf("stop0 %d\n", i);
   int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v)
   {
     if ( !is_inited() ) return 0;
-    for ( size_t m = 0; m < mask_size; m++ ) {
+    for ( int m = (int)mask_size - 1; m >= 0; --m ) {
 #ifdef __SIZEOF_INT128__
      q = _put128(v, q, mask[m].first, mask[m].second);
      v >>= mask[m].second;
