@@ -74,7 +74,7 @@ struct kv_field {
   int patch(uint64_t v, INV_disasm *dis) const
   {
     switch(type) {
-      case KV_FIELD: return dis->put(f->mask, f->mask_size, v);
+      case KV_FIELD: if ( f->scale ) v /= f->scale; return dis->put(f->mask, f->mask_size, v);
       case KV_TAB:   return dis->put(t->mask, t->mask_size, v);
       case KV_CTRL:  return dis->put_ctrl((uint8_t)v);
       case KV_CBANK:
@@ -363,7 +363,7 @@ struct INA: public NV_renderer {
         if ( !rest ) {
           printf("invalid format\n"); free(buf); continue;
         }
-        patch_Tab(tab, rest);
+        if ( patch_Tab(tab, rest) ) add_history(buf);
         free(buf);
         continue;
       }
@@ -718,6 +718,7 @@ int INA::dump_i(const char *fname)
   int need_nl = 1;
   if ( what->second.va ) printf(" Format %s", s_fmts[what->second.va->kind]);
   if ( what->second.type == KV_FIELD && what->second.f->scale ) printf(" scale %d", what->second.f->scale);
+  if ( what->second.type == KV_CBANK && what->second.cb->scale ) printf(" scale %d", what->second.cb->scale);
   if ( what->second.ea ) { // enum
    const auto ea = what->second.ea;
    if ( ea->ignore )
