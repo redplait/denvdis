@@ -24,7 +24,7 @@ struct kv_field {
     const NV_tab_fields *t;
     const NV_cbank *cb;
   };
-  int tab_idx = 0;
+  int tab_idx = 0, field_idx = 0;
   const nv_eattr *ea = nullptr;
   const nv_vattr *va = nullptr;
   // constructors
@@ -32,9 +32,9 @@ struct kv_field {
     type = KV_FIELD;
     f = _f;
   }
-  kv_field(const NV_tab_fields *_t, int idx) {
+  kv_field(const NV_tab_fields *_t, int idx, int fidx) {
     type = KV_TAB;
-    t = _t; tab_idx = idx;
+    t = _t; tab_idx = idx; field_idx = fidx;
   }
   kv_field(const NV_cbank *_cb, int idx) {
     type = KV_CBANK;
@@ -81,7 +81,16 @@ struct kv_field {
           if ( cb->scale ) v /= cb->scale;
           return 3 == cb_size() ? dis->put(cb->mask3, cb->mask3_size, v) : dis->put(cb->mask2, cb->mask2_size, v);
         }
-        if ( !tab_idx && 2 == cb_size() ) return dis->put(cb->mask1, cb->mask1_size, v);
+        if ( !tab_idx ) {
+          auto msize = cb_size(); // calc count of masks
+          if ( 2 == msize ) return dis->put(cb->mask1, cb->mask1_size, v);
+          if ( 3 == msize ) { // BankLo | (BankHi << 4), masks: BankHi - 1, BankLo - 2
+            auto lo = v & 0xf;
+            auto hi = (v >> 4) & 0xf;
+            if ( !dis->put(cb->mask1, cb->mask1_size, hi) ) return 0;
+            return dis->put(cb->mask2, cb->mask2_size, lo);
+          }
+        }
     }
     return 0;
   }
@@ -396,6 +405,7 @@ struct INA: public NV_renderer {
   int patch(std::map<std::string_view, kv_field>::const_iterator, const char *);
   int patch_internal(std::map<std::string_view, kv_field>::const_iterator *, const char *, uint64_t &v);
   int parse_arg(const char *, uint64_t &v);
+  int patch_tab(std::map<std::string_view, kv_field>::const_iterator *, uint64_t v);
   // disasm input file
   void process_buf();
   void dump_ins(const NV_pair &p, size_t off);
@@ -464,6 +474,60 @@ int INA::parse_arg(const char *s, uint64_t &v)
   return 1;
 }
 
+// ensure that we can compose valid value from all table colums
+int INA::patch_tab(std::map<std::string_view, kv_field>::const_iterator *what, uint64_t v)
+{
+  if ( opt_v ) printf("patch_tab %ld\n", v);
+  const kv_field *f = &(*what)->second;
+  // make array to search for
+  std::vector<unsigned short> etalon;
+  unsigned short pattern = (unsigned short)v;
+  int idx = 0;
+  for ( auto &fn: f->t->fields ) {
+    if ( idx == f->field_idx ) etalon.push_back(pattern);
+    else {
+      auto kviter = m_kv.find(fn);
+      if ( kviter == m_kv.end() ) {
+        printf("bad tab, cannot find value for index %d\n", idx);
+        return 0;
+      }
+      etalon.push_back((unsigned short)kviter->second);
+    }
+    idx++;
+  }
+  // check if we have such row in table
+  int has_value = 0;
+  for ( auto &tv: *f->t->tab ) {
+    auto ar = tv.second;
+    if ( ar[0] != etalon.size() ) continue;
+    // compare
+    int cmp = 1;
+    for ( int i = 0; i < (int)etalon.size(); i++ ) {
+      if ( i == f->field_idx && ar[1 + i] == pattern ) has_value++;
+      if ( ar[1 + i] != etalon[i] ) { cmp = 0; break; }
+    }
+///std::for_each(ar, ar + 1 + ar[0], [](unsigned short v) { printf("%d ", v); }); printf("cmp %d\n", cmp);
+    if ( !cmp ) continue;
+    // ok, we have full match - lets patch
+    if ( opt_v ) {
+      std::for_each(ar, ar + 1 + ar[0], [](unsigned short v) { printf("%d ", v); }); printf("res %d\n", tv.first);
+    }
+    f->patch(tv.first, m_dis);
+    return 2;
+  }
+  if ( !has_value ) {
+    printf("no value for %ld (idx %d) in table: ", v, f->field_idx );
+    std::for_each(etalon.cbegin(), etalon.cend(), [](unsigned short v) { printf("%d ", v); });
+    fputc('\n', stdout);
+    return 0;
+  }
+  // table contains value v for this column but no valid row was found
+  printf("cannot find row: ");
+  std::for_each(etalon.cbegin(), etalon.cend(), [](unsigned short v) { printf("%d ", v); });
+  fputc('\n', stdout);
+  return 2;
+}
+
 int INA::patch(std::map<std::string_view, kv_field>::const_iterator what, const char *s)
 {
   uint64_t v = 0L;
@@ -471,7 +535,7 @@ int INA::patch(std::map<std::string_view, kv_field>::const_iterator what, const 
   if ( !pres ) return 0;
   // add to kv
   m_kv[what->first] = v;
-  // try to patch
+  // try to patch if patch_internal returned 1
   if ( pres & 1 ) {
     if ( !what->second.patch(v, m_dis) ) {
       printf("patch failed\n");
@@ -502,6 +566,7 @@ int INA::patch(std::map<std::string_view, kv_field>::const_iterator what, const 
      return 1;
    }
   }
+  printf("cannot update promptr\n");
   return 0;
 }
 
@@ -525,7 +590,33 @@ int INA::patch_internal(std::map<std::string_view, kv_field>::const_iterator *wh
       printf("bad value %ld for enum %s\n", v, f->ea->ename);
       return 0;
     }
+    if ( f->type == KV_TAB ) return patch_tab(what, v);
     if ( !f->va ) return 1;
+  }
+  if ( f->type == KV_TAB ) {
+    if ( !parse_arg(s, v) ) return 0;
+    return patch_tab(what, v);
+  }
+  if ( !f->va ) {
+    if ( !parse_arg(s, v) ) return 0;
+    if ( f->type == KV_TAB ) return patch_tab(what, v);
+    return 1;
+  }
+  // input depends from format in va
+  double d;
+  switch(f->va->kind) {
+    case NV_BITSET:
+    case NV_UImm:
+     if ( !parse_arg(s, v) ) return 0;
+     return 1;
+    case NV_F64Imm:
+     d = atof(s);
+     v = *(uint64_t *)&d;
+     return 1;
+    case NV_F32Imm:
+     d = (float)atof(s);
+     v = *(uint64_t *)&d;
+     return 1;
   }
   return 0;
 }
@@ -664,17 +755,18 @@ int INA::pre_build(const nv_instr *ins)
 #endif
     int tab_idx = 0;
     for ( auto t: ins->tab_fields ) {
-      tab_idx++;
       auto tab = t->tab;
+      tab_idx++;
       auto first_row = tab->find(0); // first - value, second - array for fields
       if ( first_row == tab->end() ) first_row = tab->begin();
       if ( !m_dis->put(t->mask, t->mask_size, first_row->first) ) return 0;
       auto arr = first_row->second;
       if ( arr[0] != t->fields.size() ) return 0;
-      int i = 1;
+      int i = 1,
+          f_idx = 0;
       for ( auto &f: t->fields ) {
         m_kv[f] = arr[i++];
-        kv_field curr_field(t, tab_idx);
+        kv_field curr_field(t, tab_idx, f_idx++);
         check_vas(ins, curr_field, f);
         // field in tabs can be enum also
         const nv_eattr *ea = nullptr;
