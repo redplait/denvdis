@@ -353,6 +353,20 @@ struct INA: public NV_renderer {
         free(buf);
         continue;
       }
+      // TabXX
+      if ( buf[0] == 'T' && buf[1] == 'a' && buf[2] == 'b' ) {
+        auto tab = find_tab(buf + 3);
+        if ( !tab ) { free(buf); continue; }
+        const char *next = lspace(buf + 3);
+        if ( !next ) { free(buf); continue; }
+        const char *rest = lfind(next);
+        if ( !rest ) {
+          printf("invalid format\n"); free(buf); continue;
+        }
+        patch_Tab(tab, rest);
+        free(buf);
+        continue;
+      }
       // field value - let's first try to find field
       std::string_view sv;
       char *text = rstrip(buf);
@@ -402,8 +416,10 @@ struct INA: public NV_renderer {
   int rend_renderer(const NV_rlist *, const std::string &opcode, std::string &res);
   // instruction builders
   const NV_tab_fields *find_tab(const char *s);
+  int patch_Tab(const NV_tab_fields *, const char *);
   int check_vas(const nv_instr *, kv_field &, const std::string_view &);
   int pre_build(const nv_instr *ins);
+  int re_rend();
   int patch(std::map<std::string_view, kv_field>::const_iterator, const char *);
   int patch_internal(std::map<std::string_view, kv_field>::const_iterator *, const char *, uint64_t &v);
   int parse_arg(const char *, uint64_t &v);
@@ -455,8 +471,6 @@ const NV_tab_fields *INA::find_tab(const char *s)
   printf("cannot find table %s\n", s);
   return nullptr;
 }
-
-
 
 int INA::parse_signed(const char *s, uint64_t &v)
 {
@@ -583,7 +597,12 @@ int INA::patch(std::map<std::string_view, kv_field>::const_iterator what, const 
       return 0;
     }
   }
-  // and get new render
+  return re_rend();
+}
+
+int INA::re_rend()
+{
+  // get new render
   NV_res res;
   auto gres = m_dis->get(res, 0);
   if ( gres < 1 ) {
@@ -601,6 +620,13 @@ int INA::patch(std::map<std::string_view, kv_field>::const_iterator what, const 
        return 0;
      }
      std::string res;
+#ifdef DEBUG
+ // dump batch_t & usched_info
+ auto b1 = p.second.find("batch_t");
+ if ( b1 != p.second.end() ) printf("batch_t %ld\n", b1->second);
+ b1 = p.second.find("usched_info");
+ if ( b1 != p.second.end() ) printf("usched_info %ld\n", b1->second);
+#endif
      render(rend, res, g_instr, p.second, nullptr);
      g_prompt = res;
      g_prompt += " ";
@@ -641,6 +667,7 @@ int INA::patch_internal(std::map<std::string_view, kv_field>::const_iterator *wh
   if ( !f->va ) {
     if ( !parse_arg(s, v) ) return 0;
     if ( f->type == KV_TAB ) return patch_tab(what, v);
+    if ( f->type == KV_CTRL ) return 1;
     return 1;
   }
   // input depends from format in va
@@ -685,6 +712,7 @@ int INA::dump_i(const char *fname)
       printf("unknown field %s (%ld)\n", fname, s_fields.size()); return 0;
     }
   }
+  if ( what->second.type == KV_CTRL ) { printf("Ctrl len 8\n"); return 1; }
   printf("MaskLen %d", what->second.mask_len());
   // check what is it
   int need_nl = 1;
@@ -789,6 +817,35 @@ int INA::check_vas(const nv_instr *ins, kv_field &kf, const std::string_view &s)
   return 1;
 }
 
+int INA::patch_Tab(NV_tab_fields const *t, char const *s)
+{
+  uint64_t v;
+  auto pres = parse_arg(s, v);
+  if ( !pres ) return 0;
+  // try to find row in tab
+  auto row = t->tab->find(v);
+  if ( row == t->tab->end() ) {
+    printf("no value for %ld\n", v);
+    return 0;
+  }
+  // patch
+  if ( !m_dis->put(t->mask, t->mask_size, v) ) {
+    printf("patch failed\n");
+    return 0;
+  }
+  // patch fields in kv
+  auto ar = row->second;
+  if ( opt_v ) printf("v %ld:", v);
+  for ( int i = 0; i < ar[0]; i++ )
+  {
+    auto fname = get_it(t->fields, i);
+    m_kv[fname] = ar[i+1];
+    if ( opt_v ) printf(" %d", ar[i+1]);
+  }
+  if ( opt_v ) fputc('\n', stdout);
+  return re_rend();
+}
+
 int INA::pre_build(const nv_instr *ins)
 {
   m_kv.clear();
@@ -852,7 +909,7 @@ int INA::pre_build(const nv_instr *ins)
       s_fields.insert_or_assign(f.name, curr_field);
       if ( !ea->has_def_value ) continue;
       if ( !m_dis->put(f.mask, f.mask_size, ea->def_value) ) return 0;
-      m_kv[f.name] = fiter->ea->def_value;
+      m_kv[f.name] = ea->def_value;
     }
   }
   // const bank
@@ -862,6 +919,11 @@ int INA::pre_build(const nv_instr *ins)
     check_vas(ins, f2, ins->cb_field->f2);
     s_fields.insert_or_assign(ins->cb_field->f1, f1);
     s_fields.insert_or_assign(ins->cb_field->f2, f2);
+  }
+  // add ctrl for 64bit
+  if ( m_width == 64 ) {
+    kv_field f(KV_CTRL);
+    s_fields.insert_or_assign("Ctrl", f);
   }
   // check if we can extract our instruction back
   NV_res res;
@@ -1128,6 +1190,11 @@ void INA::dump_ins(const NV_pair &p, size_t off)
         fputc(':', m_out);
         for ( auto &ms: m_missed ) fprintf(m_out, " %s", ms.c_str());
       }
+    }
+    if ( m_width == 64 ) {
+     uint8_t op = 0, ctrl = 0;
+     m_dis->get_ctrl(op, ctrl);
+     if ( ctrl ) fprintf(m_out, " Ctrl %X", ctrl);
     }
     fputc('\n', m_out);
   }
