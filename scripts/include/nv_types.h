@@ -321,13 +321,12 @@ struct NV_base_decoder {
        else res.push_back('0');
      }
    }
-   const unsigned char *start = nullptr, *curr = nullptr, *end, *block_start;
+   const unsigned char *start = nullptr, *curr = nullptr, *end;
    int m_idx = 0;
    inline int is_inited() const
    { return (curr != nullptr) && (curr < end); }
    void _init(const unsigned char *buf, size_t size) {
-     block_start = curr = buf;
-     start = curr;
+     start = curr = buf;
      end = buf + size;
      m_idx = 0;
      opcode = ctrl = 0;
@@ -337,7 +336,11 @@ struct NV_base_decoder {
 struct nv64: public NV_base_decoder {
  protected:
   const int _width = 64;
-  uint64_t *value = nullptr, cqword;
+  uint64_t *value = nullptr, *cqword = nullptr;
+  void _init(const unsigned char *buf, size_t size) {
+    NV_base_decoder::_init(buf, size);
+    cqword = (uint64_t *)curr;
+  }
   inline int check_bit(int idx) const {
     return _check_bit(*value, idx);
   }
@@ -370,16 +373,15 @@ struct nv64: public NV_base_decoder {
   }
   int flush() {
     // make cqword
-    cqword |= (ctrl & 0xff) << (8 * m_idx + 2);
+    *cqword |= (ctrl & 0xff) << (8 * m_idx + 2);
     curr += 8;
     value++;
     m_idx++;
     if ( 7 == m_idx ) {
-      *(uint64_t *)curr = cqword;
       value = nullptr;
       m_idx = 0;
       curr += 8 * 8;
-      block_start = curr;
+      cqword = (uint64_t *)curr;
       return (curr >= end);
     }
     return 0;
@@ -390,14 +392,13 @@ struct nv64: public NV_base_decoder {
     if ( !m_idx ) {
       // check that we have space for least 8 64 qwords
       if ( end - curr < 8 * 8 ) return 0;
-      cqword = *(uint64_t *)curr;
-      block_start = curr;
+      cqword = (uint64_t *)curr;
       curr += 8;
       // 6 bit - 3f, << 2 = 0xfc
-      opcode = (cqword & 0x3) | ((cqword >> (64 - 8)) & 0xfc);
+      opcode = ((*cqword) & 0x3) | (((*cqword) >> (64 - 8)) & 0xfc);
     }
     // fill ctrl
-    ctrl = (cqword >> (8 * m_idx + 2)) & 0xff;
+    ctrl = ((*cqword) >> (8 * m_idx + 2)) & 0xff;
     // fill value
     value = (uint64_t *)curr;
     curr += 8;
@@ -427,7 +428,11 @@ struct nv64: public NV_base_decoder {
 struct nv88: public NV_base_decoder {
  protected:
   const int _width = 88;
-  uint64_t *value = nullptr, cqword, cword;
+  uint64_t *value = nullptr, *cqword = nullptr, cword;
+  void _init(const unsigned char *buf, size_t size) {
+    NV_base_decoder::_init(buf, size);
+    cqword = (uint64_t *)curr;
+  }
   inline uint64_t get_cword() const {
     return cword;
   }
@@ -480,15 +485,14 @@ struct nv88: public NV_base_decoder {
     return 1;
   }
   int flush() {
-    cqword |= (cword & 0x1fffff) << (21 * m_idx);
+    *cqword |= (cword & 0x1fffff) << (21 * m_idx);
     value++;
     m_idx++;
     if ( 3 == m_idx ) {
-      *(uint64_t *)curr = cqword;
       m_idx = 0;
       value = nullptr;
       curr += 4 * 8;
-      block_start = curr;
+      cqword = (uint64_t *)curr;
       return (curr >= end);
     }
     return 0;
@@ -499,19 +503,18 @@ struct nv88: public NV_base_decoder {
     if ( !m_idx ) {
       // check that we have space for least 8 64 qwords
       if ( end - curr < 4 * 8 ) return 0;
-      cqword = *(uint64_t *)curr;
-      block_start = curr;
+      cqword = (uint64_t *)curr;
       curr += 8;
     }
     // fill cword - 21 bit = 1fffff
-    cword = (cqword >> (21 * m_idx)) & 0x1fffff;
+    cword = ((*cqword) >> (21 * m_idx)) & 0x1fffff;
     // fill ctrl - see https://github.com/NervanaSystems/maxas/wiki/Control-Codes
     switch(m_idx) {
-      case 0: ctrl = (cqword & 0x00000000001e0000) >> 17;
+      case 0: ctrl = ((*cqword) & 0x00000000001e0000) >> 17;
        break;
-      case 1: ctrl = (cqword & 0x000003c000000000) >> 38;
+      case 1: ctrl = ((*cqword) & 0x000003c000000000) >> 38;
        break;
-      case 2: ctrl = (cqword & 0x7800000000000000) >> 59;
+      case 2: ctrl = ((*cqword) & 0x7800000000000000) >> 59;
     }
     // fill value
     value = (uint64_t *)curr;
