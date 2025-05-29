@@ -387,8 +387,7 @@ struct INA: public NV_renderer {
       }
       if ( what == s_fields.end() ) {
         printf("unknown field ");
-        std::for_each(sv.cbegin(), sv.cend(), [&](char c){ putc(c, stdout); });
-        fputc('\n', stdout);
+        dump_out(sv); fputc('\n', stdout);
         free(buf); continue;
       }
       if ( patch(what, rest) ) add_history(text);
@@ -414,6 +413,11 @@ struct INA: public NV_renderer {
   void r_velist(const std::list<ve_base> &l, std::string &res);
   void dump_curr_rend();
   int rend_renderer(const NV_rlist *, const std::string &opcode, std::string &res);
+  template <typename T>
+  void dump_usArr(T &a, int nl = 0) const {
+    std::for_each(a.cbegin(), a.cend(), [](unsigned short v) { printf("%d ", v); });
+    if ( nl ) fputc('\n', stdout);
+  }
   // instruction builders
   const NV_tab_fields *find_tab(const char *s);
   int patch_Tab(const NV_tab_fields *, const char *);
@@ -572,14 +576,12 @@ int INA::patch_tab(std::map<std::string_view, kv_field>::const_iterator *what, u
   }
   if ( !has_value ) {
     printf("no value for %ld (idx %d) in table: ", v, f->field_idx );
-    std::for_each(etalon.cbegin(), etalon.cend(), [](unsigned short v) { printf("%d ", v); });
-    fputc('\n', stdout);
+    dump_usArr(etalon, 1);
     return 0;
   }
   // table contains value v for this column but no valid row was found
   printf("cannot find row: ");
-  std::for_each(etalon.cbegin(), etalon.cend(), [](unsigned short v) { printf("%d ", v); });
-  fputc('\n', stdout);
+  dump_usArr(etalon, 1);
   return 2;
 }
 
@@ -740,7 +742,7 @@ int INA::dump_i(const char *fname)
   }
   if ( what->second.type == KV_TAB ) { // tab
     fputs(" TAB(", stdout);
-    std::for_each( what->first.cbegin(), what->first.cend(), [&](char c){ putc(c, stdout); });
+    dump_out(what->first);
     fputs("):\n\t", stdout);
     need_nl = 0;
     // make offsets of fields names
@@ -750,7 +752,7 @@ int INA::dump_i(const char *fname)
       auto fn = get_it(what->second.t->fields, i);
       offsets.push_back(prev);
       prev += fn.size() + 1;
-      std::for_each( fn.cbegin(), fn.cend(), [&](char c){ putc(c, stdout); });
+      dump_out(fn);
       fputc(' ', stdout);
     }
     fputc('\n', stdout);
@@ -783,7 +785,7 @@ void INA::dump_kv()
       default:       fputs("      ", stdout); break;
     }
     if ( fiter->second.type != KV_CTRL ) {
-      std::for_each( fiter->first.cbegin(), fiter->first.cend(), [&](char c){ putc(c, stdout); });
+      dump_out(fiter->first);
       putc(':', stdout);
     } else fputs(": ", stdout);
     if ( fiter->second.ea ) {

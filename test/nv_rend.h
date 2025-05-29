@@ -97,6 +97,7 @@ class NV_renderer {
    void dump_predicates(const struct nv_instr *, const NV_extracted &) const;
    int cmp(const std::string_view &, const char *) const;
    void dump_sv(const std::string_view &) const;
+   void dump_out(const std::string_view &) const;
    bool contain(const std::string_view &, char) const;
    int calc_miss(const struct nv_instr *, const NV_extracted &, int) const;
    int calc_index(const NV_res &, int) const;

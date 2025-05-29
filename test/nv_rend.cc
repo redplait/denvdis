@@ -47,6 +47,11 @@ void NV_renderer::dump_sv(const std::string_view &sv) const
   std::for_each( sv.cbegin(), sv.cend(), [&](char c){ fputc(c, m_out); });
 }
 
+void NV_renderer::dump_out(const std::string_view &sv) const
+{
+  std::for_each( sv.cbegin(), sv.cend(), [&](char c){ fputc(c, stdout); });
+}
+
 int NV_renderer::cmp(const std::string_view &sv, const char *s) const
 {
   size_t i = 0;
