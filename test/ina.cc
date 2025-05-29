@@ -2,6 +2,7 @@
 #include <readline/readline.h>
 #include "nv_rend.h"
 #include <numeric>
+#include <fp16.h>
 // for stat & getopt
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -400,11 +401,13 @@ struct INA: public NV_renderer {
   void dump_curr_rend();
   int rend_renderer(const NV_rlist *, const std::string &opcode, std::string &res);
   // instruction builders
+  const NV_tab_fields *find_tab(const char *s);
   int check_vas(const nv_instr *, kv_field &, const std::string_view &);
   int pre_build(const nv_instr *ins);
   int patch(std::map<std::string_view, kv_field>::const_iterator, const char *);
   int patch_internal(std::map<std::string_view, kv_field>::const_iterator *, const char *, uint64_t &v);
   int parse_arg(const char *, uint64_t &v);
+  int parse_signed(const char *, uint64_t &v);
   int patch_tab(std::map<std::string_view, kv_field>::const_iterator *, uint64_t v);
   // disasm input file
   void process_buf();
@@ -439,6 +442,44 @@ int INA::extract_sv(const char *s, std::string_view &sv)
   const char *end = lspace(s);
   if ( !end ) return 0;
   sv = { s, end };
+  return 1;
+}
+
+const NV_tab_fields *INA::find_tab(const char *s)
+{
+  // read tab idx
+  auto idx = atoi(s);
+  for ( auto &kfi: s_fields ) {
+    if ( kfi.second.type == KV_TAB && kfi.second.tab_idx == idx ) return kfi.second.t;
+  }
+  printf("cannot find table %s\n", s);
+  return nullptr;
+}
+
+
+
+int INA::parse_signed(const char *s, uint64_t &v)
+{
+  bool minus = false;
+  if ( s[0] == '-' ) { minus = true; s++; }
+  char *end = nullptr;
+  long sv;
+  // check hex
+  if ( s[0] == '0' && s[1] == 'x' ) { // 0x
+    sv = strtoll(s + 2, &end, 16);
+    if ( *end ) {
+      printf("bad hex const %s\n", s);
+      return 0;
+    }
+  } else {
+    sv = strtoll(s, &end, 10);
+    if ( *end ) {
+      printf("bad const %s\n", s);
+      return 0;
+    }
+  }
+  if ( minus ) v = -sv;
+  else v = sv;
   return 1;
 }
 
@@ -566,7 +607,7 @@ int INA::patch(std::map<std::string_view, kv_field>::const_iterator what, const 
      return 1;
    }
   }
-  printf("cannot update promptr\n");
+  printf("cannot update prompt\n");
   return 0;
 }
 
@@ -604,6 +645,7 @@ int INA::patch_internal(std::map<std::string_view, kv_field>::const_iterator *wh
   }
   // input depends from format in va
   double d;
+  float fd;
   switch(f->va->kind) {
     case NV_BITSET:
     case NV_UImm:
@@ -617,6 +659,16 @@ int INA::patch_internal(std::map<std::string_view, kv_field>::const_iterator *wh
      d = (float)atof(s);
      v = *(uint64_t *)&d;
      return 1;
+    case NV_F16Imm:
+      fd = atof(s);
+      v = fp16_ieee_from_fp32_value(fd);
+     return 1;
+    // signed int
+    case NV_SImm:
+    case NV_SSImm:
+    case NV_RSImm:
+      if ( !parse_signed(s, v) ) return 0;
+      return 1;
   }
   return 0;
 }
