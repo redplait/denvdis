@@ -52,6 +52,11 @@ void NV_renderer::dump_out(const std::string_view &sv) const
   std::for_each( sv.cbegin(), sv.cend(), [&](char c){ fputc(c, stdout); });
 }
 
+void NV_renderer::dump_out(const std::string_view &sv, FILE *fp) const
+{
+  std::for_each( sv.cbegin(), sv.cend(), [fp](char c){ fputc(c, fp); });
+}
+
 int NV_renderer::cmp(const std::string_view &sv, const char *s) const
 {
   size_t i = 0;
@@ -471,6 +476,27 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
     idx++;
   }
   return missed;
+}
+
+int NV_renderer::dump_predicates(const struct nv_instr *i, const NV_extracted &kv, FILE *fp) const
+{
+  if ( !i->predicated ) return 0;
+  int ret = 0;
+  for ( auto &pred: *i->predicated ) {
+    ret++;
+    fputc(' ', fp); dump_out(pred.first, fp);
+    int res = pred.second(kv);
+    if ( res >= 0 && m_vq && cmp(pred.first, "VQ") ) {
+     auto name = m_vq(res);
+     if ( name )
+       fprintf(fp, ": %s (%d)", name, res);
+     else
+       fprintf(fp, ": %d", res);
+    } else
+      fprintf(fp, ": %d", res);
+    fputc('\n', fp);
+  }
+  return ret;
 }
 
 void NV_renderer::dump_predicates(const struct nv_instr *i, const NV_extracted &kv) const

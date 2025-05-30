@@ -94,13 +94,18 @@ class NV_renderer {
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist);
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, NV_Tabset &);
    void dump_ops(const struct nv_instr *, const NV_extracted &) const;
-   void dump_predicates(const struct nv_instr *, const NV_extracted &) const;
+   // string_view methods
    int cmp(const std::string_view &, const char *) const;
    void dump_sv(const std::string_view &) const;
    void dump_out(const std::string_view &) const;
+   void dump_out(const std::string_view &, FILE *) const;
    bool contain(const std::string_view &, char) const;
+   // calculating best instruction from candidates
    int calc_miss(const struct nv_instr *, const NV_extracted &, int) const;
    int calc_index(const NV_res &, int) const;
+   // predicates
+   void dump_predicates(const struct nv_instr *, const NV_extracted &) const;
+   int dump_predicates(const struct nv_instr *, const NV_extracted &, FILE *fp) const;
    // renderer
    int render_ve(const ve_base &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
    int render_ve_list(const std::list<ve_base> &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;

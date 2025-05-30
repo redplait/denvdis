@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 int opt_m = 0,
+    opt_p = 0,
     opt_v = 0;
 
 enum kv_type {
@@ -115,7 +116,8 @@ static const std::vector<const nv_instr *> *g_found;
 static std::string g_prompt, s_opcode;
 static const nv_instr *g_instr = nullptr;
 static std::map<std::string_view, kv_field> s_fields;
-static decltype(s_fields)::const_iterator s_fields_iter;
+typedef decltype(s_fields)::const_iterator Fields_Iter;
+static Fields_Iter s_fields_iter;
 
 // completiton logic stolen from https://prateek.page/post/gnu-readline-for-tab-autocomplete-and-bash-like-history/
 char *null_generator(const char *text, int state) {
@@ -378,7 +380,7 @@ struct INA: public NV_renderer {
       if ( !rest ) {
         printf("invalid format\n"); free(buf); continue;
       }
-      auto what = s_fields.find(sv);
+      Fields_Iter what = s_fields.find(sv);
       if ( what == s_fields.end() ) {
         // ok, check in ins->eas
         auto ea = find(g_instr->eas, sv);
@@ -424,11 +426,11 @@ struct INA: public NV_renderer {
   int check_vas(const nv_instr *, kv_field &, const std::string_view &) const;
   int pre_build(const nv_instr *ins);
   int re_rend();
-  int patch(std::map<std::string_view, kv_field>::const_iterator, const char *);
-  int patch_internal(std::map<std::string_view, kv_field>::const_iterator *, const char *, uint64_t &v);
+  int patch(Fields_Iter &, const char *);
+  int patch_internal(Fields_Iter *, const char *, uint64_t &v);
   int parse_arg(const char *, uint64_t &v) const;
   int parse_signed(const char *, uint64_t &v) const;
-  int patch_tab(std::map<std::string_view, kv_field>::const_iterator *, uint64_t v);
+  int patch_tab(Fields_Iter *, uint64_t v);
   // disasm input file
   void process_buf();
   void dump_ins(const NV_pair &p, size_t off);
@@ -534,7 +536,7 @@ int INA::parse_arg(const char *s, uint64_t &v) const
 }
 
 // ensure that we can compose valid value from all table colums
-int INA::patch_tab(std::map<std::string_view, kv_field>::const_iterator *what, uint64_t v)
+int INA::patch_tab(Fields_Iter *what, uint64_t v)
 {
   if ( opt_v ) printf("patch_tab %ld\n", v);
   const kv_field *f = &(*what)->second;
@@ -585,7 +587,7 @@ int INA::patch_tab(std::map<std::string_view, kv_field>::const_iterator *what, u
   return 2;
 }
 
-int INA::patch(std::map<std::string_view, kv_field>::const_iterator what, const char *s)
+int INA::patch(Fields_Iter &what, const char *s)
 {
   uint64_t v = 0L;
   int pres = patch_internal(&what, s, v);
@@ -632,6 +634,10 @@ int INA::re_rend()
      render(rend, res, g_instr, p.second, nullptr);
      g_prompt = res;
      g_prompt += " ";
+     if ( opt_p && g_instr->predicated ) {
+       printf("Predicates:\n");
+       dump_predicates(p.first, p.second, stdout);
+     }
      return 1;
    }
   }
@@ -642,7 +648,7 @@ int INA::re_rend()
 // return: 1 if need to patch & add to kv store
 //   2 if need just to add to kv store
 //   0 if fails
-int INA::patch_internal(std::map<std::string_view, kv_field>::const_iterator *what, const char *s, uint64_t &v)
+int INA::patch_internal(Fields_Iter *what, const char *s, uint64_t &v)
 {
   const kv_field *f = &(*what)->second;
   int mask_size = f->mask_len();
@@ -1200,6 +1206,10 @@ void INA::dump_ins(const NV_pair &p, size_t off)
      if ( ctrl ) fprintf(m_out, " Ctrl %X", ctrl);
     }
     fputc('\n', m_out);
+    if ( opt_p && p.first->predicated ) {
+      fprintf(m_out, "Predicates:\n");
+      dump_predicates(p.first, p.second, m_out);
+    }
   }
 }
 
@@ -1210,6 +1220,7 @@ void usage(const char *prog)
   printf(" -i input binary\n");
   printf(" -o output binary\n");
   printf(" -m - dump missed fields\n");
+  printf(" -p - dump predicated\n");
   printf(" -v - verbose mode\n");
   exit(6);
 }
@@ -1219,12 +1230,13 @@ int main(int argc, char **argv)
   int c;
   const char *o_fname = nullptr, *i_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "mvi:o:");
+    c = getopt(argc, argv, "mpvi:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'm': opt_m = 1; break;
       case 'o': o_fname = optarg; break;
       case 'i': i_fname = optarg; break;
+      case 'p': opt_p = 1; break;
       case 'v': opt_v = 1; break;
       default: usage(argv[0]);
     }
