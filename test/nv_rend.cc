@@ -478,13 +478,14 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
   return missed;
 }
 
-int NV_renderer::dump_predicates(const struct nv_instr *i, const NV_extracted &kv, FILE *fp) const
+int NV_renderer::dump_predicates(const struct nv_instr *i, const NV_extracted &kv, FILE *fp, const char *pfx) const
 {
   if ( !i->predicated ) return 0;
   int ret = 0;
   for ( auto &pred: *i->predicated ) {
     ret++;
-    fputc(' ', fp); dump_out(pred.first, fp);
+    if ( pfx ) fputs(pfx, fp);
+    dump_out(pred.first, fp);
     int res = pred.second(kv);
     if ( res >= 0 && m_vq && cmp(pred.first, "VQ") ) {
      auto name = m_vq(res);
@@ -502,20 +503,7 @@ int NV_renderer::dump_predicates(const struct nv_instr *i, const NV_extracted &k
 void NV_renderer::dump_predicates(const struct nv_instr *i, const NV_extracted &kv) const
 {
   if ( !i->predicated ) return;
-  for ( auto &pred: *i->predicated ) {
-    fputs("P> ", m_out);
-    dump_sv(pred.first);
-    int res = pred.second(kv);
-    if ( res >= 0 && m_vq && cmp(pred.first, "VQ") ) {
-     auto name = m_vq(res);
-     if ( name )
-       fprintf(m_out, ": %s (%d)", name, res);
-     else
-       fprintf(m_out, ": %d", res);
-    } else
-      fprintf(m_out, ": %d", res);
-    fputc('\n', m_out);
-  }
+  dump_predicates(i, kv, m_out, "P> ");
 }
 
 void NV_renderer::dump_ops(const struct nv_instr *i, const NV_extracted &kv) const
@@ -557,12 +545,11 @@ void NV_renderer::dump_ops(const struct nv_instr *i, const NV_extracted &kv) con
 
 bool NV_renderer::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist)
 {
-  NV_Tabset tmp;
-  return check_sched_cond(i, kv, clist, tmp);
+  return check_sched_cond(i, kv, clist, nullptr);
 }
 
 bool NV_renderer::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist,
- NV_Tabset &out_res)
+ NV_Tabset *out_res)
 {
   if ( !clist.second || !clist.second->size() ) return true;
   int res = 0;
@@ -574,7 +561,8 @@ bool NV_renderer::check_sched_cond(const struct nv_instr *i, const NV_extracted 
     }
     auto kiter = kv.find(cond.first);
     if ( kiter == kv.end() ) { if ( opt_m ) m_missed.insert({cond.first.begin(), cond.first.end()}); continue; }
-    out_res[cond.first] = (int)kiter->second;
+    if ( out_res )
+     (*out_res)[cond.first] = (int)kiter->second;
     res++;
   }
   return res != 0;
@@ -603,7 +591,7 @@ int NV_renderer::fill_sched(const struct nv_instr *i, const NV_extracted &kv)
     } else {
       // check tab.cols[titer.idx].second for condition
       NV_Tabset row_res;
-      if ( !check_sched_cond(i, kv, get_it(titer.tab->cols, titer.idx), row_res) ) {
+      if ( !check_sched_cond(i, kv, get_it(titer.tab->cols, titer.idx), &row_res) ) {
         if ( get_it(titer.tab->cols, titer.idx).second )
           cached[ get_it(titer.tab->cols, titer.idx).second ] = nullptr; // store bad result in cache too
         continue;
@@ -660,7 +648,7 @@ int NV_renderer::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
       tset = cres->second;
     } else {
       NV_Tabset row_res;
-      if ( !check_sched_cond(i, kv, get_it(titer.tab->rows, titer.idx), row_res) ) {
+      if ( !check_sched_cond(i, kv, get_it(titer.tab->rows, titer.idx), &row_res) ) {
         if ( get_it(titer.tab->rows, titer.idx).second )
           cached[ get_it(titer.tab->rows, titer.idx).second ] = nullptr; // store bad result in cache too
         continue;

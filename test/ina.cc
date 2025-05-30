@@ -411,10 +411,10 @@ struct INA: public NV_renderer {
   int extract_sv(const char *, std::string_view &) const;
   int dump_i(const char *) const;
   void dump_kv() const;
-  void r_ve(const ve_base &, std::string &res);
-  void r_velist(const std::list<ve_base> &l, std::string &res);
-  void dump_curr_rend();
-  int rend_renderer(const NV_rlist *, const std::string &opcode, std::string &res);
+  void r_ve(const ve_base &, std::string &res) const;
+  void r_velist(const std::list<ve_base> &l, std::string &res) const;
+  void dump_curr_rend() const;
+  int rend_renderer(const NV_rlist *, const std::string &opcode, std::string &res) const;
   template <typename T>
   void dump_usArr(T &a, int nl = 0) const {
     std::for_each(a.cbegin(), a.cend(), [](unsigned short v) { printf("%d ", v); });
@@ -636,7 +636,7 @@ int INA::re_rend()
      g_prompt += " ";
      if ( opt_p && g_instr->predicated ) {
        printf("Predicates:\n");
-       dump_predicates(p.first, p.second, stdout);
+       dump_predicates(p.first, p.second, stdout, " ");
      }
      return 1;
    }
@@ -961,7 +961,7 @@ int INA::pre_build(const nv_instr *ins)
   return 0;
 }
 
-void INA::dump_curr_rend()
+void INA::dump_curr_rend() const
 {
   auto rend = m_dis->get_rend(g_instr->n);
   if ( !rend ) return;
@@ -969,7 +969,7 @@ void INA::dump_curr_rend()
   if ( rend_renderer( rend, s_opcode, form ) ) printf("%s\n", form.c_str());
 }
 
-int INA::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res)
+int INA::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res) const
 {
   for ( auto r: *rlist ) {
     switch(r->type) {
@@ -1042,13 +1042,13 @@ int INA::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::st
   return !res.empty();
 }
 
-void INA::r_ve(const ve_base &ve, std::string &res)
+void INA::r_ve(const ve_base &ve, std::string &res) const
 {
   if ( ve.type == R_enum ) res += "E:";
   res += ve.arg;
 }
 
-void INA::r_velist(const std::list<ve_base> &l, std::string &res)
+void INA::r_velist(const std::list<ve_base> &l, std::string &res) const
 {
   auto size = l.size();
   if ( 1 == size ) {
@@ -1208,7 +1208,7 @@ void INA::dump_ins(const NV_pair &p, size_t off)
     fputc('\n', m_out);
     if ( opt_p && p.first->predicated ) {
       fprintf(m_out, "Predicates:\n");
-      dump_predicates(p.first, p.second, m_out);
+      dump_predicates(p.first, p.second, m_out, " ");
     }
   }
 }

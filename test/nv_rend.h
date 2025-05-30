@@ -92,7 +92,7 @@ class NV_renderer {
    int dump_sched(const struct nv_instr *, const NV_extracted &);
    void dump_cond_list(const NV_Tabset *) const;
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist);
-   bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, NV_Tabset &);
+   bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, NV_Tabset *);
    void dump_ops(const struct nv_instr *, const NV_extracted &) const;
    // string_view methods
    int cmp(const std::string_view &, const char *) const;
@@ -105,7 +105,7 @@ class NV_renderer {
    int calc_index(const NV_res &, int) const;
    // predicates
    void dump_predicates(const struct nv_instr *, const NV_extracted &) const;
-   int dump_predicates(const struct nv_instr *, const NV_extracted &, FILE *fp) const;
+   int dump_predicates(const struct nv_instr *, const NV_extracted &, FILE *fp, const char *pfx) const;
    // renderer
    int render_ve(const ve_base &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
    int render_ve_list(const std::list<ve_base> &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
