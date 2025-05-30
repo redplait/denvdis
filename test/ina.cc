@@ -115,7 +115,7 @@ static const std::vector<const nv_instr *> *g_found;
 static std::string g_prompt, s_opcode;
 static const nv_instr *g_instr = nullptr;
 static std::map<std::string_view, kv_field> s_fields;
-static std::map<std::string_view, kv_field>::const_iterator s_fields_iter;
+static decltype(s_fields)::const_iterator s_fields_iter;
 
 // completiton logic stolen from https://prateek.page/post/gnu-readline-for-tab-autocomplete-and-bash-like-history/
 char *null_generator(const char *text, int state) {
@@ -406,9 +406,9 @@ struct INA: public NV_renderer {
   unsigned char buf[64];
   size_t block_size = 0;
  protected:
-  int extract_sv(const char *, std::string_view &);
-  int dump_i(const char *);
-  void dump_kv();
+  int extract_sv(const char *, std::string_view &) const;
+  int dump_i(const char *) const;
+  void dump_kv() const;
   void r_ve(const ve_base &, std::string &res);
   void r_velist(const std::list<ve_base> &l, std::string &res);
   void dump_curr_rend();
@@ -419,15 +419,15 @@ struct INA: public NV_renderer {
     if ( nl ) fputc('\n', stdout);
   }
   // instruction builders
-  const NV_tab_fields *find_tab(const char *s);
+  const NV_tab_fields *find_tab(const char *s) const;
   int patch_Tab(const NV_tab_fields *, const char *);
-  int check_vas(const nv_instr *, kv_field &, const std::string_view &);
+  int check_vas(const nv_instr *, kv_field &, const std::string_view &) const;
   int pre_build(const nv_instr *ins);
   int re_rend();
   int patch(std::map<std::string_view, kv_field>::const_iterator, const char *);
   int patch_internal(std::map<std::string_view, kv_field>::const_iterator *, const char *, uint64_t &v);
-  int parse_arg(const char *, uint64_t &v);
-  int parse_signed(const char *, uint64_t &v);
+  int parse_arg(const char *, uint64_t &v) const;
+  int parse_signed(const char *, uint64_t &v) const;
   int patch_tab(std::map<std::string_view, kv_field>::const_iterator *, uint64_t v);
   // disasm input file
   void process_buf();
@@ -440,7 +440,7 @@ printf("flush res %d\n", res);
     if ( res < 0 ) return 0;
     if ( ifp ) {
       if ( 1 != fwrite(buf, block_size, 1, ifp) ) {
-        fprintf(stderr, "fwrute failed, errno %d (%s)\n", errno, strerror(errno));
+        fprintf(stderr, "fwrite failed, errno %d (%s)\n", errno, strerror(errno));
         return 0;
       }
     }
@@ -457,7 +457,7 @@ printf("flush res %d\n", res);
   NV_extracted m_kv;
 } g_ina;
 
-int INA::extract_sv(const char *s, std::string_view &sv)
+int INA::extract_sv(const char *s, std::string_view &sv) const
 {
   const char *end = lspace(s);
   if ( !end ) return 0;
@@ -465,7 +465,7 @@ int INA::extract_sv(const char *s, std::string_view &sv)
   return 1;
 }
 
-const NV_tab_fields *INA::find_tab(const char *s)
+const NV_tab_fields *INA::find_tab(const char *s) const
 {
   // read tab idx
   auto idx = atoi(s);
@@ -476,7 +476,7 @@ const NV_tab_fields *INA::find_tab(const char *s)
   return nullptr;
 }
 
-int INA::parse_signed(const char *s, uint64_t &v)
+int INA::parse_signed(const char *s, uint64_t &v) const
 {
   bool minus = false;
   if ( s[0] == '-' ) { minus = true; s++; }
@@ -501,7 +501,7 @@ int INA::parse_signed(const char *s, uint64_t &v)
   return 1;
 }
 
-int INA::parse_arg(const char *s, uint64_t &v)
+int INA::parse_arg(const char *s, uint64_t &v) const
 {
   if ( s[0] == 0 && s[1] == 'b' ) { // 0b
     v = 0;
@@ -702,7 +702,7 @@ int INA::patch_internal(std::map<std::string_view, kv_field>::const_iterator *wh
   return 0;
 }
 
-int INA::dump_i(const char *fname)
+int INA::dump_i(const char *fname) const
 {
   auto what = s_fields.find(fname);
   if ( what == s_fields.end() ) {
@@ -773,7 +773,7 @@ int INA::dump_i(const char *fname)
   return 1;
 }
 
-void INA::dump_kv()
+void INA::dump_kv() const
 {
   for ( auto &p: m_kv ) {
     auto fiter = s_fields.find(p.first);
@@ -811,7 +811,7 @@ void INA::dump_kv()
   }
 }
 
-int INA::check_vas(const nv_instr *ins, kv_field &kf, const std::string_view &s)
+int INA::check_vas(const nv_instr *ins, kv_field &kf, const std::string_view &s) const
 {
   if ( !ins->vas ) return 0;
   auto viter = find(ins->vas, s);
