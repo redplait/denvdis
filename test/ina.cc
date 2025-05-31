@@ -112,7 +112,6 @@ struct kv_field {
 static const NV_sorted *g_sorted = nullptr;
 // mess of globals for readline interface
 static int g_sorted_idx = -1;
-static const std::vector<const nv_instr *> *g_found;
 static std::string g_prompt, s_opcode;
 static const nv_instr *g_instr = nullptr;
 static std::map<const std::string_view, kv_field> s_fields;
@@ -270,6 +269,8 @@ struct INA: public NV_renderer {
   }
   INA(): NV_renderer()
   { }
+  // pair to hold instruction MD and it's render
+  typedef std::pair<const nv_instr *, const NV_rlist *> IRPair;
   typedef std::function<ptrApply()> FApply;
   struct inapply: public Apply {
     FApply clos;
@@ -293,45 +294,40 @@ struct INA: public NV_renderer {
       free(buf);
       g_found = find_il( g_sorted, what );
       if ( !g_found ) continue;
+      fill_irs();
       g_prompt = s_opcode = what;
       g_prompt += " ";
       add_history(s_opcode.c_str());
       if ( g_found->size() > 1 ) return &mnem_idx;
-      auto ins = g_found->at(0);
 #ifdef DEBUG
+      auto ins = g_found->at(0);
       printf("ins %d\n", ins->n);
 #endif
-      if ( pre_build(ins) ) return &ops_fill;
+      if ( pre_build(m_irs[0]) ) return &ops_fill;
     }
     return nullptr;
   } };
   inapply mnem_idx{ [&]() -> ptrApply {
     // dump renderers
-    int rsize = (int)g_found->size();
-    printf("%d forms:\n", rsize);
-    for ( int i = 0; i < rsize; i++ ) {
-      auto ins = g_found->at(i);
-      if ( !ins ) continue;
-      auto rend = m_dis->get_rend(ins->n);
-      if ( !rend ) continue;
-      std::string form;
-      if ( rend_renderer( rend, s_opcode, form ) ) {
-        printf("%d) ", 1 + i);
-        if ( opt_v ) printf("n %d line %d ", ins->n, ins->line);
-        printf("%s\n", form.c_str());
-      }
-    }
+    dump_irs();
     char *buf;
     rl_attempted_completion_function = nullptr;
     while( nullptr != (buf = readline(g_prompt.c_str())) ) {
       if ( !strcmp(buf, "q") ) { free(buf); return nullptr; } // q - quit
-      if ( !strcmp(buf, "b") ) { free(buf); g_found = nullptr; return &mnem_name; } // b - back to instruction selection
+      if ( !strcmp(buf, "b") ) { free(buf); reset_irs(); return &mnem_name; } // b - back to instruction selection
+      if ( !strcmp(buf, "!") ) { free(buf); fill_irs(); dump_irs(); continue; } // ! - reset filters
+      if ( buf[0] == '+' || buf[0] == '-' ) { // apply filter
+        int res = apply_sel_filter(buf[0] == '+' ? 1 : 0, rstrip(buf + 1));
+        free(buf);
+        if ( res ) dump_irs();
+        continue;
+      }
       char *end = nullptr;
       auto idx = strtol(buf, &end, 10);
       if ( *end ) { printf("bad index %s\n", buf); free(buf); continue; }
       free(buf);
-      if ( idx < 1 || idx > rsize ) { printf("invalid index %ld\n", idx); continue; }
-      if ( pre_build( g_found->at(idx - 1) ) ) return &ops_fill;
+      if ( idx < 1 || idx > (int)m_irs.size() ) { printf("invalid index %ld\n", idx); continue; }
+      if ( pre_build( m_irs[idx - 1] ) ) return &ops_fill;
     }
     return nullptr;
   } };
@@ -396,7 +392,7 @@ struct INA: public NV_renderer {
       free(buf); continue;
     }
     g_instr = nullptr;
-    g_found = nullptr;
+    reset_irs();
     return &mnem_name;
   } };
   int init(int dump);
@@ -411,7 +407,10 @@ struct INA: public NV_renderer {
   int extract_sv(const char *, std::string_view &) const;
   int dump_i(const char *) const;
   void dump_kv() const;
+  bool cmp_rend(const NV_rlist *, const std::string_view &) const;
+  bool cmp_r_ve(const ve_base &, const std::string_view &) const;
   void r_ve(const ve_base &, std::string &res) const;
+  bool cmp_r_velist(const std::list<ve_base> &l, const std::string_view &) const;
   void r_velist(const std::list<ve_base> &l, std::string &res) const;
   void dump_curr_rend() const;
   int rend_renderer(const NV_rlist *, const std::string &opcode, std::string &res) const;
@@ -424,7 +423,7 @@ struct INA: public NV_renderer {
   const NV_tab_fields *find_tab(const char *s) const;
   int patch_Tab(const NV_tab_fields *, const char *);
   int check_vas(const nv_instr *, kv_field &, const std::string_view &) const;
-  int pre_build(const nv_instr *ins);
+  int pre_build(const IRPair &);
   int re_rend();
   int patch(Fields_Iter &, const char *);
   int patch_internal(Fields_Iter *, const char *, uint64_t &v);
@@ -452,12 +451,100 @@ printf("flush res %d\n", res);
     dirty = false;
     return 1;
   }
+  int apply_sel_filter(bool plus, const char *);
+  void reset_irs() {
+    g_found = nullptr;
+    m_irs.clear();
+  }
+  int fill_irs();
+  void dump_irs() const;
   // members
   FILE *ifp = nullptr;
   unsigned char *ibuf = nullptr;
   bool dirty = false;
   NV_extracted m_kv;
+  const std::vector<const nv_instr *> *g_found = nullptr;
+  std::vector<IRPair> m_irs;
 } g_ina;
+
+static int is_rend_type(const char *buf)
+{
+  if ( buf[1] ) return 0;
+  switch(buf[0]) {
+    case 'C': // R_C || R_CX
+    case 'T': // R_TTU
+    case 'M': // R_M1
+    case 'd': // R_desc
+    case 'm': // R_mem
+     return 1;
+  }
+  return 0;
+}
+
+// return 1 if m_irs was changed (and so must be redrawn)
+int INA::apply_sel_filter(bool plus, const char *buf)
+{
+  std::vector<IRPair> new_irs;
+#ifdef DEBUG
+printf("filter %c%s\n", plus ? '+' : '-', buf);
+#endif
+  if ( is_rend_type(buf) ) {
+    auto sel = [buf](const render_base *rb) -> bool {
+        switch(buf[0]) {
+          case 'C': return rb->type == R_C || rb->type == R_CX;
+          case 'T': return rb->type == R_TTU;
+          case 'M': return rb->type == R_M1;
+          case 'd': return rb->type == R_desc;
+          case 'm': return rb->type == R_mem;
+        }
+        return false;
+    };
+    std::copy_if( m_irs.begin(), m_irs.end(), std::back_inserter(new_irs), [plus,&sel](const IRPair &p) -> bool {
+      return ( std::any_of(p.second->begin(), p.second->end(), sel) == plus );
+    });
+    if ( new_irs.empty() ) {
+      printf("no items with %c%c found\n", plus ? '+' : '-', buf[0]);
+      return 0;
+    }
+  } else { // just name of some field
+    std::string_view sv(buf);
+    std::copy_if( m_irs.begin(), m_irs.end(), std::back_inserter(new_irs), [&,plus](const IRPair &p) -> bool {
+      return ( cmp_rend(p.second, sv) == plus );
+    });
+    if ( new_irs.empty() ) {
+      printf("no renders with %c%s found\n", plus ? '+' : '-', buf);
+      return 0;
+    }
+  }
+  m_irs = std::move(new_irs);
+  return 1;
+}
+
+void INA::dump_irs() const
+{
+   printf("%ld forms:\n", m_irs.size());
+   int i = 0;
+   for ( auto &p: m_irs ) {
+      std::string form;
+      if ( rend_renderer( p.second, s_opcode, form ) ) {
+        printf("%d) ", 1 + i);
+        if ( opt_v ) printf("n %d line %d ", p.first->n, p.first->line);
+        printf("%s\n", form.c_str());
+      }
+      i++;
+    }
+}
+
+int INA::fill_irs()
+{
+  m_irs.clear();
+  if ( !g_found ) return 0;
+  for ( auto i: *g_found ) {
+    auto r = m_dis->get_rend(i->n);
+    if ( r ) m_irs.push_back( { i, r } );
+  }
+  return !m_irs.empty();
+}
 
 int INA::extract_sv(const char *s, std::string_view &sv) const
 {
@@ -855,10 +942,11 @@ int INA::patch_Tab(NV_tab_fields const *t, char const *s)
   return re_rend();
 }
 
-int INA::pre_build(const nv_instr *ins)
+int INA::pre_build(const IRPair &pair)
 {
   m_kv.clear();
   s_fields.clear();
+  auto ins = pair.first;
   // try apply mask
   if ( !m_dis->set_mask(ins->mask) ) {
     printf("set_mask for %d failed\n", ins->n);
@@ -969,6 +1057,47 @@ void INA::dump_curr_rend() const
   if ( rend_renderer( rend, s_opcode, form ) ) printf("%s\n", form.c_str());
 }
 
+bool INA::cmp_rend(const NV_rlist *rlist, const std::string_view &s) const
+{
+  for ( auto r: *rlist ) {
+    switch(r->type) {
+      case R_value:
+      case R_predicate:
+      case R_enum: {
+       const render_named *rn = (const render_named *)r;
+       if ( rn->name && cmp(s, rn->name) ) return 1;
+     } break;
+      case R_C:
+      case R_CX: {
+       const render_C *rn = (const render_C *)r;
+       if ( rn->name && cmp(s, rn->name) ) return 1;
+       if ( cmp_r_ve(rn->left, s) ) return 1;
+       if ( cmp_r_velist(rn->right, s) ) return 1;
+     } break;
+      case R_TTU: {
+       const render_TTU *rt = (const render_TTU *)r;
+       if ( cmp_r_ve(rt->left, s) ) return 1;
+     } break;
+      case R_M1: {
+       const render_M1 *rt = (const render_M1 *)r;
+       if ( rt->name && cmp(s, rt->name) ) return 1;
+       if ( cmp_r_ve(rt->left, s) ) return 1;
+     } break;
+      case R_desc: {
+       const render_desc *rt = (const render_desc *)r;
+       if ( cmp_r_ve(rt->left, s) ) return 1;
+       if ( cmp_r_velist(rt->right, s) ) return 1;
+     } break;
+      case R_mem: {
+       const render_mem *rm = (const render_mem *)r;
+       if ( cmp_r_velist(rm->right, s) ) return 1;
+     } break;
+     default: ; // no name check for R_opcode and to avoid stupid 'not handled in switch' warning
+   }
+  }
+  return 0;
+}
+
 int INA::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res) const
 {
   for ( auto r: *rlist ) {
@@ -1044,10 +1173,21 @@ int INA::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::st
   return !res.empty();
 }
 
+bool INA::cmp_r_ve(const ve_base &ve, const std::string_view &s) const
+{
+  if ( ve.arg ) return cmp(s, ve.arg);
+  return false;
+}
+
 void INA::r_ve(const ve_base &ve, std::string &res) const
 {
   if ( ve.type == R_enum ) res += "E:";
   res += ve.arg;
+}
+
+bool INA::cmp_r_velist(const std::list<ve_base> &l, const std::string_view &s) const
+{
+  return std::any_of(l.begin(), l.end(), [&](const ve_base &ve) -> bool { return cmp_r_ve(ve, s); });
 }
 
 void INA::r_velist(const std::list<ve_base> &l, std::string &res) const
