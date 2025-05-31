@@ -115,7 +115,7 @@ static int g_sorted_idx = -1;
 static const std::vector<const nv_instr *> *g_found;
 static std::string g_prompt, s_opcode;
 static const nv_instr *g_instr = nullptr;
-static std::map<std::string_view, kv_field> s_fields;
+static std::map<const std::string_view, kv_field> s_fields;
 typedef decltype(s_fields)::const_iterator Fields_Iter;
 static Fields_Iter s_fields_iter;
 
@@ -992,7 +992,9 @@ int INA::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::st
       case R_C:
       case R_CX: {
          const render_C *rn = (const render_C *)r;
-         res += "c:[";
+         res += "c:";
+         if ( rn->name ) res += rn->name;
+         res += "[";
          r_ve(rn->left, res);
          res += "][";
          r_velist(rn->right, res);
@@ -1010,7 +1012,7 @@ int INA::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::st
      case R_M1: {
          const render_M1 *rt = (const render_M1 *)r;
          if ( rt->pfx ) res += rt->pfx;
-         res += rt->name;
+         if ( rt->name ) res += rt->name;
          res += ":[";
          r_ve(rt->left, res);
          res += ']';
