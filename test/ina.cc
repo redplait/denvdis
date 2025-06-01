@@ -112,7 +112,6 @@ struct kv_field {
 static const NV_sorted *g_sorted = nullptr;
 // mess of globals for readline interface
 static int g_sorted_idx = -1;
-static std::string g_prompt, s_opcode;
 static const nv_instr *g_instr = nullptr;
 static std::map<const std::string_view, kv_field> s_fields;
 typedef decltype(s_fields)::const_iterator Fields_Iter;
@@ -283,10 +282,10 @@ struct INA: public NV_renderer {
     2 - edit fields - ops_fill
    */
   inapply mnem_name{ [&]() -> ptrApply {
-    g_prompt = "> ";
+    m_prompt = "> ";
     rl_attempted_completion_function = instr_completion;
     char *buf;
-    while( nullptr != (buf = readline(g_prompt.c_str())) ) {
+    while( nullptr != (buf = readline(m_prompt.c_str())) ) {
       if ( !strcmp(buf, "q") ) { free(buf); return nullptr; } // q - quit
       // check if we have such instruction
       std::string what(buf);
@@ -295,9 +294,9 @@ struct INA: public NV_renderer {
       g_found = find_il( g_sorted, what );
       if ( !g_found ) continue;
       fill_irs();
-      g_prompt = s_opcode = what;
-      g_prompt += " ";
-      add_history(s_opcode.c_str());
+      m_prompt = m_opcode = what;
+      m_prompt += " ";
+      add_history(m_opcode.c_str());
       if ( g_found->size() > 1 ) return &mnem_idx;
 #ifdef DEBUG
       auto ins = g_found->at(0);
@@ -312,7 +311,7 @@ struct INA: public NV_renderer {
     dump_irs();
     char *buf;
     rl_attempted_completion_function = nullptr;
-    while( nullptr != (buf = readline(g_prompt.c_str())) ) {
+    while( nullptr != (buf = readline(m_prompt.c_str())) ) {
       if ( !strcmp(buf, "q") ) { free(buf); return nullptr; } // q - quit
       if ( !strcmp(buf, "b") ) { free(buf); reset_irs(); return &mnem_name; } // b - back to instruction selection
       if ( !strcmp(buf, "!") ) { free(buf); fill_irs(); dump_irs(); continue; } // ! - reset filters
@@ -334,7 +333,7 @@ struct INA: public NV_renderer {
   inapply ops_fill { [&]() -> ptrApply {
     char *buf;
     rl_attempted_completion_function = fill_completion;
-    while( nullptr != (buf = readline(g_prompt.c_str())) ) {
+    while( nullptr != (buf = readline(m_prompt.c_str())) ) {
       if ( !strcmp(buf, "q") ) { free(buf); return nullptr; } // q - quit
       if ( !strcmp(buf, "b") ) { free(buf); break; } // b - back to instruction selection
       if ( !strcmp(buf, "w") ) { free(buf); if ( flush() ) break;
@@ -462,6 +461,7 @@ printf("flush res %d\n", res);
   FILE *ifp = nullptr;
   unsigned char *ibuf = nullptr;
   bool dirty = false;
+  std::string m_prompt, m_opcode;
   NV_extracted m_kv;
   const std::vector<const nv_instr *> *g_found = nullptr;
   std::vector<IRPair> m_irs;
@@ -526,7 +526,7 @@ void INA::dump_irs() const
    int i = 0;
    for ( auto &p: m_irs ) {
       std::string form;
-      if ( rend_renderer( p.second, s_opcode, form ) ) {
+      if ( rend_renderer( p.second, m_opcode, form ) ) {
         printf("%d) ", 1 + i);
         if ( opt_v ) printf("n %d line %d ", p.first->n, p.first->line);
         printf("%s\n", form.c_str());
@@ -719,8 +719,8 @@ int INA::re_rend()
  if ( b1 != p.second.end() ) printf("usched_info %ld\n", b1->second);
 #endif
      render(rend, res, g_instr, p.second, nullptr);
-     g_prompt = res;
-     g_prompt += " ";
+     m_prompt = res;
+     m_prompt += " ";
      if ( opt_p && g_instr->predicated ) {
        printf("Predicates:\n");
        dump_predicates(p.first, p.second, stdout, " ");
@@ -1038,8 +1038,8 @@ int INA::pre_build(const IRPair &pair)
      if ( !rend ) return 0;
      std::string res;
      render(rend, res, ins, p.second, nullptr);
-     g_prompt = res;
-     g_prompt += " ";
+     m_prompt = res;
+     m_prompt += " ";
      // finally set g_instr
      g_instr = ins;
      return 1;
@@ -1054,7 +1054,7 @@ void INA::dump_curr_rend() const
   auto rend = m_dis->get_rend(g_instr->n);
   if ( !rend ) return;
   std::string form;
-  if ( rend_renderer( rend, s_opcode, form ) ) printf("%s\n", form.c_str());
+  if ( rend_renderer( rend, m_opcode, form ) ) printf("%s\n", form.c_str());
 }
 
 bool INA::cmp_rend(const NV_rlist *rlist, const std::string_view &s) const
