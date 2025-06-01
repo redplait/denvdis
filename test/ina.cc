@@ -306,6 +306,7 @@ struct INA: public NV_renderer {
     }
     return nullptr;
   } };
+ protected:
   inapply mnem_idx{ [&]() -> ptrApply {
     // dump renderers
     dump_irs();
@@ -394,15 +395,16 @@ struct INA: public NV_renderer {
     reset_irs();
     return &mnem_name;
   } };
+ public:
   int init(int dump);
   int open_binary(const char *);
   int process_binary(const char *);
+ protected:
   // 64bit - 8 + 7 * 8 = 64 bytes
   // 88bit - 8 + 3 * 8 = 32 bytes
   // 128bit - just 16 bytes
   unsigned char buf[64];
   size_t block_size = 0;
- protected:
   int extract_sv(const char *, std::string_view &) const;
   int dump_i(const char *) const;
   void dump_kv() const;
@@ -521,15 +523,29 @@ void INA::dump_irs() const
 {
    printf("%ld forms:\n", m_irs.size());
    int i = 0;
+   // common suffixes
+   std::map<const char *, std::pair<int, const render_named *> > cs;
    for ( auto &p: m_irs ) {
       std::string form;
       if ( rend_renderer( p.second, m_opcode, form ) ) {
         printf("%d) ", 1 + i);
         if ( opt_v ) printf("n %d line %d ", p.first->n, p.first->line);
         printf("%s\n", form.c_str());
+        cs_rend(p.second, [&](const render_named *rn, std::map<const char *, std::pair<int, const render_named *> > *arg) {
+          auto cs_iter = arg->find(rn->name);
+          if ( cs_iter != arg->end() ) cs_iter->second.first++;
+          else (*arg)[rn->name] = { 1, rn };
+        }, &cs);
       }
       i++;
     }
+   // filter out suffixes with ref count < i
+   std::erase_if(cs, [i](auto &citer) { return citer.second.first != i; });
+   if ( !cs.empty() ) {
+     printf("CS(%ld):", cs.size());
+     for ( auto ci: cs ) printf(" %s", ci.first);
+     fputc('\n', stdout);
+   }
 }
 
 int INA::fill_irs()

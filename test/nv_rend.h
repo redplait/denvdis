@@ -106,6 +106,22 @@ class NV_renderer {
    // predicates
    void dump_predicates(const struct nv_instr *, const NV_extracted &) const;
    int dump_predicates(const struct nv_instr *, const NV_extracted &, FILE *fp, const char *pfx) const;
+   // rend common suffixes logic
+   template <typename F, typename T>
+   int cs_rend(const NV_rlist *rlist, F f, T arg) const
+   {
+     int res = 0, state = 0;
+     for ( auto r: *rlist ) {
+       if ( !state ) {
+         if ( r->type == R_opcode ) state = 1;
+         continue;
+       }
+       if ( r->type != R_enum ) break;
+       res++;
+       f((const render_named *)r, arg);
+     }
+     return res;
+   }
    // rend filters
    template <typename F>
    bool fbn_r_ve(const ve_base &ve, F &f) const {
