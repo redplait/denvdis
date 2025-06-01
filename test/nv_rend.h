@@ -106,7 +106,62 @@ class NV_renderer {
    // predicates
    void dump_predicates(const struct nv_instr *, const NV_extracted &) const;
    int dump_predicates(const struct nv_instr *, const NV_extracted &, FILE *fp, const char *pfx) const;
+   // rend filters
+   template <typename F>
+   bool fbn_r_ve(const ve_base &ve, F &f) const {
+    if ( ve.arg ) return f(ve.arg);
+    return false;
+   }
+   template <typename F>
+   bool fbn_r_velist(const std::list<ve_base> &l, F &f) const
+   {
+     return std::any_of(l.begin(), l.end(), [&](const ve_base &ve) -> bool { return fbn_r_ve(ve, f); });
+   }
+   template <typename F>
+   bool fbn_rend(const NV_rlist *rlist, F &f) const
+   {
+     for ( auto r: *rlist ) {
+      switch(r->type) {
+       case R_value:
+       case R_predicate:
+       case R_enum: {
+        const render_named *rn = (const render_named *)r;
+        if ( rn->name && f(rn->name) ) return 1;
+       } break;
+       case R_C:
+       case R_CX: {
+        const render_C *rn = (const render_C *)r;
+        if ( rn->name && f(rn->name) ) return 1;
+        if ( fbn_r_ve(rn->left, f) ) return 1;
+        if ( fbn_r_velist(rn->right, f) ) return 1;
+       } break;
+       case R_TTU: {
+        const render_TTU *rt = (const render_TTU *)r;
+        if ( fbn_r_ve(rt->left, f) ) return 1;
+       } break;
+       case R_M1: {
+        const render_M1 *rt = (const render_M1 *)r;
+        if ( rt->name && f(rt->name) ) return 1;
+        if ( fbn_r_ve(rt->left, f) ) return 1;
+      } break;
+       case R_desc: {
+        const render_desc *rt = (const render_desc *)r;
+        if ( fbn_r_ve(rt->left, f) ) return 1;
+        if ( fbn_r_velist(rt->right, f) ) return 1;
+      } break;
+       case R_mem: {
+        const render_mem *rm = (const render_mem *)r;
+        if ( fbn_r_velist(rm->right, f) ) return 1;
+      } break;
+      default: ; // no name check for R_opcode and to avoid stupid 'not handled in switch' warning
+     }
+    }
+    return 0;
+   }
    // renderer
+   int rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res) const;
+   void r_velist(const std::list<ve_base> &l, std::string &res) const;
+   void r_ve(const ve_base &ve, std::string &res) const;
    int render_ve(const ve_base &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
    int render_ve_list(const std::list<ve_base> &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
    int check_mod(char c, const NV_extracted &, const char* name, std::string &r) const;

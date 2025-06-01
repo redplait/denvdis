@@ -303,6 +303,112 @@ bool NV_renderer::check_branch(const struct nv_instr *i, const NV_extracted::con
   return true;
 }
 
+int NV_renderer::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res) const
+{
+  for ( auto r: *rlist ) {
+    switch(r->type) {
+      case R_value:
+      case R_predicate: {
+        const render_named *rn = (const render_named *)r;
+        if ( r->pfx ) res += r->pfx;
+        res += rn->name;
+       }
+       break;
+      case R_enum:{
+        const render_named *rn = (const render_named *)r;
+        res += "E:";
+        res += rn->name;
+       }
+       break;
+      case R_opcode:
+        res += opcode;
+       break;
+      case R_C:
+      case R_CX: {
+         const render_C *rn = (const render_C *)r;
+         res += "c:";
+         if ( rn->name ) res += rn->name;
+         res += "[";
+         r_ve(rn->left, res);
+         res += "][";
+         r_velist(rn->right, res);
+         res += ']';
+       } break;
+       case R_TTU: {
+         const render_TTU *rt = (const render_TTU *)r;
+         if ( rt->pfx ) res += rt->pfx;
+         else res += ' ';
+         res += "ttu:[";
+         r_ve(rt->left, res);
+         res += ']';
+       }
+       break;
+     case R_M1: {
+         const render_M1 *rt = (const render_M1 *)r;
+         if ( rt->pfx ) res += rt->pfx;
+         if ( rt->name ) res += rt->name;
+         res += ":[";
+         r_ve(rt->left, res);
+         res += ']';
+       } break;
+
+      case R_desc: {
+         const render_desc *rt = (const render_desc *)r;
+         if ( rt->pfx ) res += rt->pfx;
+         res += "desc:[";
+         r_ve(rt->left, res);
+         res += "],[";
+         r_velist(rt->right, res);
+         res += ']';
+       } break;
+
+      case R_mem: {
+         const render_mem *rt = (const render_mem *)r;
+         if ( rt->pfx ) res += rt->pfx;
+         res += "[";
+         r_velist(rt->right, res);
+         res += ']';
+       } break;
+
+//      default: fprintf(stderr, "unknown rend type %d at index %d for inst %s\n", r->type, idx, opcode.c_str());
+    }
+    res += ' ';
+  }
+  res.pop_back(); // remove last space
+  return !res.empty();
+}
+
+void NV_renderer::r_velist(const std::list<ve_base> &l, std::string &res) const
+{
+  auto size = l.size();
+  if ( 1 == size ) {
+    r_ve(*l.begin(), res);
+    return;
+  }
+  int idx = 0;
+  for ( auto ve: l ) {
+    if ( ve.type == R_value )
+    {
+      if ( ve.pfx ) res += ve.pfx;
+      else if ( idx ) res += '+';
+      res += ve.arg;
+      idx++;
+      continue;
+    }
+    // enum
+    res += "E:";
+    res += ve.arg;
+    res += " ";
+  }
+  if ( res.back() == ' ' ) res.pop_back();
+}
+
+void NV_renderer::r_ve(const ve_base &ve, std::string &res) const
+{
+  if ( ve.type == R_enum ) res += "E:";
+  res += ve.arg;
+}
+
 int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv, NV_labels *l) const
 {
   int idx = 0;

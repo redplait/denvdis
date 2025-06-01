@@ -406,13 +406,7 @@ struct INA: public NV_renderer {
   int extract_sv(const char *, std::string_view &) const;
   int dump_i(const char *) const;
   void dump_kv() const;
-  bool cmp_rend(const NV_rlist *, const std::string_view &) const;
-  bool cmp_r_ve(const ve_base &, const std::string_view &) const;
-  void r_ve(const ve_base &, std::string &res) const;
-  bool cmp_r_velist(const std::list<ve_base> &l, const std::string_view &) const;
-  void r_velist(const std::list<ve_base> &l, std::string &res) const;
   void dump_curr_rend() const;
-  int rend_renderer(const NV_rlist *, const std::string &opcode, std::string &res) const;
   template <typename T>
   void dump_usArr(T &a, int nl = 0) const {
     std::for_each(a.cbegin(), a.cend(), [](unsigned short v) { printf("%d ", v); });
@@ -508,8 +502,11 @@ printf("filter %c%s\n", plus ? '+' : '-', buf);
     }
   } else { // just name of some field
     std::string_view sv(buf);
+    auto filter = [&](const char *s) -> bool {
+      return cmp(sv, s);
+    };
     std::copy_if( m_irs.begin(), m_irs.end(), std::back_inserter(new_irs), [&,plus](const IRPair &p) -> bool {
-      return ( cmp_rend(p.second, sv) == plus );
+      return ( fbn_rend(p.second, filter) == plus );
     });
     if ( new_irs.empty() ) {
       printf("no renders with %c%s found\n", plus ? '+' : '-', buf);
@@ -1055,164 +1052,6 @@ void INA::dump_curr_rend() const
   if ( !rend ) return;
   std::string form;
   if ( rend_renderer( rend, m_opcode, form ) ) printf("%s\n", form.c_str());
-}
-
-bool INA::cmp_rend(const NV_rlist *rlist, const std::string_view &s) const
-{
-  for ( auto r: *rlist ) {
-    switch(r->type) {
-      case R_value:
-      case R_predicate:
-      case R_enum: {
-       const render_named *rn = (const render_named *)r;
-       if ( rn->name && cmp(s, rn->name) ) return 1;
-     } break;
-      case R_C:
-      case R_CX: {
-       const render_C *rn = (const render_C *)r;
-       if ( rn->name && cmp(s, rn->name) ) return 1;
-       if ( cmp_r_ve(rn->left, s) ) return 1;
-       if ( cmp_r_velist(rn->right, s) ) return 1;
-     } break;
-      case R_TTU: {
-       const render_TTU *rt = (const render_TTU *)r;
-       if ( cmp_r_ve(rt->left, s) ) return 1;
-     } break;
-      case R_M1: {
-       const render_M1 *rt = (const render_M1 *)r;
-       if ( rt->name && cmp(s, rt->name) ) return 1;
-       if ( cmp_r_ve(rt->left, s) ) return 1;
-     } break;
-      case R_desc: {
-       const render_desc *rt = (const render_desc *)r;
-       if ( cmp_r_ve(rt->left, s) ) return 1;
-       if ( cmp_r_velist(rt->right, s) ) return 1;
-     } break;
-      case R_mem: {
-       const render_mem *rm = (const render_mem *)r;
-       if ( cmp_r_velist(rm->right, s) ) return 1;
-     } break;
-     default: ; // no name check for R_opcode and to avoid stupid 'not handled in switch' warning
-   }
-  }
-  return 0;
-}
-
-int INA::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res) const
-{
-  for ( auto r: *rlist ) {
-    switch(r->type) {
-      case R_value:
-      case R_predicate: {
-        const render_named *rn = (const render_named *)r;
-        if ( r->pfx ) res += r->pfx;
-        res += rn->name;
-       }
-       break;
-      case R_enum:{
-        const render_named *rn = (const render_named *)r;
-        res += "E:";
-        res += rn->name;
-       }
-       break;
-      case R_opcode:
-        res += opcode;
-       break;
-      case R_C:
-      case R_CX: {
-         const render_C *rn = (const render_C *)r;
-         res += "c:";
-         if ( rn->name ) res += rn->name;
-         res += "[";
-         r_ve(rn->left, res);
-         res += "][";
-         r_velist(rn->right, res);
-         res += ']';
-       } break;
-       case R_TTU: {
-         const render_TTU *rt = (const render_TTU *)r;
-         if ( rt->pfx ) res += rt->pfx;
-         else res += ' ';
-         res += "ttu:[";
-         r_ve(rt->left, res);
-         res += ']';
-       }
-       break;
-     case R_M1: {
-         const render_M1 *rt = (const render_M1 *)r;
-         if ( rt->pfx ) res += rt->pfx;
-         if ( rt->name ) res += rt->name;
-         res += ":[";
-         r_ve(rt->left, res);
-         res += ']';
-       } break;
-
-      case R_desc: {
-         const render_desc *rt = (const render_desc *)r;
-         if ( rt->pfx ) res += rt->pfx;
-         res += "desc:[";
-         r_ve(rt->left, res);
-         res += "],[";
-         r_velist(rt->right, res);
-         res += ']';
-       } break;
-
-      case R_mem: {
-         const render_mem *rt = (const render_mem *)r;
-         if ( rt->pfx ) res += rt->pfx;
-         res += "[";
-         r_velist(rt->right, res);
-         res += ']';
-       } break;
-
-//      default: fprintf(stderr, "unknown rend type %d at index %d for inst %s\n", r->type, idx, opcode.c_str());
-    }
-    res += ' ';
-  }
-  res.pop_back(); // remove last space
-  return !res.empty();
-}
-
-bool INA::cmp_r_ve(const ve_base &ve, const std::string_view &s) const
-{
-  if ( ve.arg ) return cmp(s, ve.arg);
-  return false;
-}
-
-void INA::r_ve(const ve_base &ve, std::string &res) const
-{
-  if ( ve.type == R_enum ) res += "E:";
-  res += ve.arg;
-}
-
-bool INA::cmp_r_velist(const std::list<ve_base> &l, const std::string_view &s) const
-{
-  return std::any_of(l.begin(), l.end(), [&](const ve_base &ve) -> bool { return cmp_r_ve(ve, s); });
-}
-
-void INA::r_velist(const std::list<ve_base> &l, std::string &res) const
-{
-  auto size = l.size();
-  if ( 1 == size ) {
-    r_ve(*l.begin(), res);
-    return;
-  }
-  int idx = 0;
-  for ( auto ve: l ) {
-    if ( ve.type == R_value )
-    {
-      if ( ve.pfx ) res += ve.pfx;
-      else if ( idx ) res += '+';
-      res += ve.arg;
-      idx++;
-      continue;
-    }
-    // enum
-    res += "E:";
-    res += ve.arg;
-    res += " ";
-  }
-  if ( res.back() == ' ' ) res.pop_back();
 }
 
 int INA::init(int dump)
