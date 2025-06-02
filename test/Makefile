@@ -3,17 +3,17 @@ ELFIO=-I ../../../../../ELFIO/
 # path to fp16 (https://github.com/Maratyszcza/FP16)
 FP16=-I ../../FP16/include
 # for release add -Os and remove -g
-SM_FLAGS=-Wall -shared -fpic -msse2avx -g -pthread $(IFLAGS)
+SM_FLAGS=-Wall -shared -fpic -msse2avx -gdwarf-4 -pthread $(IFLAGS)
 SM_LIBS=-lstdc++ -lpthread
 # ead.pl options
 PERL_OPTS=-d:Confess
 EAD=../scripts/ead.pl
-EAD_OPTS=-BFmgrizp
+EAD_OPTS=-BFEmgrizp
 
 all: ina nvd
 
 ina: nv_rend.cc ina.cc
-	gcc -Wall -std=c++20 -g $(IFLAGS) $(FP16) -o $@ $^ -lreadline -lstdc++ -ldl
+	gcc -Wall -std=c++20 -gdwarf-4 $(IFLAGS) $(FP16) -o $@ $^ -lreadline -lstdc++ -ldl
 
 nvd: nv_rend.cc nvd.cc
 	gcc -Wall -std=c++20 -g $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
