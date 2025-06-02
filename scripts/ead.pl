@@ -1,7 +1,9 @@
 #!perl -w
 # some nvdisasm encoding analysis
-# -CBFrm to produce c++
-# add -p to dump predicates: https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-6.html
+# -CEBFrmgz to produce c++
+# -E to generate enum maps for asm parsing
+# -g to parse & generate scheduling tables
+# add -p to parse predicates: https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-6.html
 use strict;
 use warnings;
 use Getopt::Std;
@@ -12,7 +14,7 @@ use feature qw( switch );
 no warnings qw( experimental::smartmatch );
 
 # options
-use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_e $opt_f $opt_F $opt_g $opt_i $opt_m $opt_N $opt_p $opt_P $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_E $opt_e $opt_f $opt_F $opt_g $opt_i $opt_m $opt_N $opt_p $opt_P $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -25,6 +27,7 @@ Usage: $0 [options] md.txt
   -C - suffix
   -c - use format constant to form mask
   -e - dump enums
+  -E - dump direct enums (with -C)
   -f - dump fully filled masks
   -F - filter by enums
   -g - parse groups
@@ -193,7 +196,7 @@ sub merge_enum
   while( my($n, $v) = each %$em ) {
     $err->{$n} //= $v;
   }
-  return 1;
+  1;
 }
 
 # args: ref to enum hashmap or name of enum, value to find
@@ -215,7 +218,7 @@ sub enum_by_value
 sub is_type
 {
   my $c = shift;
-  return ($c eq 'BITSET') || ($c eq 'UImm') || ($c eq 'SImm') || ($c eq 'SSImm') || ($c eq 'RSImm')
+  ($c eq 'BITSET') || ($c eq 'UImm') || ($c eq 'SImm') || ($c eq 'SSImm') || ($c eq 'RSImm')
    || ($c eq 'F64Imm') || ($c eq 'F16Imm') || ($c eq 'F32Imm');
 }
 
@@ -315,7 +318,7 @@ sub parse_tab_key
     $s =~ s/\'//g;
     return $s;
   }
-  return int($s);
+  int($s);
 }
 
 sub parse_tab_keys
@@ -335,7 +338,7 @@ sub parse_tab_keys
     return \@res;
   } else {
     # just some literal
-    return parse_tab_key($s, $line);
+    parse_tab_key($s, $line);
   }
 }
 
@@ -401,7 +404,7 @@ sub mask_len
   for ( my $i = 0; $i < scalar @$list; $i += 2 ) {
     $res += $list->[$i+1];
   }
-  return $res;
+  $res;
 }
 
 sub scale_len
@@ -934,6 +937,7 @@ sub remove_encs
     push @new, $emask;
   }
   $op->[5] = \@new if $altered;
+  $altered;
 }
 
 sub gen_inst_mask
@@ -1505,7 +1509,7 @@ printf("id_value: %s\n", $args);
   foreach my $a ( split /\s*,\s*/, $args ) {
     $kv->{$a} = $v;
   }
-  return 1;
+  1;
 }
 
 sub strip_t
@@ -2505,9 +2509,19 @@ sub c_enum_name
   $e =~ s/\./_/g;
   sprintf("%s_enum_%s", $opt_C, $e);
 }
+
+sub c_renum_name
+{
+  my $e = shift;
+  $e =~ s/\./_/g;
+  sprintf("%s_renum_%s", $opt_C, $e);
+}
+
 sub gen_enums
 {
   my $fh = shift;
+  my @re;
+  my $res;
   printf($fh "// ---- enums\n");
   foreach my $ename ( keys %g_used_enums ) {
     printf($fh "NV_ENUM(%s) = {\n", c_enum_name($ename));
@@ -2516,8 +2530,25 @@ sub gen_enums
       printf($fh " { %d, \"%s\" },\n", $i, $renum->{$i} );
     }
     printf($fh "};\n");
+    if ( defined $opt_E ) {
+      printf($fh "NV_RENUM(%s) = {\n", c_renum_name($ename));
+      my $enum = $g_enums{$ename};
+      foreach my $i ( sort {$a cmp $b} keys %$enum ) {
+        printf($fh " { \"%s\", %d },\n", $i, $enum->{$i} );
+      }
+      push @re, $ename;
+      printf($fh "};\n");
+    }
+  }
+  if ( defined $opt_E ) {
+    printf($fh "\n// RENUMS\n");
+    $res = $opt_C . '_renums';
+    printf($fh "static const NV_Renums %s = {\n", $res);
+    printf($fh " { \"%s\", &%s },\n", $_, c_renum_name($_)) for @re;
+    printf($fh "};\n");
   }
   printf($fh "\n");
+  $res;
 }
 
 sub c_tab_name
@@ -3304,7 +3335,9 @@ sub gen_C
   # dump masks
   gen_masks($fh);
   # dump used enums
-  gen_enums($fh);
+  my $ename = gen_enums($fh);
+  if ( defined $ename ) { $ename = '&' . $ename; }
+  else { $ename = 'nullptr'; }
   # dump used tabs
   gen_tabs($fh);
   # dump instructions
@@ -3331,7 +3364,7 @@ sub gen_C
   printf($fh "};\n");
   # finally gen get_sm
   printf($fh "\nINV_disasm *get_sm() {\n");
-  printf($fh " return new NV_disasm<nv%d>(%s, %d, %d, &%s); }\n", $g_size, $root, $g_rz, $n, $s_name);
+  printf($fh " return new NV_disasm<nv%d>(%s, %d, %d, &%s, %s); }\n", $g_size, $root, $g_rz, $n, $s_name, $ename);
   close $fh;
 }
 
@@ -4331,7 +4364,7 @@ sub read_groups
 }
 
 ### main
-my $status = getopts("abBcefFgimpPrtvwzT:N:C:");
+my $status = getopts("abBcEefFgimpPrtvwzT:N:C:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");

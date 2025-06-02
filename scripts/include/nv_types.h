@@ -13,6 +13,7 @@
 
 #define NV_MASK(name, size) static const std::pair<short, short> name[size]
 #define NV_ENUM(name)  static const std::unordered_map<int, const char *> name
+#define NV_RENUM(name)  static const std::unordered_map<const char *, int> name
 #define NV_TAB(name)   static const std::unordered_map<int, const unsigned short *> name
 #define NV_PRED(name)  static const NV_Preds name
 
@@ -76,6 +77,9 @@ struct nv_float_conv {
  short v1, v2; // -1 means no value for fmt_var
 };
 
+// direct enums name -> value
+typedef std::unordered_map<const char *, int> NV_Renum;
+typedef std::unordered_map<const char *, const NV_Renum *> NV_Renums;
 typedef int (*nv_filter)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &);
 typedef std::unordered_map<std::string_view, uint64_t> NV_extracted;
 struct nv_width {
@@ -953,6 +957,7 @@ struct INV_disasm {
   virtual uint64_t get_cword() const = 0;
   virtual const NV_rlist *get_rend(int idx) const = 0;
   virtual const NV_sorted *get_instrs() const = 0;
+  virtual const NV_Renums *get_renums() const = 0;
   // patch methods
   virtual int set_mask(const char *) = 0;
   virtual int put(const std::pair<short, short> *, size_t, uint64_t v) = 0;
@@ -977,12 +982,13 @@ struct dirty_trait<nv64> {
 template <typename T>
 struct NV_disasm: public INV_disasm, T
 {
-  NV_disasm(const NV_non_leaf *root, int _rz, int cnt, const NV_sorted *ins)
+  NV_disasm(const NV_non_leaf *root, int _rz, int cnt, const NV_sorted *ins, const NV_Renums *_re)
   {
     rz = _rz;
     m_root = root;
     m_cnt = cnt;
     m_instr = ins;
+    m_renums = _re;
   }
   virtual int width() const { return T::_width; }
   virtual size_t offset() const { return T::curr_off(); }
@@ -1028,6 +1034,9 @@ struct NV_disasm: public INV_disasm, T
   virtual const NV_sorted *get_instrs() const {
     return m_instr;
   }
+  virtual const NV_Renums *get_renums() const {
+    return m_renums;
+  }
   virtual int set_mask(const char *mask) {
     return T::set_mask(mask);
   }
@@ -1071,6 +1080,7 @@ struct NV_disasm: public INV_disasm, T
   }
   const NV_non_leaf *m_root = nullptr;
   const NV_sorted *m_instr = nullptr;
+  const NV_Renums *m_renums = nullptr;
 };
 
 
