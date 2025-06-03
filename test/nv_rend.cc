@@ -201,6 +201,23 @@ int NV_renderer::calc_index(const NV_res &res, int rz) const
   return -1;
 }
 
+int NV_renderer::check_abs(const NV_extracted &kv, const char* name) const
+{
+  std::string mod_name(name);
+  mod_name += "@absolute";
+  auto kvi = kv.find(mod_name);
+  if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(mod_name); return 0; }
+  if ( !kvi->second ) return 0;
+  return 1;
+}
+
+int NV_renderer::check_abs(const NV_extracted &kv, const char* name, std::string &r) const
+{
+  auto res = check_abs(kv, name);
+  if ( res ) r += '|';
+  return res;
+}
+
 int NV_renderer::check_mod(char c, const NV_extracted &kv, const char* name, std::string &r) const
 {
   std::string mod_name(name);
@@ -442,6 +459,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
   int prev = -1;  // workaround to fix op, bcs testcc is missed
   for ( auto ri: *rl ) {
     std::string tmp;
+    int is_abs = 0;
     switch(ri->type)
     {
       case R_opcode:
@@ -509,6 +527,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
            } else res += ' ';
            // check mod
            if ( rn->mod ) check_mod(rn->mod, kv, rn->name, res);
+           if ( rn->abs ) is_abs = check_abs(kv, rn->name, res);
          }
          auto eid = ea->em->find(kvi->second);
          if ( eid != ea->em->end() )
@@ -517,6 +536,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
            missed++;
            break;
          }
+         if ( is_abs ) res += '|';
          if ( ea->ignore ) {
            idx++; continue;
          }
@@ -555,11 +575,13 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
          if ( rn->pfx ) res += rn->pfx;
          else res += ' ';
          if ( rn->mod ) check_mod(rn->mod, kv, rn->name, res);
+         if ( rn->abs ) is_abs = check_abs(kv, rn->name, res);
          res += "c:[";
          missed += render_ve(rn->left, i, kv, res);
          res += "][";
          missed += render_ve_list(rn->right, i, kv, res);
          res += ']';
+         if ( is_abs ) res += '|';
        } break;
 
       case R_TTU: {
