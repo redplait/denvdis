@@ -189,7 +189,6 @@ class NV_renderer {
    INV_disasm *m_dis = nullptr;
    Dvq_name m_vq = nullptr;
    int m_width;
-   static const char *s_fmts[];
    // missed fields
    mutable std::unordered_set<std::string> m_missed;
    // dual issues
@@ -208,4 +207,7 @@ class NV_renderer {
     scond_count = 0,
     scond_succ = 0,
     scond_hits = 0;
+   // static fields
+   static const char *s_fmts[];
+   static std::map<int, std::pair<const char *, const char *> > s_sms;
 };

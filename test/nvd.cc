@@ -57,31 +57,6 @@ void HexDump(FILE *f, const unsigned char *From, int Len)
 
 using namespace ELFIO;
 
-// ripped from sm_version.txt
-static std::map<int, std::pair<const char *, const char *> > s_sms = {
- { 0x1E, { "sm30", "sm3" } },
- { 0x20, { "sm32", "sm4" } },
- { 0x23, { "sm35", "sm4" } },
- { 0x25, { "sm37", "sm4" } },
- { 0x32, { "sm50", "sm5" } },
- { 0x34, { "sm52", nullptr } },
- { 0x35, { "sm53", "sm52" } },
- { 0x3c, { "sm60", "sm55" } },
- { 0x3d, { "sm61", "sm57" } },
- { 0x3e, { "sm62", "sm57" } },
- { 0x46, { "sm70", nullptr } },
- { 0x48, { "sm72", nullptr } },
- { 0x4b, { "sm75", nullptr } },
- { 0x50, { "sm80", nullptr } },
- { 0x56, { "sm86", nullptr } },
- { 0x57, { "sm87", "sm86" } },
- { 0x59, { "sm89", nullptr } },
- { 0x5a, { "sm90", nullptr } },
- { 0x64, { "sm100", nullptr } },
- { 0x65, { "sm101", nullptr } },
- { 0x78, { "sm120", nullptr } },
-};
-
 static std::map<char, const char *> s_ei = {
  { 0x1, "EIATTR_PAD" },
  { 0x2, "EIATTR_IMAGE_SLOT" },
