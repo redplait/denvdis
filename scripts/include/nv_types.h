@@ -13,7 +13,7 @@
 
 #define NV_MASK(name, size) static const std::pair<short, short> name[size]
 #define NV_ENUM(name)  static const std::unordered_map<int, const char *> name
-#define NV_RENUM(name)  static const std::unordered_map<const char *, int> name
+#define NV_RENUM(name)  static const std::unordered_map<std::string_view, int> name
 #define NV_TAB(name)   static const std::unordered_map<int, const unsigned short *> name
 #define NV_PRED(name)  static const NV_Preds name
 
@@ -78,8 +78,8 @@ struct nv_float_conv {
 };
 
 // direct enums name -> value
-typedef std::unordered_map<const char *, int> NV_Renum;
-typedef std::unordered_map<const char *, const NV_Renum *> NV_Renums;
+typedef std::unordered_map<std::string_view, int> NV_Renum;
+typedef std::unordered_map<std::string, const NV_Renum *> NV_Renums;
 typedef int (*nv_filter)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &);
 typedef std::unordered_map<std::string_view, uint64_t> NV_extracted;
 struct nv_width {
