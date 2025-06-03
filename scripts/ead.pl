@@ -1815,6 +1815,7 @@ sub make_inst
         }
         # this enum has non-default value
 # printf("%s: no part %d\n", $ae->[0], $ae->[1]);
+        my $is_abs = 0;
         my $v = lookup_value($op, $kv, $ae, $b);
         next unless ( defined $v );
         if ( $ae->[1] ) { $res .= '.' }
@@ -1830,6 +1831,14 @@ sub make_inst
          elsif ( $f->[3] eq '-') {
            my $pneg = $ae->[3] . '@negate';
            $res .= '-' if ( exists($kv->{$pneg}) && $kv->{$pneg} );
+         }
+         # [-|]
+         elsif ( $f->[3] eq '-|') {
+           my $pneg = $ae->[3] . '@negate';
+           $res .= '-' if ( exists($kv->{$pneg}) && $kv->{$pneg} );
+           $pneg = $ae->[3] . '@absolute';
+           $is_abs = exists($kv->{$pneg}) && $kv->{$pneg};
+           $res .= '|' if $is_abs;
          }
          # check [~]
          elsif ( $f->[3] eq '~') {
@@ -1847,6 +1856,7 @@ sub make_inst
         } else {
           $res .= $v->[1];
         }
+        $res .= '|' if $is_abs;
         $res .= $f->[2] if ( defined $f->[2] ); # suffix
       }
     } elsif ( $f->[0] eq '$' ) { # opcode
@@ -1948,6 +1958,7 @@ sub make_inst
       next;
     } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) { # const bank
       my($v, $pfx);
+      my $is_abs = 0;
       $pfx = substr($op->[10]->[0], 0, 1) if ( $f->[0] eq 'C' );
       $res .= $f->[1] if ( defined $f->[1] ); # prefix
       if ( defined($f->[3]) and defined($f->[4]) ) {
@@ -1958,6 +1969,12 @@ sub make_inst
         } elsif ( $f->[3] eq '-' ) {
           my $pneg = $f->[4] . '@negate';
           $res .= '-' if ( exists($kv->{$pneg}) && $kv->{$pneg} );
+        } elsif ( $f->[3] eq '-|' ) {
+          my $pneg = $f->[4] . '@negate';
+          $res .= '-' if ( exists($kv->{$pneg}) && $kv->{$pneg} );
+          $pneg = $f->[4] . '@absolute';
+          $is_abs = exists($kv->{$pneg}) && $kv->{$pneg};
+          $res .= '|' if ( $is_abs );
         }
       }
       $res .= 'C[';
@@ -1998,6 +2015,7 @@ sub make_inst
             $res .= sprintf("0x%X]", $v);
           }
         } else { $res .= sprintf(" cannot find cvalue %s]", $f->[6]); }
+        $res .= '|' if $is_abs;
         $res .= $f->[2] if ( $f->[2] ); # suffix
       }
     } elsif ( $f->[0] eq 'V' ) { # some value
@@ -2917,14 +2935,17 @@ sub gen_base
   my $f = shift;
   my $res = '';
   # prefix
-  if ( $f->[1] ) { $res .= "'" . $f->[1] . "', "; }
+  if ( defined $f->[1] ) { $res .= "'" . $f->[1] . "', "; }
   else { $res .= '0, '}
   # suffix
   if ( $f->[2] ) { $res .= "'" . $f->[2] . "', "; }
   else { $res .= '0, '}
   # mod
-  if ( $f->[3] ) { $res .= "'" . $f->[3] . "'"; }
-  else { $res .= '0'}
+  if ( defined $f->[3] ) {
+   if ( $f->[3] eq '-|' ) {
+     $res .= "'-', '|'";
+   } else { $res .= "'" . $f->[3] . "'"; }
+  } else { $res .= '0'}
   $res;
 }
 # M1 & M2 use $f->[3] as format string
@@ -4363,6 +4384,15 @@ sub read_groups
   }
 }
 
+sub check_abs
+{
+  my($p, $a) = @_;
+  return $p unless defined $p;
+  return $p unless ( $p eq '-' );
+  return '-|' if defined($a);
+  $p;
+}
+
 ### main
 my $status = getopts("abBcEefFgimpPrtvwzT:N:C:");
 usage() if ( !$status );
@@ -4650,7 +4680,7 @@ $cons_ae = sub {
   # here we have value Sb@invert
   if ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bC\:([^:\[]+)\s*\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
         # 0 - type   1 - optional ,              2    3   4
-    my @cf = ( 'C', defined($1) ? ',' : undef, undef, $2, $4, $5);
+    my @cf = ( 'C', defined($1) ? ',' : undef, undef, check_abs($2, $3), $4, $5);
     # see details here: https://perldoc.perl.org/perlretut#Position-information
     my $left = $5;
     my $right = $6;
@@ -4673,7 +4703,7 @@ $cons_ae = sub {
   # $1 - optional comma, $2 - [x], $3 - [||]?, $4 - name after CX:, $5 - first [], $6 - second []
   } elsif ( $s =~ /(\'\,\'\s*)?(?:\[(.)\]\s*)?(\[\|\|\]\s*)?\s*\bCX\:([^:\[]+)\s*\[([^\]]+)\]\*?\s*\[([^\]]+)\]/p ) {
         # 0 - type   1 - optional ,               2    3    4   5
-    my @cf = ( 'X', defined($1) ? ',' : undef, undef, $2, $4, $5);
+    my @cf = ( 'X', defined($1) ? ',' : undef, undef, check_abs($2, $3), $4, $5);
     # see details here: https://perldoc.perl.org/perlretut#Position-information
     my $spos = $-[0];
     my $slen = $+[0] - $-[0];
@@ -4846,9 +4876,9 @@ $cons_ae = sub {
       my $aref = [ $5, $4 ne '', defined($6) ? $g_enums{$5}->{$6} : undef, $8, defined($7) ];
       $ae{$8} = $aref;
       if ( defined($2) and $2 eq '!' and defined($6) ) {
-        push @flist, [ 'P', $1, defined($9) ? ',' : undef, $2, $aref ];
+        push @flist, [ 'P', $1, defined($9) ? ',' : undef, check_abs($2, $3), $aref ];
       } else {
-        push @flist, [ 'E', $1, defined($9) ? ',' : undef, $2, $aref ];
+        push @flist, [ 'E', $1, defined($9) ? ',' : undef, check_abs($2, $3), $aref ];
       }
     } elsif ( is_type($5) ) {
       $values{$8} = [ $5, undef ];

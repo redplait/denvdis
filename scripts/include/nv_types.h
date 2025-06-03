@@ -822,13 +822,17 @@ struct render_base
   char pfx;
   char sfx;
   char mod; // !~- etc
+  char abs = 0; // ||, if [-] presents in mod. opposite is not true - there are operands with [-] without [||]
   render_base(NV_rend _t, char _p, char _s, char _m):
    type(_t), pfx(_p), sfx(_s), mod(_m) {}
+  render_base(NV_rend _t, char _p, char _s, char _m, char _a):
+   type(_t), pfx(_p), sfx(_s), mod(_m), abs(_a) {}
   render_base() = default;
   virtual ~render_base() = default;
 };
 
 #define NR_BORING type = t; pfx = _p; sfx = _s; mod = _m;
+#define NR_BORINGA type = t; pfx = _p; sfx = _s; mod = _m; abs = _a;
 
 struct render_named: public render_base
 {
@@ -836,6 +840,9 @@ struct render_named: public render_base
   render_named(NV_rend t, char _p, char _s, char _m, const char *_n):
    name(_n)
   { NR_BORING }
+  render_named(NV_rend t, char _p, char _s, char _m, char _a, const char *_n):
+   name(_n)
+  { NR_BORINGA }
   const char *name;
 };
 
@@ -854,6 +861,11 @@ struct render_TTU: public render_base
     NR_BORING
     left = _v;
   }
+  render_TTU(NV_rend t, char _p, char _s, char _m, char _a, ve_base _v)
+  {
+    NR_BORINGA
+    left = _v;
+  }
   ve_base left;
 };
 
@@ -862,6 +874,12 @@ struct render_M1: public render_named
   render_M1(NV_rend t, char _p, char _s, char _m, const char *_n, ve_base _b)
   {
     NR_BORING
+    name = _n;
+    left = _b;
+  }
+  render_M1(NV_rend t, char _p, char _s, char _m, char _a, const char *_n, ve_base _b)
+  {
+    NR_BORINGA
     name = _n;
     left = _b;
   }
@@ -876,6 +894,12 @@ struct render_C: public render_named
     name = _n;
     left = _b;
   }
+  render_C(NV_rend t, char _p, char _s, char _m, char _a, const char *_n, ve_base _b)
+  {
+    NR_BORINGA
+    name = _n;
+    left = _b;
+  }
   ve_base left;
   std::list<ve_base> right;
 };
@@ -887,6 +911,11 @@ struct render_desc: public render_base
     NR_BORING
     left = _b;
   }
+  render_desc(NV_rend t, char _p, char _s, char _m, char _a, ve_base _b)
+  {
+    NR_BORINGA
+    left = _b;
+  }
   ve_base left;
   std::list<ve_base> right;
 };
@@ -896,6 +925,11 @@ struct render_mem: public render_named
   render_mem(NV_rend t, char _p, char _s, char _m, const char *_n)
   {
     NR_BORING
+    name = _n;
+  }
+  render_mem(NV_rend t, char _p, char _s, char _m, char _a, const char *_n)
+  {
+    NR_BORINGA
     name = _n;
   }
   std::list<ve_base> right;
