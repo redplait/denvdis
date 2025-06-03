@@ -358,6 +358,10 @@ int NV_renderer::rend_renderer(const NV_rlist *rlist, const std::string &opcode,
        break;
       case R_enum:{
         const render_named *rn = (const render_named *)r;
+        if ( rn->mod ) {
+          res += rn->mod;
+          if ( rn->abs ) res += '|';
+        }
         res += "E:";
         res += rn->name;
        }
@@ -368,6 +372,10 @@ int NV_renderer::rend_renderer(const NV_rlist *rlist, const std::string &opcode,
       case R_C:
       case R_CX: {
          const render_C *rn = (const render_C *)r;
+         if ( rn->mod ) {
+          res += rn->mod;
+          if ( rn->abs ) res += '|';
+         }
          res += "c:";
          if ( rn->name ) res += rn->name;
          res += "[";
