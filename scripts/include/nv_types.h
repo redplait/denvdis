@@ -79,7 +79,7 @@ struct nv_float_conv {
 
 // direct enums name -> value
 typedef std::unordered_map<std::string_view, int> NV_Renum;
-typedef std::unordered_map<std::string, const NV_Renum *> NV_Renums;
+typedef std::unordered_map<std::string_view, const NV_Renum *> NV_Renums;
 typedef int (*nv_filter)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &);
 typedef std::unordered_map<std::string_view, uint64_t> NV_extracted;
 struct nv_width {
