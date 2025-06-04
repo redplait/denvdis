@@ -15,8 +15,11 @@ class ParseSASS: public NV_renderer
    int add(const std::string &s);
   protected:
    struct form_list {
+     form_list(const render_base *_rb) {
+       rb = _rb;
+     }
      const render_base *rb = nullptr;
-     std::list<const render_base *> lr;
+     std::list<std::pair<const render_base *, const nv_eattr *> > lr;
    };
    struct one_form
    {
@@ -34,6 +37,8 @@ class ParseSASS: public NV_renderer
      one_form& operator=(one_form&& other) = default;
      one_form(one_form&& other) = default;
    };
+   typedef std::vector<one_form> NV_Forms;
+   int next(NV_Forms &) const;
    // predicate
    bool has_ast;
    std::string m_pred;
@@ -88,7 +93,7 @@ int ParseSASS::add(const std::string &s)
     return 0;
   }
   // ok, lets construct forms array
-  std::vector<one_form> forms;
+  NV_Forms forms;
   for ( auto ins: mv->second ) {
     auto r = m_dis->get_rend(ins->n);
     if ( !r ) continue;
@@ -97,12 +102,54 @@ int ParseSASS::add(const std::string &s)
     if ( (*ri)->type == R_predicate ) ++ri;
     if ( (*ri)->type != R_opcode ) continue;
     one_form of(ins, r);
-    // dissect render
+    // dissect render - ri holds R_opcode and pushed into of
+    of.ops.push_back( new form_list(*ri) );
+    for ( ; ri != r->end(); ++ri ) {
+      const render_named *rn = nullptr;
+      switch((*ri)->type) {
+        case R_value: { // check for bitmap
+          rn = (const render_named *)*ri;
+          auto vi = find(ins->vas, rn->name);
+          if ( vi && vi->kind == NV_BITSET ) goto out;
+          of.ops.push_back( new form_list(*ri) );
+        }
+        break;
+        case R_enum: {
+          rn = (const render_named *)*ri;
+          const nv_eattr *ea = nullptr;
+          auto ei = find(ins->eas, rn->name);
+          if ( ei ) { ea = ei->ea; }
+          else { ea = try_by_ename(ins, rn->name); }
+          if ( ea && ea->ignore ) { // push it into last
+            of.ops.back()->lr.push_back( std::make_pair(*ri, ea) );
+            break;
+          }
+        } // notice - no break here
+        default:
+         of.ops.push_back( new form_list(*ri) );
+      }
+    }
+out:
     // finally put into forms
     forms.push_back(std::move(of));
   }
   if ( forms.empty() ) return 0;
+  std::for_each( forms.begin(), forms.end(), [](one_form &of) { of.current = of.ops.begin(); });
+  if ( idx >= (int)s.size() ) return 1;
+  auto c = s.at(idx);
+  if ( s.at(idx) == '.' ) {
+    // some attr
+  } else if ( c == ' ' ) {
+    if ( !next(forms) ) return 0;
+  }
   return 1;
+}
+
+int ParseSASS::next(NV_Forms &f) const
+{
+  std::for_each( f.begin(), f.end(), [](one_form &of) { of.current = of.ops.begin(); });
+  std::erase_if(f, [](one_form &of) { return of.current == of.ops.end(); });
+  return !f.empty();
 }
 
 int ParseSASS::init(const std::string &s)
