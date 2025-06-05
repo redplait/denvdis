@@ -65,6 +65,7 @@ class ParseSASS: public NV_renderer
    const NV_sorted *m_sorted = nullptr;
    const NV_Renums *m_renums = nullptr;
    const NV_Renum *usched = nullptr;
+   const NV_Renum *pseudo = nullptr;
 };
 
 std::regex ParseSASS::s_digits("\\d+");
@@ -188,6 +189,10 @@ int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
 #ifdef DEBUG
  printf("attr %s len %d\n", s.c_str() + idx, last - idx);
 #endif
+  if ( pseudo ) {
+    auto pi = pseudo->find(ename);
+    if ( pi != pseudo->end() ) return last;
+  }
   int found = 0;
   // iterate on all remained forms and try to find this attr at thers current operand
   std::erase_if(f, [&](one_form &of) {
@@ -363,6 +368,11 @@ int ParseSASS::init(const std::string &s)
   if ( ri != m_renums->end() ) usched = ri->second;
   else {
     fprintf(stderr, "cannot find usched_info enum\n");
+  }
+  ri = m_renums->find("PSEUDO_OPCODE");
+  if ( ri != m_renums->end() ) pseudo = ri->second;
+  else {
+    fprintf(stderr, "cannot find pseudo_opcode enum\n");
   }
   return 1;
 }
