@@ -49,13 +49,20 @@ class ParseSASS: public NV_renderer
      has_ast = false;
      m_pred.clear();
    }
+   int parse_req(const char *s);
+   int parse_digit(const char *s, int &v);
    int parse_pred(const std::string &s);
+   std::string process_tail(int idx, const std::string &s, NV_Forms &);
    // currently kv
    NV_extracted m_kv;
+   static std::regex s_digits;
+   static constexpr auto c_usched_name = "usched_info";
    const NV_sorted *m_sorted = nullptr;
    const NV_Renums *m_renums = nullptr;
    const NV_Renum *usched = nullptr;
 };
+
+std::regex ParseSASS::s_digits("\\d+");
 
 int ParseSASS::parse_pred(const std::string &s)
 {
@@ -71,12 +78,111 @@ int ParseSASS::parse_pred(const std::string &s)
   return res;
 }
 
+// return len
+int ParseSASS::parse_digit(const char *s, int &v)
+{
+  char *end;
+  if ( s[0] == '0' && s[1] == 'x' ) {
+    v = strtol(s + 2, &end, 16);
+    return end - s;
+  }
+  v = strtol(s, &end, 10);
+  return end - s;
+}
+
+int ParseSASS::parse_req(const char *s)
+{
+  std::string tmp;
+  int i = 0;
+  for ( ; s[i] != '}'; i++ ) tmp.push_back(s[i]);
+  // ripped from https://stackoverflow.com/questions/10058606/splitting-a-string-by-a-character
+  int req = 0;
+  std::sregex_token_iterator begin(tmp.begin(), tmp.end(), s_digits), end;
+  std::for_each(begin, end, [s,&req]( const std::string &ss ) {
+    int v = atoi(ss.c_str());
+    if ( v > 5 ) fprintf(stderr, "bad req index %d in %s\n", v, s);
+    else req |= 1 << v;
+  });
+  // push into kv
+  m_kv["req_bit_set"] = req;
+  return i + 1;
+}
+
+std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
+{
+  std::string res;
+  int state = 0;
+  for ( int i = idx; i < (int)s.size(); ) {
+    auto c = s.at(i);
+#ifdef DEBUG
+ printf("state %d i %d %c\n", state, i, c);
+#endif
+    if ( !state ) {
+      if ( c == '&' ) state = 1;
+      else if ( c == '?' ) state = 2;
+      else {
+        res.push_back(c); i++; continue;
+      }
+      i++;
+    }
+    if ( 2 == state ) {
+      if ( !usched ) break;
+      // check if this enum exists
+      std::string ename;
+      std::copy_if( s.begin() + i, s.end(), std::back_inserter(ename), [](char c) { return !isspace(c); });
+      auto ei = usched->find(ename);
+      if ( ei == usched->end() ) {
+        printf("[!] unknown sched %s\n", ename.c_str());
+        break;
+      }
+      // update kv
+      m_kv[c_usched_name] = ei->second;
+      break; // bcs ?usched is always last
+    }
+    // check &something=
+    if ( 1 == state ) {
+      int value = 0;
+      std::string_view tmp{ s.c_str() + i, s.size() - idx };
+      if ( tmp.starts_with("req={") ) {
+        i += 5 + parse_req(s.c_str() + 5 + i);
+      } else if ( tmp.starts_with("wr=") ) {
+        i += 3 + parse_digit(s.c_str() + 3 + i, value);
+        m_kv["dist_wr_sb"] = value;
+      } else if ( tmp.starts_with("rd=") ) {
+        i += 3 + parse_digit(s.c_str() + 3 + i, value);
+        m_kv["src_rel_sb"] = value;
+      }
+      else {
+        printf("unknown tail %s\n", s.c_str() + i);
+        break;
+      }
+      state = 3;
+      continue;
+    }
+    // check symbol at tail
+    if ( c == '&' ) state = 1;
+    else if ( c == '?' ) state = 2;
+    else if ( !isspace(c) ) {
+       printf("unknown symbol '%c' in tail %s\n", c, s.c_str() + i);
+       break;
+    }
+    i++;
+  }
+  rstrip(res);
+  return res;
+}
+
 int ParseSASS::add(const std::string &s)
 {
   reset_pred();
   int idx = 0;
   // check predicate
   if ( s.at(0) == '@' ) idx = parse_pred(s);
+  // check { for dual-issued instructions
+  if ( m_width == 88 && s.at(0) == '{' ) {
+    m_kv[c_usched_name] = 0x10; // see https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-7-dual.html
+    for ( idx = 1; idx < (int)s.size(); idx++ ) if ( !isspace(s.at(idx)) ) break;
+  }
   // extract mnemonic
   std::string mnem;
   for ( ; idx < (int)s.size(); idx++ ) {
@@ -136,8 +242,16 @@ out:
   if ( forms.empty() ) return 0;
   std::for_each( forms.begin(), forms.end(), [](one_form &of) { of.current = of.ops.begin(); });
   if ( idx >= (int)s.size() ) return 1;
-  auto c = s.at(idx);
-  if ( s.at(idx) == '.' ) {
+  // process first tail with rd/wr etc
+  std::string head = process_tail(idx, s, forms);
+  if ( head.empty() ) {
+    if ( !forms.empty() ) return 1;
+    printf("[!] unknown form %s after process_tail\n", s.c_str());
+    return 0;
+  }
+  idx = 0;
+  auto c = head.at(idx);
+  if ( c == '.' ) {
     // some attr
   } else if ( c == ' ' ) {
     if ( !next(forms) ) return 0;
