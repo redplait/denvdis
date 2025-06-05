@@ -42,6 +42,7 @@ class ParseSASS: public NV_renderer
    };
    typedef std::vector<one_form> NV_Forms;
    int next(NV_Forms &) const;
+   int fill_forms(NV_Forms &, const std::vector<const nv_instr *> &);
    // predicate
    bool has_ast;
    std::string m_pred;
@@ -205,35 +206,10 @@ int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
   return last;
 }
 
-int ParseSASS::add(const std::string &s)
+int ParseSASS::fill_forms(NV_Forms &forms, const std::vector<const nv_instr *> &mv)
 {
-  reset_pred();
-  int idx = 0;
-  // check predicate
-  if ( s.at(0) == '@' ) idx = parse_pred(s);
-  // check { for dual-issued instructions
-  if ( m_width == 88 && s.at(0) == '{' ) {
-    m_kv[c_usched_name] = 0x10; // see https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-7-dual.html
-    for ( idx = 1; idx < (int)s.size(); idx++ ) if ( !isspace(s.at(idx)) ) break;
-  }
-  // extract mnemonic
-  std::string mnem;
-  for ( ; idx < (int)s.size(); idx++ ) {
-    auto c = s.at(idx);
-    if ( isspace(c) || c == '.' || c == ',' ) break;
-    mnem.push_back(c);
-  }
-  // try to find mnemonic
-  auto mv = std::lower_bound( m_sorted->begin(), m_sorted->end(), mnem, [](const auto &pair, const std::string &w) {
-    return pair.first < w;
-   });
-  if ( mv == m_sorted->end() ) {
-    printf("[!] cannot find mnemonic %s\n", mnem.c_str());
-    return 0;
-  }
-  // ok, lets construct forms array
-  NV_Forms forms;
-  for ( auto ins: mv->second ) {
+  int res = 0;
+  for ( auto ins: mv ) {
     auto r = m_dis->get_rend(ins->n);
     if ( !r ) continue;
     auto ri = r->begin();
@@ -271,9 +247,42 @@ int ParseSASS::add(const std::string &s)
 out:
     // finally put into forms
     forms.push_back(std::move(of));
+    res++;
   }
-  if ( forms.empty() ) return 0;
   std::for_each( forms.begin(), forms.end(), [](one_form &of) { of.current = of.ops.begin(); });
+  return res;
+}
+
+int ParseSASS::add(const std::string &s)
+{
+  reset_pred();
+  int idx = 0;
+  // check predicate
+  if ( s.at(0) == '@' ) idx = parse_pred(s);
+  // check { for dual-issued instructions
+  if ( m_width == 88 && s.at(0) == '{' ) {
+    m_kv[c_usched_name] = 0x10; // see https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-7-dual.html
+    for ( idx = 1; idx < (int)s.size(); idx++ ) if ( !isspace(s.at(idx)) ) break;
+  }
+  // extract mnemonic
+  std::string mnem;
+  for ( ; idx < (int)s.size(); idx++ ) {
+    auto c = s.at(idx);
+    if ( isspace(c) || c == '.' || c == ',' ) break;
+    mnem.push_back(c);
+  }
+  // try to find mnemonic
+  auto mv = std::lower_bound( m_sorted->begin(), m_sorted->end(), mnem, [](const auto &pair, const std::string &w) {
+    return pair.first < w;
+   });
+  if ( mv == m_sorted->end() ) {
+    printf("[!] cannot find mnemonic %s\n", mnem.c_str());
+    return 0;
+  }
+  // ok, lets construct forms array
+  NV_Forms forms;
+  fill_forms(forms, mv->second);
+  if ( forms.empty() ) return 0;
   if ( idx >= (int)s.size() ) return 1;
   // process first tail with rd/wr etc
   std::string head = process_tail(idx, s, forms);
@@ -285,11 +294,23 @@ out:
   idx = 0;
   while( idx < (int)head.size() )
   {
+    int old_idx = idx;
     auto c = head.at(idx);
     if ( c == '.' ) {
     // some attr
     idx = process_attr(idx, head, forms);
     if ( forms.empty() ) {
+      // surprise - there is mnemonics like UIADD.64
+      if ( !old_idx ) {
+        std::string second_mnem(head, idx);
+        mnem += second_mnem;
+        mv = std::lower_bound( m_sorted->begin(), m_sorted->end(), mnem, [](const auto &pair, const std::string &w) {
+         return pair.first < w;
+        });
+        if ( mv != m_sorted->end() ) {
+          if ( fill_forms(forms, mv->second) ) continue;
+        }
+      }
       printf("[!] unknown form %s after process_attr\n", head.c_str());
       return 0;
      }
