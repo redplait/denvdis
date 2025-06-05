@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,6 +10,16 @@
 #include "include/nv_types.h"
 
 typedef std::unordered_set<uint32_t> NV_labels;
+
+inline std::string& rstrip(std::string &s)
+{
+  while(!s.empty()) {
+    auto c = s.back();
+    if ( !isspace(c) ) break;
+    s.pop_back();
+  }
+  return s;
+}
 
 class NV_renderer {
  public:

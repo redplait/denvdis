@@ -123,16 +123,6 @@ char *null_generator(const char *text, int state) {
 };
 
 // string helpers
-static std::string& rstrip(std::string &s)
-{
-  while(!s.empty()) {
-    auto c = s.back();
-    if ( !isspace(c) ) break;
-    s.pop_back();
-  }
-  return s;
-}
-
 static std::string& to_up(std::string &s)
 {
   std::transform(s.begin(), s.end(), s.begin(), ::toupper);
