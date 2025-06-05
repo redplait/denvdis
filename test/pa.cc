@@ -18,6 +18,9 @@ class ParseSASS: public NV_renderer
      form_list(const render_base *_rb) {
        rb = _rb;
      }
+     inline bool empty() const {
+       return lr.empty();
+     }
      const render_base *rb = nullptr;
      std::list<std::pair<const render_base *, const nv_eattr *> > lr;
    };
@@ -53,6 +56,7 @@ class ParseSASS: public NV_renderer
    int parse_digit(const char *s, int &v);
    int parse_pred(const std::string &s);
    std::string process_tail(int idx, const std::string &s, NV_Forms &);
+   int process_attr(int idx, const std::string &s, NV_Forms &);
    // currently kv
    NV_extracted m_kv;
    static std::regex s_digits;
@@ -171,6 +175,36 @@ std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
   return res;
 }
 
+// idx - index of '.' at start of attr
+int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
+{
+  int last;
+  for ( last = ++idx; last < (int)s.size(); ++last ) {
+    auto c = s.at(last);
+    if ( isspace(c) || c == '.' ) break;
+  }
+  std::string_view ename(s.c_str() + idx, last - idx);
+#ifdef DEBUG
+ printf("attr %s len %d\n", s.c_str() + idx, last - idx);
+#endif
+  int found = 0;
+  // iterate on all remained forms and try to find this attr at thers current operand
+  std::erase_if(f, [&](one_form &of) {
+    if ( (*of.current)->empty() ) return 1;
+    for ( auto &a: (*of.current)->lr ) {
+      auto en = m_renums->find(a.second->ename);
+#ifdef DEBUG
+ printf("check in %s\n", a.second->ename);
+#endif
+      if ( en == m_renums->end() ) continue;
+      auto aiter = en->second->find(ename);
+      if ( aiter != en->second->end() ) { found++; return 0; }
+    }
+    return 1;
+  });
+  return last;
+}
+
 int ParseSASS::add(const std::string &s)
 {
   reset_pred();
@@ -209,7 +243,7 @@ int ParseSASS::add(const std::string &s)
     one_form of(ins, r);
     // dissect render - ri holds R_opcode and pushed into of
     of.ops.push_back( new form_list(*ri) );
-    for ( ; ri != r->end(); ++ri ) {
+    for ( ++ri; ri != r->end(); ++ri ) {
       const render_named *rn = nullptr;
       switch((*ri)->type) {
         case R_value: { // check for bitmap
@@ -249,11 +283,23 @@ out:
     return 0;
   }
   idx = 0;
-  auto c = head.at(idx);
-  if ( c == '.' ) {
+  while( idx < (int)head.size() )
+  {
+    auto c = head.at(idx);
+    if ( c == '.' ) {
     // some attr
-  } else if ( c == ' ' ) {
-    if ( !next(forms) ) return 0;
+    idx = process_attr(idx, head, forms);
+    if ( forms.empty() ) {
+      printf("[!] unknown form %s after process_attr\n", head.c_str());
+      return 0;
+     }
+    } else if ( c == ' ' ) {
+      if ( !next(forms) ) return 0;
+      idx++; break;
+    } else {
+      printf("[!] cannot parse %s\n", head.c_str() + idx);
+      return 0;
+    }
   }
   return 1;
 }
