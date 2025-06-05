@@ -92,12 +92,11 @@ int ParseSASS::parse_digit(const char *s, int &v)
 
 int ParseSASS::parse_req(const char *s)
 {
-  std::string tmp;
   int i = 0;
-  for ( ; s[i] != '}'; i++ ) tmp.push_back(s[i]);
+  for ( ; s[i] != '}'; i++ ) ;
   // ripped from https://stackoverflow.com/questions/10058606/splitting-a-string-by-a-character
   int req = 0;
-  std::sregex_token_iterator begin(tmp.begin(), tmp.end(), s_digits), end;
+  std::cregex_token_iterator begin(s, s + i, s_digits), end;
   std::for_each(begin, end, [s,&req]( const std::string &ss ) {
     int v = atoi(ss.c_str());
     if ( v > 5 ) fprintf(stderr, "bad req index %d in %s\n", v, s);
