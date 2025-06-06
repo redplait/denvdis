@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 int opt_m = 0,
+    opt_s = 0,
     opt_v = 0;
 
 class ParseSASS: public NV_renderer
@@ -13,6 +14,7 @@ class ParseSASS: public NV_renderer
    { }
    int init(const std::string &s);
    int add(const std::string &s);
+   int print_fsummary(FILE *) const;
   protected:
    struct form_list {
      form_list(const render_base *_rb) {
@@ -58,6 +60,7 @@ class ParseSASS: public NV_renderer
    int parse_pred(const std::string &s);
    std::string process_tail(int idx, const std::string &s, NV_Forms &);
    int process_attr(int idx, const std::string &s, NV_Forms &);
+   NV_Forms m_forms;
    // currently kv
    NV_extracted m_kv;
    static std::regex s_digits;
@@ -66,6 +69,7 @@ class ParseSASS: public NV_renderer
    const NV_Renums *m_renums = nullptr;
    const NV_Renum *usched = nullptr;
    const NV_Renum *pseudo = nullptr;
+   const NV_dotted *m_dotted = nullptr;
 };
 
 std::regex ParseSASS::s_digits("\\d+");
@@ -180,28 +184,73 @@ std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
 // idx - index of '.' at start of attr
 int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
 {
-  int last;
+  int last, dotted_last = 0;
+  std::string_view dotted;
   for ( last = ++idx; last < (int)s.size(); ++last ) {
     auto c = s.at(last);
-    if ( isspace(c) || c == '.' ) break;
+    if ( isspace(c) ) break;
+    if ( c == '.' ) {
+      if ( !m_dotted )
+        break;
+      // check if this constant contains '.'
+      int len = last - idx + 1;
+      std::string_view tmp( s.c_str() + idx, len );
+      auto di = m_dotted->lower_bound(tmp);
+      if ( di == m_dotted->end() ) break;
+      if ( !(*di).starts_with(tmp) ) break;
+#ifdef DEBUG
+dump_out(tmp); printf(" -> "); dump_out(*di); fputc('\n', stdout);
+#endif
+      int i2 = 1 + last;
+      for ( ; i2 < (int)s.size(); ++i2, ++len ) {
+        auto c = s.at(i2);
+        if ( isspace(c) || c == '.' ) break;
+      }
+      // check in dotted
+      dotted = { s.c_str() + idx, len };
+// fputc('>', stdout); dump_out(dotted); fputc('\n', stdout);
+      di = m_dotted->find(dotted);
+      if ( di != m_dotted->end() ) {
+        dotted_last = i2;
+// dump_out(dotted); printf(" %d-> ", last); dump_out(*di); fputc('\n', stdout);
+      }
+      break;
+    }
   }
   std::string_view ename(s.c_str() + idx, last - idx);
 #ifdef DEBUG
  printf("attr %s len %d\n", s.c_str() + idx, last - idx);
 #endif
-  if ( pseudo ) {
+  if ( !dotted_last && pseudo ) {
     auto pi = pseudo->find(ename);
     if ( pi != pseudo->end() ) return last;
   }
   int found = 0;
+  if ( dotted_last ) {
+    // if we have some enum with '.' - check it but don't remove forms
+    std::for_each(f.begin(), f.end(), [&](const one_form &of) {
+    if ( (*of.current)->empty() ) return;
+    for ( auto &a: (*of.current)->lr ) {
+      auto en = m_renums->find(a.second->ename);
+      if ( en == m_renums->end() ) continue;
+      auto aiter = en->second->find(dotted);
+      if ( aiter != en->second->end() ) { found++; return; }
+    } });
+    if ( found ) {
+      // yes, we can proceed with dotted enum
+      last = dotted_last;
+      ename = dotted;
+#ifdef DEBUG
+ printf("%d last %d>", found, last); dump_out(ename); fputc('\n', stdout);
+#endif
+      found = 0;
+    }
+  }
   // iterate on all remained forms and try to find this attr at thers current operand
   std::erase_if(f, [&](one_form &of) {
     if ( (*of.current)->empty() ) return 1;
     for ( auto &a: (*of.current)->lr ) {
       auto en = m_renums->find(a.second->ename);
-#ifdef DEBUG
- printf("check in %s\n", a.second->ename);
-#endif
       if ( en == m_renums->end() ) continue;
       auto aiter = en->second->find(ename);
       if ( aiter != en->second->end() ) { found++; return 0; }
@@ -285,14 +334,14 @@ int ParseSASS::add(const std::string &s)
     return 0;
   }
   // ok, lets construct forms array
-  NV_Forms forms;
-  fill_forms(forms, mv->second);
-  if ( forms.empty() ) return 0;
+  m_forms.clear();
+  fill_forms(m_forms, mv->second);
+  if ( m_forms.empty() ) return 0;
   if ( idx >= (int)s.size() ) return 1;
   // process first tail with rd/wr etc
-  std::string head = process_tail(idx, s, forms);
+  std::string head = process_tail(idx, s, m_forms);
   if ( head.empty() ) {
-    if ( !forms.empty() ) return 1;
+    if ( !m_forms.empty() ) return 1;
     printf("[!] unknown form %s after process_tail\n", s.c_str());
     return 0;
   }
@@ -303,8 +352,8 @@ int ParseSASS::add(const std::string &s)
     auto c = head.at(idx);
     if ( c == '.' ) {
     // some attr
-    idx = process_attr(idx, head, forms);
-    if ( forms.empty() ) {
+    idx = process_attr(idx, head, m_forms);
+    if ( m_forms.empty() ) {
       // surprise - there is mnemonics like UIADD.64
       if ( !old_idx ) {
         std::string second_mnem(head, idx);
@@ -313,14 +362,14 @@ int ParseSASS::add(const std::string &s)
          return pair.first < w;
         });
         if ( mv != m_sorted->end() ) {
-          if ( fill_forms(forms, mv->second) ) continue;
+          if ( fill_forms(m_forms, mv->second) ) continue;
         }
       }
       printf("[!] unknown form %s after process_attr\n", head.c_str());
       return 0;
      }
     } else if ( c == ' ' ) {
-      if ( !next(forms) ) return 0;
+      if ( !next(m_forms) ) return 0;
       idx++; break;
     } else {
       printf("[!] cannot parse %s\n", head.c_str() + idx);
@@ -332,8 +381,7 @@ int ParseSASS::add(const std::string &s)
 
 int ParseSASS::next(NV_Forms &f) const
 {
-  std::for_each( f.begin(), f.end(), [](one_form &of) { of.current = of.ops.begin(); });
-  std::erase_if(f, [](one_form &of) { return of.current == of.ops.end(); });
+  std::erase_if(f, [](one_form &of) { return ++of.current == of.ops.end(); });
   return !f.empty();
 }
 
@@ -374,14 +422,34 @@ int ParseSASS::init(const std::string &s)
   else {
     fprintf(stderr, "cannot find pseudo_opcode enum\n");
   }
+  m_dotted = m_dis->get_dotted();
+  if ( !m_dotted )
+    fprintf(stderr, "cannot find dotted enums\n");
   return 1;
 }
 
+int ParseSASS::print_fsummary(FILE *fp) const
+{
+  auto fsize = m_forms.size();
+  if ( !fsize ) {
+    fprintf(fp, "[!] no forms\n");
+    return 0;
+  }
+  fprintf(fp, "%ld forms:", fsize);
+  for ( auto &f: m_forms ) fprintf(fp, " %d", f.instr->line);
+  fputc('\n', fp);
+  return 1;
+}
+
+//
+// main
+//
 void usage(const char *prog)
 {
   printf("usage: %s [options] input.asm\n", prog);
   printf("Options:\n");
   printf(" -m - dump missed fields\n");
+  printf(" -s - print forms summary\n");
   printf(" -v - verbose mode\n");
   exit(6);
 }
@@ -390,10 +458,11 @@ int main(int argc, char **argv)
 {
   int c;
   while(1) {
-    c = getopt(argc, argv, "mv");
+    c = getopt(argc, argv, "msv");
     if ( c == -1 ) break;
     switch(c) {
       case 'm': opt_m = 1; break;
+      case 's': opt_s = 1; break;
       case 'v': opt_v = 1; break;
       default: usage(argv[0]);
     }
@@ -443,6 +512,9 @@ int main(int argc, char **argv)
         auto what = matches[1].str();
         if ( opt_v ) printf("%d %s\n", ln, what.c_str());
         if ( !pa.add(what) ) printf("[!] %d %s\n", ln, what.c_str());
+        else {
+          if ( opt_s ) pa.print_fsummary(stdout);
+        }
       }
     }
   }
