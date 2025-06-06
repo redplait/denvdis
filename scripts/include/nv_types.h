@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <set>
 #include <climits>
 #include <stdio.h>
 
@@ -80,6 +81,7 @@ struct nv_float_conv {
 // direct enums name -> value
 typedef std::unordered_map<std::string_view, int> NV_Renum;
 typedef std::unordered_map<std::string_view, const NV_Renum *> NV_Renums;
+typedef std::set<std::string_view> NV_dotted;
 typedef int (*nv_filter)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &);
 typedef std::unordered_map<std::string_view, uint64_t> NV_extracted;
 struct nv_width {
@@ -992,6 +994,7 @@ struct INV_disasm {
   virtual const NV_rlist *get_rend(int idx) const = 0;
   virtual const NV_sorted *get_instrs() const = 0;
   virtual const NV_Renums *get_renums() const = 0;
+  virtual const NV_dotted *get_dotted() const = 0;
   // patch methods
   virtual int set_mask(const char *) = 0;
   virtual int put(const std::pair<short, short> *, size_t, uint64_t v) = 0;
@@ -1016,13 +1019,14 @@ struct dirty_trait<nv64> {
 template <typename T>
 struct NV_disasm: public INV_disasm, T
 {
-  NV_disasm(const NV_non_leaf *root, int _rz, int cnt, const NV_sorted *ins, const NV_Renums *_re)
+  NV_disasm(const NV_non_leaf *root, int _rz, int cnt, const NV_sorted *ins, const NV_Renums *_re, const NV_dotted *_d)
   {
     rz = _rz;
     m_root = root;
     m_cnt = cnt;
     m_instr = ins;
     m_renums = _re;
+    m_dotted = _d;
   }
   virtual int width() const { return T::_width; }
   virtual size_t offset() const { return T::curr_off(); }
@@ -1071,6 +1075,9 @@ struct NV_disasm: public INV_disasm, T
   virtual const NV_Renums *get_renums() const {
     return m_renums;
   }
+  virtual const NV_dotted *get_dotted() const {
+    return m_dotted;
+  }
   virtual int set_mask(const char *mask) {
     return T::set_mask(mask);
   }
@@ -1115,6 +1122,7 @@ struct NV_disasm: public INV_disasm, T
   const NV_non_leaf *m_root = nullptr;
   const NV_sorted *m_instr = nullptr;
   const NV_Renums *m_renums = nullptr;
+  const NV_dotted *m_dotted = nullptr;
 };
 
 

@@ -2538,8 +2538,7 @@ sub c_renum_name
 sub gen_enums
 {
   my $fh = shift;
-  my @re;
-  my $res;
+  my(@re, $res, $dot_name, %dotted);
   printf($fh "// ---- enums\n");
   foreach my $ename ( keys %g_used_enums ) {
     printf($fh "NV_ENUM(%s) = {\n", c_enum_name($ename));
@@ -2552,6 +2551,7 @@ sub gen_enums
       printf($fh "NV_RENUM(%s) = {\n", c_renum_name($ename));
       my $enum = $g_enums{$ename};
       foreach my $i ( sort {$a cmp $b} keys %$enum ) {
+        $dotted{$i} //= 1 if ( $i =~ /\./ );
         printf($fh " { \"%s\", %d },\n", $i, $enum->{$i} );
       }
       push @re, $ename;
@@ -2559,6 +2559,13 @@ sub gen_enums
     }
   }
   if ( defined $opt_E ) {
+    my $need_dot = 0;
+    if ( keys %dotted ) {
+      $dot_name = 'dotted_enums';
+      printf($fh "static const NV_dotted %s = {\n", $dot_name);
+      printf($fh "\"%s\",\n", $_) for( keys %dotted );
+      printf($fh "};\n");
+    }
     printf($fh "\n// RENUMS\n");
     $res = $opt_C . '_renums';
     printf($fh "static const NV_Renums %s = {\n", $res);
@@ -2566,7 +2573,7 @@ sub gen_enums
     printf($fh "};\n");
   }
   printf($fh "\n");
-  $res;
+  ($res, $dot_name);
 }
 
 sub c_tab_name
@@ -3356,9 +3363,11 @@ sub gen_C
   # dump masks
   gen_masks($fh);
   # dump used enums
-  my $ename = gen_enums($fh);
+  my($ename, $dotted) = gen_enums($fh);
   if ( defined $ename ) { $ename = '&' . $ename; }
   else { $ename = 'nullptr'; }
+  if ( defined $dotted ) { $dotted = '&' . $dotted; }
+  else { $dotted = 'nullptr'; }
   # dump used tabs
   gen_tabs($fh);
   # dump instructions
@@ -3385,7 +3394,7 @@ sub gen_C
   printf($fh "};\n");
   # finally gen get_sm
   printf($fh "\nINV_disasm *get_sm() {\n");
-  printf($fh " return new NV_disasm<nv%d>(%s, %d, %d, &%s, %s); }\n", $g_size, $root, $g_rz, $n, $s_name, $ename);
+  printf($fh " return new NV_disasm<nv%d>(%s, %d, %d, &%s, %s, %s); }\n", $g_size, $root, $g_rz, $n, $s_name, $ename, $dotted);
   close $fh;
 }
 
