@@ -2559,7 +2559,6 @@ sub gen_enums
     }
   }
   if ( defined $opt_E ) {
-    my $need_dot = 0;
     if ( keys %dotted ) {
       $dot_name = 'dotted_enums';
       printf($fh "static const NV_dotted %s = {\n", $dot_name);
@@ -2980,7 +2979,7 @@ sub rend_name_ea
 {
   my($f, $idx) = @_;
   my $ea = $f->[$idx];
-  return quoted_s($ea->[3]);
+  quoted_s($ea->[3]);
 }
 sub rend_value
 {
@@ -3336,7 +3335,7 @@ sub gen_instr
       }
     }
   }
-  return \%res;
+  \%res;
 }
 
 sub gen_C
@@ -3422,7 +3421,7 @@ sub c_ccond_func
 {
   my $name = shift;
   return unless $name;
-  return 's_ccond_' . $name;
+  's_ccond_' . $name;
 }
 
 # fcomp should be mapped to Test, ms to MS etc
@@ -3663,7 +3662,7 @@ sub is_known_group
   my $n = shift;
   return 1 if ( exists $g_groups{$n} );
   return 1 if ( exists $g_csets{$n} );
-  return 0;
+  0;
 }
 
 # key - merged conditions in {}
@@ -3736,7 +3735,7 @@ sub parse_cond
   # make new cond list name
   my $name = 'cond_list' . $g_cond_list_idx++;
   $g_cond_list{$body} = [ $name, \@res, $line ];
-  return $name;
+  $name;
 }
 
 # to link instructions with tabs we need yet two maps - for columns & rows
@@ -3877,7 +3876,7 @@ sub mark_tab_row_cset
 sub c_gtab_name
 {
   my $t = shift;
-  return 's_tab_' . $t->[2];
+  's_tab_' . $t->[2];
 }
 
 # gen one table in NV_tab form
@@ -4091,7 +4090,7 @@ sub parse_grow
     return 0;
   }
   push @$tab, \@res;
-  return 1;
+  1;
 }
 
 sub dump_group
@@ -4204,7 +4203,7 @@ sub parse_group_tail
       $tail, $ln);
   }
   printf("dont know how to parse tail %s, line %d\n", $str, $ln);
-  return $pset;
+  $pset;
 }
 
 # add column $name to $cols, also process $filter and $cond
