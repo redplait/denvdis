@@ -178,7 +178,7 @@ void ParseSASS::dump(const one_form &of)
   printf("%s line %d:", of.instr->name, of.instr->line);
   for ( auto ops = of.current; ops != of.ops.end(); ++ops ) {
     std::string res;
-    rend_single(*(*ops)->rb, res);
+    rend_single((*ops)->rb, res);
     printf(" %s", res.c_str());
     if ( (*ops)->rb->type == R_predicate || (*ops)->rb->type == R_enum ) {
      // check if those predicate has default
@@ -435,6 +435,7 @@ int ParseSASS::apply_enum(const std::string_view &s)
 printf("found dotted "); dump_out(ename); fputc('\n', stdout);
    }
   }
+  for ( auto &f: m_forms ) dump(f);
   return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
     if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
     const render_named *rn = (const render_named *)fl->rb;
