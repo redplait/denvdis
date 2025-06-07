@@ -46,6 +46,7 @@ class ParseSASS: public NV_renderer
      one_form& operator=(one_form&& other) = default;
      one_form(one_form&& other) = default;
    };
+   void dump(const one_form &);
    typedef std::vector<one_form> NV_Forms;
    int next(NV_Forms &) const;
    int fill_forms(NV_Forms &, const std::vector<const nv_instr *> &);
@@ -172,6 +173,24 @@ class ParseSASS: public NV_renderer
 std::regex ParseSASS::s_digits("\\d+");
 std::regex ParseSASS::s_commas("\\s*,\\s*");
 
+void ParseSASS::dump(const one_form &of)
+{
+  printf("%s line %d:", of.instr->name, of.instr->line);
+  for ( auto ops = of.current; ops != of.ops.end(); ++ops ) {
+    std::string res;
+    rend_single(*(*ops)->rb, res);
+    printf(" %s", res.c_str());
+    if ( (*ops)->rb->type == R_predicate || (*ops)->rb->type == R_enum ) {
+     // check if those predicate has default
+     const render_named *rn = (const render_named *)(*ops)->rb;
+     auto ei = find(of.instr->eas, rn->name);
+     if ( !ei ) continue;
+     if ( ei->ea->has_def_value ) printf(".D(%d):%s", ei->ea->def_value, ei->ea->ename);
+    }
+  }
+  fputc('\n', stdout);
+}
+
 int ParseSASS::parse_pred(const std::string &s)
 {
   if ( s.at(0) != '@' ) return 0;
@@ -251,6 +270,7 @@ int ParseSASS::classify_op(int op_idx, const std::string &s)
     return apply_kind(m_forms, cl);
   }
   if ( tmp.starts_with("0x") ) return reduce(R_value);
+  if ( tmp.starts_with("(*\"BRANCH_TARGETS") ) return reduce(R_value);
   switch(c) {
     case '`': if ( s.at(1) != '(' ) {
        fprintf(stderr, "unknown op %d: %s\n", op_idx, s.c_str());
@@ -394,6 +414,10 @@ int ParseSASS::apply_enum(const std::string_view &s)
   int last, dotted_last = 0;
   std::string_view dotted;
   last = try_dotted(0, s, dotted, dotted_last);
+// #ifdef DEBUG
+ printf("apply_enum "); dump_out(s); printf(" last %d dlast %d\n", last, dotted_last);
+// #endif
+
   std::string_view ename(s.begin(), last);
   if ( dotted_last ) {
     if ( check_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
@@ -408,6 +432,7 @@ int ParseSASS::apply_enum(const std::string_view &s)
     return aiter != en->second->end();
    }) ) {
     ename = dotted;
+printf("found dotted "); dump_out(ename); fputc('\n', stdout);
    }
   }
   return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
@@ -590,9 +615,11 @@ int ParseSASS::add(const std::string &s)
   }
   // we have set of opcodes in head
   if ( !opt_o ) {
-    std::cregex_token_iterator begin(head.c_str() + idx, head.c_str() + head.size(), s_commas), end;
+    std::cregex_token_iterator begin(head.c_str() + idx, head.c_str() + head.size(), s_commas, -1), end;
     int op_idx = 0;
     for ( auto op = begin; op != end; ++op, ++op_idx ) {
+      auto s = *op;
+      if ( !s.length() ) continue;
       if ( op_idx ) { // first next was issued in head processing after first space
         if ( !next(m_forms) ) return 0;
       }
