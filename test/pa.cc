@@ -91,7 +91,7 @@ class ParseSASS: public NV_renderer
        for ( auto ci = f.current; ci != f.ops.end(); ++ci )
        {
          if ( pred((*ci), f.instr) ) { res++; break; }
-         if ( (*ci)->rb->type == R_predicate ) {
+         if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
            auto ei = find(f.instr->eas, rn->name);
@@ -130,7 +130,7 @@ class ParseSASS: public NV_renderer
        for ( auto ci = f.current; ci != f.ops.end(); ci++ )
        {
          if ( pred((*ci), f.instr) ) { f.current = ci; return 0; }
-         if ( (*ci)->rb->type == R_predicate ) {
+         if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
            auto ei = find(f.instr->eas, rn->name);
@@ -186,6 +186,7 @@ void ParseSASS::dump(const one_form &of)
      auto ei = find(of.instr->eas, rn->name);
      if ( !ei ) continue;
      if ( ei->ea->has_def_value ) printf(".D(%d):%s", ei->ea->def_value, ei->ea->ename);
+     else printf(".E:%s", ei->ea->ename);
     }
   }
   fputc('\n', stdout);
@@ -256,12 +257,17 @@ int ParseSASS::reduce_pred(const std::string_view &s)
 }
 
 // main horror - try to detect what dis op is
-int ParseSASS::classify_op(int op_idx, const std::string &s)
+int ParseSASS::classify_op(int op_idx, const std::string &os)
 {
+  auto spaces = os.find_first_not_of(' ');
+  std::string s{ spaces == std::string::npos ? os.begin() : os.begin() + spaces, os.end() };
+#ifdef DEBUG
+ printf("op %d %s\n", op_idx, s.c_str());
+#endif
   int idx = 0, minus = 0;
   char c = s.at(idx);
-  if ( c == '-' ) { minus = 1; idx++; }
-  else if ( c == '+' ) idx++;
+  if ( c == '-' ) { minus = 1; c = s.at(++idx); }
+  else if ( c == '+' ) c = s.at(++idx);
   std::string_view tmp{ s.c_str() + idx, s.size() - idx};
   if ( tmp == "INF"sv ) return reduce(R_value);
   auto cl = [](const render_base *rb) { return rb->type == R_C || rb->type == R_CX; };
@@ -284,7 +290,7 @@ int ParseSASS::classify_op(int op_idx, const std::string &s)
        return 0;
      } else {
        // check what is dis
-       std::string_view abs{ s.c_str() + idx, tmp.size() - 1};
+       std::string_view abs{ s.c_str() + idx + 1, tmp.size() - 1};
        if ( abs.starts_with("c[") ) return apply_kind(m_forms, cl);
        else return apply_enum(abs);
      }
@@ -414,11 +420,12 @@ int ParseSASS::apply_enum(const std::string_view &s)
   int last, dotted_last = 0;
   std::string_view dotted;
   last = try_dotted(0, s, dotted, dotted_last);
+  std::string_view ename(s.begin(), last);
+
 // #ifdef DEBUG
- printf("apply_enum "); dump_out(s); printf(" last %d dlast %d\n", last, dotted_last);
+ printf("apply_enum "); dump_out(ename); printf(" last %d dlast %d\n", last, dotted_last);
 // #endif
 
-  std::string_view ename(s.begin(), last);
   if ( dotted_last ) {
     if ( check_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
     if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
@@ -426,7 +433,7 @@ int ParseSASS::apply_enum(const std::string_view &s)
     auto ei = find(instr->eas, rn->name);
     if ( !ei ) return 0;
     // check if it has enum in s
-    auto en = m_renums->find(ei->name);
+    auto en = m_renums->find(ei->ea->ename);
     if ( en == m_renums->end() ) return 0;
     auto aiter = en->second->find(dotted);
     return aiter != en->second->end();
@@ -437,13 +444,17 @@ printf("found dotted "); dump_out(ename); fputc('\n', stdout);
   }
   for ( auto &f: m_forms ) dump(f);
   return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
+  std::string res;
+  rend_single(fl->rb, res); printf("%s ", res.c_str());
     if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
     const render_named *rn = (const render_named *)fl->rb;
     auto ei = find(instr->eas, rn->name);
     if ( !ei ) return 0;
+  printf("found ei %s", ei->ea->ename);
     // check if it has enum in s
-    auto en = m_renums->find(ei->name);
+    auto en = m_renums->find(ei->ea->ename);
     if ( en == m_renums->end() ) return 0;
+  printf("en\n");
     auto aiter = en->second->find(ename);
     return aiter != en->second->end();
   });
@@ -626,7 +637,7 @@ int ParseSASS::add(const std::string &s)
       }
       classify_op(op_idx, *op);
       if ( m_forms.empty() ) {
-        printf("[!] empty after %d op: %s\n", op_idx, head.c_str());
+        printf("[!] empty after %d op: %s\n", op_idx, head.c_str() + idx);
         break;
       }
     }
