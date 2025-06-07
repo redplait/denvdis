@@ -345,10 +345,9 @@ bool NV_renderer::check_branch(const struct nv_instr *i, const NV_extracted::con
   return true;
 }
 
-int NV_renderer::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res) const
+int NV_renderer::rend_single(render_base *r, std::string &res, const std::string *opcode) const
 {
-  for ( auto r: *rlist ) {
-    switch(r->type) {
+  switch(r->type) {
       case R_value:
       case R_predicate: {
         const render_named *rn = (const render_named *)r;
@@ -367,7 +366,10 @@ int NV_renderer::rend_renderer(const NV_rlist *rlist, const std::string &opcode,
        }
        break;
       case R_opcode:
-        res += opcode;
+        if ( opcode )
+          res += *opcode;
+        else
+          res += "OPCODE";
        break;
       case R_C:
       case R_CX: {
@@ -422,6 +424,13 @@ int NV_renderer::rend_renderer(const NV_rlist *rlist, const std::string &opcode,
 
 //      default: fprintf(stderr, "unknown rend type %d at index %d for inst %s\n", r->type, idx, opcode.c_str());
     }
+ return !res.empty();
+}
+
+int NV_renderer::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res) const
+{
+  for ( auto r: *rlist ) {
+    rend_single(r, res, &opcode);
     res += ' ';
   }
   res.pop_back(); // remove last space
