@@ -5,7 +5,11 @@
 
 int opt_m = 0,
     opt_s = 0,
+    opt_o = 0,
     opt_v = 0;
+
+// for sv literals
+using namespace std::string_view_literals;
 
 class ParseSASS: public NV_renderer
 {
@@ -55,15 +59,108 @@ class ParseSASS: public NV_renderer
      has_ast = false;
      m_pred.clear();
    }
+   // heart of opcodes processing
+   // check kind and return count of matches
+   template <typename F>
+   int check_kind(NV_Forms &forms, F pred) {
+     int res = 0;
+     for ( auto &f: forms )
+     {
+       for ( auto ci = f.current; ci != f.ops.end(); ++ci )
+       {
+         if ( pred((*ci)->rb) ) { res++; break; }
+         if ( (*ci)->rb->type == R_predicate ) {
+           // check if those predicate has default
+           const render_named *rn = (const render_named *)(*ci)->rb;
+           auto ei = find(f.instr->eas, rn->name);
+           if ( !ei ) break;
+           if ( !ei->ea->has_def_value ) break;
+           continue;
+         }
+         break;
+       }
+     }
+     return res;
+   }
+   template <typename F>
+   int check_op(NV_Forms &forms, F pred) {
+     int res = 0;
+     for ( auto &f: forms )
+     {
+       for ( auto ci = f.current; ci != f.ops.end(); ++ci )
+       {
+         if ( pred((*ci), f.instr) ) { res++; break; }
+         if ( (*ci)->rb->type == R_predicate ) {
+           // check if those predicate has default
+           const render_named *rn = (const render_named *)(*ci)->rb;
+           auto ei = find(f.instr->eas, rn->name);
+           if ( !ei ) break;
+           if ( !ei->ea->has_def_value ) break;
+           continue;
+         }
+         break;
+       }
+     }
+     return res;
+   }
+   template <typename F>
+   int apply_kind(NV_Forms &f, F pred) {
+     std::erase_if(f, [&](one_form &f) {
+       for ( auto ci = f.current; ci != f.ops.end(); ci++ )
+       {
+         if ( pred((*ci)->rb) ) { f.current = ci; return 0; }
+         if ( (*ci)->rb->type == R_predicate ) {
+           // check if those predicate has default
+           const render_named *rn = (const render_named *)(*ci)->rb;
+           auto ei = find(f.instr->eas, rn->name);
+           if ( !ei ) break;
+           if ( !ei->ea->has_def_value ) break;
+           continue;
+         }
+         return 1;
+       }
+       return 1;
+     });
+     return !f.empty();
+   }
+   template <typename F>
+   int apply_op(NV_Forms &f, F pred) {
+     std::erase_if(f, [&](one_form &f) {
+       for ( auto ci = f.current; ci != f.ops.end(); ci++ )
+       {
+         if ( pred((*ci), f.instr) ) { f.current = ci; return 0; }
+         if ( (*ci)->rb->type == R_predicate ) {
+           // check if those predicate has default
+           const render_named *rn = (const render_named *)(*ci)->rb;
+           auto ei = find(f.instr->eas, rn->name);
+           if ( !ei ) break;
+           if ( !ei->ea->has_def_value ) break;
+           continue;
+         }
+         return 1;
+       }
+       return 1;
+     });
+     return !f.empty();
+   }
+
    int parse_req(const char *s);
    int parse_digit(const char *s, int &v);
    int parse_pred(const std::string &s);
    std::string process_tail(int idx, const std::string &s, NV_Forms &);
    int process_attr(int idx, const std::string &s, NV_Forms &);
+   template <typename T>
+   int try_dotted(int, T &, std::string_view &dotted, int &dotted_last);
+   int classify_op(int idx, const std::string &s);
+   int reduce(int);
+   int reduce_enum(const std::string_view &);
+   int reduce_pred(const std::string_view &);
+   int apply_enum(const std::string_view &);
    NV_Forms m_forms;
    // currently kv
    NV_extracted m_kv;
    static std::regex s_digits;
+   static std::regex s_commas;
    static constexpr auto c_usched_name = "usched_info";
    const NV_sorted *m_sorted = nullptr;
    const NV_Renums *m_renums = nullptr;
@@ -73,6 +170,7 @@ class ParseSASS: public NV_renderer
 };
 
 std::regex ParseSASS::s_digits("\\d+");
+std::regex ParseSASS::s_commas("\\s*,\\s*");
 
 int ParseSASS::parse_pred(const std::string &s)
 {
@@ -115,6 +213,77 @@ int ParseSASS::parse_req(const char *s)
   // push into kv
   m_kv["req_bit_set"] = req;
   return i + 1;
+}
+
+int ParseSASS::reduce(int kind)
+{
+  auto cl = [kind](const render_base *rb) { return rb->type == kind; };
+  return apply_kind(m_forms, cl);
+}
+
+int ParseSASS::reduce_pred(const std::string_view &s)
+{
+  return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
+    if ( fl->rb->type != R_predicate ) return 0;
+    const render_named *rn = (const render_named *)fl->rb;
+    auto ei = find(instr->eas, rn->name);
+    if ( !ei ) return 0;
+    // check if it has enum in s
+    auto en = m_renums->find(ei->name);
+    if ( en == m_renums->end() ) return 0;
+    auto aiter = en->second->find(s);
+    return aiter != en->second->end();
+   });
+}
+
+// main horror - try to detect what dis op is
+int ParseSASS::classify_op(int op_idx, const std::string &s)
+{
+  int idx = 0, minus = 0;
+  char c = s.at(idx);
+  if ( c == '-' ) { minus = 1; idx++; }
+  else if ( c == '+' ) idx++;
+  std::string_view tmp{ s.c_str() + idx, s.size() - idx};
+  if ( tmp == "INF"sv ) return reduce(R_value);
+  auto cl = [](const render_base *rb) { return rb->type == R_C || rb->type == R_CX; };
+  if ( tmp.starts_with("desc[") ) return reduce(R_desc);
+  if ( tmp.starts_with("c[") ) {
+    return apply_kind(m_forms, cl);
+  }
+  if ( tmp.starts_with("0x") ) return reduce(R_value);
+  switch(c) {
+    case '`': if ( s.at(1) != '(' ) {
+       fprintf(stderr, "unknown op %d: %s\n", op_idx, s.c_str());
+       return 0;
+     }
+     return reduce(R_value);
+     break;
+    case '!': return reduce_pred({ s.c_str() + idx, s.size() - idx});
+    case '|': if ( !tmp.ends_with("|") ) {
+       fprintf(stderr, "bad operand %d: %s\n", op_idx, s.c_str());
+       return 0;
+     } else {
+       // check what is dis
+       std::string_view abs{ s.c_str() + idx, tmp.size() - 1};
+       if ( abs.starts_with("c[") ) return apply_kind(m_forms, cl);
+       else return apply_enum(abs);
+     }
+    case '~':
+     return reduce(R_enum);
+    case '[': return reduce(R_mem);
+  }
+  // check for digit
+  int dig = 1, was_dot = 0;
+  for ( auto ti = tmp.cbegin(); ti != tmp.cend(); ++ti ) {
+    c = *ti;
+    if ( c >= '0' && c <= '9' ) continue;
+    if ( c == '.' ) { if ( !was_dot ) { ++was_dot; continue; } }
+    dig = 0;
+    break;
+  }
+  if ( dig ) return reduce(R_value);
+  // will hope this is enum
+  return apply_enum(tmp);
 }
 
 std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
@@ -181,12 +350,12 @@ std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
   return res;
 }
 
-// idx - index of '.' at start of attr
-int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
+template <typename T>
+int ParseSASS::try_dotted(int idx, T &s, std::string_view &dotted, int &dotted_last)
 {
-  int last, dotted_last = 0;
-  std::string_view dotted;
-  for ( last = ++idx; last < (int)s.size(); ++last ) {
+  int last;
+  dotted_last = 0;
+  for ( last = idx; last < (int)s.size(); ++last ) {
     auto c = s.at(last);
     if ( isspace(c) ) break;
     if ( c == '.' ) {
@@ -194,7 +363,7 @@ int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
         break;
       // check if this constant contains '.'
       int len = last - idx + 1;
-      std::string_view tmp( s.c_str() + idx, len );
+      std::string_view tmp( s.data() + idx, len );
       auto di = m_dotted->lower_bound(tmp);
       if ( di == m_dotted->end() ) break;
       if ( !(*di).starts_with(tmp) ) break;
@@ -207,7 +376,7 @@ dump_out(tmp); printf(" -> "); dump_out(*di); fputc('\n', stdout);
         if ( isspace(c) || c == '.' ) break;
       }
       // check in dotted
-      dotted = { s.c_str() + idx, len };
+      dotted = { s.data() + idx, (size_t)len };
 // fputc('>', stdout); dump_out(dotted); fputc('\n', stdout);
       di = m_dotted->find(dotted);
       if ( di != m_dotted->end() ) {
@@ -217,6 +386,49 @@ dump_out(tmp); printf(" -> "); dump_out(*di); fputc('\n', stdout);
       break;
     }
   }
+  return last;
+}
+
+int ParseSASS::apply_enum(const std::string_view &s)
+{
+  int last, dotted_last = 0;
+  std::string_view dotted;
+  last = try_dotted(0, s, dotted, dotted_last);
+  std::string_view ename(s.begin(), last);
+  if ( dotted_last ) {
+    if ( check_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
+    if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
+    const render_named *rn = (const render_named *)fl->rb;
+    auto ei = find(instr->eas, rn->name);
+    if ( !ei ) return 0;
+    // check if it has enum in s
+    auto en = m_renums->find(ei->name);
+    if ( en == m_renums->end() ) return 0;
+    auto aiter = en->second->find(dotted);
+    return aiter != en->second->end();
+   }) ) {
+    ename = dotted;
+   }
+  }
+  return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
+    if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
+    const render_named *rn = (const render_named *)fl->rb;
+    auto ei = find(instr->eas, rn->name);
+    if ( !ei ) return 0;
+    // check if it has enum in s
+    auto en = m_renums->find(ei->name);
+    if ( en == m_renums->end() ) return 0;
+    auto aiter = en->second->find(ename);
+    return aiter != en->second->end();
+  });
+}
+
+// idx - index of '.' at start of attr
+int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
+{
+  int last, dotted_last = 0;
+  std::string_view dotted;
+  last = try_dotted(++idx, s, dotted, dotted_last);
   std::string_view ename(s.c_str() + idx, last - idx);
 #ifdef DEBUG
  printf("attr %s len %d\n", s.c_str() + idx, last - idx);
@@ -376,6 +588,22 @@ int ParseSASS::add(const std::string &s)
       return 0;
     }
   }
+  // we have set of opcodes in head
+  if ( !opt_o ) {
+    std::cregex_token_iterator begin(head.c_str() + idx, head.c_str() + head.size(), s_commas), end;
+    int op_idx = 0;
+    for ( auto op = begin; op != end; ++op, ++op_idx ) {
+      if ( op_idx ) { // first next was issued in head processing after first space
+        if ( !next(m_forms) ) return 0;
+      }
+      classify_op(op_idx, *op);
+      if ( m_forms.empty() ) {
+        printf("[!] empty after %d op: %s\n", op_idx, head.c_str());
+        break;
+      }
+    }
+  }
+  if ( m_forms.empty() ) return 0;
   return 1;
 }
 
@@ -449,20 +677,24 @@ void usage(const char *prog)
   printf("usage: %s [options] input.asm\n", prog);
   printf("Options:\n");
   printf(" -m - dump missed fields\n");
+  printf(" -o - skip operands parsing\n");
   printf(" -s - print forms summary\n");
+  printf(" -S - print stat\n");
   printf(" -v - verbose mode\n");
   exit(6);
 }
 
 int main(int argc, char **argv)
 {
-  int c;
+  int c, opt_S = 0;
   while(1) {
-    c = getopt(argc, argv, "msv");
+    c = getopt(argc, argv, "mosSv");
     if ( c == -1 ) break;
     switch(c) {
       case 'm': opt_m = 1; break;
+      case 'o': opt_o = 1; break;
       case 's': opt_s = 1; break;
+      case 'S': opt_S = 1; break;
       case 'v': opt_v = 1; break;
       default: usage(argv[0]);
     }
@@ -490,6 +722,8 @@ int main(int argc, char **argv)
   std::regex cmt("^\\s*\\/\\/");
   std::regex section("^\\s+\\.section\\s+\\.(\\w+)");
   std::regex code("^\\s*\\/\\*.*\\*\\/\\s+(.*)\\s*;");
+  unsigned long total = 0,
+   succ = 0;
   for( ; std::getline(fs, s); ++ln ) {
     std::smatch matches;
     if ( !state ) {
@@ -511,11 +745,16 @@ int main(int argc, char **argv)
       if ( std::regex_search(s, matches, code) ) {
         auto what = matches[1].str();
         if ( opt_v ) printf("%d %s\n", ln, what.c_str());
+        total++;
         if ( !pa.add(what) ) printf("[!] %d %s\n", ln, what.c_str());
         else {
+          succ++;
           if ( opt_s ) pa.print_fsummary(stdout);
         }
       }
     }
+  }
+  if ( opt_S ) {
+    printf("total %ld succ %ld rate %f\n", total, succ, (double)succ / (double)total);
   }
 }
