@@ -304,12 +304,24 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
        fprintf(stderr, "unknown op %d: %s\n", op_idx, s.c_str());
        return 0;
      }
-     return reduce(R_value);
+     if ( has_target(&m_forms) )
+       return reduce(R_value);
+     return 1;
      break;
     case '!': return reduce_pred({ s.c_str() + idx + 1, s.size() - 1 - idx});
     case '|': if ( !tmp.ends_with("|") ) {
-       fprintf(stderr, "bad operand %d: %s\n", op_idx, s.c_str());
-       return 0;
+       // surprise - there can be ops like |R13|.reuse
+       // so try to find second |
+       int ip = idx + 1;
+       for ( ; ip < (int)tmp.size(); ip++ ) if ( tmp.at(ip) == '|' ) break;
+       if ( ip == (int)tmp.size() ) {
+         fprintf(stderr, "bad operand %d: %s\n", op_idx, s.c_str());
+         return 0;
+       }
+       // TODO: add attributes processing in tmp + ip + 1
+       std::string_view abs{ s.c_str() + idx + 1, size_t(ip - idx - 1)};
+printf("piped: len %d ", ip - idx - 1); dump_out(abs); fputc('\n', stdout);
+       return apply_enum(abs);
      } else {
        // check what is dis
        std::string_view abs{ s.c_str() + idx + 1, tmp.size() - 2};
@@ -318,6 +330,9 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
      }
     case '~':
      return reduce(R_enum);
+    case '{': // hopefully this is bitset for DEPBAR
+     // TODO: add check like in parse_req
+     return reduce(R_value);
     case '[': return reduce(R_mem);
   }
   // check for digit
@@ -445,39 +460,46 @@ int ParseSASS::apply_enum(const std::string_view &s)
   last = try_dotted(0, s, dotted, dotted_last);
   std::string_view ename(s.begin(), last);
 
-// #ifdef DEBUG
- printf("apply_enum "); dump_out(ename); printf(" last %d dlast %d\n", last, dotted_last);
-// #endif
-
+  if ( opt_d ) {
+    printf("apply_enum "); dump_out(ename); printf(" last %d dlast %d\n", last, dotted_last);
+  }
   if ( dotted_last ) {
     if ( check_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
-    if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
-    const render_named *rn = (const render_named *)fl->rb;
-    auto ei = find(instr->eas, rn->name);
-    if ( !ei ) return 0;
-    // check if it has enum in s
-    auto en = m_renums->find(ei->ea->ename);
-    if ( en == m_renums->end() ) return 0;
-    auto aiter = en->second->find(dotted);
-    return aiter != en->second->end();
-   }) ) {
-    ename = dotted;
-printf("found dotted "); dump_out(ename); fputc('\n', stdout);
+      if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
+      const render_named *rn = (const render_named *)fl->rb;
+      auto ei = find(instr->eas, rn->name);
+      if ( !ei ) return 0;
+      // check if it has enum in s
+      auto en = m_renums->find(ei->ea->ename);
+      if ( en == m_renums->end() ) return 0;
+      auto aiter = en->second->find(dotted);
+      return aiter != en->second->end();
+     }) ) {
+     ename = dotted;
+     if ( opt_d ) {
+       printf("found dotted "); dump_out(ename); fputc('\n', stdout);
+     }
    }
   }
   for ( auto &f: m_forms ) dump(f);
   return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
-  std::string res;
-  rend_single(fl->rb, res); printf("%s ", res.c_str());
+    if ( opt_d ) {
+      std::string res;
+      rend_single(fl->rb, res); printf("%s ", res.c_str());
+    }
     if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
     const render_named *rn = (const render_named *)fl->rb;
     auto ei = find(instr->eas, rn->name);
     if ( !ei ) return 0;
+#ifdef DEBUG
   printf("found ei %s", ei->ea->ename);
+#endif
     // check if it has enum in s
     auto en = m_renums->find(ei->ea->ename);
     if ( en == m_renums->end() ) return 0;
+#ifdef DEBUG
   printf("en\n");
+#endif
     auto aiter = en->second->find(ename);
     return aiter != en->second->end();
   });
@@ -551,7 +573,8 @@ int ParseSASS::fill_forms(NV_Forms &forms, const std::vector<const nv_instr *> &
         case R_value: { // check for bitmap
           rn = (const render_named *)*ri;
           auto vi = find(ins->vas, rn->name);
-          if ( vi && vi->kind == NV_BITSET ) goto out;
+          // need to check name of field too bcs we can have DEPBAR with dep_scbd having type NV_BITSET too
+          if ( vi && vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4)) goto out;
           of.ops.push_back( new form_list(*ri) );
         }
         break;

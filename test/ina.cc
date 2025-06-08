@@ -1059,7 +1059,10 @@ void INA::dump_curr_rendE() const
   auto rend = m_dis->get_rend(g_instr->n);
   if ( !rend ) return;
   std::string form;
-  if ( rend_rendererE(g_instr, rend, form ) ) printf("%s\n", form.c_str());
+  if ( rend_rendererE(g_instr, rend, form ) ) {
+    if ( g_instr->target_index ) printf("Target:%s ", g_instr->target_index);
+    printf("%s\n", form.c_str());
+  }
 }
 
 void INA::dump_curr_rend() const
