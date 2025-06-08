@@ -298,7 +298,11 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     return apply_kind(m_forms, cl);
   }
   if ( tmp.starts_with("0x") ) return reduce(R_value);
-  if ( tmp.starts_with("(*\"BRANCH_TARGETS") ) return reduce(R_value);
+  if ( tmp.starts_with("(*\"BRANCH_TARGETS") ) {
+    if ( has_target(&m_forms) )
+      return reduce(R_value);
+    return 1;
+  }
   switch(c) {
     case '`': if ( s.at(1) != '(' ) {
        fprintf(stderr, "unknown op %d: %s\n", op_idx, s.c_str());
@@ -320,7 +324,9 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
        }
        // TODO: add attributes processing in tmp + ip + 1
        std::string_view abs{ s.c_str() + idx + 1, size_t(ip - idx - 1)};
-printf("piped: len %d ", ip - idx - 1); dump_out(abs); fputc('\n', stdout);
+#ifdef DEBUG
+ printf("piped: len %d ", ip - idx - 1); dump_out(abs); fputc('\n', stdout);
+#endif
        return apply_enum(abs);
      } else {
        // check what is dis
