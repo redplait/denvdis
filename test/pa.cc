@@ -159,6 +159,7 @@ class ParseSASS: public NV_renderer
    int try_dotted(int, T &, std::string_view &dotted, int &dotted_last);
    int classify_op(int idx, const std::string &s);
    int reduce(int);
+   int reduce_label(int);
    int reduce_enum(const std::string_view &);
    int reduce_pred(const std::string_view &);
    int apply_enum(const std::string_view &);
@@ -254,6 +255,27 @@ int ParseSASS::reduce(int kind)
   return apply_kind(m_forms, cl);
 }
 
+int ParseSASS::reduce_label(int type)
+{
+  return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
+#ifdef DEBUG
+ dump(fl, instr);
+#endif
+    // we can have R_value - and then must check name of value - it must be the same as instr->target_index
+    // or we can have R_Cxx - then I don't know how to confirm if this is what I want
+    if ( fl->rb->type == R_value )
+    {
+      if ( !instr->target_index ) return 1;
+      // find vas
+      const render_named *rn = (const render_named *)fl->rb;
+      return !strcmp(instr->target_index, rn->name);
+    }
+    // const bank, perhaps I should check R_CX too?
+    if ( fl->rb->type == R_C ) return 1;
+    return 0;
+   });
+}
+
 int ParseSASS::reduce_pred(const std::string_view &s)
 {
 #ifdef DEBUG
@@ -304,12 +326,14 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     return 1;
   }
   switch(c) {
-    case '`': if ( s.at(1) != '(' ) {
+    case '`': if ( s.at(idx+1) != '(' ) {
        fprintf(stderr, "unknown op %d: %s\n", op_idx, s.c_str());
        return 0;
      }
-     if ( has_target(&m_forms) )
-       return reduce(R_value);
+     if ( has_target(&m_forms) ) {
+       if ( opt_d ) printf("` has targets, try R_value\n");
+       return reduce_label(R_value);
+     }
      return 1;
      break;
     case '!': return reduce_pred({ s.c_str() + idx + 1, s.size() - 1 - idx});
@@ -487,7 +511,9 @@ int ParseSASS::apply_enum(const std::string_view &s)
      }
    }
   }
-  for ( auto &f: m_forms ) dump(f);
+  if ( opt_d ) {
+    for ( auto &f: m_forms ) dump(f);
+  }
   return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
     if ( opt_d ) {
       std::string res;
