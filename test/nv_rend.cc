@@ -357,12 +357,13 @@ int NV_renderer::rend_singleE(const struct nv_instr *instr, const render_base *r
       res += std::to_string(eiter->ea->def_value);
       res += ")";
     }
-  } else if ( r->type == R_value && instr->vas ) {
+  }
+  if ( r->type == R_value && instr->vas ) {
     // try to find format in instr->vas
     const render_named *rn = (const render_named *)r;
     auto viter = find(instr->vas, rn->name);
     if ( viter ) {
-      res += ".f:";
+      res += ':';
       res += s_fmts[viter->kind];
       if ( viter->has_ast ) res += '*';
     }
@@ -447,7 +448,9 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
          res += ']';
        } break;
 
-//      default: fprintf(stderr, "unknown rend type %d at index %d for inst %s\n", r->type, idx, opcode.c_str());
+      default:
+        if ( opcode ) fprintf(stderr, "unknown rend type %d for inst %s\n", r->type, opcode);
+        return 0;
     }
  return !res.empty();
 }
@@ -455,7 +458,7 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
 int NV_renderer::rend_rendererE(const struct nv_instr *instr, const NV_rlist *rlist, std::string &res) const
 {
   for ( auto r: *rlist ) {
-    if ( r->type == R_enum || r->type == R_predicate )
+    if ( r->type == R_enum || r->type == R_predicate || r->type == R_value )
       rend_singleE(instr, r, res);
     else
       rend_single(r, res, instr->name);

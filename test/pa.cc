@@ -3,7 +3,8 @@
 #include <regex>
 #include <unistd.h>
 
-int opt_m = 0,
+int opt_d = 0,
+    opt_m = 0,
     opt_s = 0,
     opt_o = 0,
     opt_v = 0;
@@ -49,6 +50,9 @@ class ParseSASS: public NV_renderer
    void dump(const one_form &) const;
    void dump(const form_list *fl, const nv_instr *instr) const;
    typedef std::vector<one_form> NV_Forms;
+   int has_target(const NV_Forms *f) const {
+     return std::any_of(f->cbegin(), f->cend(), [](const one_form &of) { return nullptr != of.instr->target_index; });
+   }
    int next(NV_Forms &) const;
    int fill_forms(NV_Forms &, const std::vector<const nv_instr *> &);
    // predicate
@@ -148,7 +152,7 @@ class ParseSASS: public NV_renderer
 
    int parse_req(const char *s);
    int parse_digit(const char *s, int &v);
-   int parse_pred(const std::string &s);
+   int parse_pred(int idx, const std::string &s);
    std::string process_tail(int idx, const std::string &s, NV_Forms &);
    int process_attr(int idx, const std::string &s, NV_Forms &);
    template <typename T>
@@ -201,10 +205,10 @@ void ParseSASS::dump(const form_list *fl, const nv_instr *instr) const
   printf("%s\n", res.c_str());
 }
 
-int ParseSASS::parse_pred(const std::string &s)
+int ParseSASS::parse_pred(int idx, const std::string &s)
 {
-  if ( s.at(0) != '@' ) return 0;
-  int res = 1;
+  if ( s.at(idx) != '@' ) return 0;
+  int res = idx + 1;
   reset_pred();
   if ( s.at(res) == '!' ) {
     has_ast = 1;
@@ -579,13 +583,15 @@ int ParseSASS::add(const std::string &s)
 {
   reset_pred();
   int idx = 0;
-  // check predicate
-  if ( s.at(0) == '@' ) idx = parse_pred(s);
+  // skip initial spaces
+  for ( ; idx < (int)s.size(); idx++ ) if ( !isspace(s.at(idx)) ) break;
   // check { for dual-issued instructions
-  if ( m_width == 88 && s.at(0) == '{' ) {
+  if ( m_width == 88 && s.at(idx) == '{' ) {
     m_kv[c_usched_name] = 0x10; // see https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-7-dual.html
-    for ( idx = 1; idx < (int)s.size(); idx++ ) if ( !isspace(s.at(idx)) ) break;
+    for ( ++idx; idx < (int)s.size(); idx++ ) if ( !isspace(s.at(idx)) ) break;
   }
+  // check predicate
+  if ( s.at(idx) == '@' ) idx = parse_pred(idx, s);
   // extract mnemonic
   std::string mnem;
   for ( ; idx < (int)s.size(); idx++ ) {
@@ -614,6 +620,12 @@ int ParseSASS::add(const std::string &s)
     return 0;
   }
   idx = 0;
+  if ( opt_d ) {
+    printf("before operands processing:\n");
+    for ( auto &f: m_forms ) {
+      dump(f);
+    }
+  }
   while( idx < (int)head.size() )
   {
     int old_idx = idx;
@@ -734,6 +746,7 @@ void usage(const char *prog)
 {
   printf("usage: %s [options] input.asm\n", prog);
   printf("Options:\n");
+  printf(" -d - debug mode\n");
   printf(" -m - dump missed fields\n");
   printf(" -o - skip operands parsing\n");
   printf(" -s - print forms summary\n");
@@ -746,9 +759,10 @@ int main(int argc, char **argv)
 {
   int c, opt_S = 0;
   while(1) {
-    c = getopt(argc, argv, "mosSv");
+    c = getopt(argc, argv, "dmosSv");
     if ( c == -1 ) break;
     switch(c) {
+      case 'd': opt_d = 1; break;
       case 'm': opt_m = 1; break;
       case 'o': opt_o = 1; break;
       case 's': opt_s = 1; break;
