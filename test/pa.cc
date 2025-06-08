@@ -46,7 +46,8 @@ class ParseSASS: public NV_renderer
      one_form& operator=(one_form&& other) = default;
      one_form(one_form&& other) = default;
    };
-   void dump(const one_form &);
+   void dump(const one_form &) const;
+   void dump(const form_list *fl, const nv_instr *instr) const;
    typedef std::vector<one_form> NV_Forms;
    int next(NV_Forms &) const;
    int fill_forms(NV_Forms &, const std::vector<const nv_instr *> &);
@@ -173,7 +174,7 @@ class ParseSASS: public NV_renderer
 std::regex ParseSASS::s_digits("\\d+");
 std::regex ParseSASS::s_commas("\\s*,\\s*");
 
-void ParseSASS::dump(const one_form &of)
+void ParseSASS::dump(const one_form &of) const
 {
   printf("%s line %d:", of.instr->name, of.instr->line);
   for ( auto ops = of.current; ops != of.ops.end(); ++ops ) {
@@ -190,6 +191,14 @@ void ParseSASS::dump(const one_form &of)
     }
   }
   fputc('\n', stdout);
+}
+
+void ParseSASS::dump(const form_list *fl, const nv_instr *instr) const
+{
+  printf("%s line %d:", instr->name, instr->line);
+  std::string res;
+  rend_single(fl->rb, res);
+  printf("%s\n", res.c_str());
 }
 
 int ParseSASS::parse_pred(const std::string &s)
@@ -243,15 +252,24 @@ int ParseSASS::reduce(int kind)
 
 int ParseSASS::reduce_pred(const std::string_view &s)
 {
+#ifdef DEBUG
+ printf("reduce_pred: "); dump_out(s); fputc('\n', stdout);
+#endif
   return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
-    if ( fl->rb->type != R_predicate ) return 0;
+#ifdef DEBUG
+ dump(fl, instr);
+#endif
+    if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
     const render_named *rn = (const render_named *)fl->rb;
     auto ei = find(instr->eas, rn->name);
     if ( !ei ) return 0;
     // check if it has enum in s
-    auto en = m_renums->find(ei->name);
+    auto en = m_renums->find(ei->ea->ename);
     if ( en == m_renums->end() ) return 0;
     auto aiter = en->second->find(s);
+#ifdef DEBUG
+ printf("en %d\n", aiter != en->second->end());
+#endif
     return aiter != en->second->end();
    });
 }
@@ -284,7 +302,7 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
      }
      return reduce(R_value);
      break;
-    case '!': return reduce_pred({ s.c_str() + idx, s.size() - idx});
+    case '!': return reduce_pred({ s.c_str() + idx + 1, s.size() - 1 - idx});
     case '|': if ( !tmp.ends_with("|") ) {
        fprintf(stderr, "bad operand %d: %s\n", op_idx, s.c_str());
        return 0;
@@ -304,6 +322,7 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     c = *ti;
     if ( c >= '0' && c <= '9' ) continue;
     if ( c == '.' ) { if ( !was_dot ) { ++was_dot; continue; } }
+    if ( c == 'e' ) break;
     dig = 0;
     break;
   }
@@ -793,7 +812,7 @@ int main(int argc, char **argv)
       }
     }
   }
-  if ( opt_S ) {
+  if ( opt_S && total ) {
     printf("total %ld succ %ld rate %f\n", total, succ, (double)succ / (double)total);
   }
 }
