@@ -187,8 +187,10 @@ class NV_renderer {
     return 0;
    }
    // renderer
-   int rend_single(const render_base *r, std::string &res, const std::string *opcode = nullptr) const;
+   int rend_singleE(const struct nv_instr *, const render_base *r, std::string &res) const;
+   int rend_single(const render_base *r, std::string &res, const char *opcode = nullptr) const;
    int rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res) const;
+   int rend_rendererE(const struct nv_instr *, const NV_rlist *rlist, std::string &res) const;
    void r_velist(const std::list<ve_base> &l, std::string &res) const;
    void r_ve(const ve_base &ve, std::string &res) const;
    int render_ve(const ve_base &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;

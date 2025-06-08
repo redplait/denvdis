@@ -331,6 +331,7 @@ struct INA: public NV_renderer {
        fprintf(stderr, "cannot flush\n"); continue;
       }
       if ( !strcmp(buf, "r") ) { free(buf); dump_curr_rend(); continue; }
+      if ( !strcmp(buf, "R") ) { free(buf); dump_curr_rendE(); continue; }
       if ( !strcmp(buf, "kv") ) { free(buf); dump_kv(); continue; }
       // i field
       if ( buf[0] == 'i' && isspace(buf[1]) ) {
@@ -399,6 +400,7 @@ struct INA: public NV_renderer {
   int dump_i(const char *) const;
   void dump_kv() const;
   void dump_curr_rend() const;
+  void dump_curr_rendE() const;
   template <typename T>
   void dump_usArr(T &a, int nl = 0) const {
     std::for_each(a.cbegin(), a.cend(), [](unsigned short v) { printf("%d ", v); });
@@ -1050,6 +1052,14 @@ int INA::pre_build(const IRPair &pair)
   }
   printf("Oops: not found\n");
   return 0;
+}
+
+void INA::dump_curr_rendE() const
+{
+  auto rend = m_dis->get_rend(g_instr->n);
+  if ( !rend ) return;
+  std::string form;
+  if ( rend_rendererE(g_instr, rend, form ) ) printf("%s\n", form.c_str());
 }
 
 void INA::dump_curr_rend() const

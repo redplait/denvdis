@@ -308,7 +308,7 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
        return 0;
      } else {
        // check what is dis
-       std::string_view abs{ s.c_str() + idx + 1, tmp.size() - 1};
+       std::string_view abs{ s.c_str() + idx + 1, tmp.size() - 2};
        if ( abs.starts_with("c[") ) return apply_kind(m_forms, cl);
        else return apply_enum(abs);
      }
@@ -317,12 +317,12 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     case '[': return reduce(R_mem);
   }
   // check for digit
-  int dig = 1, was_dot = 0;
+  int dig = 1, cnt = 0, was_dot = 0;
   for ( auto ti = tmp.cbegin(); ti != tmp.cend(); ++ti ) {
     c = *ti;
-    if ( c >= '0' && c <= '9' ) continue;
+    if ( c >= '0' && c <= '9' ) { cnt++; continue; }
     if ( c == '.' ) { if ( !was_dot ) { ++was_dot; continue; } }
-    if ( c == 'e' ) break;
+    if ( cnt && c == 'e' ) break;
     dig = 0;
     break;
   }

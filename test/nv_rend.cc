@@ -345,7 +345,32 @@ bool NV_renderer::check_branch(const struct nv_instr *i, const NV_extracted::con
   return true;
 }
 
-int NV_renderer::rend_single(const render_base *r, std::string &res, const std::string *opcode) const
+int NV_renderer::rend_singleE(const struct nv_instr *instr, const render_base *r, std::string &res) const
+{
+  int what = rend_single(r, res, instr ? instr->name: nullptr);
+  if ( !what ) return 0;
+  if ( r->type == R_enum || r->type == R_predicate ) {
+    const render_named *rn = (const render_named *)r;
+    auto eiter = find(instr->eas, rn->name);
+    if ( eiter && eiter->ea->has_def_value ) {
+      res += ".D(";
+      res += std::to_string(eiter->ea->def_value);
+      res += ")";
+    }
+  } else if ( r->type == R_value && instr->vas ) {
+    // try to find format in instr->vas
+    const render_named *rn = (const render_named *)r;
+    auto viter = find(instr->vas, rn->name);
+    if ( viter ) {
+      res += ".f:";
+      res += s_fmts[viter->kind];
+      if ( viter->has_ast ) res += '*';
+    }
+  }
+  return what;
+}
+
+int NV_renderer::rend_single(const render_base *r, std::string &res, const char *opcode) const
 {
   switch(r->type) {
       case R_value:
@@ -367,7 +392,7 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const std::
        break;
       case R_opcode:
         if ( opcode )
-          res += *opcode;
+          res += opcode;
         else
           res += "OPCODE";
        break;
@@ -427,10 +452,23 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const std::
  return !res.empty();
 }
 
+int NV_renderer::rend_rendererE(const struct nv_instr *instr, const NV_rlist *rlist, std::string &res) const
+{
+  for ( auto r: *rlist ) {
+    if ( r->type == R_enum || r->type == R_predicate )
+      rend_singleE(instr, r, res);
+    else
+      rend_single(r, res, instr->name);
+    res += ' ';
+  }
+  res.pop_back(); // remove last space
+  return !res.empty();
+}
+
 int NV_renderer::rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res) const
 {
   for ( auto r: *rlist ) {
-    rend_single(r, res, &opcode);
+    rend_single(r, res, opcode.c_str());
     res += ' ';
   }
   res.pop_back(); // remove last space
