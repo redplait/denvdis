@@ -1,0 +1,10 @@
+.headerflags	@"EF_CUDA_TEXMODE_UNIFIED EF_CUDA_64BIT_ADDRESS EF_CUDA_SM50 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM50)"
+ .section .text.sm5
+/*380*/ @P0 SYNC                                              (*"BRANCH_TARGETS .L_x_0"*) ;
+/*403*/ BRA `(.L_x_1) ;
+/*483*/ {    @!P1 SHR R10, R7.reuse, 0x1f ; with {
+/*484*/ @!P1 SHR R10, R7.reuse, 0x1f } ; without {
+/*498*/ {    @!P2 IADD R8.CC, R8, c[0x0][0x150] ; with {
+/*498*/ @!P2 IADD R8.CC, R8, c[0x0][0x150] } ; without {
+/*0da8*/                   DEPBAR.LE SB1, 0x0 ;
+/*1178*/                   DEPBAR.LE SB0, 0x0, {2} ;

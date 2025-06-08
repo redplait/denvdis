@@ -1,0 +1,15 @@
+.target sm_120
+ .section .text.some-section
+; empty after 5 op: R12, R26.reuse, 0xf, RZ, 0xc0, !PT
+/*134817*/ LOP3.LUT R12, R26.reuse, 0xf, RZ, 0xc0, !PT                                                 ?trans2 ;
+; empty after 3 op: R9, R7, -0x80, !PT
+/*227786*/ VIMNMX.S32 R9, R7, -0x80, !PT                                                               ?trans1 ;
+; empty after 1 op: 0x0, !P0
+/*136173*/ BAR.RED.OR.DEFER_BLOCKING 0x0, !P0                                                          ?trans6 ;
+; empty after 4 op: P0, PT, R3, RZ, !P0
+/*136175*/ ISETP.NE.OR P0, PT, R3, RZ, !P0                              &req={0}                       ?WAIT13_END_GROUP ;
+; empty after 4 op: R20, -RZ, RZ, 0, 5.9604644775390625e-08
+/*152195*/ HFMA2 R20, -RZ, RZ, 0, 5.9604644775390625e-08 ;
+; empty after 3 op: R18, RZ, 0x1, !P3
+/*547008*/ @!P1 SEL R18, RZ, 0x1, !P3                                                                       ?WAIT4_END_GROUP ;
+
