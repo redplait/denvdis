@@ -339,7 +339,7 @@ bool NV_renderer::check_branch(const struct nv_instr *i, const NV_extracted::con
 }
 
 template <typename Fs, typename Fl>
-int NV_renderer::rend_single(const render_base *r, std::string &res, const char *opcode, Fs r1, Fl rl) const
+int NV_renderer::rend_single(const render_base *r, std::string &res, const char *opcode, Fs &&r1, Fl &&rl) const
 {
   switch(r->type) {
       case R_value:

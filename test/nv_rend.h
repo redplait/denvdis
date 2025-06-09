@@ -196,7 +196,7 @@ class NV_renderer {
    // renderer
    int rend_singleE(const struct nv_instr *, const render_base *r, std::string &res) const;
    template <typename Fs, typename Fl>
-   int rend_single(const render_base *r, std::string &res, const char *opcode, Fs, Fl) const;
+   int rend_single(const render_base *r, std::string &res, const char *opcode, Fs &&, Fl &&) const;
    int rend_single(const render_base *r, std::string &res, const char *opcode = nullptr) const;
    int rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res) const;
    int rend_rendererE(const struct nv_instr *, const NV_rlist *rlist, std::string &res) const;

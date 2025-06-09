@@ -52,6 +52,9 @@ class ParseSASS: public NV_renderer
    };
    void dump(const one_form &) const;
    void dump(const form_list *fl, const nv_instr *instr) const;
+   void dump_forms() const {
+     for ( auto &f: m_forms ) dump(f);
+   }
    typedef std::vector<one_form> NV_Forms;
    int has_target(const NV_Forms *f) const {
      return std::any_of(f->cbegin(), f->cend(), [](const one_form &of) { return nullptr != of.instr->target_index; });
@@ -274,6 +277,8 @@ int ParseSASS::reduce_label(int type)
       if ( !instr->target_index ) return 1;
       // find vas
       const render_named *rn = (const render_named *)fl->rb;
+      // there is strange case in RET where target_index is Ra and rn->name Ra_offset
+      if ( !strcmp(instr->name, "RET") ) return 1;
       return !strcmp(instr->target_index, rn->name);
     }
     // const bank, perhaps I should check R_CX too?
@@ -526,9 +531,7 @@ int ParseSASS::apply_enum(const std::string_view &s)
      }
    }
   }
-  if ( opt_d ) {
-    for ( auto &f: m_forms ) dump(f);
-  }
+  if ( opt_d ) dump_forms();
   int res = apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
     if ( opt_d ) {
       std::string res;
@@ -707,7 +710,19 @@ int ParseSASS::enum_tail(int idx, const std::string_view &head)
        printf("[!] unknown attr "); dump_out(tmp); printf(" after enum_tail %d\n", a_n);
        return 0;
       }
-    } else break;
+    } else if ( c == ' ' ) {
+      if ( !next(m_forms) ) return 0;
+      std::string tmp{ head.data() + idx + 1, size_t(head.size() - idx - 1) };
+      if ( opt_d ) {
+        printf("call classify_op %s\n", tmp.c_str());
+        dump_forms();
+      }
+      return classify_op(0, tmp);
+    } else {
+      std::string_view tmp{ head.data() + idx, size_t(head.size() - idx) };
+      printf("[!] unknown tail "); dump_out(tmp); printf(" after enum_tail %d\n", a_n);
+      return 0;
+    }
   }
   return 1;
 }
@@ -755,9 +770,7 @@ int ParseSASS::add(const std::string &s)
   idx = 0;
   if ( opt_d ) {
     printf("before operands processing:\n");
-    for ( auto &f: m_forms ) {
-      dump(f);
-    }
+    dump_forms();
   }
   for( int attr_n = 0; idx < (int)head.size(); ++attr_n )
   {
