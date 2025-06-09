@@ -3181,7 +3181,7 @@ sub form_vas
   printf($fh "static const std::initializer_list<const nv_vattr> %s = {\n", $name);
   foreach my $v ( sort keys %$vlist ) {
     my $vf = $vlist->{$v};
-    printf($fh " {\"%s\",  %s, %s },", $v, 'NV_' . $vf->[0], defined($vf->[1]) ? 'true' : 'false');
+    printf($fh " {\"%s\",  %s, %s },\n", $v, 'NV_' . $vf->[0], defined($vf->[1]) ? 'true' : 'false');
   }
   printf($fh "};\n");
   $name;
@@ -3395,6 +3395,7 @@ sub gen_C
   printf($fh "\nINV_disasm *get_sm() {\n");
   printf($fh " return new NV_disasm<nv%d>(%s, %d, %d, &%s, %s, %s); }\n", $g_size, $root, $g_rz, $n, $s_name, $ename, $dotted);
   close $fh;
+  $n;
 }
 
 # group processing logic
@@ -3539,7 +3540,7 @@ sub try_convert_ccond
   $res .= 'return ' . $body . ';';
   # store body
   $g_used_ccond{$name} = $res;
-  return 1;
+  1;
 }
 
 my %g_cc_pr; # hashamp for Pr conditions, key - body from [], value - name in g_used_ccond
@@ -3654,7 +3655,7 @@ sub process_cset
     return 0;
   }
   $g_csets{$name} = \@res;
-  return 1;
+  1;
 }
 
 sub is_known_group
@@ -3958,7 +3959,7 @@ sub gen_c_gtabs
     foreach my $cc ( keys %g_used_ccond ) {
       printf($fh "static int %s%s;\n", c_ccond_func( $cc ), $m_ccond_fwd);
     }
-    # second pass - put defunitions
+    # second pass - put definitions
     foreach my $cc ( keys %g_used_ccond ) {
      printf($fh "static int %s%s {\n", c_ccond_func( $cc ), $m_ccond_fwd);
      printf($fh "%s\n}\n", $g_used_ccond{ $cc });
@@ -4126,7 +4127,7 @@ sub merge_groups
   foreach my $i ( keys %$g2 ) {
     $res{$i} = $g2->{$i};
   }
-  return \%res;
+  \%res;
 }
 
 # g1 - g2
@@ -4137,7 +4138,7 @@ sub minus_groups
   foreach my $i ( keys %$g2 ) {
     delete $res{$i};
   }
-  return \%res;
+  \%res;
 }
 
 sub parse_named_list
@@ -4156,7 +4157,7 @@ sub parse_named_list
       $res{$i} = $i;
     }
   }
-  return \%res;
+  \%res;
 }
 
 # I am too lazy to implement full-featured LR-parser, so
