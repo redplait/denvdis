@@ -168,6 +168,7 @@ class ParseSASS: public NV_renderer
    int reduce_enum(const std::string_view &);
    int reduce_pred(const std::string_view &);
    int apply_enum(const std::string_view &);
+   int enum_tail(int idx, const std::string_view &);
    NV_Forms m_forms;
    // currently kv
    NV_extracted m_kv;
@@ -519,6 +520,7 @@ int ParseSASS::apply_enum(const std::string_view &s)
       return aiter != en->second->end();
      }) ) {
      ename = dotted;
+     last = dotted_last;
      if ( opt_d ) {
        printf("found dotted "); dump_out(ename); fputc('\n', stdout);
      }
@@ -527,7 +529,7 @@ int ParseSASS::apply_enum(const std::string_view &s)
   if ( opt_d ) {
     for ( auto &f: m_forms ) dump(f);
   }
-  return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
+  int res = apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
     if ( opt_d ) {
       std::string res;
       rend_single(fl->rb, res); printf("%s ", res.c_str());
@@ -548,6 +550,10 @@ int ParseSASS::apply_enum(const std::string_view &s)
     auto aiter = en->second->find(ename);
     return aiter != en->second->end();
   });
+  if ( !res ) return res;
+  // tail
+  if ( last < (int)s.size() ) res = enum_tail(last, s);
+  return res;
 }
 
 // idx - index of '.' at start of attr
@@ -686,6 +692,26 @@ out:
   return res;
 }
 
+int ParseSASS::enum_tail(int idx, const std::string_view &head)
+{
+  if ( opt_d ) {
+    printf("enum_tail: "); for ( int i = idx; i < (int)head.size(); i++ ) fputc(head.at(i), stdout); fputc('\n', stdout);
+  }
+  for( int a_n = 0; idx < (int)head.size(); ++a_n )
+  {
+    auto c = head.at(idx);
+    if ( c == '.' ) {
+      idx = process_tail_attr(idx, head, m_forms);
+      if ( m_forms.empty() ) {
+       std::string_view tmp{ head.data() + idx, size_t(head.size() - idx) };
+       printf("[!] unknown attr "); dump_out(tmp); printf(" after enum_tail %d\n", a_n);
+       return 0;
+      }
+    } else break;
+  }
+  return 1;
+}
+
 int ParseSASS::add(const std::string &s)
 {
   reset_pred();
@@ -733,16 +759,15 @@ int ParseSASS::add(const std::string &s)
       dump(f);
     }
   }
-  while( idx < (int)head.size() )
+  for( int attr_n = 0; idx < (int)head.size(); ++attr_n )
   {
-    int old_idx = idx;
     auto c = head.at(idx);
     if ( c == '.' ) {
     // some attr
     idx = process_attr(idx, head, m_forms);
     if ( m_forms.empty() ) {
       // surprise - there is mnemonics like UIADD.64
-      if ( !old_idx ) {
+      if ( !attr_n ) {
         std::string second_mnem(head, idx);
         mnem += second_mnem;
         mv = std::lower_bound( m_sorted->begin(), m_sorted->end(), mnem, [](const auto &pair, const std::string &w) {
@@ -752,7 +777,7 @@ int ParseSASS::add(const std::string &s)
           if ( fill_forms(m_forms, mv->second) ) continue;
         }
       }
-      printf("[!] unknown form %s after process_attr\n", head.c_str());
+      printf("[!] unknown form %s after process_attr %d\n", head.c_str(), attr_n);
       return 0;
      }
     } else if ( c == ' ' ) {
