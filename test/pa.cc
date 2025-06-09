@@ -20,6 +20,9 @@ class ParseSASS: public NV_renderer
    int init(const std::string &s);
    int add(const std::string &s);
    int print_fsummary(FILE *) const;
+   inline int fsize() const {
+     return (int)m_forms.size();
+   }
   protected:
    struct form_list {
      form_list(const render_base *_rb) {
@@ -154,6 +157,8 @@ class ParseSASS: public NV_renderer
    int parse_digit(const char *s, int &v);
    int parse_pred(int idx, const std::string &s);
    std::string process_tail(int idx, const std::string &s, NV_Forms &);
+   int tail_attrs(int idx, const std::string_view &s, NV_Forms &);
+   int process_tail_attr(int idx, const std::string_view &s, NV_Forms &);
    int process_attr(int idx, const std::string &s, NV_Forms &);
    template <typename T>
    int try_dotted(int, T &, std::string_view &dotted, int &dotted_last);
@@ -263,7 +268,7 @@ int ParseSASS::reduce_label(int type)
 #endif
     // we can have R_value - and then must check name of value - it must be the same as instr->target_index
     // or we can have R_Cxx - then I don't know how to confirm if this is what I want
-    if ( fl->rb->type == R_value )
+    if ( type == R_value && fl->rb->type == R_value )
     {
       if ( !instr->target_index ) return 1;
       // find vas
@@ -271,7 +276,7 @@ int ParseSASS::reduce_label(int type)
       return !strcmp(instr->target_index, rn->name);
     }
     // const bank, perhaps I should check R_CX too?
-    if ( fl->rb->type == R_C ) return 1;
+    if ( type != R_value && fl->rb->type == R_C ) return 1;
     return 0;
    });
 }
@@ -314,6 +319,7 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
   else if ( c == '+' ) c = s.at(++idx);
   std::string_view tmp{ s.c_str() + idx, s.size() - idx};
   if ( tmp == "INF"sv ) return reduce(R_value);
+  if ( tmp == "QNAN"sv ) return reduce(R_value);
   auto cl = [](const render_base *rb) { return rb->type == R_C || rb->type == R_CX; };
   if ( tmp.starts_with("desc[") ) return reduce(R_desc);
   if ( tmp.starts_with("c[") ) {
@@ -535,6 +541,48 @@ int ParseSASS::apply_enum(const std::string_view &s)
     auto aiter = en->second->find(ename);
     return aiter != en->second->end();
   });
+}
+
+// idx - index of '.' at start of attr
+int ParseSASS::process_tail_attr(int idx, const std::string_view &s, NV_Forms &f)
+{
+  int last, dotted_last = 0;
+  std::string_view dotted;
+  last = try_dotted(++idx, s, dotted, dotted_last);
+  std::string_view ename(s.data() + idx, last - idx);
+  int found = 0;
+  if ( dotted_last ) {
+    // if we have some enum with '.' - check it but don't remove forms
+    std::for_each(f.begin(), f.end(), [&](const one_form &of) {
+    if ( (*of.current)->empty() ) return;
+    for ( auto &a: (*of.current)->lr ) {
+      auto en = m_renums->find(a.second->ename);
+      if ( en == m_renums->end() ) continue;
+      auto aiter = en->second->find(dotted);
+      if ( aiter != en->second->end() ) { found++; return; }
+    } });
+    if ( found ) {
+      // yes, we can proceed with dotted enum
+      last = dotted_last;
+      ename = dotted;
+#ifdef DEBUG
+ printf("%d last %d>", found, last); dump_out(ename); fputc('\n', stdout);
+#endif
+      found = 0;
+    }
+  }
+  // iterate on all remained forms and try to find this attr at thers current operand
+  std::erase_if(f, [&](one_form &of) {
+    if ( (*of.current)->empty() ) return 1;
+    for ( auto &a: (*of.current)->lr ) {
+      auto en = m_renums->find(a.second->ename);
+      if ( en == m_renums->end() ) continue;
+      auto aiter = en->second->find(ename);
+      if ( aiter != en->second->end() ) { found++; return 0; }
+    }
+    return 1;
+  });
+  return last;
 }
 
 // idx - index of '.' at start of attr
@@ -788,9 +836,13 @@ int ParseSASS::print_fsummary(FILE *fp) const
     fprintf(fp, "[!] no forms\n");
     return 0;
   }
-  fprintf(fp, "%ld forms:", fsize);
-  for ( auto &f: m_forms ) fprintf(fp, " %d", f.instr->line);
-  fputc('\n', fp);
+  fprintf(fp, "%ld forms:\n", fsize);
+  for ( auto &f: m_forms ) {
+    fprintf(fp, " %d", f.instr->line);
+    std::string res;
+    rend_rendererE(f.instr, f.rend, res);
+    fprintf(fp, " %s\n", res.c_str());
+  }
   return 1;
 }
 
@@ -850,7 +902,8 @@ int main(int argc, char **argv)
   std::regex section("^\\s+\\.section\\s+\\.(\\w+)");
   std::regex code("^\\s*\\/\\*.*\\*\\/\\s+(.*)\\s*;");
   unsigned long total = 0,
-   succ = 0;
+   succ = 0,
+   forms = 0;
   for( ; std::getline(fs, s); ++ln ) {
     std::smatch matches;
     if ( !state ) {
@@ -876,12 +929,14 @@ int main(int argc, char **argv)
         if ( !pa.add(what) ) printf("[!] %d %s\n", ln, what.c_str());
         else {
           succ++;
+          forms += pa.fsize();
           if ( opt_s ) pa.print_fsummary(stdout);
         }
       }
     }
   }
   if ( opt_S && total ) {
-    printf("total %ld succ %ld rate %f\n", total, succ, (double)succ / (double)total);
+    printf("total %ld succ %ld forms %ld rate %f avg %f\n", total, succ, forms,
+     (double)succ / (double)total, (double)forms / (double)total);
   }
 }
