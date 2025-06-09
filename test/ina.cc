@@ -980,10 +980,7 @@ int INA::pre_build(const IRPair &pair)
         kv_field curr_field(t, tab_idx, f_idx++);
         check_vas(ins, curr_field, f);
         // field in tabs can be enum also
-        const nv_eattr *ea = nullptr;
-        auto fiter = find(ins->eas, f);
-        if ( fiter ) { ea = fiter->ea; }
-        else { ea = try_by_ename(ins, f); }
+        const nv_eattr *ea = find_ea(ins, f);
         if ( ea ) curr_field.ea = ea;
         s_fields.insert_or_assign(f, curr_field);
       }
@@ -999,10 +996,7 @@ int INA::pre_build(const IRPair &pair)
     for ( auto &f: ins->fields ) {
       kv_field curr_field(&f);
       check_vas(ins, curr_field, f.name);
-      const nv_eattr *ea = nullptr;
-      auto fiter = find(ins->eas, f.name);
-      if ( fiter ) { ea = fiter->ea; }
-      else { ea = try_by_ename(ins, f.name); }
+      const nv_eattr *ea = find_ea(ins, f.name);
       if ( !ea ) {
         s_fields.insert_or_assign(f.name, curr_field);
         continue;

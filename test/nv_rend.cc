@@ -151,10 +151,7 @@ int NV_renderer::calc_miss(const struct nv_instr *ins, const NV_extracted &kv, i
 {
   int res = 0;
   for ( auto ki: kv ) {
-    const nv_eattr *ea = nullptr;
-    auto kiter = find(ins->eas, ki.first);
-    if ( kiter ) { ea = kiter->ea; }
-    else { ea = try_by_ename(ins, ki.first); }
+    const nv_eattr *ea = find_ea(ins, ki.first);
     if ( !ea ) continue;
     if ( cmp(ki.first, "NonZeroRegister") && (int)ki.second == rz ) {
       res++; continue;
@@ -247,9 +244,8 @@ int NV_renderer::render_ve(const ve_base &ve, const struct nv_instr *i, const NV
     return 0;
   }
   // enum
-  auto ei = find(i->eas, ve.arg);
-  if ( !ei ) return 1;
-  const nv_eattr *ea = ei->ea;
+  const nv_eattr *ea = find_ea(i, ve.arg);
+  if ( !ea ) return 1;
   auto kvi = kv.find(ve.arg);
   if ( kvi == kv.end() ) { if ( opt_m ) m_missed.insert(ve.arg); return 1; }
   auto eid = ea->em->find(kvi->second);
@@ -284,10 +280,7 @@ int NV_renderer::render_ve_list(const std::list<ve_base> &l, const struct nv_ins
       continue;
     }
     // this is (optional) enum
-    const nv_eattr *ea = nullptr;
-    auto ei = find(i->eas, ve.arg);
-    if ( ei ) { ea = ei->ea; }
-    else { ea = try_by_ename(i, ve.arg); }
+    const nv_eattr *ea = find_ea(i, ve.arg);
     if ( !ea ) {
       missed++;
       continue;
@@ -345,33 +338,8 @@ bool NV_renderer::check_branch(const struct nv_instr *i, const NV_extracted::con
   return true;
 }
 
-int NV_renderer::rend_singleE(const struct nv_instr *instr, const render_base *r, std::string &res) const
-{
-  int what = rend_single(r, res, instr ? instr->name: nullptr);
-  if ( !what ) return 0;
-  if ( r->type == R_enum || r->type == R_predicate ) {
-    const render_named *rn = (const render_named *)r;
-    auto eiter = find(instr->eas, rn->name);
-    if ( eiter && eiter->ea->has_def_value ) {
-      res += ".D(";
-      res += std::to_string(eiter->ea->def_value);
-      res += ")";
-    }
-  }
-  if ( r->type == R_value && instr->vas ) {
-    // try to find format in instr->vas
-    const render_named *rn = (const render_named *)r;
-    auto viter = find(instr->vas, rn->name);
-    if ( viter ) {
-      res += ':';
-      res += s_fmts[viter->kind];
-      if ( viter->has_ast ) res += '*';
-    }
-  }
-  return what;
-}
-
-int NV_renderer::rend_single(const render_base *r, std::string &res, const char *opcode) const
+template <typename Fs, typename Fl>
+int NV_renderer::rend_single(const render_base *r, std::string &res, const char *opcode, Fs r1, Fl rl) const
 {
   switch(r->type) {
       case R_value:
@@ -407,9 +375,9 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
          res += "c:";
          if ( rn->name ) res += rn->name;
          res += "[";
-         r_ve(rn->left, res);
+         r1(rn->left, res);
          res += "][";
-         r_velist(rn->right, res);
+         rl(rn->right, res);
          res += ']';
        } break;
        case R_TTU: {
@@ -417,7 +385,7 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
          if ( rt->pfx ) res += rt->pfx;
          else res += ' ';
          res += "ttu:[";
-         r_ve(rt->left, res);
+         r1(rt->left, res);
          res += ']';
        }
        break;
@@ -426,7 +394,7 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
          if ( rt->pfx ) res += rt->pfx;
          if ( rt->name ) res += rt->name;
          res += ":[";
-         r_ve(rt->left, res);
+         r1(rt->left, res);
          res += ']';
        } break;
 
@@ -434,9 +402,9 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
          const render_desc *rt = (const render_desc *)r;
          if ( rt->pfx ) res += rt->pfx;
          res += "desc:[";
-         r_ve(rt->left, res);
+         r1(rt->left, res);
          res += "],[";
-         r_velist(rt->right, res);
+         rl(rt->right, res);
          res += ']';
        } break;
 
@@ -444,7 +412,7 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
          const render_mem *rt = (const render_mem *)r;
          if ( rt->pfx ) res += rt->pfx;
          res += "[";
-         r_velist(rt->right, res);
+         rl(rt->right, res);
          res += ']';
        } break;
 
@@ -455,13 +423,50 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
  return !res.empty();
 }
 
+int NV_renderer::rend_single(const render_base *r, std::string &res, const char *opcode) const
+{
+  return rend_single(r, res, opcode, 
+    std::bind(&NV_renderer::r_ve, this, std::placeholders::_1, std::placeholders::_2),
+    std::bind(&NV_renderer::r_velist, this, std::placeholders::_1, std::placeholders::_2)
+  );
+}
+
+int NV_renderer::rend_singleE(const struct nv_instr *instr, const render_base *r, std::string &res) const
+{
+  const nv_eattr *ea = nullptr;
+  if ( r->type == R_enum || r->type == R_predicate ) {
+    const render_named *rn = (const render_named *)r;
+    ea = find_ea(instr, rn->name);
+    if ( ea && ea->ignore ) res += '.';
+  }
+  int what = rend_single(r, res, instr ? instr->name: nullptr);
+  if ( !what ) return 0;
+  if ( ea && ea->has_def_value ) {
+    res += ".D(";
+    res += std::to_string(ea->def_value);
+    res += ")";
+  }
+  if ( r->type == R_value && instr->vas ) {
+    // try to find format in instr->vas
+    const render_named *rn = (const render_named *)r;
+    auto viter = find(instr->vas, rn->name);
+    if ( viter ) {
+      res += ':';
+      res += s_fmts[viter->kind];
+      if ( viter->has_ast ) res += '*';
+    }
+  }
+  return what;
+}
+
 int NV_renderer::rend_rendererE(const struct nv_instr *instr, const NV_rlist *rlist, std::string &res) const
 {
   for ( auto r: *rlist ) {
     if ( r->type == R_enum || r->type == R_predicate || r->type == R_value )
       rend_singleE(instr, r, res);
     else
-      rend_single(r, res, instr->name);
+      rend_single(r, res, instr->name, std::bind(&NV_renderer::r_vei, this, instr, std::placeholders::_1, std::placeholders::_2),
+       std::bind(&NV_renderer::r_velisti, this, instr, std::placeholders::_1, std::placeholders::_2) );
     res += ' ';
   }
   res.pop_back(); // remove last space
@@ -501,6 +506,67 @@ void NV_renderer::r_velist(const std::list<ve_base> &l, std::string &res) const
     res += " ";
   }
   if ( res.back() == ' ' ) res.pop_back();
+}
+
+void NV_renderer::r_velisti(const struct nv_instr *instr, const std::list<ve_base> &l, std::string &res) const
+{
+  auto size = l.size();
+  if ( 1 == size ) {
+    r_vei(instr, *l.begin(), res);
+    return;
+  }
+  int idx = 0;
+  for ( auto ve: l ) {
+    if ( ve.type == R_value )
+    {
+      if ( ve.pfx ) res += ve.pfx;
+      else if ( idx ) res += '+';
+      res += ve.arg;
+      auto viter = find(instr->vas, ve.arg);
+      if ( viter ) {
+        res += ':';
+        res += s_fmts[viter->kind];
+        if ( viter->has_ast ) res += '*';
+      }
+      idx++;
+      continue;
+    }
+    // enum
+    auto ea = find_ea(instr, ve.arg);
+    if ( ea && ea->ignore ) res += '.';
+    res += "E:";
+    res += ve.arg;
+    if ( ea && ea->has_def_value ) {
+      res += ".D(";
+      res += std::to_string(ea->def_value);
+      res += ")";
+    }
+    res += " ";
+  }
+  if ( res.back() == ' ' ) res.pop_back();
+}
+
+void NV_renderer::r_vei(const struct nv_instr *instr, const ve_base &ve, std::string &res) const
+{
+  if ( ve.type == R_enum ) {
+    auto ea = find_ea(instr, ve.arg);
+    if ( ea && ea->ignore ) res += '.';
+    res += "E:";
+    res += ve.arg;
+    if ( ea && ea->has_def_value ) {
+      res += ".D(";
+      res += std::to_string(ea->def_value);
+      res += ")";
+    }
+  } else {
+    res += ve.arg;
+    auto viter = find(instr->vas, ve.arg);
+    if ( viter ) {
+      res += ':';
+      res += s_fmts[viter->kind];
+      if ( viter->has_ast ) res += '*';
+    }
+  }
 }
 
 void NV_renderer::r_ve(const ve_base &ve, std::string &res) const
@@ -553,10 +619,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
 
       case R_enum: {
          const render_named *rn = (const render_named *)ri;
-         const nv_eattr *ea = nullptr;
-         auto ei = find(i->eas, rn->name);
-         if ( ei ) { ea = ei->ea; }
-         else { ea = try_by_ename(i, rn->name); }
+         const nv_eattr *ea = find_ea(i, rn->name);
          if ( !ea ) {
            missed++;
            idx++;
@@ -602,12 +665,11 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
 
       case R_predicate: { // like enum but can be ignored if has default value
          const render_named *rn = (const render_named *)ri;
-         auto ei = find(i->eas, rn->name);
-         if ( !ei ) {
+         const nv_eattr *ea = find_ea(i, rn->name);
+         if ( !ea ) {
            missed++;
            break;
          }
-         const nv_eattr *ea = ei->ea;
          auto kvi = kv.find(rn->name);
          if ( kvi == kv.end() ) {
            if ( opt_m ) m_missed.insert(rn->name);
@@ -733,10 +795,7 @@ void NV_renderer::dump_ops(const struct nv_instr *i, const NV_extracted &kv) con
       }
     }
     // check in enums
-    const nv_eattr *ea = nullptr;
-    auto ei = find(i->eas, kv1.first);
-    if ( ei ) { ea = ei->ea; }
-    else { ea = try_by_ename(i, kv1.first); }
+    const nv_eattr *ea = find_ea(i, kv1.first);
     if ( ea ) {
       fprintf(m_out, " E %s: %s %lX", name.c_str(), ea->ename, kv1.second);
       auto eid = ea->em->find(kv1.second);

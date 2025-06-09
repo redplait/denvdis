@@ -186,13 +186,24 @@ class NV_renderer {
     }
     return 0;
    }
+   template <typename S>
+   const nv_eattr *find_ea(const struct nv_instr *i, S s) const
+   {
+     auto ei = find(i->eas, s);
+     if ( ei ) return ei->ea;
+     return try_by_ename(i, s);
+   }
    // renderer
    int rend_singleE(const struct nv_instr *, const render_base *r, std::string &res) const;
+   template <typename Fs, typename Fl>
+   int rend_single(const render_base *r, std::string &res, const char *opcode, Fs, Fl) const;
    int rend_single(const render_base *r, std::string &res, const char *opcode = nullptr) const;
    int rend_renderer(const NV_rlist *rlist, const std::string &opcode, std::string &res) const;
    int rend_rendererE(const struct nv_instr *, const NV_rlist *rlist, std::string &res) const;
    void r_velist(const std::list<ve_base> &l, std::string &res) const;
    void r_ve(const ve_base &ve, std::string &res) const;
+   void r_vei(const struct nv_instr *, const ve_base &ve, std::string &res) const;
+   void r_velisti(const struct nv_instr *, const std::list<ve_base> &l, std::string &res) const;
    int render_ve(const ve_base &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
    int render_ve_list(const std::list<ve_base> &, const struct nv_instr *, const NV_extracted &kv, std::string &) const;
    int check_mod(char c, const NV_extracted &, const char* name, std::string &r) const;

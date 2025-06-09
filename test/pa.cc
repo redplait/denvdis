@@ -81,9 +81,9 @@ class ParseSASS: public NV_renderer
          if ( (*ci)->rb->type == R_predicate ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
-           auto ei = find(f.instr->eas, rn->name);
-           if ( !ei ) break;
-           if ( !ei->ea->has_def_value ) break;
+           auto ea = find_ea(f.instr, rn->name);
+           if ( !ea ) break;
+           if ( !ea->has_def_value ) break;
            continue;
          }
          break;
@@ -102,9 +102,9 @@ class ParseSASS: public NV_renderer
          if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
-           auto ei = find(f.instr->eas, rn->name);
-           if ( !ei ) break;
-           if ( !ei->ea->has_def_value ) break;
+           auto ea = find_ea(f.instr, rn->name);
+           if ( !ea ) break;
+           if ( !ea->has_def_value ) break;
            continue;
          }
          break;
@@ -121,9 +121,9 @@ class ParseSASS: public NV_renderer
          if ( (*ci)->rb->type == R_predicate ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
-           auto ei = find(f.instr->eas, rn->name);
-           if ( !ei ) break;
-           if ( !ei->ea->has_def_value ) break;
+           auto ea = find_ea(f.instr, rn->name);
+           if ( !ea ) break;
+           if ( !ea->has_def_value ) break;
            continue;
          }
          return 1;
@@ -141,9 +141,9 @@ class ParseSASS: public NV_renderer
          if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
-           auto ei = find(f.instr->eas, rn->name);
-           if ( !ei ) break;
-           if ( !ei->ea->has_def_value ) break;
+           auto ea = find_ea(f.instr, rn->name);
+           if ( !ea ) break;
+           if ( !ea->has_def_value ) break;
            continue;
          }
          return 1;
@@ -194,10 +194,10 @@ void ParseSASS::dump(const one_form &of) const
     if ( (*ops)->rb->type == R_predicate || (*ops)->rb->type == R_enum ) {
      // check if those predicate has default
      const render_named *rn = (const render_named *)(*ops)->rb;
-     auto ei = find(of.instr->eas, rn->name);
-     if ( !ei ) continue;
-     if ( ei->ea->has_def_value ) printf(".D(%d):%s", ei->ea->def_value, ei->ea->ename);
-     else printf(".E:%s", ei->ea->ename);
+     auto ea = find_ea(of.instr, rn->name);
+     if ( !ea ) continue;
+     if ( ea->has_def_value ) printf(".D(%d):%s", ea->def_value, ea->ename);
+     else printf(".E:%s", ea->ename);
     }
   }
   fputc('\n', stdout);
@@ -292,10 +292,10 @@ int ParseSASS::reduce_pred(const std::string_view &s)
 #endif
     if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
     const render_named *rn = (const render_named *)fl->rb;
-    auto ei = find(instr->eas, rn->name);
-    if ( !ei ) return 0;
+    auto ea = find_ea(instr, rn->name);
+    if ( !ea ) return 0;
     // check if it has enum in s
-    auto en = m_renums->find(ei->ea->ename);
+    auto en = m_renums->find(ea->ename);
     if ( en == m_renums->end() ) return 0;
     auto aiter = en->second->find(s);
 #ifdef DEBUG
@@ -382,6 +382,13 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     break;
   }
   if ( dig ) return reduce(R_value);
+  // check for some unknown prefix for memory
+  for ( int pi = idx + 1; pi < (int)tmp.size(); ++pi ) {
+    if ( '[' == tmp.at(pi) ) {
+      fprintf(stderr, "[!] unknown memory prefix\n");
+      return 0;
+    }
+  }
   // will hope this is enum
   return apply_enum(tmp);
 }
@@ -503,10 +510,10 @@ int ParseSASS::apply_enum(const std::string_view &s)
     if ( check_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
       if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
       const render_named *rn = (const render_named *)fl->rb;
-      auto ei = find(instr->eas, rn->name);
-      if ( !ei ) return 0;
+      auto ea = find_ea(instr, rn->name);
+      if ( !ea ) return 0;
       // check if it has enum in s
-      auto en = m_renums->find(ei->ea->ename);
+      auto en = m_renums->find(ea->ename);
       if ( en == m_renums->end() ) return 0;
       auto aiter = en->second->find(dotted);
       return aiter != en->second->end();
@@ -527,13 +534,13 @@ int ParseSASS::apply_enum(const std::string_view &s)
     }
     if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
     const render_named *rn = (const render_named *)fl->rb;
-    auto ei = find(instr->eas, rn->name);
-    if ( !ei ) return 0;
+    auto ea = find_ea(instr, rn->name);
+    if ( !ea ) return 0;
 #ifdef DEBUG
-  printf("found ei %s", ei->ea->ename);
+  printf("found ei %s", ea->ename);
 #endif
     // check if it has enum in s
-    auto en = m_renums->find(ei->ea->ename);
+    auto en = m_renums->find(ea->ename);
     if ( en == m_renums->end() ) return 0;
 #ifdef DEBUG
   printf("en\n");
@@ -660,10 +667,7 @@ int ParseSASS::fill_forms(NV_Forms &forms, const std::vector<const nv_instr *> &
         break;
         case R_enum: {
           rn = (const render_named *)*ri;
-          const nv_eattr *ea = nullptr;
-          auto ei = find(ins->eas, rn->name);
-          if ( ei ) { ea = ei->ea; }
-          else { ea = try_by_ename(ins, rn->name); }
+          const nv_eattr *ea = find_ea(ins, rn->name);
           if ( ea && ea->ignore ) { // push it into last
             of.ops.back()->lr.push_back( std::make_pair(*ri, ea) );
             break;
