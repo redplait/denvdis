@@ -363,7 +363,16 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
 #ifdef DEBUG
  printf("piped: len %d ", ip - idx - 1); dump_out(abs); fputc('\n', stdout);
 #endif
-       return apply_enum(abs);
+       int eres = apply_enum(abs);
+       if ( !eres ) return eres;
+       if ( ip + 1 < (int)s.size() ) {
+         std::string tmp{ s.begin() + ip + 1, s.end() };
+#ifdef DEBUG
+ printf("after | %s\n", tmp.c_str());
+#endif
+         eres = enum_tail(0, tmp);
+       }
+       return eres;
      } else {
        // check what is dis
        std::string_view abs{ s.c_str() + idx + 1, tmp.size() - 2};
