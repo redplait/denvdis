@@ -74,7 +74,7 @@ class ParseSASS: public NV_renderer
    // heart of opcodes processing
    // check kind and return count of matches
    template <typename F>
-   int check_kind(NV_Forms &forms, F pred) {
+   int check_kind(NV_Forms &forms, F &&pred) {
      int res = 0;
      for ( auto &f: forms )
      {
@@ -95,7 +95,7 @@ class ParseSASS: public NV_renderer
      return res;
    }
    template <typename F>
-   int check_op(NV_Forms &forms, F pred) {
+   int check_op(NV_Forms &forms, F &&pred) {
      int res = 0;
      for ( auto &f: forms )
      {
@@ -116,7 +116,7 @@ class ParseSASS: public NV_renderer
      return res;
    }
    template <typename F>
-   int apply_kind(NV_Forms &f, F pred) {
+   int apply_kind(NV_Forms &f, F &&pred) {
      std::erase_if(f, [&](one_form &f) {
        for ( auto ci = f.current; ci != f.ops.end(); ci++ )
        {
@@ -136,7 +136,7 @@ class ParseSASS: public NV_renderer
      return !f.empty();
    }
    template <typename F>
-   int apply_op(NV_Forms &f, F pred) {
+   int apply_op(NV_Forms &f, F &&pred) {
      std::erase_if(f, [&](one_form &f) {
        for ( auto ci = f.current; ci != f.ops.end(); ci++ )
        {
@@ -156,6 +156,8 @@ class ParseSASS: public NV_renderer
      return !f.empty();
    }
 
+   template <typename C, typename F>
+   int parse_c_left(int idx, const std::string &s, F);
    int parse_req(const char *s);
    int parse_digit(const char *s, int &v);
    int parse_pred(int idx, const std::string &s);
@@ -311,6 +313,55 @@ int ParseSASS::reduce_pred(const std::string_view &s)
    });
 }
 
+// f - predicate for render_base filtering, idx - start of const bank after 'c['
+template <typename C, typename F>
+int ParseSASS::parse_c_left(int idx, const std::string &s, F f)
+{
+  // find ]
+  int li = idx;
+  for ( ; li < (int)s.size(); ++li ) if ( s.at(li) == ']' ) break;
+  // pre-classify what is it
+  int type = R_enum;
+  if ( s.at(idx) == '0' && s.at(idx+1) == 'x' ) type = R_value;
+  else {
+    int dig = 1;
+    for ( auto ti = idx; ti < li; ++ti ) {
+      char c = s.at(ti);
+      if ( c >= '0' && c <= '9' ) continue;
+      dig = 0;
+      break;
+    }
+    if ( dig ) type = R_value;
+  }
+#ifdef DEBUG
+ printf("type %d idx %d %s\n", type, idx, s.c_str() + idx);
+#endif
+  std::string_view ename;
+  if ( type == R_enum ) {
+    ename = { s.c_str() + idx, (size_t)(li - idx) };
+    if ( opt_d ) {
+      printf("c_left: "); dump_out(ename); fputc('\n', stdout);
+    }
+  }
+  auto my_cl = [&](one_form &of)
+   {
+     if ( !f((*of.current)->rb) ) return 1;
+     const C *rc = (const C *)(*of.current)->rb;
+     if ( rc->left.type != type ) return 1;
+     if ( type != R_enum ) return 0;
+     // check enum
+     auto ea = find_ea(of.instr, rc->left.arg);
+     if ( !ea ) return 1; // remove if no attr was found
+     auto en = m_renums->find(ea->ename);
+     if ( en == m_renums->end() ) return 1;
+     auto aiter = en->second->find(ename);
+     if ( aiter != en->second->end() ) return 0;
+     return 1; // not enum
+   };
+  std::erase_if(m_forms, my_cl);
+  return !m_forms.empty();
+}
+
 // main horror - try to detect what dis op is
 int ParseSASS::classify_op(int op_idx, const std::string &os)
 {
@@ -327,9 +378,16 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
   if ( tmp == "INF"sv ) return reduce(R_value);
   if ( tmp == "QNAN"sv ) return reduce(R_value);
   auto cl = [](const render_base *rb) { return rb->type == R_C || rb->type == R_CX; };
-  if ( tmp.starts_with("desc[") ) return reduce(R_desc);
+  if ( tmp.starts_with("desc[") ) {
+    auto dcl = [](const render_base *rb) { return rb->type == R_desc; };
+    int kres = apply_kind(m_forms, dcl);
+    if ( !kres ) return 0;
+    return parse_c_left<render_desc>(idx + 5, s, dcl);
+  }
   if ( tmp.starts_with("c[") ) {
-    return apply_kind(m_forms, cl);
+    int kres = apply_kind(m_forms, cl);
+    if ( !kres ) return 0;
+    return parse_c_left<render_C>(idx + 2, s, cl);
   }
   if ( tmp.starts_with("0x") ) return reduce(R_value);
   if ( tmp.starts_with("(*\"BRANCH_TARGETS") ) {
@@ -376,8 +434,11 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
      } else {
        // check what is dis
        std::string_view abs{ s.c_str() + idx + 1, tmp.size() - 2};
-       if ( abs.starts_with("c[") ) return apply_kind(m_forms, cl);
-       else return apply_enum(abs);
+       if ( abs.starts_with("c[") ) {
+         int kres = apply_kind(m_forms, cl);
+         if ( !kres ) return 0;
+         return parse_c_left<render_C>(idx + 3, s, cl); // 1 - | + 2 - c[
+       } else return apply_enum(abs);
      }
     case '~':
      return reduce(R_enum);
