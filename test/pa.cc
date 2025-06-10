@@ -378,10 +378,20 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F f)
     }
     if ( dig ) type = R_value;
   }
-  // btw there can be something like c[0x0] [0x8].H1
-  if ( type != R_value ) return 1; // don't invented yet how check complex right parts
-  auto my_cl2 = [&](one_form &of) -> bool
-   {
+  // find last ']' and check if we have tail like c[0x0] [0x8].H1
+  int ri = li + 1;
+  for ( ; ri < (int)s.size(); ++ri ) if ( s.at(ri) == ']' ) break;
+  std::string_view tail;
+  if ( ri + 1 < (int)s.size() && s.at(ri + 1) == '.' ) {
+    // we have some attrs at ri + 1
+    tail = { s.c_str() + ri + 1, (size_t)(s.size() - ri - 1) };
+    if ( opt_d ) {
+      printf("enum tail: "); dump_out(tail); fputc('\n', stdout);
+    }
+  }
+  if ( type == R_value ) { // don't invented yet how check complex right parts
+    auto my_cl2 = [&](one_form &of) -> bool
+    {
      if ( !f((*of.current)->rb) ) return 1;
      const C *rc = (const C *)(*of.current)->rb;
      for ( auto &vb: rc->right ) {
@@ -395,9 +405,12 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F f)
        return 1;
      }
      return 1;
-   };
-  std::erase_if(m_forms, my_cl2);
-  return !m_forms.empty();
+    };
+    std::erase_if(m_forms, my_cl2);
+    if ( m_forms.empty() ) return 0;
+  }
+  if ( !tail.empty() ) return process_tail_attr(0, tail, m_forms);
+  return 1;
 }
 
 // main horror - try to detect what dis op is
@@ -412,6 +425,7 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
   char c = s.at(idx);
   if ( c == '-' ) { minus = 1; c = s.at(++idx); }
   else if ( c == '+' ) c = s.at(++idx);
+  else if ( c == '~' ) c = s.at(++idx);
   std::string_view tmp{ s.c_str() + idx, s.size() - idx};
   if ( tmp == "INF"sv ) return reduce(R_value);
   if ( tmp == "QNAN"sv ) return reduce(R_value);
@@ -478,8 +492,6 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
          return parse_c_left<render_C>(idx + 3, s, cl); // 1 - | + 2 - c[
        } else return apply_enum(abs);
      }
-    case '~':
-     return reduce(R_enum);
     case '{': // hopefully this is bitset for DEPBAR
      // TODO: add check like in parse_req
      return reduce(R_value);
