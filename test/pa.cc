@@ -313,7 +313,9 @@ int ParseSASS::reduce_pred(const std::string_view &s)
    });
 }
 
-// f - predicate for render_base filtering, idx - start of const bank after 'c['
+// f - predicate for render_base filtering
+// C - real type of current render
+// idx - start of const bank after 'c['
 template <typename C, typename F>
 int ParseSASS::parse_c_left(int idx, const std::string &s, F f)
 {
@@ -343,7 +345,7 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F f)
       printf("c_left: "); dump_out(ename); fputc('\n', stdout);
     }
   }
-  auto my_cl = [&](one_form &of)
+  auto my_cl = [&](one_form &of) -> bool
    {
      if ( !f((*of.current)->rb) ) return 1;
      const C *rc = (const C *)(*of.current)->rb;
@@ -356,9 +358,45 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F f)
      if ( en == m_renums->end() ) return 1;
      auto aiter = en->second->find(ename);
      if ( aiter != en->second->end() ) return 0;
-     return 1; // not enum
+     return 1; // enum not found
    };
   std::erase_if(m_forms, my_cl);
+  if ( m_forms.empty() ) return 0;
+  // find right part
+  for ( ; li < (int)s.size(); ++li ) if ( s.at(li) == '[' ) break;
+  if ( li >= (int)s.size() ) return 1; // bad format?
+  // check right part - if it contains number value
+  type = R_enum;
+  if ( s.at(li+1) == '0' && s.at(li+2) == 'x' ) type = R_value;
+  else {
+    int dig = 1;
+    for ( auto ti = li + 1; ti < (int)s.size(); ++ti ) {
+      char c = s.at(ti);
+      if ( c >= '0' && c <= '9' ) continue;
+      dig = 0;
+      break;
+    }
+    if ( dig ) type = R_value;
+  }
+  // btw there can be something like c[0x0] [0x8].H1
+  if ( type != R_value ) return 1; // don't invented yet how check complex right parts
+  auto my_cl2 = [&](one_form &of) -> bool
+   {
+     if ( !f((*of.current)->rb) ) return 1;
+     const C *rc = (const C *)(*of.current)->rb;
+     for ( auto &vb: rc->right ) {
+       if ( vb.type == type ) return 0;
+       if ( type != R_enum ) return 0;
+       // check enum
+       auto ea = find_ea(of.instr, vb.arg);
+       if ( !ea ) return 1; // remove if no attr was found
+       // check if this enum has default
+       if ( ea->has_def_value ) continue;
+       return 1;
+     }
+     return 1;
+   };
+  std::erase_if(m_forms, my_cl2);
   return !m_forms.empty();
 }
 
@@ -416,7 +454,7 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
          fprintf(stderr, "bad operand %d: %s\n", op_idx, s.c_str());
          return 0;
        }
-       // TODO: add attributes processing in tmp + ip + 1
+       // remained attributes start at s + ip + 1
        std::string_view abs{ s.c_str() + idx + 1, size_t(ip - idx - 1)};
 #ifdef DEBUG
  printf("piped: len %d ", ip - idx - 1); dump_out(abs); fputc('\n', stdout);
