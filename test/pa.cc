@@ -27,6 +27,11 @@ class ParseSASS: public NV_renderer
    }
   protected:
    int add_internal(const std::string &s);
+   struct LTuple {
+     const render_base *first;
+     const nv_eattr *second;
+     const NV_Renum *en;
+   };
    struct form_list {
      form_list(const render_base *_rb) {
        rb = _rb;
@@ -35,7 +40,7 @@ class ParseSASS: public NV_renderer
        return lr.empty();
      }
      const render_base *rb = nullptr;
-     std::list<std::pair<const render_base *, const nv_eattr *> > lr;
+     std::list<LTuple> lr;
    };
    struct one_form
    {
@@ -696,10 +701,9 @@ int ParseSASS::process_tail_attr(int idx, const std::string_view &s, NV_Forms &f
     std::for_each(f.begin(), f.end(), [&](const one_form &of) {
     if ( (*of.current)->empty() ) return;
     for ( auto &a: (*of.current)->lr ) {
-      auto en = m_renums->find(a.second->ename);
-      if ( en == m_renums->end() ) continue;
-      auto aiter = en->second->find(dotted);
-      if ( aiter != en->second->end() ) { found++; return; }
+      if ( !a.en ) continue;
+      auto aiter = a.en->find(dotted);
+      if ( aiter != a.en->end() ) { found++; return; }
     } });
     if ( found ) {
       // yes, we can proceed with dotted enum
@@ -715,13 +719,12 @@ int ParseSASS::process_tail_attr(int idx, const std::string_view &s, NV_Forms &f
   std::erase_if(f, [&](one_form &of) {
     if ( (*of.current)->empty() ) return 1;
     for ( auto &a: (*of.current)->lr ) {
-      auto en = m_renums->find(a.second->ename);
-      if ( en == m_renums->end() ) continue;
+      if ( !a.en ) continue;
       const render_named *rn = (const render_named *)a.first;
       auto ki = of.l_kv.find(rn->name);
       if ( ki != of.l_kv.end() ) continue;
-      auto aiter = en->second->find(ename);
-      if ( aiter != en->second->end() ) {
+      auto aiter = a.en->find(ename);
+      if ( aiter != a.en->end() ) {
        // insert name of this enum into m_kv
        of.l_kv[rn->name] = aiter->second;
        return 0;
@@ -752,10 +755,9 @@ int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
     std::for_each(f.begin(), f.end(), [&](const one_form &of) {
     if ( (*of.current)->empty() ) return;
     for ( auto &a: (*of.current)->lr ) {
-      auto en = m_renums->find(a.second->ename);
-      if ( en == m_renums->end() ) continue;
-      auto aiter = en->second->find(dotted);
-      if ( aiter != en->second->end() ) { found++; return; }
+      if ( !a.en ) continue;
+      auto aiter = a.en->find(dotted);
+      if ( aiter != a.en->end() ) { found++; return; }
     } });
     if ( found ) {
       // yes, we can proceed with dotted enum
@@ -771,13 +773,12 @@ int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
   std::erase_if(f, [&](one_form &of) {
     if ( (*of.current)->empty() ) return 1;
     for ( auto &a: (*of.current)->lr ) {
-      auto en = m_renums->find(a.second->ename);
-      if ( en == m_renums->end() ) continue;
+      if ( !a.en ) continue;
       const render_named *rn = (const render_named *)a.first;
       auto ki = of.l_kv.find(rn->name);
       if ( ki != of.l_kv.end() ) continue;
-      auto aiter = en->second->find(ename);
-      if ( aiter != en->second->end() ) {
+      auto aiter = a.en->find(ename);
+      if ( aiter != a.en->end() ) {
        // insert name of this enum into m_kv
        of.l_kv[rn->name] = aiter->second;
        return 0;
@@ -816,7 +817,9 @@ int ParseSASS::fill_forms(NV_Forms &forms, const std::vector<const nv_instr *> &
           rn = (const render_named *)*ri;
           const nv_eattr *ea = find_ea(ins, rn->name);
           if ( ea && ea->ignore ) { // push it into last
-            of.ops.back()->lr.push_back( std::make_pair(*ri, ea) );
+            auto en = m_renums->find(ea->ename);
+            LTuple l{ *ri, ea, en != m_renums->end() ? en->second : nullptr };
+            of.ops.back()->lr.push_back( l );
             break;
           }
         } // notice - no break here
