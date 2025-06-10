@@ -5,6 +5,7 @@
 
 int opt_d = 0,
     opt_e = 0,
+    opt_k = 0,
     opt_m = 0,
     opt_s = 0,
     opt_o = 0,
@@ -40,6 +41,7 @@ class ParseSASS: public NV_renderer
    {
      const nv_instr *instr;
      const NV_rlist *rend;
+     NV_extracted l_kv; // local key-value for this form
      std::list<form_list *> ops;
      std::list<form_list *>::iterator current;
      one_form(const nv_instr *_i, const NV_rlist *_r) {
@@ -177,7 +179,7 @@ class ParseSASS: public NV_renderer
    int apply_enum(const std::string_view &);
    int enum_tail(int idx, const std::string_view &);
    NV_Forms m_forms;
-   // currently kv
+   // curren kv - used for predicate & tail like usched_info etc
    NV_extracted m_kv;
    static std::regex s_digits;
    static std::regex s_commas;
@@ -709,14 +711,21 @@ int ParseSASS::process_tail_attr(int idx, const std::string_view &s, NV_Forms &f
       found = 0;
     }
   }
-  // iterate on all remained forms and try to find this attr at thers current operand
+  // iterate on all remained forms and try to find this attr at theirs current operand
   std::erase_if(f, [&](one_form &of) {
     if ( (*of.current)->empty() ) return 1;
     for ( auto &a: (*of.current)->lr ) {
       auto en = m_renums->find(a.second->ename);
       if ( en == m_renums->end() ) continue;
+      const render_named *rn = (const render_named *)a.first;
+      auto ki = of.l_kv.find(rn->name);
+      if ( ki != of.l_kv.end() ) continue;
       auto aiter = en->second->find(ename);
-      if ( aiter != en->second->end() ) { found++; return 0; }
+      if ( aiter != en->second->end() ) {
+       // insert name of this enum into m_kv
+       of.l_kv[rn->name] = aiter->second;
+       return 0;
+      }
     }
     return 1;
   });
@@ -764,8 +773,15 @@ int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
     for ( auto &a: (*of.current)->lr ) {
       auto en = m_renums->find(a.second->ename);
       if ( en == m_renums->end() ) continue;
+      const render_named *rn = (const render_named *)a.first;
+      auto ki = of.l_kv.find(rn->name);
+      if ( ki != of.l_kv.end() ) continue;
       auto aiter = en->second->find(ename);
-      if ( aiter != en->second->end() ) { found++; return 0; }
+      if ( aiter != en->second->end() ) {
+       // insert name of this enum into m_kv
+       of.l_kv[rn->name] = aiter->second;
+       return 0;
+      }
     }
     return 1;
   });
@@ -856,6 +872,21 @@ int ParseSASS::add(const std::string &s)
   if ( opt_e ) return ares;
   // final cut
   std::erase_if(m_forms, [&](one_form &of) {
+     // check opcode operand
+     for ( auto cold = of.ops.begin(); ; ++cold ) {
+      if ( !(*cold)->empty() ) {
+       for ( auto &a: (*cold)->lr ) {
+         if ( a.second->has_def_value ) continue;
+         const render_named *rn = (const render_named *)a.first;
+         auto ki = of.l_kv.find(rn->name);
+         if ( ki == of.l_kv.end() ) {
+           // dump(of); printf("%d no %s\n", of.instr->line, rn->name);
+           return 1;
+         }
+       }
+      }
+      if ( cold == of.current ) break;
+     }
      if ( of.current == of.ops.end() ) return 0;
      auto ci = of.current;
      // check if we have some operands without default values behind last processed
@@ -1027,6 +1058,11 @@ int ParseSASS::print_fsummary(FILE *fp) const
   }
   fprintf(fp, "%ld forms:\n", fsize);
   for ( auto &f: m_forms ) {
+    if ( opt_k ) {
+     for ( auto &ki: f.l_kv ) {
+       fputc(' ', fp); dump_out(ki.first, fp); fprintf(fp, ": %ld\n", ki.second);
+     }
+    }
     fprintf(fp, " %d", f.instr->line);
     std::string res;
     rend_rendererE(f.instr, f.rend, res);
@@ -1044,6 +1080,7 @@ void usage(const char *prog)
   printf("Options:\n");
   printf(" -d - debug mode\n");
   printf(" -e - skip final cut\n");
+  printf(" -k - dump kv\n");
   printf(" -m - dump missed fields\n");
   printf(" -o - skip operands parsing\n");
   printf(" -s - print forms summary\n");
@@ -1056,11 +1093,12 @@ int main(int argc, char **argv)
 {
   int c, opt_S = 0;
   while(1) {
-    c = getopt(argc, argv, "demosSv");
+    c = getopt(argc, argv, "dekmosSv");
     if ( c == -1 ) break;
     switch(c) {
       case 'd': opt_d = 1; break;
       case 'e': opt_e = 1; break;
+      case 'k': opt_k = 1; break;
       case 'm': opt_m = 1; break;
       case 'o': opt_o = 1; break;
       case 's': opt_s = 1; break;

@@ -167,7 +167,7 @@ char *copy_str(const T &what) {
   return res;
 }
 
-// readlne completitions
+// readline completitions
 char *instr_generator(const char *text, int state) {
   if ( -1 == g_sorted_idx || g_sorted_idx >= (int)g_sorted->size() ) return nullptr;
   std::string textstr(text);
