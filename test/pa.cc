@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 int opt_d = 0,
+    opt_e = 0,
     opt_m = 0,
     opt_s = 0,
     opt_o = 0,
@@ -24,6 +25,7 @@ class ParseSASS: public NV_renderer
      return (int)m_forms.size();
    }
   protected:
+   int add_internal(const std::string &s);
    struct form_list {
      form_list(const render_base *_rb) {
        rb = _rb;
@@ -81,7 +83,7 @@ class ParseSASS: public NV_renderer
        for ( auto ci = f.current; ci != f.ops.end(); ++ci )
        {
          if ( pred((*ci)->rb) ) { res++; break; }
-         if ( (*ci)->rb->type == R_predicate ) {
+         if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
            auto ea = find_ea(f.instr, rn->name);
@@ -157,7 +159,7 @@ class ParseSASS: public NV_renderer
    }
 
    template <typename C, typename F>
-   int parse_c_left(int idx, const std::string &s, F);
+   int parse_c_left(int idx, const std::string &s, F &&);
    int parse_req(const char *s);
    int parse_digit(const char *s, int &v);
    int parse_pred(int idx, const std::string &s);
@@ -317,7 +319,7 @@ int ParseSASS::reduce_pred(const std::string_view &s)
 // C - real type of current render
 // idx - start of const bank after 'c['
 template <typename C, typename F>
-int ParseSASS::parse_c_left(int idx, const std::string &s, F f)
+int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
 {
   // find ]
   int li = idx;
@@ -849,6 +851,31 @@ int ParseSASS::enum_tail(int idx, const std::string_view &head)
 
 int ParseSASS::add(const std::string &s)
 {
+  int ares = add_internal(s);
+  if ( !ares ) return 0;
+  if ( opt_e ) return ares;
+  // final cut
+  std::erase_if(m_forms, [&](one_form &of) {
+     if ( of.current == of.ops.end() ) return 0;
+     auto ci = of.current;
+     // check if we have some operands without default values behind last processed
+     for ( ++ci; ci != of.ops.end(); ++ci ) {
+       if ( (*ci)->rb->type == R_value ) continue;
+       if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
+         // check if those predicate has default
+         const render_named *rn = (const render_named *)(*ci)->rb;
+         auto ea = find_ea(of.instr, rn->name);
+         if ( ea && ea->has_def_value ) continue;
+       }
+       return 1;
+     }
+     return 0;
+   });
+  return !m_forms.empty();
+}
+
+int ParseSASS::add_internal(const std::string &s)
+{
   reset_pred();
   int idx = 0;
   // skip initial spaces
@@ -1016,6 +1043,7 @@ void usage(const char *prog)
   printf("usage: %s [options] input.asm\n", prog);
   printf("Options:\n");
   printf(" -d - debug mode\n");
+  printf(" -e - skip final cut\n");
   printf(" -m - dump missed fields\n");
   printf(" -o - skip operands parsing\n");
   printf(" -s - print forms summary\n");
@@ -1028,10 +1056,11 @@ int main(int argc, char **argv)
 {
   int c, opt_S = 0;
   while(1) {
-    c = getopt(argc, argv, "dmosSv");
+    c = getopt(argc, argv, "demosSv");
     if ( c == -1 ) break;
     switch(c) {
       case 'd': opt_d = 1; break;
+      case 'e': opt_e = 1; break;
       case 'm': opt_m = 1; break;
       case 'o': opt_o = 1; break;
       case 's': opt_s = 1; break;
