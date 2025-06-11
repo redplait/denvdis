@@ -165,8 +165,13 @@ class ParseSASS: public NV_renderer
      return !f.empty();
    }
 
+   typedef std::vector< std::pair<const std::list<ve_base> *, const nv_instr *> > OFRights;
    template <typename C, typename F>
-   int parse_c_left(int idx, const std::string &s, F &&);
+    OFRights collect_rights(F &&);
+   template <typename C, typename F>
+    int parse_mem_right(int idx, const std::string_view &, F &&);
+   template <typename C, typename F>
+    int parse_c_left(int idx, const std::string &s, F &&);
    int parse_req(const char *s);
    int parse_digit(const char *s, int &v);
    int parse_pred(int idx, const std::string &s);
@@ -175,7 +180,7 @@ class ParseSASS: public NV_renderer
    int process_tail_attr(int idx, const std::string_view &s, NV_Forms &);
    int process_attr(int idx, const std::string &s, NV_Forms &);
    template <typename T>
-   int try_dotted(int, T &, std::string_view &dotted, int &dotted_last);
+    int try_dotted(int, T &, std::string_view &dotted, int &dotted_last);
    int classify_op(int idx, const std::string &s);
    int reduce(int);
    int reduce_label(int);
@@ -322,6 +327,107 @@ int ParseSASS::reduce_pred(const std::string_view &s)
    });
 }
 
+// fun fact - without ParseSASS:: prefix stupid gcc 12 says
+//  error: ‘OFRights’ does not name a type
+// wtf? it is obvious bug
+template <typename C, typename F>
+ParseSASS::OFRights ParseSASS::collect_rights(F &&f)
+{
+  OFRights res;
+  std::for_each(m_forms.cbegin(), m_forms.cend(), [&](const one_form &of) {
+     if ( !f((*of.current)->rb) ) return;
+     const C *rc = (const C *)(*of.current)->rb;
+     res.push_back( std::make_pair(&rc->right, of.instr) );
+   });
+  return res;
+}
+
+// s - contains body after '[' (point by idx)
+template <typename C, typename F>
+int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
+{
+  if ( opt_d ) {
+    printf("mem_right: "); dump_out(s); fputc('\n', stdout);
+  }
+  // find last ']' and check if we have tail like c[0x0] [0x8].H1
+  int ri = idx;
+  for ( ; ri < (int)s.size(); ++ri ) if ( s.at(ri) == ']' ) break;
+  // check right part - if it contains number value
+  int type = R_enum;
+  std::string_view ename;
+  if ( s.at(idx) == '0' && s.at(idx+1) == 'x' ) type = R_value;
+  else {
+    int dig = 1;
+    int ti = idx;
+    for ( ; ti < ri; ++ti ) {
+      char c = s.at(ti);
+      if ( c >= '0' && c <= '9' ) continue;
+      dig = 0;
+      if ( isspace(c) || c == '+' || c == '.' ) {
+        ename = { s.data() + idx, size_t(ti - idx) };
+        break;
+      }
+    }
+    if ( dig ) type = R_value;
+    else if ( ti == ri ) ename = { s.data() + idx, size_t(ti - idx) };
+    idx = ti;
+  }
+  if ( opt_d && type == R_enum ) {
+    printf("parse_mem_right enum: "); dump_out(ename); fputc('\n', stdout);
+  }
+  // extract forms
+  auto lf = collect_rights<C>(f);
+  std::unordered_set<const nv_instr *> to_del;
+  for ( auto &p: lf ) {
+    int match = 0;
+    if ( type == R_value ) {
+      // check first item in p.first
+      for ( auto &vb: *p.first ) {
+       if ( vb.type == type ) { match = 1; break; };
+       if ( vb.type != R_enum ) break;
+       // check enum
+       auto ea = find_ea(p.second, vb.arg);
+       if ( !ea ) break; // remove if no attr was found
+       // check if this enum has default
+       if ( ea->has_def_value ) continue;
+       break;
+     }
+    } else if ( !ename.empty() )
+    {
+      for ( auto &vb: *p.first ) {
+        if ( vb.type != R_enum ) break;
+        auto ea = find_ea(p.second, vb.arg);
+        if ( !ea ) break;
+        auto en = m_renums->find(ea->ename);
+        if ( en == m_renums->end() ) break;
+// printf("try find "); dump_out(ename); fputc('\n', stdout);
+        auto aiter = en->second->find(ename);
+        if ( aiter != en->second->end() ) match = 1;
+        break;
+      }
+    }
+#ifdef DEBUG
+ if ( !match ) {
+  std::string rs; r_velisti(p.second, *p.first, rs);
+  printf("line %d type %d %d: %s\n", p.second->line, type, match, rs.c_str());
+ }
+#endif
+    if ( !match ) to_del.insert(p.second);
+  }
+  if ( !to_del.empty() )
+  {
+    std::erase_if(m_forms, [&to_del](one_form &of) {
+      auto di = to_del.find(of.instr);
+      return di != to_del.end();
+    });
+    if ( m_forms.empty() ) return 0;
+  }
+  // check attrs - ri is pos of ']'
+  if ( ri + 2 < (int)s.size() && s.at(ri + 1) == '.' )
+    return process_tail_attr(ri + 1, s, m_forms);
+  return !m_forms.empty();
+}
+
 // f - predicate for render_base filtering
 // C - real type of current render
 // idx - start of const bank after 'c['
@@ -371,54 +477,31 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
    };
   std::erase_if(m_forms, my_cl);
   if ( m_forms.empty() ) return 0;
-  // find right part
-  for ( ; li < (int)s.size(); ++li ) if ( s.at(li) == '[' ) break;
-  if ( li >= (int)s.size() ) return 1; // bad format?
-  // check right part - if it contains number value
-  type = R_enum;
-  if ( s.at(li+1) == '0' && s.at(li+2) == 'x' ) type = R_value;
-  else {
-    int dig = 1;
-    for ( auto ti = li + 1; ti < (int)s.size(); ++ti ) {
-      char c = s.at(ti);
-      if ( c >= '0' && c <= '9' ) continue;
-      dig = 0;
-      break;
-    }
-    if ( dig ) type = R_value;
-  }
-  // find last ']' and check if we have tail like c[0x0] [0x8].H1
-  int ri = li + 1;
-  for ( ; ri < (int)s.size(); ++ri ) if ( s.at(ri) == ']' ) break;
+  // check if render of type C has field 'right'
+  // from https://stackoverflow.com/questions/257288/how-can-you-check-whether-a-templated-class-has-a-member-function
+  constexpr bool has_right = requires(const C& t) {
+    t.right;
+  };
   std::string_view tail;
-  if ( ri + 1 < (int)s.size() && s.at(ri + 1) == '.' ) {
-    // we have some attrs at ri + 1
-    tail = { s.c_str() + ri + 1, (size_t)(s.size() - ri - 1) };
-    if ( opt_d ) {
-      printf("enum tail: "); dump_out(tail); fputc('\n', stdout);
+  if constexpr ( has_right )
+  {
+    // find right part
+    for ( ; li < (int)s.size(); ++li ) if ( s.at(li) == '[' ) break;
+    if ( li >= (int)s.size() ) return 1; // bad format?
+    tail = { s.c_str() + li + 1, (size_t)(s.size() - li - 1) };
+    return parse_mem_right<C>(0, tail, f);
+  } else {
+    // check if we have attributes, li holds pos of closing ']'
+    if ( li + 2 < (int)s.size() && s.at(li + 1) == '.' )
+    {
+      tail = { s.c_str() + li + 1, (size_t)(s.size() - li - 1) };
+      if ( opt_d ) {
+        printf("enum tail: "); dump_out(tail); fputc('\n', stdout);
+      }
+      if ( !tail.empty() ) return process_tail_attr(0, tail, m_forms);
     }
   }
-  if ( type == R_value ) { // don't invented yet how check complex right parts
-    auto my_cl2 = [&](one_form &of) -> bool
-    {
-     if ( !f((*of.current)->rb) ) return 1;
-     const C *rc = (const C *)(*of.current)->rb;
-     for ( auto &vb: rc->right ) {
-       if ( vb.type == type ) return 0;
-       if ( type != R_enum ) return 0;
-       // check enum
-       auto ea = find_ea(of.instr, vb.arg);
-       if ( !ea ) return 1; // remove if no attr was found
-       // check if this enum has default
-       if ( ea->has_def_value ) continue;
-       return 1;
-     }
-     return 1;
-    };
-    std::erase_if(m_forms, my_cl2);
-    if ( m_forms.empty() ) return 0;
-  }
-  if ( !tail.empty() ) return process_tail_attr(0, tail, m_forms);
+  return !m_forms.empty();
   return 1;
 }
 
@@ -464,6 +547,9 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
      if ( has_target(&m_forms) ) {
        if ( opt_d ) printf("` has targets, try R_value\n");
        return reduce_label(R_value);
+     } else {
+       if ( opt_d ) printf("unknown target operand %d: %s\n", op_idx, s.c_str());
+       return reduce(R_value);
      }
      return 1;
      break;
@@ -1059,7 +1145,10 @@ int ParseSASS::print_fsummary(FILE *fp) const
     fprintf(fp, "[!] no forms\n");
     return 0;
   }
-  fprintf(fp, "%ld forms:\n", fsize);
+  if ( 1 == fsize )
+    fprintf(fp, "%ld form:\n", fsize);
+  else
+    fprintf(fp, "%ld forms:\n", fsize);
   for ( auto &f: m_forms ) {
     if ( opt_k ) {
      for ( auto &ki: f.l_kv ) {
