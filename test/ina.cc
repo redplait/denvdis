@@ -376,7 +376,7 @@ struct INA: public NV_renderer {
       }
       if ( what == s_fields.end() ) {
         printf("unknown field ");
-        dump_out(sv); fputc('\n', stdout);
+        dump_outln(sv);
         free(buf); continue;
       }
       if ( patch(what, rest) ) add_history(text);

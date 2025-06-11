@@ -110,7 +110,9 @@ class NV_renderer {
    int cmp(const std::string_view &, const char *) const;
    void dump_sv(const std::string_view &) const;
    void dump_out(const std::string_view &) const;
+   void dump_outln(const std::string_view &) const;
    void dump_out(const std::string_view &, FILE *) const;
+   void dump_outln(const std::string_view &, FILE *) const;
    bool contain(const std::string_view &, char) const;
    // calculating best instruction from candidates
    int calc_miss(const struct nv_instr *, const NV_extracted &, int) const;

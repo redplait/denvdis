@@ -77,9 +77,21 @@ void NV_renderer::dump_out(const std::string_view &sv) const
   std::for_each( sv.cbegin(), sv.cend(), [&](char c){ fputc(c, stdout); });
 }
 
+void NV_renderer::dump_outln(const std::string_view &sv) const
+{
+  std::for_each( sv.cbegin(), sv.cend(), [&](char c){ fputc(c, stdout); });
+  fputc('\n', stdout);
+}
+
 void NV_renderer::dump_out(const std::string_view &sv, FILE *fp) const
 {
   std::for_each( sv.cbegin(), sv.cend(), [fp](char c){ fputc(c, fp); });
+}
+
+void NV_renderer::dump_outln(const std::string_view &sv, FILE *fp) const
+{
+  std::for_each( sv.cbegin(), sv.cend(), [&](char c){ fputc(c, fp); });
+  fputc('\n', fp);
 }
 
 int NV_renderer::cmp(const std::string_view &sv, const char *s) const
