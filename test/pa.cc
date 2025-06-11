@@ -533,6 +533,11 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     if ( !kres ) return 0;
     return parse_c_left<render_C>(idx + 2, s, cl);
   }
+  if ( tmp.starts_with("cx[") ) {
+    int kres = apply_kind(m_forms, cl);
+    if ( !kres ) return 0;
+    return parse_c_left<render_C>(idx + 3, s, cl);
+  }
   if ( tmp.starts_with("0x") ) return reduce(R_value);
   if ( tmp.starts_with("(*\"BRANCH_TARGETS") ) {
     if ( has_target(&m_forms) )
@@ -1226,7 +1231,7 @@ int main(int argc, char **argv)
   std::regex hdr("\\.headerflags\\s+.*EF_CUDA_SM(\\d+)");
   std::regex cmt("^\\s*\\/\\/");
   std::regex section("^\\s+\\.section\\s+\\.(\\w+)");
-  std::regex code("^\\s*\\/\\*.*\\*\\/\\s+(.*)\\s*;");
+  std::regex code("^\\s*(?:\\[.+\\]\\s+)?\\/\\*.*\\*\\/\\s+(.*)\\s*;");
   unsigned long total = 0,
    succ = 0,
    forms = 0;
