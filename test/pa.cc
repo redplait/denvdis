@@ -590,7 +590,12 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     case '{': // hopefully this is bitset for DEPBAR
      // TODO: add check like in parse_req
      return reduce(R_value);
-    case '[': return reduce(R_mem);
+    case '[': {
+      auto dm = [](const render_base *rb) { return rb->type == R_mem; };
+      int kres = apply_kind(m_forms, dm);
+      if ( !kres ) return 0;
+      return parse_mem_right<render_mem>(idx + 1, s, dm);
+    }
   }
   // check for digit
   int dig = 1, cnt = 0, was_dot = 0;
