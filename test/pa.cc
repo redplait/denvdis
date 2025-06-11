@@ -293,8 +293,8 @@ int ParseSASS::reduce_label(int type)
       if ( !instr->target_index ) return 1;
       // find vas
       const render_named *rn = (const render_named *)fl->rb;
-      // there is strange case in RET where target_index is Ra and rn->name Ra_offset
-      if ( !strcmp(instr->name, "RET") ) return 1;
+      // there is strange case in RET/CALL where target_index is Ra and rn->name Ra_offset
+      if ( !strcmp(instr->name, "RET") || !strcmp(instr->name, "CALL") ) return 1;
       return !strcmp(instr->target_index, rn->name);
     }
     // const bank, perhaps I should check R_CX too?
@@ -601,6 +601,10 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
       if ( !kres ) return 0;
       return parse_mem_right<render_mem>(idx + 1, s, dm);
     }
+  }
+  // 32@lo( & 32@hi
+  if ( tmp.starts_with("32@lo(") || tmp.starts_with("32@hi(") ) {
+    return reduce(R_value);
   }
   // check for digit
   int dig = 1, cnt = 0, was_dot = 0;
