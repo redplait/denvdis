@@ -897,6 +897,18 @@ sub get_filled_mask
   return join('', @$a);
 }
 
+# parse default value
+sub parse_dval
+{
+  my $s = shift;
+  return unless defined($s);
+  return unless ( $s =~ /^\d+\/(.*)/ );
+  $s = $1;
+  return hex($1) if ( $s =~ /0x([0-9a-f]+)/i );
+  return int($1) if ( $s =~ /(\d+)/ );
+  undef; # I can't find 0b as default value
+}
+
 # parse args to BITSET
 # return (is_ok, size, value)
 sub parse_bitset
@@ -3170,7 +3182,8 @@ sub form_vas
   foreach my $vv ( sort keys %$vlist ) {
     my $vas = $vlist->{$vv};
     $res .= $vv . '@' . $vas->[0];
-    if ( defined $vas->[1] ) { $res .= '_1' };
+    $res .= '_1' if ( defined $vas->[1] );
+    $res .= '/' . $vas->[2] if ( $vas->[2] );
   }
   return $cached_vas{$res} if exists($cached_vas{$res});
   # make name of new vas
@@ -3181,7 +3194,7 @@ sub form_vas
   printf($fh "static const std::initializer_list<const nv_vattr> %s = {\n", $name);
   foreach my $v ( sort keys %$vlist ) {
     my $vf = $vlist->{$v};
-    printf($fh " {\"%s\",  %s, %s },\n", $v, 'NV_' . $vf->[0], defined($vf->[1]) ? 'true' : 'false');
+    printf($fh " {\"%s\", %s, %d, %s },\n", $v, 'NV_' . $vf->[0], $vf->[2] // 0, defined($vf->[1]) ? 'true' : 'false');
   }
   printf($fh "};\n");
   $name;
@@ -4890,7 +4903,8 @@ $cons_ae = sub {
         push @flist, [ 'E', $1, defined($9) ? ',' : undef, check_abs($2, $3), $aref ];
       }
     } elsif ( is_type($5) ) {
-      $values{$8} = [ $5, undef ];
+      my $dval = parse_dval($6);
+      $values{$8} = $dval ? [ $5, undef, $dval ] : [ $5, undef ];
       push @flist, [ 'V', $1, defined($9) ? ',' : undef, $2, $8, $5 ];
     } else {
        printf("enum %s does not exists, line %d\n", $5, $line);

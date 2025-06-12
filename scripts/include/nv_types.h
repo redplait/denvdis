@@ -54,6 +54,7 @@ enum NV_Scbd_Type {
 struct nv_vattr {
  std::string_view name;
  enum NV_Format kind;
+ unsigned long dval; // default value
  bool has_ast; // final *
 };
 
