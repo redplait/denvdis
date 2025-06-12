@@ -424,6 +424,8 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
         auto aiter = en->second->find(*ei);
         if ( aiter != en->second->end() ) {
  /// printf("found "); dump_outln(ename);
+         // store in l_kv
+         p.second->l_kv[vb.arg] = aiter->second;
          if ( ++ei == enums.end() ) { match = 1; break; }
  /// printf("next "); dump_outln(*ei);
          continue;
@@ -453,7 +455,11 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
         if ( en == m_renums->end() ) break;
 // printf("try find "); dump_outln(ename);
         auto aiter = en->second->find(ename);
-        if ( aiter != en->second->end() ) match = 1;
+        if ( aiter != en->second->end() ) {
+          match = 1;
+          // store in l_kv
+          p.second->l_kv[vb.arg] = aiter->second;
+        }
         if ( ea->has_def_value ) continue;
         break;
       }
