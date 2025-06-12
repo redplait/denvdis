@@ -428,34 +428,51 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
     else if ( ti == ri ) ename = { s.data() + idx, size_t(ti - idx) };
     idx = ti;
   }
-  if ( opt_d && type == R_enum ) {
-    printf("parse_mem_right enum: "); dump_outln(ename);
+  if ( opt_d ) {
+    if ( !enums.empty() ) printf("%ld enums\n", enums.size());
+    else if ( type == R_enum )
+    { printf("parse_mem_right enum: "); dump_outln(ename); }
   }
   // extract forms
   auto lf = collect_rights<C>(f);
+  if ( opt_d ) {
+    for ( auto &li: lf ) {
+      std::string res;
+      r_velisti(li.second->instr, *li.first, res);
+      printf(" %d %s\n", li.second->instr->line, res.c_str());
+    }
+  }
   std::unordered_set<const nv_instr *> to_del;
   for ( auto &p: lf ) {
     int match = 0;
     if ( !enums.empty() ) {
       auto ei = enums.cbegin();
       for ( auto &vb: *p.first ) {
-        if ( vb.type != R_enum ) break;
+        if ( vb.type != R_enum ) {
+          if ( ei != enums.cend() && *ei == "64"sv ) {
+            if ( ++ei == enums.cend() ) match = 1;
+          }
+          break;
+        }
         auto ea = find_ea(p.second->instr, vb.arg);
         if ( !ea ) break;
  /// printf("line %d enum %s\n", p.second->instr->line, vb.arg);
-        auto en = m_renums->find(ea->ename);
-        if ( en == m_renums->end() ) break;
+        if ( ei != enums.cend() ) {
+          auto en = m_renums->find(ea->ename);
+          if ( en == m_renums->end() ) break;
  /// printf("try find "); dump_outln(ename);
-        auto aiter = en->second->find(*ei);
-        if ( aiter != en->second->end() ) {
+          auto aiter = en->second->find(*ei);
+          if ( aiter != en->second->end() ) {
  /// printf("found "); dump_outln(ename);
-         // store in l_kv
-         p.second->l_kv[vb.arg] = aiter->second;
-         if ( ++ei == enums.end() ) { match = 1; break; }
+           // store in l_kv
+            p.second->l_kv[vb.arg] = aiter->second;
+            if ( ++ei == enums.cend() ) match = 1;
  /// printf("next "); dump_outln(*ei);
-         continue;
+            continue;
+          }
         }
         if ( ea->has_def_value ) continue;
+        match = 0;
         break;
       }
     } else if ( type == R_value ) {
@@ -639,7 +656,6 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
        if ( opt_d ) printf("unknown target operand %d: %s\n", op_idx, s.c_str());
        return reduce(R_value);
      }
-     return 1;
      break;
     case '!': return reduce_pred({ s.c_str() + idx + 1, s.size() - 1 - idx});
     case '|': if ( !tmp.ends_with("|") ) {
