@@ -165,7 +165,7 @@ class ParseSASS: public NV_renderer
      return !f.empty();
    }
 
-   typedef std::vector< std::pair<const std::list<ve_base> *, const nv_instr *> > OFRights;
+   typedef std::vector< std::pair<const std::list<ve_base> *, one_form *> > OFRights;
    template <typename C, typename F>
     OFRights collect_rights(F &&);
    template <typename C, typename F>
@@ -306,7 +306,7 @@ int ParseSASS::reduce_label(int type)
 int ParseSASS::reduce_pred(const std::string_view &s)
 {
 #ifdef DEBUG
- printf("reduce_pred: "); dump_out(s); fputc('\n', stdout);
+ printf("reduce_pred: "); dump_outln(s);
 #endif
   return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
 #ifdef DEBUG
@@ -334,12 +334,35 @@ template <typename C, typename F>
 ParseSASS::OFRights ParseSASS::collect_rights(F &&f)
 {
   OFRights res;
-  std::for_each(m_forms.cbegin(), m_forms.cend(), [&](const one_form &of) {
+  std::for_each(m_forms.begin(), m_forms.end(), [&](one_form &of) {
      if ( !f((*of.current)->rb) ) return;
      const C *rc = (const C *)(*of.current)->rb;
-     res.push_back( std::make_pair(&rc->right, of.instr) );
+     res.push_back( std::make_pair(&rc->right, &of) );
    });
   return res;
+}
+
+inline int is_msep(char c) {
+ return isspace(c) || c == '+' || c == '.';
+}
+
+// try extract second enum
+int parse_dot(const std::string_view &s, int start, int end, std::string_view &e2)
+{
+  int i = start;
+  for ( ; i < end; i++ )
+  {
+    char c = s.at(i);
+     if ( is_msep(c) ) {
+      e2 = { s.data() + start, size_t(i - start) };
+      return 1;
+     }
+  }
+  if ( i == end ) {
+    e2 = { s.data() + start, size_t(end - start) };
+    return 1;
+  };
+  return 0;
 }
 
 // s - contains body after '[' (point by idx)
@@ -347,7 +370,7 @@ template <typename C, typename F>
 int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
 {
   if ( opt_d ) {
-    printf("mem_right: "); dump_out(s); fputc('\n', stdout);
+    printf("mem_right: "); dump_outln(s);
   }
   // find last ']' and check if we have tail like c[0x0] [0x8].H1
   int ri = idx;
@@ -355,6 +378,7 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
   // check right part - if it contains number value
   int type = R_enum;
   std::string_view ename;
+  std::list<std::string_view> enums;
   if ( s.at(idx) == '0' && s.at(idx+1) == 'x' ) type = R_value;
   else {
     int dig = 1;
@@ -363,8 +387,15 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
       char c = s.at(ti);
       if ( c >= '0' && c <= '9' ) continue;
       dig = 0;
-      if ( isspace(c) || c == '+' || c == '.' ) {
+      if ( is_msep(c) ) {
         ename = { s.data() + idx, size_t(ti - idx) };
+        if ( c == '.' ) {
+          std::string_view tmp;
+          if ( parse_dot(s, ti + 1, ri, tmp) ) {
+            enums.push_back(ename);
+            enums.push_back(tmp);
+          }
+        }
         break;
       }
     }
@@ -373,20 +404,40 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
     idx = ti;
   }
   if ( opt_d && type == R_enum ) {
-    printf("parse_mem_right enum: "); dump_out(ename); fputc('\n', stdout);
+    printf("parse_mem_right enum: "); dump_outln(ename);
   }
   // extract forms
   auto lf = collect_rights<C>(f);
   std::unordered_set<const nv_instr *> to_del;
   for ( auto &p: lf ) {
     int match = 0;
-    if ( type == R_value ) {
+    if ( !enums.empty() ) {
+      auto ei = enums.cbegin();
+      for ( auto &vb: *p.first ) {
+        if ( vb.type != R_enum ) break;
+        auto ea = find_ea(p.second->instr, vb.arg);
+        if ( !ea ) break;
+ /// printf("line %d enum %s\n", p.second->instr->line, vb.arg);
+        auto en = m_renums->find(ea->ename);
+        if ( en == m_renums->end() ) break;
+ /// printf("try find "); dump_outln(ename);
+        auto aiter = en->second->find(*ei);
+        if ( aiter != en->second->end() ) {
+ /// printf("found "); dump_outln(ename);
+         if ( ++ei == enums.end() ) { match = 1; break; }
+ /// printf("next "); dump_outln(*ei);
+         continue;
+        }
+        if ( ea->has_def_value ) continue;
+        break;
+      }
+    } else if ( type == R_value ) {
       // check first item in p.first
       for ( auto &vb: *p.first ) {
        if ( vb.type == type ) { match = 1; break; };
        if ( vb.type != R_enum ) break;
        // check enum
-       auto ea = find_ea(p.second, vb.arg);
+       auto ea = find_ea(p.second->instr, vb.arg);
        if ( !ea ) break; // remove if no attr was found
        // check if this enum has default
        if ( ea->has_def_value ) continue;
@@ -396,23 +447,24 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
     {
       for ( auto &vb: *p.first ) {
         if ( vb.type != R_enum ) break;
-        auto ea = find_ea(p.second, vb.arg);
+        auto ea = find_ea(p.second->instr, vb.arg);
         if ( !ea ) break;
         auto en = m_renums->find(ea->ename);
         if ( en == m_renums->end() ) break;
-// printf("try find "); dump_out(ename); fputc('\n', stdout);
+// printf("try find "); dump_outln(ename);
         auto aiter = en->second->find(ename);
         if ( aiter != en->second->end() ) match = 1;
+        if ( ea->has_def_value ) continue;
         break;
       }
     }
 #ifdef DEBUG
  if ( !match ) {
-  std::string rs; r_velisti(p.second, *p.first, rs);
-  printf("line %d type %d %d: %s\n", p.second->line, type, match, rs.c_str());
+  std::string rs; r_velisti(p.second->instr, *p.first, rs);
+  printf("line %d type %d %d: %s\n", p.second->instr->line, type, match, rs.c_str());
  }
 #endif
-    if ( !match ) to_del.insert(p.second);
+    if ( !match ) to_del.insert(p.second->instr);
   }
   if ( !to_del.empty() )
   {
@@ -457,7 +509,7 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
   if ( type == R_enum ) {
     ename = { s.c_str() + idx, (size_t)(li - idx) };
     if ( opt_d ) {
-      printf("c_left: "); dump_out(ename); fputc('\n', stdout);
+      printf("c_left: "); dump_outln(ename);
     }
   }
   auto my_cl = [&](one_form &of) -> bool
@@ -496,7 +548,7 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
     {
       tail = { s.c_str() + li + 1, (size_t)(s.size() - li - 1) };
       if ( opt_d ) {
-        printf("enum tail: "); dump_out(tail); fputc('\n', stdout);
+        printf("enum tail: "); dump_outln(tail);
       }
       if ( !tail.empty() ) return process_tail_attr(0, tail, m_forms);
     }
@@ -522,24 +574,24 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
   if ( tmp == "INF"sv ) return reduce(R_value);
   if ( tmp == "QNAN"sv ) return reduce(R_value);
   auto cl = [](const render_base *rb) { return rb->type == R_C || rb->type == R_CX; };
-  if ( tmp.starts_with("desc[") ) {
+  if ( tmp.starts_with("desc["sv) ) {
     auto dcl = [](const render_base *rb) { return rb->type == R_desc; };
     int kres = apply_kind(m_forms, dcl);
     if ( !kres ) return 0;
     return parse_c_left<render_desc>(idx + 5, s, dcl);
   }
-  if ( tmp.starts_with("c[") ) {
+  if ( tmp.starts_with("c["sv) ) {
     int kres = apply_kind(m_forms, cl);
     if ( !kres ) return 0;
     return parse_c_left<render_C>(idx + 2, s, cl);
   }
-  if ( tmp.starts_with("cx[") ) {
+  if ( tmp.starts_with("cx["sv) ) {
     int kres = apply_kind(m_forms, cl);
     if ( !kres ) return 0;
     return parse_c_left<render_C>(idx + 3, s, cl);
   }
-  if ( tmp.starts_with("0x") ) return reduce(R_value);
-  if ( tmp.starts_with("(*\"BRANCH_TARGETS") ) {
+  if ( tmp.starts_with("0x"sv) ) return reduce(R_value);
+  if ( tmp.starts_with("(*\"BRANCH_TARGETS"sv) ) {
     if ( has_target(&m_forms) )
       return reduce(R_value);
     return 1;
@@ -571,7 +623,7 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
        // remained attributes start at s + ip + 1
        std::string_view abs{ s.c_str() + idx + 1, size_t(ip - idx - 1)};
 #ifdef DEBUG
- printf("piped: len %d ", ip - idx - 1); dump_out(abs); fputc('\n', stdout);
+ printf("piped: len %d ", ip - idx - 1); dump_outln(abs);
 #endif
        int eres = apply_enum(abs);
        if ( !eres ) return eres;
@@ -586,7 +638,7 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
      } else {
        // check what is dis
        std::string_view abs{ s.c_str() + idx + 1, tmp.size() - 2};
-       if ( abs.starts_with("c[") ) {
+       if ( abs.starts_with("c["sv) ) {
          int kres = apply_kind(m_forms, cl);
          if ( !kres ) return 0;
          return parse_c_left<render_C>(idx + 3, s, cl); // 1 - | + 2 - c[
@@ -603,7 +655,7 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     }
   }
   // 32@lo( & 32@hi
-  if ( tmp.starts_with("32@lo(") || tmp.starts_with("32@hi(") ) {
+  if ( tmp.starts_with("32@lo("sv) || tmp.starts_with("32@hi("sv) ) {
     return reduce(R_value);
   }
   // check for digit
@@ -710,7 +762,7 @@ int ParseSASS::try_dotted(int idx, T &s, std::string_view &dotted, int &dotted_l
       if ( di == m_dotted->end() ) break;
       if ( !(*di).starts_with(tmp) ) break;
 #ifdef DEBUG
-dump_out(tmp); printf(" -> "); dump_out(*di); fputc('\n', stdout);
+dump_out(tmp); printf(" -> "); dump_outln(*di);
 #endif
       int i2 = 1 + last;
       for ( ; i2 < (int)s.size(); ++i2, ++len ) {
@@ -719,11 +771,11 @@ dump_out(tmp); printf(" -> "); dump_out(*di); fputc('\n', stdout);
       }
       // check in dotted
       dotted = { s.data() + idx, (size_t)len };
-// fputc('>', stdout); dump_out(dotted); fputc('\n', stdout);
+// fputc('>', stdout); dump_outln(dotted);
       di = m_dotted->find(dotted);
       if ( di != m_dotted->end() ) {
         dotted_last = i2;
-// dump_out(dotted); printf(" %d-> ", last); dump_out(*di); fputc('\n', stdout);
+// dump_out(dotted); printf(" %d-> ", last); dump_outln(*di);
       }
       break;
     }
@@ -756,7 +808,7 @@ int ParseSASS::apply_enum(const std::string_view &s)
      ename = dotted;
      last = dotted_last;
      if ( opt_d ) {
-       printf("found dotted "); dump_out(ename); fputc('\n', stdout);
+       printf("found dotted "); dump_outln(ename);
      }
    }
   }
@@ -764,7 +816,7 @@ int ParseSASS::apply_enum(const std::string_view &s)
   int res = apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
     if ( opt_d ) {
       std::string res;
-      rend_single(fl->rb, res); printf("%s ", res.c_str());
+      rend_single(fl->rb, res); printf(" %s\n", res.c_str());
     }
     if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
     const render_named *rn = (const render_named *)fl->rb;
@@ -810,7 +862,7 @@ int ParseSASS::process_tail_attr(int idx, const std::string_view &s, NV_Forms &f
       last = dotted_last;
       ename = dotted;
 #ifdef DEBUG
- printf("%d last %d>", found, last); dump_out(ename); fputc('\n', stdout);
+ printf("%d last %d>", found, last); dump_outln(ename);
 #endif
       found = 0;
     }
@@ -864,7 +916,7 @@ int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
       last = dotted_last;
       ename = dotted;
 #ifdef DEBUG
- printf("%d last %d>", found, last); dump_out(ename); fputc('\n', stdout);
+ printf("%d last %d>", found, last); dump_outln(ename);
 #endif
       found = 0;
     }
