@@ -346,20 +346,45 @@ inline int is_msep(char c) {
  return isspace(c) || c == '+' || c == '.';
 }
 
-// try extract second enum
-int parse_dot(const std::string_view &s, int start, int end, std::string_view &e2)
+// try extract next enum after '+'
+int try_plus(const std::string_view &s, int start, int end, std::list<std::string_view> &elist)
+{
+  if ( s.at(start) == '-' ) start++; // [R6+-0x50] from sm_120
+  if ( start + 2 <= end && s.at(start) == '0' && s.at(start+1) == 'x' ) return 0; // hex
+  int digit = 1;
+  int ti = start;
+  for ( ; ti < end; ++ti ) {
+    char c = s.at(ti);
+    if ( c >= '0' && c <= '9' ) continue;
+    digit = 0;
+    if ( is_msep(c) ) {
+      elist.push_back({ s.data() + start, size_t(ti - start) });
+      return 1;
+    }
+  }
+  if ( digit ) return 0;
+  if ( ti == end ) {
+    elist.push_back({ s.data() + start, size_t(end - start) });
+    return 1;
+  };
+  return 0;
+}
+
+// try extract second enum ater '.'
+int parse_dot(const std::string_view &s, int start, int end, std::list<std::string_view> &elist)
 {
   int i = start;
   for ( ; i < end; i++ )
   {
     char c = s.at(i);
      if ( is_msep(c) ) {
-      e2 = { s.data() + start, size_t(i - start) };
+      elist.push_back({ s.data() + start, size_t(i - start) });
+      if ( c == '+' ) try_plus(s, i + 1, end, elist);
       return 1;
      }
   }
   if ( i == end ) {
-    e2 = { s.data() + start, size_t(end - start) };
+    elist.push_back({ s.data() + start, size_t(end - start) });
     return 1;
   };
   return 0;
@@ -389,13 +414,13 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
       dig = 0;
       if ( is_msep(c) ) {
         ename = { s.data() + idx, size_t(ti - idx) };
+        int need_add = 0;
         if ( c == '.' ) {
-          std::string_view tmp;
-          if ( parse_dot(s, ti + 1, ri, tmp) ) {
-            enums.push_back(ename);
-            enums.push_back(tmp);
-          }
+          need_add = parse_dot(s, ti + 1, ri, enums);
+        } else if ( c == '+' ) {
+          need_add = try_plus(s, ti + 1, ri, enums);
         }
+        if ( need_add ) enums.push_front(ename);
         break;
       }
     }
