@@ -465,6 +465,11 @@ int NV_renderer::rend_singleE(const struct nv_instr *instr, const render_base *r
     if ( viter ) {
       res += ':';
       res += s_fmts[viter->kind];
+      if ( viter->dval ) {
+        res += '(';
+        res += std::to_string(viter->dval);
+        res += ')';
+      }
       if ( viter->has_ast ) res += '*';
     }
   }
