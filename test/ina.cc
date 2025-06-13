@@ -417,6 +417,7 @@ struct INA: public NV_renderer {
   int parse_arg(const char *, uint64_t &v) const;
   int parse_signed(const char *, uint64_t &v) const;
   int patch_tab(Fields_Iter *, uint64_t v);
+  std::unordered_map<int, const unsigned short *>::const_iterator check_1tab(const nv_instr *, const NV_tab_fields *t);
   // disasm input file
   void process_buf();
   void dump_ins(const NV_pair &p, size_t off);
@@ -909,6 +910,7 @@ void INA::dump_kv() const
   }
 }
 
+// find & fill kv_field.va
 int INA::check_vas(const nv_instr *ins, kv_field &kf, const std::string_view &s) const
 {
   if ( !ins->vas ) return 0;
@@ -947,6 +949,26 @@ int INA::patch_Tab(NV_tab_fields const *t, char const *s)
   return re_rend();
 }
 
+std::unordered_map<int, const unsigned short *>::const_iterator INA::check_1tab(const nv_instr *ins, const NV_tab_fields *t)
+{
+  auto def = t->tab->cend();
+  if ( 1 != t->fields.size() ) return def;
+  auto f1 = get_it(t->fields, 0);
+  // extract only field
+  if ( !ins->vas ) return def;
+  auto viter = find(ins->vas, f1);
+  if ( !viter ) return def;
+  if ( !viter->dval ) return def;
+  // lookup this value
+  for ( auto ti = t->tab->cbegin(); ti != t->tab->cend(); ++ti )
+  {
+    auto arr = ti->second;
+    if ( 1 != arr[0] ) continue;
+    if ( arr[1] == (int)viter->dval ) return ti;
+  }
+  return def;
+}
+
 int INA::pre_build(const IRPair &pair)
 {
   m_kv.clear();
@@ -970,6 +992,10 @@ int INA::pre_build(const IRPair &pair)
       tab_idx++;
       auto first_row = tab->find(0); // first - value, second - array for fields
       if ( first_row == tab->end() ) first_row = tab->begin();
+      if ( 1 == t->fields.size() ) {
+       auto ft = check_1tab(ins, t);
+       if ( ft != tab->cend() ) first_row = ft;
+      }
       if ( !m_dis->put(t->mask, t->mask_size, first_row->first) ) return 0;
       auto arr = first_row->second;
       if ( arr[0] != t->fields.size() ) return 0;
@@ -996,6 +1022,12 @@ int INA::pre_build(const IRPair &pair)
     for ( auto &f: ins->fields ) {
       kv_field curr_field(&f);
       check_vas(ins, curr_field, f.name);
+      if ( curr_field.va && curr_field.va->dval ) {
+        // if this field is table-based it already have record on m_kv, so check it
+        auto ki = m_kv.find(f.name);
+        if ( ki == m_kv.end() && m_dis->put(f.mask, f.mask_size, curr_field.va->dval) )
+         m_kv[f.name] = curr_field.va->dval;
+      }
       const nv_eattr *ea = find_ea(ins, f.name);
       if ( !ea ) {
         s_fields.insert_or_assign(f.name, curr_field);
