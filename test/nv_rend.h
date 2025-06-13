@@ -11,6 +11,13 @@
 
 typedef std::unordered_set<uint32_t> NV_labels;
 
+enum NV_LType {
+  BRANCH_TARGET = 1,
+  LABEL,
+  L32,
+  H32,
+};
+
 inline std::string& rstrip(std::string &s)
 {
   while(!s.empty()) {
@@ -239,5 +246,6 @@ class NV_renderer {
     scond_hits = 0;
    // static fields
    static const char *s_fmts[];
+   static const char *s_labels[];
    static std::map<int, std::pair<const char *, const char *> > s_sms;
 };

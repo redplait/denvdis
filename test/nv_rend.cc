@@ -29,6 +29,14 @@ std::map<int, std::pair<const char *, const char *> > NV_renderer::s_sms = {
  { 0x78, { "sm120", nullptr } },
 };
 
+const char *NV_renderer::s_labels[] = {
+ nullptr /* 0 */,
+ "BRANCH_TARGET",
+ "LABEL",
+ "32LO",
+ "32HI",
+};
+
 const char *NV_renderer::s_fmts[] = {
  "BITSET",
  "UImm",
