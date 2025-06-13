@@ -56,6 +56,14 @@ class ParseSASS: public NV_renderer
      ~one_form() {
        for ( auto o: ops ) delete o;
      }
+     // stored label
+     inline bool has_label() const {
+       return ltype != 0;
+     }
+     int ltype = 0;
+     std::list<form_list *>::iterator lop = ops.end();
+     std::string lname; // name of label
+     // boring stuff
      one_form& operator=(one_form&& other) = default;
      one_form(one_form&& other) = default;
    };
@@ -161,6 +169,26 @@ class ParseSASS: public NV_renderer
          return 1;
        }
        return 1;
+      });
+      return !f.empty();
+     }
+     template <typename F>
+     int apply_op2(NV_Forms &f, F &&pred) {
+     std::erase_if(f, [&](one_form &f) {
+       for ( auto ci = f.current; ci != f.ops.end(); ci++ )
+       {
+         if ( pred((*ci), f, ci) ) { f.current = ci; return 0; }
+         if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
+           // check if those predicate has default
+           const render_named *rn = (const render_named *)(*ci)->rb;
+           auto ea = find_ea(f.instr, rn->name);
+           if ( !ea ) break;
+           if ( !ea->has_def_value ) break;
+           continue;
+         }
+         return 1;
+       }
+       return 1;
      });
      return !f.empty();
    }
@@ -175,6 +203,10 @@ class ParseSASS: public NV_renderer
    int parse_req(const char *s);
    int parse_digit(const char *s, int &v);
    int parse_pred(int idx, const std::string &s);
+   template <typename C>
+    std::string extract_label(int idx, const C &s);
+   int mark_label(int, std::string &s);
+   int reduce_label(int, int, std::string &s);
    std::string process_tail(int idx, const std::string &s, NV_Forms &);
    int tail_attrs(int idx, const std::string_view &s, NV_Forms &);
    int process_tail_attr(int idx, const std::string_view &s, NV_Forms &);
@@ -183,13 +215,12 @@ class ParseSASS: public NV_renderer
     int try_dotted(int, T &, std::string_view &dotted, int &dotted_last);
    int classify_op(int idx, const std::string &s);
    int reduce(int);
-   int reduce_label(int);
    int reduce_enum(const std::string_view &);
    int reduce_pred(const std::string_view &);
    int apply_enum(const std::string_view &);
    int enum_tail(int idx, const std::string_view &);
    NV_Forms m_forms;
-   // curren kv - used for predicate & tail like usched_info etc
+   // current kv - used for predicate & tail like usched_info etc
    NV_extracted m_kv;
    static std::regex s_digits;
    static std::regex s_commas;
@@ -274,15 +305,53 @@ int ParseSASS::parse_req(const char *s)
   return i + 1;
 }
 
+template <typename C>
+std::string ParseSASS::extract_label(int idx, const C &s)
+{
+  std::string res;
+  // skip spaces
+  int i = idx;
+  char c;
+  for ( ; i < (int)s.size(); i++ ) {
+    c = s.at(i);
+    if ( !isspace(c) ) break;
+  }
+  for ( ; i < (int)s.size(); i++ ) {
+    c = s.at(i);
+    if ( c == ')' || c == '"' ) break;
+    res.push_back(c);
+  }
+  return res;
+}
+
+int ParseSASS::mark_label(int t, std::string &s)
+{
+  int res = 0;
+  std::for_each(m_forms.begin(), m_forms.end(), [&](one_form &of) {
+    res++;
+    of.ltype = t;
+    of.lname = s; // don't use std::move here bcs we don't know size of remained items in m_forms
+   });
+  return res;
+}
+
 int ParseSASS::reduce(int kind)
 {
   auto cl = [kind](const render_base *rb) { return rb->type == kind; };
   return apply_kind(m_forms, cl);
 }
 
-int ParseSASS::reduce_label(int type)
+// type - type of value in form_list
+// ltype - type of label
+// s - name of label, don't move it bcs it can be assigned to multiply of one_forms
+int ParseSASS::reduce_label(int type, int ltype, std::string &s)
 {
-  return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
+  auto apply_label = [&](one_form &f, auto &ci) {
+    f.ltype = ltype;
+    f.lname = s;
+    f.lop = ci;
+  };
+  return apply_op2(m_forms, [&](form_list *fl, one_form &f, auto &ci) -> bool {
 #ifdef DEBUG
  dump(fl, instr);
 #endif
@@ -290,15 +359,26 @@ int ParseSASS::reduce_label(int type)
     // or we can have R_Cxx - then I don't know how to confirm if this is what I want
     if ( type == R_value && fl->rb->type == R_value )
     {
-      if ( !instr->target_index ) return 1;
+      if ( !f.instr->target_index ) {
+       apply_label(f, ci);
+       return 1;
+      }
       // find vas
       const render_named *rn = (const render_named *)fl->rb;
       // there is strange case in RET/CALL where target_index is Ra and rn->name Ra_offset
-      if ( !strcmp(instr->name, "RET") || !strcmp(instr->name, "CALL") ) return 1;
-      return !strcmp(instr->target_index, rn->name);
+      if ( !strcmp(f.instr->name, "RET") || !strcmp(f.instr->name, "CALL") ) {
+        apply_label(f, ci);
+        return 1;
+      }
+      int res = !strcmp(f.instr->target_index, rn->name);
+      if ( res ) apply_label(f, ci);
+      return res;
     }
     // const bank, perhaps I should check R_CX too?
-    if ( type != R_value && fl->rb->type == R_C ) return 1;
+    if ( type != R_value && fl->rb->type == R_C ) {
+      apply_label(f, ci);
+      return 1;
+    }
     return 0;
    });
 }
@@ -607,6 +687,8 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
   return 1;
 }
 
+static const std::string_view s_bt = "(*\"BRANCH_TARGETS"sv;
+
 // main horror - try to detect what dis op is
 int ParseSASS::classify_op(int op_idx, const std::string &os)
 {
@@ -641,10 +723,12 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     return parse_c_left<render_C>(idx + 3, s, cl);
   }
   if ( tmp.starts_with("0x"sv) ) return reduce(R_value);
-  if ( tmp.starts_with("(*\"BRANCH_TARGETS"sv) ) {
+  if ( tmp.starts_with(s_bt) ) {
+    auto bt_name = extract_label(s_bt.size(), tmp);
     if ( has_target(&m_forms) )
-      return reduce(R_value);
-    return 1;
+      return reduce_label(R_value, BRANCH_TARGET, bt_name);
+    else
+      return mark_label(BRANCH_TARGET, bt_name);
   }
   switch(c) {
     case '`': if ( s.at(idx+1) != '(' ) {
@@ -652,11 +736,13 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
        return 0;
      }
      if ( has_target(&m_forms) ) {
+       auto lname = extract_label(idx + 2, s);
        if ( opt_d ) printf("` has targets, try R_value\n");
-       return reduce_label(R_value);
+       return reduce_label(R_value, LABEL, lname);
      } else {
+       auto lname = extract_label(idx + 2, s);
        if ( opt_d ) printf("unknown target operand %d: %s\n", op_idx, s.c_str());
-       return reduce(R_value);
+       return reduce_label(R_value, LABEL, lname);
      }
      break;
     case '!': return reduce_pred({ s.c_str() + idx + 1, s.size() - 1 - idx});
@@ -704,8 +790,15 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     }
   }
   // 32@lo( & 32@hi
-  if ( tmp.starts_with("32@lo("sv) || tmp.starts_with("32@hi("sv) ) {
-    return reduce(R_value);
+  if ( tmp.starts_with("32@lo("sv) ) {
+    c = tmp.at(6);
+    auto lname = extract_label(c == '(' ? 7 : 6, tmp);
+    return reduce_label(R_value, L32, lname);
+  }
+  if ( tmp.starts_with("32@hi("sv) ) {
+    c = tmp.at(6);
+    auto lname = extract_label(c == '(' ? 7: 6, tmp);
+    return reduce_label(R_value, H32, lname);
   }
   // check for digit
   int dig = 1, cnt = 0, was_dot = 0;
@@ -1273,7 +1366,11 @@ int ParseSASS::print_fsummary(FILE *fp) const
     fprintf(fp, " %d", f.instr->line);
     std::string res;
     rend_rendererE(f.instr, f.rend, res);
-    fprintf(fp, " %s\n", res.c_str());
+    fprintf(fp, " %s", res.c_str());
+    if ( f.has_label() ) {
+      fprintf(fp, " ; LABEL %s %s", s_labels[f.ltype], f.lname.c_str());
+    }
+    fputc('\n', fp);
   }
   return 1;
 }
