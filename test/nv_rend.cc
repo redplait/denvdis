@@ -35,6 +35,7 @@ const char *NV_renderer::s_labels[] = {
  "LABEL",
  "32LO",
  "32HI",
+ "INDIRECT_CALL",
 };
 
 const char *NV_renderer::s_fmts[] = {

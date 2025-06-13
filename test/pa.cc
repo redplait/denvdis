@@ -688,6 +688,8 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
 }
 
 static const std::string_view s_bt = "(*\"BRANCH_TARGETS"sv;
+static const std::string_view s_ic = "(*\"INDIRECT_CALL\"*)"sv;
+static std::string s_empty = "";
 
 // main horror - try to detect what dis op is
 int ParseSASS::classify_op(int op_idx, const std::string &os)
@@ -711,6 +713,18 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     int kres = apply_kind(m_forms, dcl);
     if ( !kres ) return 0;
     return parse_c_left<render_desc>(idx + 5, s, dcl);
+  }
+  if ( tmp.starts_with("a["sv) ) {
+    auto da = [](const render_base *rb) { return rb->type == R_mem; };
+    int kres = apply_kind(m_forms, da);
+    if ( !kres ) return 0;
+    return parse_mem_right<render_mem>(idx + 2, s, da);
+  }
+  if ( tmp.starts_with("ttu["sv) ) {
+    auto dttu = [](const render_base *rb) { return rb->type == R_TTU; };
+    int kres = apply_kind(m_forms, dttu);
+    if ( !kres ) return 0;
+    return parse_c_left<render_TTU>(idx + 4, s, dttu);
   }
   if ( tmp.starts_with("c["sv) ) {
     int kres = apply_kind(m_forms, cl);
@@ -789,6 +803,8 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
       return parse_mem_right<render_mem>(idx + 1, s, dm);
     }
   }
+  // INDIRECT_CALL
+  if ( tmp.starts_with(s_ic) ) return mark_label(INDIRECT_CALL, s_empty);
   // 32@lo( & 32@hi
   if ( tmp.starts_with("32@lo("sv) ) {
     c = tmp.at(6);

@@ -16,6 +16,7 @@ enum NV_LType {
   LABEL,
   L32,
   H32,
+  INDIRECT_CALL,
 };
 
 inline std::string& rstrip(std::string &s)
