@@ -48,6 +48,9 @@ sm75.so: sm75.cc
 sm72.so: sm72.cc
 	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
+sm70.so: sm70.cc
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+
 sm57.so: sm57.cc
 	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
