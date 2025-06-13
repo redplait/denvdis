@@ -501,8 +501,10 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
           match = 1;
           // store in l_kv
           p.second->l_kv[vb.arg] = aiter->second;
+          continue;
         }
         if ( ea->has_def_value ) continue;
+        match = 0;
         break;
       }
     }
