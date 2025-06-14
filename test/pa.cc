@@ -353,7 +353,7 @@ int ParseSASS::reduce_label(int type, int ltype, std::string &s)
   };
   return apply_op2(m_forms, [&](form_list *fl, one_form &f, auto &ci) -> bool {
 #ifdef DEBUG
- dump(fl, instr);
+ dump(fl, f.instr);
 #endif
     // we can have R_value - and then must check name of value - it must be the same as instr->target_index
     // or we can have R_Cxx - then I don't know how to confirm if this is what I want
@@ -684,7 +684,6 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
     }
   }
   return !m_forms.empty();
-  return 1;
 }
 
 static const std::string_view s_bt = "(*\"BRANCH_TARGETS"sv;
@@ -748,14 +747,13 @@ int ParseSASS::classify_op(int op_idx, const std::string &os)
     case '`': if ( s.at(idx+1) != '(' ) {
        fprintf(stderr, "unknown op %d: %s\n", op_idx, s.c_str());
        return 0;
-     }
-     if ( has_target(&m_forms) ) {
-       auto lname = extract_label(idx + 2, s);
-       if ( opt_d ) printf("` has targets, try R_value\n");
-       return reduce_label(R_value, LABEL, lname);
      } else {
        auto lname = extract_label(idx + 2, s);
-       if ( opt_d ) printf("unknown target operand %d: %s\n", op_idx, s.c_str());
+       if ( has_target(&m_forms) ) {
+         if ( opt_d ) printf("` has targets, try R_value\n");
+       } else {
+         if ( opt_d ) printf("unknown target operand %d: %s\n", op_idx, s.c_str());
+       }
        return reduce_label(R_value, LABEL, lname);
      }
      break;
