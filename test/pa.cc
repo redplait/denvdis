@@ -3,6 +3,18 @@
 #include <regex>
 #include <unistd.h>
 
+// black magic to get lambda arity from https://stackoverflow.com/questions/40411241/c-lambda-does-not-have-operator
+template <typename T>
+struct get_arity : get_arity<decltype(&std::remove_reference_t<T>::operator())> {};
+template <typename R, typename... Args>
+struct get_arity<R(Args...)> : std::integral_constant<unsigned, sizeof...(Args)> {};
+template <typename R, typename... Args>
+struct get_arity<R(Args...) const> : std::integral_constant<unsigned, sizeof...(Args)> {};
+template <typename R, typename C, typename... Args>
+struct get_arity<R(C::*)(Args...)> : std::integral_constant<unsigned, sizeof...(Args)> {};
+template <typename R, typename C, typename... Args>
+struct get_arity<R(C::*)(Args...) const> : std::integral_constant<unsigned, sizeof...(Args)> {};
+
 int opt_d = 0,
     opt_e = 0,
     opt_k = 0,
@@ -93,11 +105,16 @@ class ParseSASS: public NV_renderer
    template <typename F>
    int check_kind(NV_Forms &forms, F &&pred) {
      int res = 0;
+     constexpr unsigned arity = get_arity<F>{};
      for ( auto &f: forms )
      {
        for ( auto ci = f.current; ci != f.ops.end(); ++ci )
        {
-         if ( pred((*ci)->rb) ) { res++; break; }
+         if constexpr ( arity == 2 ) {
+           if ( pred((*ci)->rb, f) ) { res++; break; }
+         } else {
+           if ( pred((*ci)->rb) ) { res++; break; }
+         }
          if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
@@ -134,10 +151,13 @@ class ParseSASS: public NV_renderer
    }
    template <typename F>
    int apply_kind(NV_Forms &f, F &&pred) {
+     constexpr unsigned arity = get_arity<F>{};
      std::erase_if(f, [&](one_form &f) {
        for ( auto ci = f.current; ci != f.ops.end(); ci++ )
        {
-         if ( pred((*ci)->rb) ) { f.current = ci; return 0; }
+         if constexpr ( arity == 2 ) {
+           if ( pred((*ci)->rb, f) ) { f.current = ci; return 0; }
+         } else { if ( pred((*ci)->rb) ) { f.current = ci; return 0; } }
          if ( (*ci)->rb->type == R_predicate ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
@@ -200,6 +220,8 @@ class ParseSASS: public NV_renderer
     int parse_mem_right(int idx, const std::string_view &, F &&);
    template <typename C, typename F>
     int parse_c_left(int idx, const std::string &s, F &&);
+   template <typename C>
+    int parse_hex_tail(int idx, const C &s, int radix);
    int parse_req(const char *s);
    int parse_digit(const char *s, int &v);
    int parse_pred(int idx, const std::string &s);
@@ -213,8 +235,9 @@ class ParseSASS: public NV_renderer
    int process_attr(int idx, const std::string &s, NV_Forms &);
    template <typename T>
     int try_dotted(int, T &, std::string_view &dotted, int &dotted_last);
-   int classify_op(int idx, const std::string_view &s);
+   int classify_op(int op_idx, const std::string_view &s);
    int reduce(int);
+   int reduce_value();
    int reduce_enum(const std::string_view &);
    int reduce_pred(const std::string_view &);
    int apply_enum(const std::string_view &);
@@ -303,6 +326,25 @@ int ParseSASS::parse_digit(const char *s, int &v)
   }
   v = strtol(s, &end, 10);
   return end - s;
+}
+
+// return new idx
+template <typename C>
+int ParseSASS::parse_hex_tail(int idx, const C &s, int radix)
+{
+  char *end;
+  const char *start = s.data() + idx;
+  m_v = strtol(start, &end, radix);
+  m_numv = NumV::num;
+  int diff = int(end - start);
+  idx += diff;
+  if ( idx >= (int)s.size() ) return idx;
+  // skip trailing spaces
+  for ( ; idx < (int)s.size(); ++idx ) {
+    char c = s.at(idx);
+    if ( !isspace(c) ) break;
+  }
+  return idx;
 }
 
 int ParseSASS::parse_req(const char *s)
@@ -753,7 +795,15 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
     if ( !kres ) return 0;
     return parse_c_left<render_C>(idx + 3, s, cl);
   }
-  if ( tmp.starts_with("0x"sv) ) return reduce(R_value);
+  if ( tmp.starts_with("0x"sv) ) {
+   idx = parse_hex_tail(2, tmp, 16);
+   if ( !reduce(R_value) ) return 0;
+   if ( idx < (int)tmp.size() ) {
+     std::string_view next{ tmp.data() + idx, size_t(tmp.size() - idx) };
+     return classify_op(op_idx + 1, next);
+   }
+   return 1;
+  }
   if ( tmp.starts_with(s_bt) ) {
     auto bt_name = extract_label(s_bt.size(), tmp);
     if ( has_target(&m_forms) )
