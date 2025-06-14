@@ -213,7 +213,7 @@ class ParseSASS: public NV_renderer
    int process_attr(int idx, const std::string &s, NV_Forms &);
    template <typename T>
     int try_dotted(int, T &, std::string_view &dotted, int &dotted_last);
-   int classify_op(int idx, const std::string &s);
+   int classify_op(int idx, const std::string_view &s);
    int reduce(int);
    int reduce_enum(const std::string_view &);
    int reduce_pred(const std::string_view &);
@@ -222,6 +222,23 @@ class ParseSASS: public NV_renderer
    NV_Forms m_forms;
    // current kv - used for predicate & tail like usched_info etc
    NV_extracted m_kv;
+   // current numeric value
+   enum NumV {
+     nan = 1,
+     inf = 2,
+     num = 3,
+     fp  = 4,
+   };
+   union {
+     unsigned long m_v;
+     float m_f;
+     double m_d;
+   };
+   int m_numv = 0;
+   int m_minus = 0;
+   void reset_v() {
+     m_numv = m_minus = 0;
+   }
    static std::regex s_digits;
    static std::regex s_commas;
    static constexpr auto c_usched_name = "usched_info";
@@ -691,21 +708,22 @@ static const std::string_view s_ic = "(*\"INDIRECT_CALL\"*)"sv;
 static std::string s_empty = "";
 
 // main horror - try to detect what dis op is
-int ParseSASS::classify_op(int op_idx, const std::string &os)
+int ParseSASS::classify_op(int op_idx, const std::string_view &os)
 {
+  reset_v();
   auto spaces = os.find_first_not_of(' ');
   std::string s{ spaces == std::string::npos ? os.begin() : os.begin() + spaces, os.end() };
 #ifdef DEBUG
  printf("op %d %s\n", op_idx, s.c_str());
 #endif
-  int idx = 0, minus = 0;
+  int idx = 0;
   char c = s.at(idx);
-  if ( c == '-' ) { minus = 1; c = s.at(++idx); }
+  if ( c == '-' ) { m_minus = 1; c = s.at(++idx); }
   else if ( c == '+' ) c = s.at(++idx);
   else if ( c == '~' ) c = s.at(++idx);
   std::string_view tmp{ s.c_str() + idx, s.size() - idx};
-  if ( tmp == "INF"sv ) return reduce(R_value);
-  if ( tmp == "QNAN"sv ) return reduce(R_value);
+  if ( tmp == "INF"sv ) { m_numv = NumV::inf; return reduce(R_value); }
+  if ( tmp == "QNAN"sv ) { m_numv = NumV::nan; return reduce(R_value); }
   auto cl = [](const render_base *rb) { return rb->type == R_C || rb->type == R_CX; };
   if ( tmp.starts_with("desc["sv) ) {
     auto dcl = [](const render_base *rb) { return rb->type == R_desc; };
@@ -1161,9 +1179,9 @@ int ParseSASS::enum_tail(int idx, const std::string_view &head)
       }
     } else if ( c == ' ' ) {
       if ( !next(m_forms) ) return 0;
-      std::string tmp{ head.data() + idx + 1, size_t(head.size() - idx - 1) };
+      std::string_view tmp{ head.data() + idx + 1, size_t(head.size() - idx - 1) };
       if ( opt_d ) {
-        printf("call classify_op %s\n", tmp.c_str());
+        printf("call classify_op "); dump_outln(tmp);
         dump_forms();
       }
       return classify_op(0, tmp);
@@ -1300,7 +1318,8 @@ int ParseSASS::add_internal(const std::string &s)
       if ( op_idx ) { // first next was issued in head processing after first space
         if ( !next(m_forms) ) return 0;
       }
-      classify_op(op_idx, *op);
+      std::string_view tmp{ s.first, s.second };
+      classify_op(op_idx, tmp);
       if ( m_forms.empty() ) {
         printf("[!] empty after %d op: %s\n", op_idx, head.c_str() + idx);
         break;
