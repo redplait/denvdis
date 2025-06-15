@@ -1,5 +1,6 @@
 #include <fstream>
 #include "nv_rend.h"
+#include <fp16.h>
 #include <regex>
 #include <unistd.h>
 
@@ -172,7 +173,7 @@ class ParseSASS: public NV_renderer
      });
      return !f.empty();
    }
-   // closure receives form_list * & one_form & to store local kv
+   // closure receives form_list* & one_form& to store local kv
    template <typename F>
    int apply_op(NV_Forms &f, F &&pred) {
      std::erase_if(f, [&](one_form &f) {
@@ -262,9 +263,12 @@ class ParseSASS: public NV_renderer
      double m_d;
    };
    int m_numv = 0;
-   int m_minus = 0;
+   char m_minus = 0;
+   char m_tilda = 0; // ~ for @invert
+   char m_abs = 0;   // | for @absolute
    void reset_v() {
-     m_numv = m_minus = 0;
+     m_numv = 0;
+     m_minus = m_tilda = m_abs = 0;
    }
    static std::regex s_digits;
    static std::regex s_commas;
@@ -444,6 +448,28 @@ int ParseSASS::reduce_value()
       }
       return 1;
     });
+  } else if ( m_numv == NumV::fp ) {
+    return apply_kind(m_forms, [&](const render_base *rb, one_form &f) {
+      if ( rb->type != R_value ) return 0;
+      if ( f.instr->vas ) {
+        const render_named *rn = (const render_named *)rb;
+        auto vas = find(f.instr->vas, rn->name);
+        if ( vas ) {
+          uint64_t v;
+          if ( vas->kind == NV_F64Imm )
+            f.l_kv[rn->name] = *(uint64_t *)&this->m_d;
+          else if ( vas->kind == NV_F32Imm ) {
+            float fl = (float)this->m_d;
+            *(float *)&v = fl;
+            f.l_kv[rn->name] = v;
+          } else if ( vas->kind == NV_F16Imm ) {
+            v = fp16_ieee_from_fp32_value((float)this->m_d);
+            f.l_kv[rn->name] = v;
+          }
+        }
+      }
+      return 1;
+    });
   } else return reduce(R_value);
 }
 
@@ -509,7 +535,15 @@ int ParseSASS::reduce_pred(const std::string_view &s, int exclamation)
 #ifdef DEBUG
  printf("en %d\n", aiter != en->second->end());
 #endif
-    return aiter != en->second->end();
+    if ( aiter == en->second->end() ) return 0;
+    // store into l_kv
+    of.l_kv[rn->name] = aiter->second;
+    if ( exclamation ) {
+      std::string not_name = rn->name;
+      not_name += "@not";
+      of.l_kv[not_name] = 1;
+    }
+    return 1;
    });
 }
 
@@ -797,6 +831,13 @@ static const std::string_view s_ic = "(*\"INDIRECT_CALL\"*)"sv;
 static std::string s_empty = "";
 
 // main horror - try to detect what dis op is
+// sass grammar is not pure regular - some operands separated by space - especially labels, like
+//  BRX R2 -0x110 (*"INDIRECT_CALL"*)
+// here first call will be apply_enum
+// then enum_tail calls classify_op again - this time it will classify op -0x110 as hex and will call classify_op
+// yet one time after parse_hex_tail
+// So this method is recursive with max depth (hopefully) 3
+// Also to avoid operands copying use string_view - they are much cheaper than std::string
 int ParseSASS::classify_op(int op_idx, const std::string_view &os)
 {
   reset_v();
@@ -809,7 +850,7 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
   char c = s.at(idx);
   if ( c == '-' ) { m_minus = 1; c = s.at(++idx); }
   else if ( c == '+' ) c = s.at(++idx);
-  else if ( c == '~' ) c = s.at(++idx);
+  else if ( c == '~' ) { m_tilda = 1; c = s.at(++idx); };
   std::string_view tmp{ s.c_str() + idx, s.size() - idx};
   if ( tmp == "INF"sv ) { m_numv = NumV::inf; return reduce(R_value); }
   if ( tmp == "QNAN"sv ) { m_numv = NumV::nan; return reduce(R_value); }
@@ -874,7 +915,9 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
      }
      break;
     case '!': return reduce_pred({ s.c_str() + idx + 1, s.size() - 1 - idx}, 1);
-    case '|': if ( !tmp.ends_with("|") ) {
+    case '|':
+     m_abs = 1;
+     if ( !tmp.ends_with("|") ) {
        // surprise - there can be ops like |R13|.reuse
        // so try to find second |
        int ip = idx + 1;
@@ -950,7 +993,15 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
    }
    return 1;
   }
-  if ( dig ) return reduce(R_value);
+  if ( dig ) {
+   idx = parse_float_tail(0, tmp);
+   if ( !reduce_value() ) return 0;
+   if ( idx < (int)tmp.size() ) {
+     std::string_view next{ tmp.data() + idx, size_t(tmp.size() - idx) };
+     return classify_op(op_idx + 1, next);
+   }
+   return 1;
+  }
   // check for some unknown prefix for memory
   for ( int pi = idx + 1; pi < (int)tmp.size(); ++pi ) {
     if ( '[' == tmp.at(pi) ) {
