@@ -172,12 +172,13 @@ class ParseSASS: public NV_renderer
      });
      return !f.empty();
    }
+   // closure receives form_list * & one_form & to store local kv
    template <typename F>
    int apply_op(NV_Forms &f, F &&pred) {
      std::erase_if(f, [&](one_form &f) {
        for ( auto ci = f.current; ci != f.ops.end(); ci++ )
        {
-         if ( pred((*ci), f.instr) ) { f.current = ci; return 0; }
+         if ( pred((*ci), f) ) { f.current = ci; return 0; }
          if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
@@ -192,6 +193,7 @@ class ParseSASS: public NV_renderer
       });
       return !f.empty();
      }
+     // like apply_op but 3rd arg is form_list iterator
      template <typename F>
      int apply_op2(NV_Forms &f, F &&pred) {
      std::erase_if(f, [&](one_form &f) {
@@ -222,6 +224,8 @@ class ParseSASS: public NV_renderer
     int parse_c_left(int idx, const std::string &s, F &&);
    template <typename C>
     int parse_hex_tail(int idx, const C &s, int radix);
+   template <typename C>
+    int parse_float_tail(int idx, const C &s);
    int parse_req(const char *s);
    int parse_digit(const char *s, int &v);
    int parse_pred(int idx, const std::string &s);
@@ -239,7 +243,7 @@ class ParseSASS: public NV_renderer
    int reduce(int);
    int reduce_value();
    int reduce_enum(const std::string_view &);
-   int reduce_pred(const std::string_view &);
+   int reduce_pred(const std::string_view &, int exclamation = 0);
    int apply_enum(const std::string_view &);
    int enum_tail(int idx, const std::string_view &);
    NV_Forms m_forms;
@@ -328,7 +332,32 @@ int ParseSASS::parse_digit(const char *s, int &v)
   return end - s;
 }
 
-// return new idx
+// return new idx in s
+template <typename C>
+int cut_lspaces(int idx, const C &s)
+{
+  for ( ; idx < (int)s.size(); ++idx ) {
+    char c = s.at(idx);
+    if ( !isspace(c) ) break;
+  }
+  return idx;
+}
+
+template <typename C>
+int ParseSASS::parse_float_tail(int idx, const C &s)
+{
+  char *end;
+  const char *start = s.data() + idx;
+  m_d = strtod(start, &end);
+  if ( m_minus ) m_d = -m_d;
+  m_numv = NumV::fp;
+  int diff = int(end - start);
+  idx += diff;
+  if ( idx >= (int)s.size() ) return idx;
+  // skip trailing spaces
+  return cut_lspaces(idx, s);
+}
+
 template <typename C>
 int ParseSASS::parse_hex_tail(int idx, const C &s, int radix)
 {
@@ -340,11 +369,7 @@ int ParseSASS::parse_hex_tail(int idx, const C &s, int radix)
   idx += diff;
   if ( idx >= (int)s.size() ) return idx;
   // skip trailing spaces
-  for ( ; idx < (int)s.size(); ++idx ) {
-    char c = s.at(idx);
-    if ( !isspace(c) ) break;
-  }
-  return idx;
+  return cut_lspaces(idx, s);
 }
 
 int ParseSASS::parse_req(const char *s)
@@ -400,6 +425,28 @@ int ParseSASS::reduce(int kind)
   return apply_kind(m_forms, cl);
 }
 
+int ParseSASS::reduce_value()
+{
+  if ( m_numv == NumV::num ) {
+    return apply_kind(m_forms, [&](const render_base *rb, one_form &f) {
+      if ( rb->type != R_value ) return 0;
+      if ( f.instr->vas ) {
+        const render_named *rn = (const render_named *)rb;
+        auto vas = find(f.instr->vas, rn->name);
+        if ( vas ) {
+          if ( vas->kind == NV_SImm || vas->kind == NV_SSImm || vas->kind == NV_RSImm ) {
+            long l = (long)m_v;
+            if ( m_minus ) l = -l;
+            f.l_kv[rn->name] = l;
+          } else if ( vas->kind == NV_BITSET || vas->kind == NV_UImm )
+            f.l_kv[rn->name] = m_v;
+        }
+      }
+      return 1;
+    });
+  } else return reduce(R_value);
+}
+
 // type - type of value in form_list
 // ltype - type of label
 // s - name of label, don't move it bcs it can be assigned to multiply of one_forms
@@ -442,18 +489,18 @@ int ParseSASS::reduce_label(int type, int ltype, std::string &s)
    });
 }
 
-int ParseSASS::reduce_pred(const std::string_view &s)
+int ParseSASS::reduce_pred(const std::string_view &s, int exclamation)
 {
 #ifdef DEBUG
- printf("reduce_pred: "); dump_outln(s);
+ printf("reduce_pred: %d ", exclamation); dump_outln(s);
 #endif
-  return apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
+  return apply_op(m_forms, [&](const form_list *fl, one_form &of) -> bool {
 #ifdef DEBUG
  dump(fl, instr);
 #endif
     if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
     const render_named *rn = (const render_named *)fl->rb;
-    auto ea = find_ea(instr, rn->name);
+    auto ea = find_ea(of.instr, rn->name);
     if ( !ea ) return 0;
     // check if it has enum in s
     auto en = m_renums->find(ea->ename);
@@ -796,8 +843,9 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
     return parse_c_left<render_C>(idx + 3, s, cl);
   }
   if ( tmp.starts_with("0x"sv) ) {
+   // hex value + possible tail for label
    idx = parse_hex_tail(2, tmp, 16);
-   if ( !reduce(R_value) ) return 0;
+   if ( !reduce_value() ) return 0;
    if ( idx < (int)tmp.size() ) {
      std::string_view next{ tmp.data() + idx, size_t(tmp.size() - idx) };
      return classify_op(op_idx + 1, next);
@@ -825,7 +873,7 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
        return reduce_label(R_value, LABEL, lname);
      }
      break;
-    case '!': return reduce_pred({ s.c_str() + idx + 1, s.size() - 1 - idx});
+    case '!': return reduce_pred({ s.c_str() + idx + 1, s.size() - 1 - idx}, 1);
     case '|': if ( !tmp.ends_with("|") ) {
        // surprise - there can be ops like |R13|.reuse
        // so try to find second |
@@ -891,6 +939,16 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
     if ( cnt && c == 'e' ) break;
     dig = 0;
     break;
+  }
+  if ( dig && !was_dot ) {
+   // decimal value + possible tail for label
+   idx = parse_hex_tail(0, tmp, 10);
+   if ( !reduce_value() ) return 0;
+   if ( idx < (int)tmp.size() ) {
+     std::string_view next{ tmp.data() + idx, size_t(tmp.size() - idx) };
+     return classify_op(op_idx + 1, next);
+   }
+   return 1;
   }
   if ( dig ) return reduce(R_value);
   // check for some unknown prefix for memory
@@ -1037,14 +1095,14 @@ int ParseSASS::apply_enum(const std::string_view &s)
    }
   }
   if ( opt_d ) dump_forms();
-  int res = apply_op(m_forms, [&](const form_list *fl, const nv_instr *instr) -> bool {
+  int res = apply_op(m_forms, [&](const form_list *fl, one_form &of) -> bool {
     if ( opt_d ) {
       std::string res;
       rend_single(fl->rb, res); printf(" %s\n", res.c_str());
     }
     if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
     const render_named *rn = (const render_named *)fl->rb;
-    auto ea = find_ea(instr, rn->name);
+    auto ea = find_ea(of.instr, rn->name);
     if ( !ea ) return 0;
 #ifdef DEBUG
   printf("found ei %s", ea->ename);
