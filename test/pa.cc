@@ -456,14 +456,16 @@ int ParseSASS::reduce_value()
         auto vas = find(f.instr->vas, rn->name);
         if ( vas ) {
           uint64_t v;
-          if ( vas->kind == NV_F64Imm )
+          if ( vas->kind == NV_F64Imm ) {
+            if ( m_minus ) this->m_d = -this->m_d;
             f.l_kv[rn->name] = *(uint64_t *)&this->m_d;
-          else if ( vas->kind == NV_F32Imm ) {
+          } else if ( vas->kind == NV_F32Imm ) {
             float fl = (float)this->m_d;
+            if ( m_minus ) fl = -fl;
             *(float *)&v = fl;
             f.l_kv[rn->name] = v;
           } else if ( vas->kind == NV_F16Imm ) {
-            v = fp16_ieee_from_fp32_value((float)this->m_d);
+            v = fp16_ieee_from_fp32_value((float)(m_minus ? -this->m_d : this->m_d));
             f.l_kv[rn->name] = v;
           }
         }
