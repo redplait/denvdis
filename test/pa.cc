@@ -1616,7 +1616,18 @@ int ParseSASS::print_fsummary(FILE *fp) const
   for ( auto &f: m_forms ) {
     if ( opt_k ) {
      for ( auto &ki: f.l_kv ) {
-       fputc(' ', fp); dump_out(ki.first, fp); fprintf(fp, ": %ld\n", ki.second);
+       fprintf(fp, " %s", ki.first.c_str());
+       if ( f.instr->vas ) {
+         auto vas = find(f.instr->vas, ki.first);
+         if ( vas ) {
+           fprintf(fp, " %s", s_fmts[vas->kind]);
+           std::string res;
+           dump_value(*vas, ki.second, vas->kind, res);
+           fprintf(fp, ": %s\n", res.c_str());
+           continue;
+         }
+       }
+       fprintf(fp, ": %ld\n", ki.second);
      }
     }
     fprintf(fp, " %d", f.instr->line);

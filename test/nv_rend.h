@@ -219,6 +219,7 @@ class NV_renderer {
    int check_mod(char c, const NV_extracted &, const char* name, std::string &r) const;
    int check_abs(const NV_extracted &, const char* name) const;
    int check_abs(const NV_extracted &, const char* name, std::string &r) const;
+   void dump_value(const nv_vattr &, uint64_t v, NV_Format, std::string &res) const;
    void dump_value(const struct nv_instr *, const NV_extracted &kv, const std::string_view &,
      std::string &res, const nv_vattr &, uint64_t v) const;
    bool check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;

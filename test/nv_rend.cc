@@ -117,24 +117,10 @@ bool NV_renderer::contain(const std::string_view &sv, char sym) const
   return sv.find(sym) != std::string::npos;
 }
 
-void NV_renderer::dump_value(const struct nv_instr *ins, const NV_extracted &kv, const std::string_view &var_name,
-  std::string &res, const nv_vattr &a, uint64_t v) const
+void NV_renderer::dump_value(const nv_vattr &a, uint64_t v, NV_Format kind, std::string &res) const
 {
   char buf[128];
   uint32_t f32;
-  NV_Format kind = a.kind;
-  if ( ins->vf_conv ) {
-    auto convi = find(*ins->vf_conv, var_name);
-    if ( convi ) {
-      auto vi = kv.find(convi->fmt_var);
-// printf("ins %s line %d  value fmt_var %d\n", ins->name, ins->line, (int)vi->second);
-      if ( vi != kv.end() && ((short)vi->second == convi->v1 || (short)vi->second == convi->v2) )
-      {
-// printf("ins %s line %d: change kind to %d bcs value fmt_var %d\n", ins->name, ins->line, convi->second.format, (int)vi->second);
-        kind = (NV_Format)convi->format;
-      }
-    }
-  }
   switch(kind)
   {
     case NV_F64Imm:
@@ -153,6 +139,25 @@ void NV_renderer::dump_value(const struct nv_instr *ins, const NV_extracted &kv,
   }
   buf[127] = 0;
   res += buf;
+}
+
+void NV_renderer::dump_value(const struct nv_instr *ins, const NV_extracted &kv, const std::string_view &var_name,
+  std::string &res, const nv_vattr &a, uint64_t v) const
+{
+  NV_Format kind = a.kind;
+  if ( ins->vf_conv ) {
+    auto convi = find(*ins->vf_conv, var_name);
+    if ( convi ) {
+      auto vi = kv.find(convi->fmt_var);
+// printf("ins %s line %d  value fmt_var %d\n", ins->name, ins->line, (int)vi->second);
+      if ( vi != kv.end() && ((short)vi->second == convi->v1 || (short)vi->second == convi->v2) )
+      {
+// printf("ins %s line %d: change kind to %d bcs value fmt_var %d\n", ins->name, ins->line, convi->second.format, (int)vi->second);
+        kind = (NV_Format)convi->format;
+      }
+    }
+  }
+  dump_value(a, v, kind, res);
 }
 
 // old MD has encoders like Mask = Enum
