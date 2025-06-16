@@ -59,7 +59,7 @@ class ParseSASS: public NV_renderer
    {
      const nv_instr *instr;
      const NV_rlist *rend;
-     NV_extracted l_kv; // local key-value for this form
+     std::unordered_map<std::string, uint64_t> l_kv; // local key-value for this form
      std::list<form_list *> ops;
      std::list<form_list *>::iterator current;
      one_form(const nv_instr *_i, const NV_rlist *_r) {
@@ -758,14 +758,17 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
 template <typename C, typename F>
 int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
 {
-  if ( s.at(idx) == '-' ) idx++;
+  int l_minus = 0;
+  if ( s.at(idx) == '-' ) { l_minus = 1; idx++; }
   // find ]
   int li = idx;
   for ( ; li < (int)s.size(); ++li ) if ( s.at(li) == ']' ) break;
   // pre-classify what is it
   int type = R_enum;
-  if ( s.at(idx) == '0' && s.at(idx+1) == 'x' ) type = R_value;
-  else {
+  if ( s.at(idx) == '0' && s.at(idx+1) == 'x' ) {
+   type = R_value;
+   parse_hex_tail(idx + 2, s, 16);
+  } else {
     int dig = 1;
     for ( auto ti = idx; ti < li; ++ti ) {
       char c = s.at(ti);
@@ -773,7 +776,10 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
       dig = 0;
       break;
     }
-    if ( dig ) type = R_value;
+    if ( dig ) {
+     type = R_value;
+     parse_hex_tail(idx, s, 10);
+    }
   }
 #ifdef DEBUG
  printf("type %d idx %d %s\n", type, idx, s.c_str() + idx);
@@ -790,6 +796,12 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
      if ( !f((*of.current)->rb) ) return 1;
      const C *rc = (const C *)(*of.current)->rb;
      if ( rc->left.type != type ) return 1;
+     if ( type == R_value ) {
+       // it's safe to fill l_kv here bcs non-matched forms will be just erased
+       long l = m_v;
+       if ( l_minus ) l = -l;
+       of.l_kv[rc->left.arg] = l;
+     }
      if ( type != R_enum ) return 0;
      // check enum
      auto ea = find_ea(of.instr, rc->left.arg);
@@ -797,7 +809,10 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
      auto en = m_renums->find(ea->ename);
      if ( en == m_renums->end() ) return 1;
      auto aiter = en->second->find(ename);
-     if ( aiter != en->second->end() ) return 0;
+     if ( aiter != en->second->end() ) {
+       of.l_kv[rc->left.arg] = aiter->second;
+       return 0;
+     }
      return 1; // enum not found
    };
   std::erase_if(m_forms, my_cl);
