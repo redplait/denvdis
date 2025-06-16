@@ -220,6 +220,8 @@ class ParseSASS: public NV_renderer
    template <typename C, typename F>
     OFRights collect_rights(F &&);
    template <typename C, typename F>
+    void apply_mem_attrs(F &&);
+   template <typename C, typename F>
     int parse_mem_right(int idx, const std::string_view &, F &&);
    template <typename C, typename F>
     int parse_c_left(int idx, const std::string &s, F &&);
@@ -627,6 +629,29 @@ int parse_dot(const std::string_view &s, int start, int end, std::list<std::stri
   return 0;
 }
 
+template <typename C, typename F>
+void ParseSASS::apply_mem_attrs(F &&f)
+{
+  if ( m_minus || m_abs ) {
+   // store modifiers
+   check_kind(m_forms, [&](const render_base *rb, one_form &of) -> bool {
+     if ( !f(rb) ) return 0;
+     const C *rc = (const C *)rb;
+     if ( m_minus ) {
+       std::string mname = rc->name;
+       mname += "@negate";
+       of.l_kv[mname] = 1;
+     }
+     if ( m_abs ) {
+       std::string mname = rc->name;
+       mname += "@absolute";
+       of.l_kv[mname] = 1;
+     }
+     return 1;
+   });
+  }
+}
+
 // s - contains body after '[' (point by idx)
 template <typename C, typename F>
 int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
@@ -761,6 +786,12 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
     });
     if ( m_forms.empty() ) return 0;
   }
+  constexpr bool has_name = requires(const C& t) {
+    t.name;
+  };
+  if constexpr ( has_name ) {
+    apply_mem_attrs<C>(f);
+  }
   // check attrs - ri is pos of ']'
   if ( ri + 2 < (int)s.size() && s.at(ri + 1) == '.' )
     return process_tail_attr(ri + 1, s, m_forms);
@@ -841,24 +872,7 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
     t.name;
   };
   if constexpr ( has_name ) {
-    if ( m_minus || m_abs ) {
-      // store modifiers
-      check_kind(m_forms, [&](const render_base *rb, one_form &of) -> bool {
-        if ( !f(rb) ) return 0;
-        const C *rc = (const C *)rb;
-        if ( m_minus ) {
-          std::string mname = rc->name;
-          mname += "@negate";
-          of.l_kv[mname] = 1;
-        }
-        if ( m_abs ) {
-          std::string mname = rc->name;
-          mname += "@absolute";
-          of.l_kv[mname] = 1;
-        }
-        return 1;
-      });
-    }
+    apply_mem_attrs<C>(f);
   }
   // reset modifiers
   m_minus = m_abs = 0;
