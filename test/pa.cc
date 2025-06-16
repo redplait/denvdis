@@ -1165,9 +1165,30 @@ int ParseSASS::apply_enum(const std::string_view &s)
   printf("en\n");
 #endif
     auto aiter = en->second->find(ename);
-    return aiter != en->second->end();
+    if ( aiter == en->second->end() ) return 0;
+    // store in local kv
+    of.l_kv[rn->name] = aiter->second;
+    // and attributes
+    if ( m_tilda ) {
+      std::string tname = rn->name;
+      tname += "@invert";
+      of.l_kv[tname] = 1;
+    }
+    if ( m_abs ) {
+      std::string tname = rn->name;
+      tname += "@absolute";
+      of.l_kv[tname] = 1;
+    }
+    if ( m_minus ) {
+      std::string tname = rn->name;
+      tname += "@negate";
+      of.l_kv[tname] = 1;
+    }
+    return 1;
   });
   if ( !res ) return res;
+  // reset modifiers
+  m_tilda = m_abs = m_minus = 0;
   // tail
   if ( last < (int)s.size() ) res = enum_tail(last, s);
   return res;
