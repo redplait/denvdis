@@ -444,6 +444,23 @@ int ParseSASS::reduce_value()
             f.l_kv[rn->name] = l;
           } else if ( vas->kind == NV_BITSET || vas->kind == NV_UImm )
             f.l_kv[rn->name] = m_v;
+          // for cases when float number didn't contained '.' and so was readed in parse_hex_tail into m_v
+          // also need to take into account m_minus here
+          else if ( vas->kind == NV_F64Imm )
+          {
+            double d = (double)this->m_v;
+            if ( m_minus ) d = -d;
+            f.l_kv[rn->name] = *(uint64_t *)&d;
+          } else if ( vas->kind == NV_F32Imm ) {
+            float fl = (float)this->m_v;
+            if ( m_minus ) fl = -fl;
+            uint64_t v;
+            *(float *)&v = fl;
+            f.l_kv[rn->name] = v;
+          } else if ( vas->kind == NV_F16Imm ) {
+            uint64_t v = fp16_ieee_from_fp32_value(float(m_minus ? -m_v : m_v));
+            f.l_kv[rn->name] = v;
+          }
         }
       }
       return 1;
@@ -457,15 +474,13 @@ int ParseSASS::reduce_value()
         if ( vas ) {
           uint64_t v;
           if ( vas->kind == NV_F64Imm ) {
-            if ( m_minus ) this->m_d = -this->m_d;
             f.l_kv[rn->name] = *(uint64_t *)&this->m_d;
           } else if ( vas->kind == NV_F32Imm ) {
             float fl = (float)this->m_d;
-            if ( m_minus ) fl = -fl;
             *(float *)&v = fl;
             f.l_kv[rn->name] = v;
           } else if ( vas->kind == NV_F16Imm ) {
-            v = fp16_ieee_from_fp32_value((float)(m_minus ? -this->m_d : this->m_d));
+            v = fp16_ieee_from_fp32_value(float(this->m_d));
             f.l_kv[rn->name] = v;
           }
         }
