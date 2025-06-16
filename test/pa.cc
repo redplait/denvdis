@@ -758,6 +758,7 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
 template <typename C, typename F>
 int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
 {
+  if ( s.at(idx) == '-' ) idx++;
   // find ]
   int li = idx;
   for ( ; li < (int)s.size(); ++li ) if ( s.at(li) == ']' ) break;
@@ -806,6 +807,31 @@ int ParseSASS::parse_c_left(int idx, const std::string &s, F &&f)
   constexpr bool has_right = requires(const C& t) {
     t.right;
   };
+  constexpr bool has_name = requires(const C& t) {
+    t.name;
+  };
+  if constexpr ( has_name ) {
+    if ( m_minus || m_abs ) {
+      // store modifiers
+      check_kind(m_forms, [&](const render_base *rb, one_form &of) -> bool {
+        if ( !f(rb) ) return 0;
+        const C *rc = (const C *)rb;
+        if ( m_minus ) {
+          std::string mname = rc->name;
+          mname += "@negate";
+          of.l_kv[mname] = 1;
+        }
+        if ( m_abs ) {
+          std::string mname = rc->name;
+          mname += "@absolute";
+          of.l_kv[mname] = 1;
+        }
+        return 1;
+      });
+    }
+  }
+  // reset modifiers
+  m_minus = m_abs = 0;
   std::string_view tail;
   if constexpr ( has_right )
   {
