@@ -216,6 +216,7 @@ class ParseSASS: public NV_renderer
      return !f.empty();
    }
 
+   int set_num_value(const nv_vattr *, const char *name, one_form &f);
    typedef std::vector< std::pair<const std::list<ve_base> *, one_form *> > OFRights;
    template <typename C, typename F>
     OFRights collect_rights(F &&);
@@ -229,6 +230,8 @@ class ParseSASS: public NV_renderer
     int parse_hex_tail(int idx, const C &s, int radix);
    template <typename C>
     int parse_float_tail(int idx, const C &s);
+   int try_plus(const std::string_view &s, int start, int end, std::list<std::string_view> &elist);
+   int parse_dot(const std::string_view &s, int start, int end, std::list<std::string_view> &elist);
    int parse_req(const char *s);
    int parse_digit(const char *s, int &v);
    int parse_pred(int idx, const std::string &s);
@@ -431,6 +434,35 @@ int ParseSASS::reduce(int kind)
   return apply_kind(m_forms, cl);
 }
 
+int ParseSASS::set_num_value(const nv_vattr *vas, const char *name, one_form &of)
+{
+  if ( !vas ) return 0;
+  if ( vas->kind == NV_SImm || vas->kind == NV_SSImm || vas->kind == NV_RSImm ) {
+    long l = (long)m_v;
+    if ( m_minus ) l = -l;
+    of.l_kv[name] = l;
+  } else if ( vas->kind == NV_BITSET || vas->kind == NV_UImm )
+    of.l_kv[name] = m_v;
+  // for cases when float number didn't contained '.' and so was readed in parse_hex_tail into m_v
+  // also need to take into account m_minus here
+  else if ( vas->kind == NV_F64Imm )
+  {
+    double d = (double)this->m_v;
+    if ( m_minus ) d = -d;
+    of.l_kv[name] = *(uint64_t *)&d;
+  } else if ( vas->kind == NV_F32Imm ) {
+    float fl = (float)this->m_v;
+    if ( m_minus ) fl = -fl;
+    uint64_t v;
+    *(float *)&v = fl;
+    of.l_kv[name] = v;
+  } else if ( vas->kind == NV_F16Imm ) {
+    uint64_t v = fp16_ieee_from_fp32_value(float(m_minus ? -m_v : m_v));
+    of.l_kv[name] = v;
+  }
+  return 1;
+}
+
 int ParseSASS::reduce_value()
 {
   if ( m_numv == NumV::num ) {
@@ -438,32 +470,7 @@ int ParseSASS::reduce_value()
       if ( rb->type != R_value ) return 0;
       if ( f.instr->vas ) {
         const render_named *rn = (const render_named *)rb;
-        auto vas = find(f.instr->vas, rn->name);
-        if ( vas ) {
-          if ( vas->kind == NV_SImm || vas->kind == NV_SSImm || vas->kind == NV_RSImm ) {
-            long l = (long)m_v;
-            if ( m_minus ) l = -l;
-            f.l_kv[rn->name] = l;
-          } else if ( vas->kind == NV_BITSET || vas->kind == NV_UImm )
-            f.l_kv[rn->name] = m_v;
-          // for cases when float number didn't contained '.' and so was readed in parse_hex_tail into m_v
-          // also need to take into account m_minus here
-          else if ( vas->kind == NV_F64Imm )
-          {
-            double d = (double)this->m_v;
-            if ( m_minus ) d = -d;
-            f.l_kv[rn->name] = *(uint64_t *)&d;
-          } else if ( vas->kind == NV_F32Imm ) {
-            float fl = (float)this->m_v;
-            if ( m_minus ) fl = -fl;
-            uint64_t v;
-            *(float *)&v = fl;
-            f.l_kv[rn->name] = v;
-          } else if ( vas->kind == NV_F16Imm ) {
-            uint64_t v = fp16_ieee_from_fp32_value(float(m_minus ? -m_v : m_v));
-            f.l_kv[rn->name] = v;
-          }
-        }
+        set_num_value(find(f.instr->vas, rn->name), rn->name, f);
       }
       return 1;
     });
@@ -586,10 +593,13 @@ inline int is_msep(char c) {
 }
 
 // try extract next enum after '+'
-int try_plus(const std::string_view &s, int start, int end, std::list<std::string_view> &elist)
+int ParseSASS::try_plus(const std::string_view &s, int start, int end, std::list<std::string_view> &elist)
 {
-  if ( s.at(start) == '-' ) start++; // [R6+-0x50] from sm_120
-  if ( start + 2 <= end && s.at(start) == '0' && s.at(start+1) == 'x' ) return 0; // hex
+  if ( s.at(start) == '-' ) { m_minus = 1; start++; } // [R6+-0x50] from sm_120
+  if ( start + 2 < end && s.at(start) == '0' && s.at(start+1) == 'x' ) {
+    parse_hex_tail(start + 2, s, 16);
+    return 0; // hex
+  }
   int digit = 1;
   int ti = start;
   for ( ; ti < end; ++ti ) {
@@ -601,16 +611,19 @@ int try_plus(const std::string_view &s, int start, int end, std::list<std::strin
       return 1;
     }
   }
-  if ( digit ) return 0;
+  if ( digit ) {
+    parse_hex_tail(start, s, 10);
+    return 0;
+  }
   if ( ti == end ) {
     elist.push_back({ s.data() + start, size_t(end - start) });
     return 1;
-  };
+  }
   return 0;
 }
 
 // try extract second enum ater '.'
-int parse_dot(const std::string_view &s, int start, int end, std::list<std::string_view> &elist)
+int ParseSASS::parse_dot(const std::string_view &s, int start, int end, std::list<std::string_view> &elist)
 {
   int i = start;
   for ( ; i < end; i++ )
@@ -625,7 +638,7 @@ int parse_dot(const std::string_view &s, int start, int end, std::list<std::stri
   if ( i == end ) {
     elist.push_back({ s.data() + start, size_t(end - start) });
     return 1;
-  };
+  }
   return 0;
 }
 
@@ -659,15 +672,19 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
   if ( opt_d ) {
     printf("mem_right: "); dump_outln(s);
   }
+  m_minus = 0;
   // find last ']' and check if we have tail like c[0x0] [0x8].H1
   int ri = idx;
+  if ( s.at(idx) == '-' ) { m_minus = 1; idx++; }
   for ( ; ri < (int)s.size(); ++ri ) if ( s.at(ri) == ']' ) break;
   // check right part - if it contains number value
   int type = R_enum;
   std::string_view ename;
   std::list<std::string_view> enums;
-  if ( s.at(idx) == '0' && s.at(idx+1) == 'x' ) type = R_value;
-  else {
+  if ( s.at(idx) == '0' && s.at(idx+1) == 'x' ) {
+   parse_hex_tail(idx + 2, s, 16);
+   type = R_value;
+  } else {
     int dig = 1;
     int ti = idx;
     for ( ; ti < ri; ++ti ) {
@@ -686,8 +703,10 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
         break;
       }
     }
-    if ( dig ) type = R_value;
-    else if ( ti == ri ) ename = { s.data() + idx, size_t(ti - idx) };
+    if ( dig ) {
+      type = R_value;
+      parse_hex_tail(idx, s, 10);
+    } else if ( ti == ri ) ename = { s.data() + idx, size_t(ti - idx) };
     idx = ti;
   }
   if ( opt_d ) {
@@ -740,7 +759,11 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
     } else if ( type == R_value ) {
       // check first item in p.first
       for ( auto &vb: *p.first ) {
-       if ( vb.type == type ) { match = 1; break; };
+       if ( vb.type == type ) {
+         // patch l_kv here
+         p.second->l_kv[vb.arg] = m_v;
+         match = 1; break;
+       }
        if ( vb.type != R_enum ) break;
        // check enum
        auto ea = find_ea(p.second->instr, vb.arg);
@@ -785,6 +808,20 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
       return di != to_del.end();
     });
     if ( m_forms.empty() ) return 0;
+  }
+  // here we filled l_kv for single R_value or enums values
+  // hovewer when we have some value and enums list - it's still not saved in l_kv
+  if ( !enums.empty() && m_v ) {
+    std::for_each(m_forms.begin(), m_forms.end(), [&](one_form &of) {
+     if ( !of.instr->vas ) return;
+     if ( !f((*of.current)->rb) ) return;
+     const C *rc = (const C *)(*of.current)->rb;
+     for ( auto &rci: rc->right ) {
+       if ( rci.type == R_value ) {
+         if ( set_num_value(find(of.instr->vas, rci.arg), rci.arg, of) ) break;
+       }
+     }
+    });
   }
   constexpr bool has_name = requires(const C& t) {
     t.name;
