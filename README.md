@@ -17,4 +17,4 @@ sass disassembler - of course not a complete replica of nvdisasm, instead it can
 interactive sass [assembler](https://redplait.blogspot.com/2025/05/nvidia-sass-assembler.html)
 
 ### pa
-parser of nvdisasm output
+parser of nvdisasm output - some [details](https://redplait.blogspot.com/2025/06/nvdisasm-sass-parser.html)
