@@ -111,11 +111,12 @@ class ParseSASS: public NV_renderer
      {
        for ( auto ci = f.current; ci != f.ops.end(); ++ci )
        {
-         if constexpr ( arity == 2 ) {
-           if ( pred((*ci)->rb, f) ) { res++; break; }
-         } else {
-           if ( pred((*ci)->rb) ) { res++; break; }
-         }
+         int pres;
+         if constexpr ( arity == 2 )
+           pres = pred((*ci)->rb, f);
+         else
+           pres = pred((*ci)->rb);
+         if ( pres ) { res++; break; }
          if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
@@ -156,9 +157,12 @@ class ParseSASS: public NV_renderer
      std::erase_if(f, [&](one_form &f) {
        for ( auto ci = f.current; ci != f.ops.end(); ci++ )
        {
-         if constexpr ( arity == 2 ) {
-           if ( pred((*ci)->rb, f) ) { f.current = ci; return 0; }
-         } else { if ( pred((*ci)->rb) ) { f.current = ci; return 0; } }
+         int pres;
+         if constexpr ( arity == 2 )
+           pres = pred((*ci)->rb, f);
+         else
+           pres = pred((*ci)->rb);
+         if ( pres ) { f.current = ci; return 0; }
          if ( (*ci)->rb->type == R_predicate ) {
            // check if those predicate has default
            const render_named *rn = (const render_named *)(*ci)->rb;
@@ -650,6 +654,7 @@ void ParseSASS::apply_mem_attrs(F &&f)
    check_kind(m_forms, [&](const render_base *rb, one_form &of) -> bool {
      if ( !f(rb) ) return 0;
      const C *rc = (const C *)rb;
+     if ( !rc->name ) return 0;
      if ( m_minus ) {
        std::string mname = rc->name;
        mname += "@negate";
@@ -810,7 +815,7 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
     if ( m_forms.empty() ) return 0;
   }
   // here we filled l_kv for single R_value or enums values
-  // hovewer when we have some value and enums list - it's still not saved in l_kv
+  // however when we have some value and enums list - it's still not saved in l_kv
   if ( !enums.empty() && m_v ) {
     std::for_each(m_forms.begin(), m_forms.end(), [&](one_form &of) {
      if ( !of.instr->vas ) return;
@@ -823,6 +828,7 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
      }
     });
   }
+  m_minus = 0;
   constexpr bool has_name = requires(const C& t) {
     t.name;
   };
