@@ -639,7 +639,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
           tmp = buf;
           // make (LABEL_xxx)
           snprintf(buf, 127, " (LABEL_%lX)", branch_off + m_dis->off_next());
-          if ( l ) l->insert(branch_off + m_dis->off_next());
+          if ( l ) (*l)[branch_off + m_dis->off_next()] = 0;
           tmp += buf;
         } else
           dump_value(i, kv, rn->name, tmp, *vi, kvi->second);

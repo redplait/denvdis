@@ -636,7 +636,7 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
             uint32_t addr = *(uint32_t *)(bcurr),
               lab = *(uint32_t *)(bcurr + 0xc);
  // fprintf(m_out, "addr %lX label %X\n", addr, lab);
-            ib->labels.insert(lab);
+            ib->labels[lab] = 0;
             ib->branches[addr] = lab;
           }
         }

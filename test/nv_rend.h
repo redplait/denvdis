@@ -9,7 +9,16 @@
 #include <unordered_set>
 #include "include/nv_types.h"
 
-typedef std::unordered_set<uint32_t> NV_labels;
+// labels type
+enum NVLType {
+  Label = 0,
+  Warp_wide = 10, // from EIATTR_INT_WARP_WIDE_INSTR_OFFSETS
+  Coop_grp, // EIATTR_COOP_GROUP_INSTR_OFFSETS
+  Exit,     // EIATTR_EXIT_INSTR_OFFSETS
+  S2Rctaid, // EIATTR_S2RCTAID_INSTR_OFFSETS
+};
+
+typedef std::unordered_map<uint32_t, int> NV_labels;
 
 enum NV_LType {
   BRANCH_TARGET = 1,
