@@ -12,7 +12,7 @@
 // labels type
 enum NVLType {
   Label = 0,
-  Warp_wide = 10, // from EIATTR_INT_WARP_WIDE_INSTR_OFFSETS
+  Warp_wide = 1, // from EIATTR_INT_WARP_WIDE_INSTR_OFFSETS
   Coop_grp, // EIATTR_COOP_GROUP_INSTR_OFFSETS
   Exit,     // EIATTR_EXIT_INSTR_OFFSETS
   S2Rctaid, // EIATTR_S2RCTAID_INSTR_OFFSETS
@@ -258,5 +258,6 @@ class NV_renderer {
    // static fields
    static const char *s_fmts[];
    static const char *s_labels[];
+   static const char *s_ltypes[];
    static std::map<int, std::pair<const char *, const char *> > s_sms;
 };

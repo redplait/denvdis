@@ -29,8 +29,15 @@ std::map<int, std::pair<const char *, const char *> > NV_renderer::s_sms = {
  { 0x78, { "sm120", nullptr } },
 };
 
+const char *NV_renderer::s_ltypes[] = {
+ "" /* 0 */,
+ "WARP_WIDE_INSTR",
+ "COOP_GROUP_INSTR",
+ "EXIT_INSTR",
+ "S2RCTAID_INSTR",
+};
+
 const char *NV_renderer::s_labels[] = {
- nullptr /* 0 */,
  "BRANCH_TARGET",
  "LABEL",
  "32LO",
