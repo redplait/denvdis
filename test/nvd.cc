@@ -441,6 +441,7 @@ class nv_dis: public NV_renderer
         sfilters, sfilters_succ, scond_count, scond_succ, scond_hits);
    }
   protected:
+   void fill_eaddrs(NV_labels *, int ltype, const char *, int alen);
    void try_dis(Elf_Word idx);
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
    void hdump_section(section *);
@@ -471,7 +472,7 @@ static const char *s_brts[4] = {
 void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
 {
   m_missed.clear();
-  fprintf(m_out, "%s line %d n %d", p.first->name, p.first->line, p.first->n);
+  fprintf(m_out, "; %s line %d n %d", p.first->name, p.first->line, p.first->n);
   if ( p.first->brt ) fprintf(m_out, " %s", s_brts[p.first->brt-1]);
   if ( p.first->alt ) fprintf(m_out, " ALT");
   auto rend = m_dis->get_rend(p.first->n);
@@ -532,8 +533,12 @@ void nv_dis::try_dis(Elf_Word idx)
     uint32_t curr_label = 0;
     if ( branches ) {
       auto li = branches->labels.find(off);
-      if ( li != branches->labels.end() )
-        fprintf(m_out, "LABEL_%lX:\n", off);
+      if ( li != branches->labels.end() ) {
+        if ( li->second )
+          fprintf(m_out, "LABEL_%lX: ; %s\n", off, s_ltypes[li->second]);
+        else
+          fprintf(m_out, "LABEL_%lX:\n", off);
+      }
       auto bi = branches->branches.find(off);
       if ( bi != branches->branches.end() )
         curr_label = bi->second;
@@ -601,6 +606,7 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
     char attr = data[1];
     unsigned short a_len;
     auto a_i = s_ei.find(attr);
+    int ltype = 0;
     if ( a_i != s_ei.end() )
       fprintf(m_out, "%lX: %s", data - start, a_i->second);
     else
@@ -627,7 +633,19 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
         fprintf(m_out, " len %4.4X\n", a_len);
         if ( data + 4 + a_len <= end && opt_h )
           HexDump(m_out, (const unsigned char *)(data + 4), a_len);
-        if ( attr == 0x34 ) {
+        if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
+          ltype = NVLType::Coop_grp;
+        else if ( attr == 0x1c ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
+          ltype = NVLType::Exit;
+        else if ( attr == 0x1d ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
+          ltype = NVLType::S2Rctaid;
+        else if ( attr == 0x31 ) // EIATTR_INT_WARP_WIDE_INSTR_OFFSETS
+          ltype = NVLType::Warp_wide;
+        // read offsets
+        if ( ltype ) {
+          auto ib = get_branch(sec->get_info());
+          fill_eaddrs(&ib->labels, ltype, data, a_len);
+        } else if ( attr == 0x34 ) {
           // collect indirect branches
           auto ib = get_branch(sec->get_info());
           for ( const char *bcurr = data + 4; data + 4 + a_len - bcurr >= 0x10; bcurr += 0x10 ) {
@@ -646,6 +664,15 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
         format, idx, data - start, sec->get_name().c_str());
          return;
     }
+  }
+}
+
+void nv_dis::fill_eaddrs(NV_labels *l, int ltype, const char *data, int alen)
+{
+  for ( const char *bcurr = data + 4; data + 4 + alen - bcurr >= 0x4; bcurr += 0x4 )
+  {
+    uint32_t addr = *(uint32_t *)(bcurr);
+    (*l)[addr] = ltype;
   }
 }
 
