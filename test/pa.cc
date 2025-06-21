@@ -1788,6 +1788,7 @@ int main(int argc, char **argv)
     auto fs = new Fstr(argv[optind]);
     if ( !fs->is_open() ) {
       printf("cannot open %s\n", argv[optind]);
+      delete fs;
       return 1;
     }
     is = fs;
@@ -1810,6 +1811,7 @@ int main(int argc, char **argv)
    forms = 0;
   for( ; std::getline(*is->is, s); ++ln ) {
     std::smatch matches;
+// printf("line %d state %d\n", ln, state);
     if ( !state ) {
       if ( std::regex_search(s, matches, tgt) ) {
         if ( !pa.init(matches[1].str()) ) return 2; else state = 1;

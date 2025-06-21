@@ -2,7 +2,8 @@
 #include "nv_rend.h"
 #include <unistd.h>
 
-int opt_e = 0,
+int opt_c = 0,
+    opt_e = 0,
     opt_h = 0,
     opt_m = 0,
     opt_t = 0,
@@ -428,7 +429,8 @@ class nv_dis: public NV_renderer
      std::string sm_name = "./";
      sm_name += smi->second.second ? smi->second.second : smi->second.first;
      sm_name += ".so";
-     printf("load %s\n", sm_name.c_str());
+     if ( opt_c ) printf(".target sm_%d\n", sm);
+     else printf("load %s\n", sm_name.c_str());
      return NV_renderer::load(sm_name);
    }
    void process();
@@ -489,7 +491,9 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
     }
     fputc('\n', m_out);
     // body of instruction
-    fputc('>', m_out);
+    if ( opt_c ) {
+      fprintf(m_out, " /*%lX*/ ", m_dis->offset());
+    } else fputc('>', m_out);
     if ( dual_first ) fputs(" {", m_out);
     else if ( dual_last ) fputs("  ", m_out);
     if ( label )
@@ -497,6 +501,7 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
     else
       fprintf(m_out, " %s", r.c_str());
     if ( dual_last ) fputs(" }", m_out);
+    if ( opt_c ) fputc(';', m_out);
     fputc('\n', m_out);
   } else
     fprintf(m_out, " NO_Render\n");
@@ -785,6 +790,8 @@ void nv_dis::process()
     if ( !strncmp(sname.c_str(), ".text.", 6) )
     {
       m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size() );
+      if ( opt_c )
+       fprintf(m_out, "\t.section %s\n", sname.c_str());
       try_dis(i);
     }
   }
@@ -814,9 +821,10 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "ehmrtNOpSs:o:");
+    c = getopt(argc, argv, "cehmrtNOpSs:o:");
     if ( c == -1 ) break;
     switch(c) {
+      case 'c': opt_c = 1; break;
       case 'e': opt_e = 1; break;
       case 'h': opt_h = 1; break;
       case 'm': opt_m = 1; break;
