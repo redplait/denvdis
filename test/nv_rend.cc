@@ -622,7 +622,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
   int prev = -1;  // workaround to fix op, bcs testcc is missed
   for ( auto ri: *rl ) {
     std::string tmp;
-    int is_abs = 0;
+    int is_abs = 0, empty = 0;
     switch(ri->type)
     {
       case R_opcode:
@@ -721,11 +721,11 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
          // now we have enum attr in ea and value in kvi
          // we have 2 cases - if this attr has ignore and !print and value == def_value - we should skip it
          if ( ea->has_def_value && ea->def_value == (int)kvi->second && ea->ignore && !ea->print ) {
-           idx++; continue;
+           idx++; empty = 1; continue;
          }
-         if ( ea->ignore ) res += '.';
+         if ( ea->ignore ) { res += '.'; empty = 1; }
          else {
-           if ( rn->pfx ) {
+           if ( rn->pfx && prev != R_opcode ) {
              if ( '?' == rn->pfx ) res += ' ';
              res += rn->pfx;
            } else res += ' ';
@@ -759,7 +759,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
            missed++;
            break;
          }
-         if ( ea->def_value == (int)kvi->second ) break;
+         if ( ea->def_value == (int)kvi->second ) { empty = 1; break; }
          if ( rn->pfx ) res += rn->pfx;
          if ( rn->mod ) check_mod(rn->mod, kv, rn->name, res);
          auto eid = ea->em->find(kvi->second);
@@ -775,7 +775,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
       case R_C:
       case R_CX: {
          const render_C *rn = (const render_C *)ri;
-         if ( rn->pfx ) res += rn->pfx;
+         if ( rn->pfx && prev != R_opcode ) res += rn->pfx;
          else res += ' ';
          if ( rn->mod ) check_mod(rn->mod, kv, rn->name, res);
          if ( rn->abs ) is_abs = check_abs(kv, rn->name, res);
@@ -789,7 +789,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
 
       case R_TTU: {
          const render_TTU *rt = (const render_TTU *)ri;
-         if ( rt->pfx ) res += rt->pfx;
+         if ( rt->pfx && prev != R_opcode ) res += rt->pfx;
          else res += ' ';
          res += "ttu[";
          missed += render_ve(rt->left, i, kv, res);
@@ -798,7 +798,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
 
       case R_M1: {
          const render_M1 *rt = (const render_M1 *)ri;
-         if ( rt->pfx ) res += rt->pfx;
+         if ( rt->pfx && prev != R_opcode ) res += rt->pfx;
          else res += ' ';
          res += rt->name;
          res += "[";
@@ -808,7 +808,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
 
       case R_desc: {
          const render_desc *rt = (const render_desc *)ri;
-         if ( rt->pfx ) res += rt->pfx;
+         if ( rt->pfx && prev != R_opcode ) res += rt->pfx;
          else res += ' ';
          res += "desc[";
          missed += render_ve(rt->left, i, kv, res);
@@ -819,7 +819,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
 
       case R_mem: {
          const render_mem *rt = (const render_mem *)ri;
-         if ( rt->pfx ) res += rt->pfx;
+         if ( rt->pfx && prev != R_opcode ) res += rt->pfx;
          else res += ' ';
          res += "[";
          missed += render_ve_list(rt->right, i, kv, res);
@@ -828,7 +828,8 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
 
       default: fprintf(stderr, "unknown rend type %d at index %d for inst %s\n", ri->type, idx, i->name);
     }
-    prev = ri->type;
+    if ( !empty )
+      prev = ri->type;
     idx++;
   }
   return missed;
