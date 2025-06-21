@@ -613,7 +613,8 @@ void NV_renderer::r_ve(const ve_base &ve, std::string &res) const
   res += ve.arg;
 }
 
-int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i, const NV_extracted &kv, NV_labels *l) const
+int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i,
+ const NV_extracted &kv, NV_labels *l, int opt_c) const
 {
   int idx = 0;
   int missed = 0;
@@ -629,6 +630,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
        break;
 
       case R_value: {
+        char buf[128];
         const render_named *rn = (const render_named *)ri;
         auto kvi = kv.find(rn->name);
         if ( kvi == kv.end() ) {
@@ -639,19 +641,61 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
         auto vi = find(i->vas, rn->name);
         if ( !vi ) { missed++; break; }
         if ( vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4) ) was_bs = 1;
-        long branch_off = 0;
-        if ( check_branch(i, kvi, branch_off) ) {
-          char buf[128];
-          snprintf(buf, 127, "%ld", branch_off);
-          tmp = buf;
-          // make (LABEL_xxx)
-          snprintf(buf, 127, " (LABEL_%lX)", branch_off + m_dis->off_next());
-          if ( l ) (*l)[branch_off + m_dis->off_next()] = 0;
-          tmp += buf;
-        } else
-          dump_value(i, kv, rn->name, tmp, *vi, kvi->second);
-        if ( rn->pfx ) { if ( prev != R_opcode ) res += rn->pfx; res += ' '; }
-        else if ( was_bs ) res += " &";
+        if ( was_bs && opt_c ) {
+          // unfortunatelly nvdisasm can dump only 4 fields at tail
+          // req_bit_set: &req={bit mask}
+          // src_rel_sb: &rd=0xnum
+          // dst_wr_sb:  &wr=0xnum
+          // usched_info: &enum_name
+          // two last - batch_t & pm_pred - should be ignored
+          // so lets check what we have
+          if ( !strcmp(rn->name, "req_bit_set") ) {
+            if ( kvi->second ) {
+              tmp = " &req={";
+              for ( int bi = 0; bi < 6; bi++ ) {
+                if ( kvi->second & (1 << bi) ) {
+                  tmp += std::to_string(bi);
+                  tmp.push_back(',');
+                }
+              }
+              tmp.pop_back();
+              tmp.push_back('}');
+            }
+          } else if ( !strcmp(rn->name, "src_rel_sb") ) {
+            if ( kvi->second ) {
+             tmp = " &rd=0x";
+             snprintf(buf, 127, "%lX", kvi->second);
+             tmp += buf;
+            }
+          } else if ( !strcmp(rn->name, "dst_wr_sb") ) {
+            if ( kvi->second ) {
+             tmp = " &wr=0x";
+             snprintf(buf, 127, "%lX", kvi->second);
+             tmp += buf;
+            }
+          } else if ( !strcmp(rn->name, "usched_info") ) {
+            dump_value(i, kv, rn->name, tmp, *vi, kvi->second);
+            tmp += ' ';
+            res += " ?";
+          }
+        } else {
+          long branch_off = 0;
+          if ( check_branch(i, kvi, branch_off) ) {
+            // make (LABEL_xxx)
+            if ( opt_c )
+              snprintf(buf, 127, " `(LABEL_%lX)", branch_off + m_dis->off_next());
+            else {
+              snprintf(buf, 127, "%ld", branch_off);
+              tmp = buf;
+              snprintf(buf, 127, " (LABEL_%lX)", branch_off + m_dis->off_next());
+            }
+            if ( l ) (*l)[branch_off + m_dis->off_next()] = 0;
+            tmp += buf;
+          } else
+            dump_value(i, kv, rn->name, tmp, *vi, kvi->second);
+          if ( rn->pfx ) { if ( prev != R_opcode ) res += rn->pfx; res += ' '; }
+          else if ( was_bs ) res += " &";
+        }
         res += tmp;
        } break;
 
@@ -663,6 +707,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
            idx++;
            continue;
          }
+         if ( was_bs && opt_c ) continue;
          auto kvi = kv.find(rn->name);
          if ( kvi == kv.end() ) {
            kvi = kv.find(ea->ename);
@@ -734,7 +779,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
          else res += ' ';
          if ( rn->mod ) check_mod(rn->mod, kv, rn->name, res);
          if ( rn->abs ) is_abs = check_abs(kv, rn->name, res);
-         res += "c:[";
+         res += "c[";
          missed += render_ve(rn->left, i, kv, res);
          res += "][";
          missed += render_ve_list(rn->right, i, kv, res);
@@ -746,7 +791,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
          const render_TTU *rt = (const render_TTU *)ri;
          if ( rt->pfx ) res += rt->pfx;
          else res += ' ';
-         res += "ttu:[";
+         res += "ttu[";
          missed += render_ve(rt->left, i, kv, res);
          res += ']';
        } break;
@@ -756,7 +801,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
          if ( rt->pfx ) res += rt->pfx;
          else res += ' ';
          res += rt->name;
-         res += ":[";
+         res += "[";
          missed += render_ve(rt->left, i, kv, res);
          res += ']';
        } break;
@@ -765,9 +810,9 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
          const render_desc *rt = (const render_desc *)ri;
          if ( rt->pfx ) res += rt->pfx;
          else res += ' ';
-         res += "desc:[";
+         res += "desc[";
          missed += render_ve(rt->left, i, kv, res);
-         res += "],[";
+         res += "][";
          missed += render_ve_list(rt->right, i, kv, res);
          res += ']';
        } break;

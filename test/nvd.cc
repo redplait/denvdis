@@ -481,7 +481,7 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
   if ( rend ) {
     fprintf(m_out, " %ld render items", rend->size());
     std::string r;
-    int miss = render(rend, r, p.first, p.second, l);
+    int miss = render(rend, r, p.first, p.second, l, opt_c);
     if ( miss ) {
       fprintf(m_out, " %d missed", miss);
       if ( opt_m ) {

@@ -115,7 +115,7 @@ class NV_renderer {
    }
 
    bool check_dual(const NV_extracted &);
-   int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *) const;
+   int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *, int opt_c = 0) const;
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    int fill_sched(const struct nv_instr *, const NV_extracted &);
    int dump_sched(const struct nv_instr *, const NV_extracted &);

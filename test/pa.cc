@@ -1121,7 +1121,7 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
   // check for some unknown prefix for memory
   for ( int pi = idx + 1; pi < (int)tmp.size(); ++pi ) {
     if ( '[' == tmp.at(pi) ) {
-      fprintf(stderr, "[!] unknown memory prefix\n");
+      fprintf(stderr, "[!] unknown memory prefix: "); dump_outln(tmp, stderr);
       return 0;
     }
   }
@@ -1150,7 +1150,7 @@ std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
       if ( !usched ) break;
       // check if this enum exists
       std::string ename;
-      std::copy_if( s.begin() + i, s.end(), std::back_inserter(ename), [](char c) { return !isspace(c); });
+      std::copy_if( s.begin() + i, s.end(), std::back_inserter(ename), [](char c) { return !isspace(c) && c != '}';  });
       auto ei = usched->find(ename);
       if ( ei == usched->end() ) {
         printf("[!] unknown sched %s\n", ename.c_str());
