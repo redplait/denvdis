@@ -970,7 +970,7 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
   else if ( c == '~' ) { m_tilda = 1; c = s.at(++idx); };
   std::string_view tmp{ s.c_str() + idx, s.size() - idx};
   if ( tmp == "INF"sv ) { m_numv = NumV::inf; return reduce(R_value); }
-  if ( tmp == "QNAN"sv ) { m_numv = NumV::nan; return reduce(R_value); }
+  if ( tmp == "QNAN"sv || tmp == "nan"sv ) { m_numv = NumV::nan; return reduce(R_value); }
   auto cl = [](const render_base *rb) { return rb->type == R_C || rb->type == R_CX; };
   if ( tmp.starts_with("desc["sv) ) {
     auto dcl = [](const render_base *rb) { return rb->type == R_desc; };
