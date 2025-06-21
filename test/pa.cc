@@ -3,6 +3,7 @@
 #include <fp16.h>
 #include <regex>
 #include <unistd.h>
+#include <iostream>
 
 // black magic to get lambda arity from https://stackoverflow.com/questions/40411241/c-lambda-does-not-have-operator
 template <typename T>
@@ -1732,6 +1733,35 @@ void usage(const char *prog)
   exit(6);
 }
 
+class istr
+{
+  public:
+   std::istream *is = nullptr;
+   virtual ~istr() {}
+};
+
+class Istr: public istr
+{
+  public:
+   Istr() {
+     is = &std::cin;
+   }
+};
+
+class Fstr: public istr
+{
+  public:
+   virtual ~Fstr() {}
+   Fstr(const char *fname): m_f(fname) {
+     is = &m_f;
+   }
+   bool is_open() const {
+     return m_f.is_open();
+   }
+  protected:
+   std::ifstream m_f;
+};
+
 int main(int argc, char **argv)
 {
   int c, opt_S = 0;
@@ -1747,18 +1777,20 @@ int main(int argc, char **argv)
       case 's': opt_s = 1; break;
       case 'S': opt_S = 1; break;
       case 'v': opt_v = 1; break;
+      case '?':
       default: usage(argv[0]);
     }
   }
+  istr *is;
   if ( argc == optind ) {
-    printf("where is input file?\n");
-    usage(argv[0]);
-    return 6;
-  }
-  std::ifstream fs(argv[optind]);
-  if ( !fs.is_open() ) {
-    printf("cannot open %s\n", argv[optind]);
-    return 1;
+    is = new Istr();
+  } else {
+    auto fs = new Fstr(argv[optind]);
+    if ( !fs->is_open() ) {
+      printf("cannot open %s\n", argv[optind]);
+      return 1;
+    }
+    is = fs;
   }
   ParseSASS pa;
   int ln = 1, state = 0;
@@ -1776,7 +1808,7 @@ int main(int argc, char **argv)
   unsigned long total = 0,
    succ = 0,
    forms = 0;
-  for( ; std::getline(fs, s); ++ln ) {
+  for( ; std::getline(*is->is, s); ++ln ) {
     std::smatch matches;
     if ( !state ) {
       if ( std::regex_search(s, matches, tgt) ) {
@@ -1807,6 +1839,7 @@ int main(int argc, char **argv)
       }
     }
   }
+  delete is;
   if ( opt_S && total ) {
     printf("total %ld succ %ld forms %ld rate %f avg %f\n", total, succ, forms,
      (double)succ / (double)total, (double)forms / (double)total);
