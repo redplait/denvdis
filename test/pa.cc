@@ -553,7 +553,7 @@ int ParseSASS::reduce_pred(const std::string_view &s, int exclamation)
 #endif
   return apply_op(m_forms, [&](const form_list *fl, one_form &of) -> bool {
 #ifdef DEBUG
- dump(fl, instr);
+ dump(fl, of.instr);
 #endif
     if ( fl->rb->type != R_predicate && fl->rb->type != R_enum ) return 0;
     const render_named *rn = (const render_named *)fl->rb;
@@ -961,6 +961,7 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
   std::string s{ spaces == std::string::npos ? os.begin() : os.begin() + spaces, os.end() };
 #ifdef DEBUG
  printf("op %d %s\n", op_idx, s.c_str());
+ dump_forms();
 #endif
   int idx = 0;
   char c = s.at(idx);
@@ -1278,7 +1279,7 @@ int ParseSASS::apply_enum(const std::string_view &s)
     auto en = m_renums->find(ea->ename);
     if ( en == m_renums->end() ) return 0;
 #ifdef DEBUG
-  printf("en\n");
+  printf("en "); dump_outln(ename);
 #endif
     auto aiter = en->second->find(ename);
     if ( aiter == en->second->end() ) return 0;
@@ -1502,10 +1503,12 @@ int ParseSASS::add(const std::string &s)
       if ( !(*cold)->empty() ) {
        for ( auto &a: (*cold)->lr ) {
          if ( a.second->has_def_value ) continue;
+         // special case - check if a.second->en has exactly single value
+         if ( a.second->em->size() == 1 ) continue;
          const render_named *rn = (const render_named *)a.first;
          auto ki = of.l_kv.find(rn->name);
          if ( ki == of.l_kv.end() ) {
-           // dump(of); printf("%d no %s\n", of.instr->line, rn->name);
+//           dump(of); printf("%d no %s\n", of.instr->line, rn->name);
            return 1;
          }
        }
