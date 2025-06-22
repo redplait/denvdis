@@ -18,3 +18,5 @@ interactive sass [assembler](https://redplait.blogspot.com/2025/05/nvidia-sass-a
 
 ### pa
 parser of nvdisasm output - some [details](https://redplait.blogspot.com/2025/06/nvdisasm-sass-parser.html)
+
+You can run "strange loop" to consume output of nvd - for this later must use option *-c*
