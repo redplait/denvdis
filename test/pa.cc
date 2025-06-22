@@ -1496,15 +1496,20 @@ int ParseSASS::add(const std::string &s)
   int ares = add_internal(s);
   if ( !ares ) return 0;
   if ( opt_e ) return ares;
-  bool relax = 1 == m_forms.size();
   // final cut
-  std::erase_if(m_forms, [&](one_form &of) {
+  // there is big problem - when remained forms set is too small (or contains IMAD) - usually it removes
+  // all bcs some enums linked to opcode not presents in l_kv
+  // so trick is to try first non-relaxed mode and if there are no forms - set relax and do real removing
+  bool relax = 0;
+  int matched = 0;
+  auto try_upto = [&](one_form &of) {
      // check opcode operand
      for ( auto cold = of.ops.begin(); ; ++cold ) {
       if ( !(*cold)->empty() ) {
        for ( auto &a: (*cold)->lr ) {
          if ( a.second->has_def_value ) continue;
          // special case - check if a.second->en has exactly single value
+         // first pass relax is false so em->size is not even called
          if ( relax && a.second->em->size() == 1 ) continue;
          const render_named *rn = (const render_named *)a.first;
          auto ki = of.l_kv.find(rn->name);
@@ -1515,7 +1520,18 @@ int ParseSASS::add(const std::string &s)
        }
       }
       if ( cold == of.current ) break;
-     }
+    }
+    // if we here - this form was perfectly matched
+    matched++;
+    return 0;
+  };
+  // check matches
+  std::for_each(m_forms.begin(), m_forms.end(), try_upto);
+  // if no matches - set relax
+  if ( !matched ) relax = true;
+  // now perform real erasing
+  std::erase_if(m_forms, [&](one_form &of) {
+     if ( try_upto(of) ) return 1;
      if ( of.current == of.ops.end() ) return 0;
      auto ci = of.current;
      // check if we have some operands without default values behind last processed
