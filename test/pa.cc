@@ -237,6 +237,7 @@ class ParseSASS: public NV_renderer
     int parse_float_tail(int idx, const C &s);
    int try_plus(const std::string_view &s, int start, int end, std::list<std::string_view> &elist);
    int parse_dot(const std::string_view &s, int start, int end, std::list<std::string_view> &elist);
+   int parse_bitset(int idx, const std::string_view &s);
    int parse_req(const char *s);
    int parse_digit(const char *s, int &v);
    int parse_pred(int idx, const std::string &s);
@@ -384,6 +385,20 @@ int ParseSASS::parse_hex_tail(int idx, const C &s, int radix)
   if ( idx >= (int)s.size() ) return idx;
   // skip trailing spaces
   return cut_lspaces(idx, s);
+}
+
+// parse {list,of,digits}, assign result to m_v for next call of reduce_value
+int ParseSASS::parse_bitset(int idx, const std::string_view &s)
+{
+  m_v = 0;
+  m_numv = NumV::num;
+  for ( int i = idx; i < (int)s.size(); i++ ) {
+    char c = s.at(i);
+    if ( c == '}' ) return 1;
+    if ( isdigit(c) ) { m_v |= 1 << (c - '0'); continue; }
+    if ( c != ',' && !isspace(c) ) break;
+  }
+  return 0;
 }
 
 int ParseSASS::parse_req(const char *s)
@@ -1068,7 +1083,7 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
        } else return apply_enum(abs);
      }
     case '{': // hopefully this is bitset for DEPBAR
-     // TODO: add check like in parse_req
+     if ( parse_bitset(idx + 1, tmp) ) return reduce_value();
      return reduce(R_value);
     case '[': {
       auto dm = [](const render_base *rb) { return rb->type == R_mem; };

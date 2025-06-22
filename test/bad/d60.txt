@@ -1,0 +1,3 @@
+.headerflags    @"EF_CUDA_TEXMODE_UNIFIED EF_CUDA_64BIT_ADDRESS EF_CUDA_SM60 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM60)"
+ .section        .text.test
+/*1*/ DEPBAR.LE SB0, 0x0, {2} ;
