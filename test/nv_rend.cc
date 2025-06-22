@@ -636,10 +636,11 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
         if ( kvi == kv.end() ) {
           if ( opt_m ) m_missed.insert(rn->name);
           missed++;
+          empty = 1;
           break;
         }
         auto vi = find(i->vas, rn->name);
-        if ( !vi ) { missed++; break; }
+        if ( !vi ) { missed++; empty = 1; break; }
         if ( vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4) ) was_bs = 1;
         if ( was_bs && opt_c ) {
           // unfortunatelly nvdisasm can dump only 4 fields at tail
@@ -650,7 +651,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
           // two last - batch_t & pm_pred - should be ignored
           // so lets check what we have
           if ( !strcmp(rn->name, "req_bit_set") ) {
-            if ( kvi->second ) {
+            if ( kvi->second != vi->dval ) {
               tmp = " &req={";
               for ( int bi = 0; bi < 6; bi++ ) {
                 if ( kvi->second & (1 << bi) ) {
@@ -662,13 +663,13 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
               tmp.push_back('}');
             }
           } else if ( !strcmp(rn->name, "src_rel_sb") ) {
-            if ( kvi->second ) {
+            if ( kvi->second != vi->dval ) {
              tmp = " &rd=0x";
              snprintf(buf, 127, "%lX", kvi->second);
              tmp += buf;
             }
           } else if ( !strcmp(rn->name, "dst_wr_sb") ) {
-            if ( kvi->second ) {
+            if ( kvi->second != vi->dval ) {
              tmp = " &wr=0x";
              snprintf(buf, 127, "%lX", kvi->second);
              tmp += buf;
@@ -693,8 +694,9 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
             tmp += buf;
           } else
             dump_value(i, kv, rn->name, tmp, *vi, kvi->second);
-          if ( rn->pfx ) { if ( prev != R_opcode ) res += rn->pfx; res += ' '; }
-          else if ( was_bs ) res += " &";
+          if ( rn->pfx ) { if ( prev != R_opcode ) res += rn->pfx; }
+          res += ' ';
+          if ( !rn->pfx && was_bs ) res += '&';
         }
         res += tmp;
        } break;
@@ -761,6 +763,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
          }
          if ( ea->def_value == (int)kvi->second ) { empty = 1; break; }
          if ( rn->pfx ) res += rn->pfx;
+         else if ( idx ) res += ' ';
          if ( rn->mod ) check_mod(rn->mod, kv, rn->name, res);
          auto eid = ea->em->find(kvi->second);
          if ( eid != ea->em->end() )
