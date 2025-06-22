@@ -38,6 +38,12 @@ inline std::string& rstrip(std::string &s)
   return s;
 }
 
+float int_as_float(int);
+double longlong_as_double(long long);
+
+extern const float NVf_inf, NVf_nan;
+extern const double NVd_inf, NVd_nan;
+
 class NV_renderer {
  public:
    NV_renderer() {

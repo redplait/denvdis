@@ -1496,6 +1496,7 @@ int ParseSASS::add(const std::string &s)
   int ares = add_internal(s);
   if ( !ares ) return 0;
   if ( opt_e ) return ares;
+  bool relax = 1 == m_forms.size();
   // final cut
   std::erase_if(m_forms, [&](one_form &of) {
      // check opcode operand
@@ -1504,7 +1505,7 @@ int ParseSASS::add(const std::string &s)
        for ( auto &a: (*cold)->lr ) {
          if ( a.second->has_def_value ) continue;
          // special case - check if a.second->en has exactly single value
-         if ( a.second->em->size() == 1 ) continue;
+         if ( relax && a.second->em->size() == 1 ) continue;
          const render_named *rn = (const render_named *)a.first;
          auto ki = of.l_kv.find(rn->name);
          if ( ki == of.l_kv.end() ) {

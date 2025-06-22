@@ -56,6 +56,30 @@ const char *NV_renderer::s_fmts[] = {
  "f32"
 };
 
+// ripped from https://forums.developer.nvidia.com/t/int-as-float/1557/10
+float int_as_float(int a)
+{
+ union {int a; float b;} u;
+ u.a = a;
+ return u.b;
+}
+
+double longlong_as_double(long long a)
+{
+ union {long long a; double b;} u;
+ u.a = a;
+ return u.b;
+}
+
+// ripped from math_constants.h
+const float NVf_inf = int_as_float(0x7f800000),
+ NVf_nan = int_as_float(0x7fffffff);
+;
+
+const double NVd_inf = longlong_as_double(0x7ff0000000000000ULL),
+ NVd_nan = longlong_as_double(0xfff8000000000000ULL)
+;
+
 void NV_renderer::dis_stat() const
 {
   if ( dis_total )
