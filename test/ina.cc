@@ -780,15 +780,30 @@ int INA::patch_internal(Fields_Iter *what, const char *s, uint64_t &v)
      if ( !parse_arg(s, v) ) return 0;
      return 1;
     case NV_F64Imm:
-     d = atof(s);
+     if ( !strcmp(s, "nan") )
+       d = NVd_nan;
+     else if ( !strcmp(s, "inf") )
+       d = NVd_inf;
+     else
+       d = atof(s);
      v = *(uint64_t *)&d;
      return 1;
     case NV_F32Imm:
-     d = (float)atof(s);
+      if ( !strcmp(s, "nan") )
+       d = (float)NVf_nan;
+     else if ( !strcmp(s, "inf") )
+       d = (float)NVf_inf;
+     else
+       d = (float)atof(s);
      v = *(uint64_t *)&d;
      return 1;
     case NV_F16Imm:
-      fd = atof(s);
+      if ( !strcmp(s, "nan") )
+       fd = NVf_nan;
+      else if ( !strcmp(s, "inf") )
+       fd = NVf_inf;
+      else
+       fd = atof(s);
       v = fp16_ieee_from_fp32_value(fd);
      return 1;
     // signed int
