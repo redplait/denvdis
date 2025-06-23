@@ -38,6 +38,8 @@ inline std::string& rstrip(std::string &s)
   return s;
 }
 
+const char* get_merc_reloc_name(unsigned t);
+const char* get_cuda_reloc_name(unsigned t);
 float int_as_float(int);
 double longlong_as_double(long long);
 
