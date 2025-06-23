@@ -190,6 +190,18 @@ static std::map<unsigned int, const char *> s_sht = {
  { 0x70000075, "SHT_CUDA_CONSTANT_B17" },
 };
 
+struct asymbol
+{
+  std::string name;
+  Elf64_Addr addr;
+  Elf_Xword idx = 0;
+  Elf_Xword size = 0;
+  Elf_Half section;
+  unsigned char bind = 0,
+                type = 0,
+                other = 0;
+};
+
 // extracted from EIATTR_INDIRECT_BRANCH_TARGETS
 struct bt_per_section
 {
@@ -243,10 +255,13 @@ class nv_dis: public NV_renderer
    void fill_eaddrs(NV_labels *, int ltype, const char *, int alen);
    void try_dis(Elf_Word idx);
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
+   // boring ELF related stuff
    void hdump_section(section *);
    void dump_mrelocs(section *);
    void dump_crelocs(section *);
    void parse_attrs(Elf_Half idx, section *);
+   int read_symbols();
+   // branches
    bt_per_section *get_branch(Elf_Word i) {
      auto bi = m_branches.find(i);
      if ( bi != m_branches.end() ) return bi->second;
@@ -257,6 +272,7 @@ class nv_dis: public NV_renderer
 
    Elf_Half n_sec;
    elfio reader;
+   std::vector<asymbol> m_syms;
    // indirect branches
    std::unordered_map<Elf_Word, bt_per_section *> m_branches;
 };
@@ -267,6 +283,41 @@ static const char *s_brts[4] = {
  "BRT_BRANCH",
  "BRT_BRANCHOUT"
 };
+
+int nv_dis::read_symbols()
+{
+  section *sym_sec = nullptr;
+  for ( Elf_Half i = 0; i < n_sec; ++i )
+  {
+    section* sec = reader.sections[i];
+    if ( sec->get_type() == SHT_SYMTAB ) { sym_sec = sec; break; }
+  }
+  if ( !sym_sec ) return 0;
+  // read symtab
+  symbol_section_accessor symbols( reader, sym_sec );
+  Elf_Xword sym_no = symbols.get_symbols_num();
+  if ( !sym_no )
+  {
+    fprintf(m_out, "no symbols\n");
+    return 0;
+  }
+  if ( opt_t ) {
+    fprintf(m_out, "%ld symbols\n", sym_no);
+  }
+  for ( Elf_Xword i = 0; i < sym_no; ++i )
+  {
+    asymbol sym;
+    sym.idx = i;
+    symbols.get_symbol( i, sym.name, sym.addr, sym.size, sym.bind, sym.type, sym.section, sym.other );
+    if ( opt_t ) {
+      if ( sym.type != STT_SECTION )
+        fprintf(m_out, "[%ld] %lX sec %d type %d %s\n", i, sym.addr, sym.section, sym.type, sym.name.c_str());
+    }
+    if ( opt_r )
+      m_syms.push_back(sym);
+  }
+  return !m_syms.empty();
+}
 
 void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
 {
@@ -505,7 +556,10 @@ void nv_dis::dump_mrelocs(section *sec)
     Elf_Sxword add;
     if ( rsa.get_entry(i, addr, sym, type, add) ) {
       auto tname = get_merc_reloc_name(type);
-      fprintf(m_out, " [%ld] %lX sym %d add %lX", n, addr, sym, add);
+      // resolve symbol
+      asymbol *asym = nullptr;
+      if ( sym < m_syms.size() ) asym = &m_syms[sym];
+      fprintf(m_out, " [%ld] %lX sym %d %s add %lX", n, addr, sym, asym ? asym->name.c_str() : "", add);
       if ( tname )
        fprintf(m_out, " %s\n", tname);
       else
@@ -529,7 +583,10 @@ void nv_dis::dump_crelocs(section *sec)
     Elf_Sxword add;
     if ( rsa.get_entry(i, addr, sym, type, add) ) {
       auto tname = get_cuda_reloc_name(type);
-      fprintf(m_out, " [%ld] %lX sym %d add %lX", n, addr, sym, add);
+      // resolve symbol
+      asymbol *asym = nullptr;
+      if ( sym < m_syms.size() ) asym = &m_syms[sym];
+      fprintf(m_out, " [%ld] %lX sym %d %s add %lX", n, addr, sym, asym ? asym->name.c_str() : "", add);
       if ( tname )
        fprintf(m_out, " %s\n", tname);
       else
@@ -546,6 +603,8 @@ void nv_dis::process()
   }
   auto et = reader.get_type();
   fprintf(m_out, "type %X, %d sections\n", et, n_sec);
+  if ( opt_t || opt_r )
+    read_symbols();
   // enum sections
   for ( Elf_Half i = 0; i < n_sec; ++i )
   {
