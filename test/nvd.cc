@@ -202,6 +202,7 @@ struct asymbol
                 other = 0;
 };
 
+
 // extracted from EIATTR_INDIRECT_BRANCH_TARGETS
 struct bt_per_section
 {
@@ -252,6 +253,28 @@ class nv_dis: public NV_renderer
         sfilters, sfilters_succ, scond_count, scond_succ, scond_hits);
    }
   protected:
+   // relocs. key - offset
+   typedef std::map<unsigned long, NV_rel> SRels;
+   // key - section index
+   std::unordered_map<int, SRels> m_srels;
+   mutable SRels::const_iterator riter;
+   SRels::const_iterator riter_end;
+   virtual const NV_rel *next_reloc(std::string_view &sv) const {
+     if ( !has_relocs ) return nullptr;
+     const NV_rel *res = &riter->second;
+     auto &sym = m_syms[res->second];
+     sv = { sym.name.cbegin(), sym.name.cend() };
+     if ( ++riter == riter_end )
+       has_relocs = false;
+     else {
+       m_next_roff = riter->first;
+#ifdef DEBUG
+  fprintf(m_out, "next_roff %lX\n", m_next_roff);
+#endif
+     }
+     return res;
+   }
+   int fill_rels();
    void fill_eaddrs(NV_labels *, int ltype, const char *, int alen);
    void try_dis(Elf_Word idx);
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
@@ -311,12 +334,15 @@ int nv_dis::read_symbols()
     symbols.get_symbol( i, sym.name, sym.addr, sym.size, sym.bind, sym.type, sym.section, sym.other );
     if ( opt_t ) {
       if ( sym.type != STT_SECTION )
-        fprintf(m_out, "[%ld] %lX sec %d type %d %s\n", i, sym.addr, sym.section, sym.type, sym.name.c_str());
+        fprintf(m_out, " [%ld] %lX sec %d type %d %s\n", i, sym.addr, sym.section, sym.type, sym.name.c_str());
     }
     if ( opt_r )
       m_syms.push_back(sym);
   }
-  return !m_syms.empty();
+  int res = !m_syms.empty();
+  if ( !res ) return res;
+  if ( opt_r ) return fill_rels();
+  return res;
 }
 
 void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
@@ -360,6 +386,16 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
 void nv_dis::try_dis(Elf_Word idx)
 {
   auto branches = get_branch(idx);
+  auto rels = m_srels.find(idx);
+  if ( rels != m_srels.end() ) {
+    has_relocs = true;
+    riter = rels->second.cbegin();
+    riter_end = rels->second.cend();
+    m_next_roff = riter->first;
+#ifdef DEBUG
+ fprintf(m_out, "idx %d size %ld first %lX\n", idx, rels->second.size(), m_next_roff);
+#endif
+  }
   dual_first = dual_last = false;
   while(1) {
     NV_res res;
@@ -593,6 +629,51 @@ void nv_dis::dump_crelocs(section *sec)
        fprintf(m_out, " type %d\n", type);
     }
   }
+}
+
+int nv_dis::fill_rels()
+{
+  for ( Elf_Half i = 0; i < n_sec; ++i ) {
+    section *sec = reader.sections[i];
+    auto st = sec->get_type();
+    if ( st == SHT_REL || st == SHT_RELA ) {
+      auto slink = sec->get_info();
+      section *ls = reader.sections[slink];
+#ifdef DEBUG
+ fprintf(m_out, "link %d %s\n", slink, ls->get_name().c_str());
+#endif
+      auto st2 = ls->get_type();
+      if ( st2 == SHT_NOBITS || !ls->get_size() ) continue;
+      if ( strncmp(ls->get_name().c_str(), ".text.", 6) ) continue;
+      // yup, this is our client
+      const_relocation_section_accessor rsa(reader, sec);
+      auto n = rsa.get_entries_num();
+      SRels srels;
+      for ( Elf_Xword ri = 0; ri < n; ri++ ) {
+        Elf64_Addr addr;
+        Elf_Word sym;
+        unsigned type;
+        Elf_Sxword add;
+        if ( rsa.get_entry(ri, addr, sym, type, add) ) {
+          srels[addr] = { type, sym };
+        }
+      }
+#ifdef DEBUG
+      fprintf(m_out, "store %ld relocs for section %d %s\n", srels.size(), slink, ls->get_name().c_str());
+#endif
+      if ( !srels.empty() )
+      {
+        auto prev = m_srels.find(slink);
+        if ( prev == m_srels.end() )
+          m_srels[slink] = std::move(srels);
+        else {
+          SRels &old = prev->second;
+          for ( auto &p: srels ) old[p.first] = std::move(p.second);
+        }
+      }
+    }
+  }
+  return !m_srels.empty();
 }
 
 void nv_dis::process()
