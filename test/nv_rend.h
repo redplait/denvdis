@@ -252,8 +252,11 @@ class NV_renderer {
    // missed fields
    mutable std::unordered_set<std::string> m_missed;
    // relocs
-   unsigned long m_next_roff;
-   bool has_relocs = false;
+   mutable unsigned long m_next_roff;
+   mutable bool has_relocs = false;
+   virtual const NV_rel *next_reloc(std::string_view &) const {
+     return nullptr;
+   }
    // dual issues
    bool dual_first = false;
    bool dual_last = false;

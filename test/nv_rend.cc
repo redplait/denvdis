@@ -304,7 +304,7 @@ void NV_renderer::render_rel(std::string &res, const NV_rel *nr, const C &c) con
     case 0x2b: // R_CUDA_ABS32_LO_20
     case 0x38: // R_CUDA_ABS32_LO_32
     case 0x46: // R_CUDA_32_LO
-     res += "32lo";
+     res += "32@lo";
      break;
     case 0xb:  // R_CUDA_ABS32_HI_26
     case 0xe:  // R_CUDA_ABS32_HI_23
@@ -886,6 +886,11 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
   int missed = 0;
   int was_bs = 0; // seems that scheduling args always starts with BITSET req_xx
   int prev = -1;  // workaround to fix op, bcs testcc is missed
+  const NV_rel *rel_info = nullptr;
+  std::string_view rel_name;
+  if ( has_relocs && m_dis->offset() == m_next_roff ) {
+    rel_info = next_reloc(rel_name);
+  }
   for ( auto ri: *rl ) {
     std::string tmp;
     int is_abs = 0, empty = 0;
@@ -947,7 +952,10 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
           }
         } else {
           long branch_off = 0;
-          if ( check_branch(i, kvi, branch_off) ) {
+          if ( rel_info && i->target_index && !strcmp(rn->name, i->target_index) ) {
+            render_rel(tmp, rel_info, rel_name);
+            rel_info = nullptr;
+          } else if ( check_branch(i, kvi, branch_off) ) {
             // make (LABEL_xxx)
             if ( opt_c )
               snprintf(buf, 127, " `(LABEL_%lX)", branch_off + m_dis->off_next());
@@ -958,8 +966,13 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
             }
             if ( l ) (*l)[branch_off + m_dis->off_next()] = 0;
             tmp += buf;
-          } else
-            dump_value(i, kv, rn->name, tmp, *vi, kvi->second);
+          } else {
+             if ( rel_info && !vi->dval ) {
+               render_rel(tmp, rel_info, rel_name);
+               rel_info = nullptr;
+             } else
+               dump_value(i, kv, rn->name, tmp, *vi, kvi->second);
+          }
           if ( rn->pfx ) { if ( prev != R_opcode ) res += rn->pfx; }
           res += ' ';
           if ( !rn->pfx && was_bs ) res += '&';
