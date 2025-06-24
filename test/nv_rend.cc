@@ -560,7 +560,7 @@ int NV_renderer::render_ve_list(const std::list<ve_base> &l, const struct nv_ins
   auto size = l.size();
   if ( 1 == size )
     return render_ve(*l.begin(), i, kv, res);
-  int missed = 0;
+  int missed = 0, has_prev = 0;
   int idx = 0;
   for ( auto ve: l ) {
     if ( ve.type == R_value )
@@ -573,9 +573,10 @@ int NV_renderer::render_ve_list(const std::list<ve_base> &l, const struct nv_ins
       dump_value(i, kv, ve.arg, tmp, *vi, kvi->second);
       if ( tmp == "0" && idx ) { idx++; continue; } // ignore +0
       if ( ve.pfx ) res += ve.pfx;
-      else if ( idx ) res += '+';
+      else if ( idx && has_prev ) res += '+';
       res += tmp;
       idx++;
+      has_prev = 1;
       continue;
     }
     // this is (optional) enum
@@ -593,21 +594,27 @@ int NV_renderer::render_ve_list(const std::list<ve_base> &l, const struct nv_ins
         continue;
       }
     }
+#ifdef DEBUG
+ printf("%s: ignore %d has_prev %d def %X curr %lX\n", ea->ename, ea->ignore, has_prev, ea->def_value, kvi->second);
+#endif
     if ( ea->has_def_value && ea->def_value == (int)kvi->second ) {
       if ( ea->ignore && !ea->print ) continue;
       // ignore zero register even without ea->ignore
       if ( !strcmp(ea->ename, "ZeroRegister") ) continue;
     }
     if ( !ea->ignore ) idx++;
-    if ( ea->ignore ) res += '.';
-    else {
+    if ( ea->ignore ) {
+      if ( !has_prev ) continue;
+      res += '.';
+    } else {
       if ( ve.pfx ) res += ve.pfx;
-      else if ( idx > 1 ) res += " + ";
+      else if ( idx > 1 && has_prev ) res += " + ";
     }
     auto eid = ea->em->find(kvi->second);
-    if ( eid != ea->em->end() )
-       res += eid->second;
-    else {
+    if ( eid != ea->em->end() ) {
+      res += eid->second;
+      has_prev = 1;
+    } else {
        missed++;
        continue;
     }
