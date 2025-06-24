@@ -76,6 +76,8 @@ class NV_renderer {
    typedef std::pair<const struct nv_instr *, NV_extracted> NV_pair;
    typedef std::vector<NV_pair> NV_res;
    typedef std::unordered_map<std::string_view, int> NV_Tabset;
+   // relocs
+   typedef std::pair<int, unsigned long> NV_rel;
   protected:
    template <typename T, typename I>
    const T& get_it(const std::initializer_list<T>& list, I index) const {
@@ -123,6 +125,8 @@ class NV_renderer {
    }
 
    bool check_dual(const NV_extracted &);
+   template <typename C>
+   void render_rel(std::string &res, const NV_rel *, const C &) const;
    int render(const NV_rlist *, std::string &res, const struct nv_instr *, const NV_extracted &, NV_labels *, int opt_c = 0) const;
    const nv_eattr *try_by_ename(const struct nv_instr *, const std::string_view &sv) const;
    int fill_sched(const struct nv_instr *, const NV_extracted &);
@@ -247,6 +251,9 @@ class NV_renderer {
    int m_width;
    // missed fields
    mutable std::unordered_set<std::string> m_missed;
+   // relocs
+   unsigned long m_next_roff;
+   bool has_relocs = false;
    // dual issues
    bool dual_first = false;
    bool dual_last = false;

@@ -283,6 +283,45 @@ const double NVd_inf = longlong_as_double(0x7ff0000000000000ULL),
  NVd_nan = longlong_as_double(0xfff8000000000000ULL)
 ;
 
+template <typename C>
+void NV_renderer::render_rel(std::string &res, const NV_rel *nr, const C &c) const
+{
+  switch(nr->first) {
+    case 5:    // R_CUDA_ABS32_26
+    case 0xc:  // R_CUDA_ABS32_23
+    case 0xf:  // R_CUDA_ABS24_26
+    case 0x2a: // R_CUDA_ABS32_20
+    case 0x2d: // R_CUDA_ABS24_20
+    case 0x37: // R_CUDA_ABS32_32
+    case 0x3a: // R_CUDA_ABS47_34
+    case 0x3c: // R_CUDA_ABS24_32
+    case 0x4a: // R_CUDA_ABS24_40
+    case 0x64: // R_CUDA_ABS20_44
+     res += '`';
+     break;
+    case 0xa:  // R_CUDA_ABS32_LO_26
+    case 0xd:  // R_CUDA_ABS32_LO_23
+    case 0x2b: // R_CUDA_ABS32_LO_20
+    case 0x38: // R_CUDA_ABS32_LO_32
+    case 0x46: // R_CUDA_32_LO
+     res += "32lo";
+     break;
+    case 0xb:  // R_CUDA_ABS32_HI_26
+    case 0xe:  // R_CUDA_ABS32_HI_23
+    case 0x2c: // R_CUDA_ABS32_LO_20
+    case 0x39: // R_CUDA_ABS32_HI_32
+    case 0x47: // R_CUDA_32_HI
+     res += "32@hi";
+     break;
+    default:
+     res += "UknRel";
+     res += std::to_string(nr->first);
+  }
+  res += '(';
+  res += c;
+  res += ')';
+}
+
 void NV_renderer::dis_stat() const
 {
   if ( dis_total )
