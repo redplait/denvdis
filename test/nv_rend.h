@@ -243,7 +243,9 @@ class NV_renderer {
    void dump_value(const nv_vattr &, uint64_t v, NV_Format, std::string &res) const;
    void dump_value(const struct nv_instr *, const NV_extracted &kv, const std::string_view &,
      std::string &res, const nv_vattr &, uint64_t v) const;
+   bool extract(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    bool check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
+   bool check_ret(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
 
    FILE *m_out;
    INV_disasm *m_dis = nullptr;
@@ -257,6 +259,10 @@ class NV_renderer {
    virtual const NV_rel *next_reloc(std::string_view &) const {
      return nullptr;
    }
+   virtual const std::string *try_name(unsigned long off) const {
+     return nullptr;
+   }
+   bool check_rel(const struct nv_instr *i) const;
    // dual issues
    bool dual_first = false;
    bool dual_last = false;

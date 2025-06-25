@@ -446,6 +446,15 @@ const nv_eattr *NV_renderer::try_by_ename(const struct nv_instr *ins, const std:
   return nullptr;
 }
 
+// check if some enum is RELONLY
+bool NV_renderer::check_rel(const struct nv_instr *ins) const
+{
+  for ( auto &ei: ins->eas ) {
+    if ( cmp("RELONLY", ei.ea->ename) ) return true;
+  }
+  return false;
+}
+
 int NV_renderer::calc_miss(const struct nv_instr *ins, const NV_extracted &kv, int rz) const
 {
   int res = 0;
@@ -622,6 +631,24 @@ int NV_renderer::render_ve_list(const std::list<ve_base> &l, const struct nv_ins
   return missed;
 }
 
+bool NV_renderer::check_ret(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const
+{
+  if ( i->brt != BRT_RETURN ) return false;
+  return extract(i, kvi, res);
+}
+
+bool NV_renderer::extract(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const
+{
+  auto wi = find(i->vwidth, kvi->first);
+  if ( !wi ) return false;
+  // yes, this is some imm for branch, check if it negative
+  if ( kvi->second & (1L << (wi->w - 1)) )
+    res = kvi->second - (1L << wi->w);
+  else
+    res = (long)kvi->second;
+  return true;
+}
+
 bool NV_renderer::check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const
 {
   if ( !i->brt || !i->target_index ) {
@@ -634,14 +661,7 @@ bool NV_renderer::check_branch(const struct nv_instr *i, const NV_extracted::con
   }
   // find width
 //printf("try to find target_index %s value %lX\n", i->target_index, kvi->second);
-  auto wi = find(i->vwidth, kvi->first);
-  if ( !wi ) return false;
-  // yes, this is some imm for branch, check if it negative
-  if ( kvi->second & (1L << (wi->w - 1)) )
-    res = kvi->second - (1L << wi->w);
-  else
-    res = (long)kvi->second;
-  return true;
+  return extract(i, kvi, res);
 }
 
 template <typename Fs, typename Fl>
@@ -962,16 +982,43 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
           if ( rel_info && i->target_index && !strcmp(rn->name, i->target_index) ) {
             render_rel(tmp, rel_info, rel_name);
             rel_info = nullptr;
-          } else if ( check_branch(i, kvi, branch_off) ) {
+          } else if ( check_ret(i, kvi, branch_off) ) {
+            long addr = check_rel(i) ? branch_off + m_dis->off_next() : branch_off;
+            auto lname = try_name(addr);
             // make (LABEL_xxx)
-            if ( opt_c )
-              snprintf(buf, 127, " `(LABEL_%lX)", branch_off + m_dis->off_next());
-            else {
+            if ( opt_c ) {
+              if ( lname )
+                snprintf(buf, 127, " `(%s)", lname->c_str());
+              else
+                snprintf(buf, 127, " `(LABEL_%lX)", addr);
+            } else {
               snprintf(buf, 127, "%ld", branch_off);
               tmp = buf;
-              snprintf(buf, 127, " (LABEL_%lX)", branch_off + m_dis->off_next());
+              if ( lname )
+                snprintf(buf, 127, " (%s)", lname->c_str());
+              else
+                snprintf(buf, 127, " (LABEL_%lX)", addr);
             }
-            if ( l ) (*l)[branch_off + m_dis->off_next()] = 0;
+            if ( l && !lname ) (*l)[addr] = 0;
+            tmp += buf;
+          } else if ( check_branch(i, kvi, branch_off) ) {
+            long addr = branch_off + m_dis->off_next();
+            auto lname = try_name(addr);
+            // make (LABEL_xxx)
+            if ( opt_c ) {
+              if ( lname )
+                snprintf(buf, 127, " `(%s)", lname->c_str());
+              else
+                snprintf(buf, 127, " `(LABEL_%lX)", addr);
+            } else {
+              snprintf(buf, 127, "%ld", branch_off);
+              tmp = buf;
+              if ( lname )
+                snprintf(buf, 127, " (%s)", lname->c_str());
+              else
+                snprintf(buf, 127, " (LABEL_%lX)", addr);
+            }
+            if ( l && !lname ) (*l)[addr] = 0;
             tmp += buf;
           } else {
              if ( rel_info && !vi->dval ) {

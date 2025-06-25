@@ -259,7 +259,12 @@ class nv_dis: public NV_renderer
    std::unordered_map<int, SRels> m_srels;
    mutable SRels::const_iterator riter;
    SRels::const_iterator riter_end;
-   virtual const NV_rel *next_reloc(std::string_view &sv) const {
+   virtual const std::string *try_name(unsigned long off) const override {
+     auto si = m_curr_syms.find(off);
+     if ( si == m_curr_syms.end() ) return nullptr;
+     return &si->second->name;
+   }
+   virtual const NV_rel *next_reloc(std::string_view &sv) const override {
      if ( !has_relocs ) return nullptr;
      const NV_rel *res = &riter->second;
      auto &sym = m_syms[res->second];
