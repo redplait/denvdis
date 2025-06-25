@@ -295,7 +295,13 @@ class nv_dis: public NV_renderer
 
    Elf_Half n_sec;
    elfio reader;
+   // symbols
    std::vector<asymbol> m_syms;
+   std::map<unsigned long, asymbol *> m_curr_syms;
+   std::map<unsigned long, asymbol *>::const_iterator m_curr_siter = m_curr_syms.cend();
+   int grab_syms_for_section(int);
+   int next_csym(unsigned long);
+   void dump_csym(const asymbol *) const;
    // indirect branches
    std::unordered_map<Elf_Word, bt_per_section *> m_branches;
 };
@@ -342,7 +348,69 @@ int nv_dis::read_symbols()
   int res = !m_syms.empty();
   if ( !res ) return res;
   if ( opt_r ) return fill_rels();
+  next_csym(0);
   return res;
+}
+
+int nv_dis::next_csym(unsigned long off)
+{
+  if ( m_curr_siter == m_curr_syms.cend() ) return 0;
+  if ( m_curr_siter->first != off ) return 0;
+  dump_csym(m_curr_siter->second);
+  ++m_curr_siter;
+  return 1;
+}
+
+void nv_dis::dump_csym(const asymbol *as) const
+{
+  if ( as->bind == STB_GLOBAL )
+    fprintf(m_out, "\t.global %s\n", as->name.c_str());
+  if ( as->type == STT_OBJECT )
+    fprintf(m_out, "\t.type %s,@object\n", as->name.c_str());
+  else if ( as->type == STT_FUNC )
+    fprintf(m_out, "\t.type %s,@function\n", as->name.c_str());
+  if ( as->size )
+    fprintf(m_out, "\t.size %lX\n", as->size);
+  if ( as->other ) {
+    fprintf(m_out, "\t.other %s, @\"", as->name.c_str());
+    char upE = as->other & 0xE0;
+    char lo2 = as->other & 3;
+    int idx = 0;
+    // as far I understod order is not matters
+#define _DA(c) { if ( idx ) fputc(' ', m_out); fprintf(m_out, "%s", c); idx++; }
+    if ( as->other & 0x10 ) _DA("STO_CUDA_ENTRY")
+    if ( as->other & 0x4 )  _DA("STO_CUDA_MANAGED")
+    if ( as->other & 0x8 )  _DA("STO_CUDA_OBSCURE")
+    if ( upE == 0x20 ) _DA("STO_CUDA_GLOBAL")
+    if ( upE == 0x40 ) _DA("STO_CUDA_SHARED")
+    if ( upE == 0x60 ) _DA("STO_CUDA_LOCAL")
+    if ( upE == 0x80 ) _DA("STO_CUDA_CONSTANT")
+    if ( upE == 0xa0 ) _DA("STO_CUDA_RESERVED_SHARED")
+    if ( lo2 ) {
+      if ( lo2 == 1 ) _DA("STV_INTERNAL")
+      else if ( lo2 == 2 ) _DA("STV_HIDDEN")
+      else if ( lo2 == 3 ) _DA("STV_PROTECTED")
+    } else
+     _DA("STV_DEFAULT")
+    fprintf(m_out, "\"\n");
+#undef _DA
+  }
+}
+
+int nv_dis::grab_syms_for_section(int s_idx)
+{
+  if ( m_syms.empty() ) return 0;
+  m_curr_syms.clear();
+  m_curr_siter = m_curr_syms.cend();
+  // O(N) but that's fine
+  std::for_each(m_syms.begin(), m_syms.end(), [&](asymbol &as) {
+    if ( as.section != s_idx ) return;
+    if ( as.type == STT_SECTION || as.type == STT_FILE ) return;
+    m_curr_syms[as.addr] = &as;
+  });
+  if ( m_curr_syms.empty() ) return 0;
+  m_curr_siter = m_curr_syms.cbegin();
+  return 1;
 }
 
 void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
@@ -396,15 +464,17 @@ void nv_dis::try_dis(Elf_Word idx)
  fprintf(m_out, "idx %d size %ld first %lX\n", idx, rels->second.size(), m_next_roff);
 #endif
   }
+  if ( opt_c ) grab_syms_for_section(idx);
   dual_first = dual_last = false;
   while(1) {
     NV_res res;
     int get_res = m_dis->get(res);
-    if ( -1 == get_res ) { fprintf(m_out, "stop at %lX\n", m_dis->offset()); break; }
+    auto off = m_dis->offset();
+    if ( -1 == get_res ) { fprintf(m_out, "stop at %lX\n", off); break; }
     dis_total++;
     if ( !get_res ) {
       dis_notfound++;
-      fprintf(m_out, "Not found at %lX", m_dis->offset());
+      fprintf(m_out, "Not found at %lX", off);
       if ( opt_N ) {
         std::string bstr;
         if ( m_dis->gen_mask(bstr) )
@@ -415,10 +485,10 @@ void nv_dis::try_dis(Elf_Word idx)
       m_sched.clear();
       continue;
     }
+    next_csym(off);
     int res_idx = 0;
     if ( res.size() > 1 ) res_idx = calc_index(res, m_dis->rz);
     // check branch label
-    auto off = m_dis->offset();
     uint32_t curr_label = 0;
     if ( branches ) {
       auto li = branches->labels.find(off);
@@ -595,7 +665,8 @@ void nv_dis::dump_mrelocs(section *sec)
       // resolve symbol
       asymbol *asym = nullptr;
       if ( sym < m_syms.size() ) asym = &m_syms[sym];
-      fprintf(m_out, " [%ld] %lX sym %d %s add %lX", n, addr, sym, asym ? asym->name.c_str() : "", add);
+      fprintf(m_out, " [%ld] %lX sym %d %s", n, addr, sym, asym ? asym->name.c_str() : "");
+      if ( add ) fprintf(m_out, " add %lX", add);
       if ( tname )
        fprintf(m_out, " %s\n", tname);
       else
@@ -622,7 +693,8 @@ void nv_dis::dump_crelocs(section *sec)
       // resolve symbol
       asymbol *asym = nullptr;
       if ( sym < m_syms.size() ) asym = &m_syms[sym];
-      fprintf(m_out, " [%ld] %lX sym %d %s add %lX", n, addr, sym, asym ? asym->name.c_str() : "", add);
+      fprintf(m_out, " [%ld] %lX sym %d %s", n, addr, sym, asym ? asym->name.c_str() : "");
+      if ( add ) fprintf(m_out, " add %lX", add);
       if ( tname )
        fprintf(m_out, " %s\n", tname);
       else
