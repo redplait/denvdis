@@ -236,7 +236,15 @@ class nv_dis: public NV_renderer
       fprintf(stderr, "unknown SM %X\n", sm);
        return 0;
      }
-     std::string sm_name = "./";
+     // check SM_DIR env
+     std::string sm_name;
+     char *sm_dir = getenv("SM_DIR");
+     if ( sm_dir ) {
+      sm_name = sm_dir;
+      if ( !sm_name.ends_with("/") ) sm_name += '/';
+     } else {
+      sm_name = "./";
+     }
      sm_name += smi->second.second ? smi->second.second : smi->second.first;
      sm_name += ".so";
      if ( opt_c ) printf(".target sm_%d\n", sm);
