@@ -1683,7 +1683,14 @@ int ParseSASS::init(const std::string &s)
     fprintf(stderr, "unknown %s\n", sm.c_str());
     return 0;
   }
-  sm = "./";
+  // check SM_DIR env
+  char *sm_dir = getenv("SM_DIR");
+  if ( sm_dir ) {
+    sm = sm_dir;
+    if ( !sm.ends_with("/") ) sm += '/';
+  } else {
+    sm = "./";
+  }
   sm += found;
   sm += ".so";
   if ( opt_v ) printf("try load %s\n", sm.c_str());
