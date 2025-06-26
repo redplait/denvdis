@@ -392,25 +392,26 @@ bool NV_renderer::contain(const std::string_view &sv, char sym) const
 
 void NV_renderer::dump_value(const nv_vattr &a, uint64_t v, NV_Format kind, std::string &res) const
 {
-  char buf[128];
+  constexpr int buf_size = 63;
+  char buf[buf_size + 1];
   uint32_t f32;
   switch(kind)
   {
     case NV_F64Imm:
-      snprintf(buf, 127, "%f", *(double *)&v);
+      snprintf(buf, buf_size, "%f", *(double *)&v);
      break;
     case NV_F16Imm:
       f32 = fp16_ieee_to_fp32_bits((uint16_t)v);
-      snprintf(buf, 127, "%f", *(float *)&f32);
+      snprintf(buf, buf_size, "%f", *(float *)&f32);
      break;
     case NV_F32Imm:
-      snprintf(buf, 127, "%f", *(float *)&v);
+      snprintf(buf, buf_size, "%f", *(float *)&v);
      break;
     default:
       if ( !v ) { res += '0'; return; }
-      snprintf(buf, 127, "0x%lX", v);
+      snprintf(buf, buf_size, "0x%lX", v);
   }
-  buf[127] = 0;
+  buf[buf_size] = 0;
   res += buf;
 }
 
@@ -928,7 +929,8 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
        break;
 
       case R_value: {
-        char buf[128];
+        constexpr int buf_size = 511;
+        char buf[buf_size + 1];
         const render_named *rn = (const render_named *)ri;
         auto kvi = kv.find(rn->name);
         if ( kvi == kv.end() ) {
@@ -963,13 +965,15 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
           } else if ( !strcmp(rn->name, "src_rel_sb") ) {
             if ( kvi->second != vi->dval ) {
              tmp = " &rd=0x";
-             snprintf(buf, 127, "%lX", kvi->second);
+             snprintf(buf, buf_size, "%lX", kvi->second);
+             buf[buf_size] = 0;
              tmp += buf;
             }
           } else if ( !strcmp(rn->name, "dst_wr_sb") ) {
             if ( kvi->second != vi->dval ) {
              tmp = " &wr=0x";
-             snprintf(buf, 127, "%lX", kvi->second);
+             snprintf(buf, buf_size, "%lX", kvi->second);
+             buf[buf_size] = 0;
              tmp += buf;
             }
           } else if ( !strcmp(rn->name, "usched_info") ) {
@@ -988,18 +992,20 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
             // make (LABEL_xxx)
             if ( opt_c ) {
               if ( lname )
-                snprintf(buf, 127, " `(%s)", lname->c_str());
+                snprintf(buf, buf_size, " `(%s)", lname->c_str());
               else
-                snprintf(buf, 127, " `(LABEL_%lX)", addr);
+                snprintf(buf, buf_size, " `(LABEL_%lX)", addr);
             } else {
-              snprintf(buf, 127, "%ld", branch_off);
+              snprintf(buf, buf_size, "%ld", branch_off);
+              buf[buf_size] = 0;
               tmp = buf;
               if ( lname )
-                snprintf(buf, 127, " (%s)", lname->c_str());
+                snprintf(buf, buf_size, " (%s)", lname->c_str());
               else
-                snprintf(buf, 127, " (LABEL_%lX)", addr);
+                snprintf(buf, buf_size, " (LABEL_%lX)", addr);
             }
             if ( l && !lname ) (*l)[addr] = 0;
+            buf[buf_size] = 0;
             tmp += buf;
           } else if ( check_branch(i, kvi, branch_off) ) {
             long addr = branch_off + m_dis->off_next();
@@ -1007,18 +1013,20 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
             // make (LABEL_xxx)
             if ( opt_c ) {
               if ( lname )
-                snprintf(buf, 127, " `(%s)", lname->c_str());
+                snprintf(buf, buf_size, " `(%s)", lname->c_str());
               else
-                snprintf(buf, 127, " `(LABEL_%lX)", addr);
+                snprintf(buf, buf_size, " `(LABEL_%lX)", addr);
             } else {
-              snprintf(buf, 127, "%ld", branch_off);
+              snprintf(buf, buf_size, "%ld", branch_off);
+              buf[buf_size] = 0;
               tmp = buf;
               if ( lname )
-                snprintf(buf, 127, " (%s)", lname->c_str());
+                snprintf(buf, buf_size, " (%s)", lname->c_str());
               else
-                snprintf(buf, 127, " (LABEL_%lX)", addr);
+                snprintf(buf, buf_size, " (LABEL_%lX)", addr);
             }
             if ( l && !lname ) (*l)[addr] = 0;
+            buf[buf_size] = 0;
             tmp += buf;
           } else {
              if ( rel_info && !vi->dval ) {
