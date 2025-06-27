@@ -4497,8 +4497,10 @@ my $parse_pair = sub {
   # enum = number
   if ( $s =~ /^\"?([\w\.]+)\"?\s*=\s*(\d+)$/ ) {
     $curr_enum = int($2);
+    my $ename = $1;
     $eref->{$1} = $curr_enum;
-    $erref->{$curr_enum} //= $1;
+    if ( $ename =~ /^_/ ) { $erref->{$curr_enum} //= $ename; }
+    else { $erref->{$curr_enum} = $ename; };
     $curr_enum++;
     return 1;
   }
