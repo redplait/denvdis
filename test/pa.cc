@@ -696,6 +696,7 @@ int ParseSASS::parse_mem_right(int idx, const std::string_view &s, F &&f)
   m_minus = 0;
   // find last ']' and check if we have tail like c[0x0] [0x8].H1
   int ri = idx;
+  if ( s.at(idx) == '+' ) idx++;
   if ( s.at(idx) == '-' ) { m_minus = 1; idx++; }
   for ( ; ri < (int)s.size(); ++ri ) if ( s.at(ri) == ']' ) break;
   // check right part - if it contains number value
