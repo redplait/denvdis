@@ -326,7 +326,8 @@ void NV_renderer::render_rel(std::string &res, const NV_rel *nr, const C &c) con
 void NV_renderer::dis_stat() const
 {
   if ( dis_total )
-    fprintf(m_out, "total %ld, not_found %ld, dups %ld\n", dis_total, dis_notfound, dis_dups);
+    fprintf(m_out, "total %ld, not_found %ld, dups %ld, missed_enums %ld\n",
+     dis_total, dis_notfound, dis_dups, missed_enums);
 }
 
 int NV_renderer::load(const char *sm_name)
