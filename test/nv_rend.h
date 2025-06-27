@@ -16,6 +16,7 @@ enum NVLType {
   Coop_grp, // EIATTR_COOP_GROUP_INSTR_OFFSETS
   Exit,     // EIATTR_EXIT_INSTR_OFFSETS
   S2Rctaid, // EIATTR_S2RCTAID_INSTR_OFFSETS
+  Ld_cachemode, // EIATTR_LD_CACHEMOD_INSTR_OFFSETS
 };
 
 typedef std::unordered_map<uint32_t, int> NV_labels;
@@ -276,6 +277,7 @@ class NV_renderer {
     dis_dups = 0,
     sfilters = 0,
     sfilters_succ = 0,
+    missed_enums = 0,
     scond_count = 0,
     scond_succ = 0,
     scond_hits = 0;

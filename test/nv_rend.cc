@@ -35,6 +35,7 @@ const char *NV_renderer::s_ltypes[] = {
  "COOP_GROUP_INSTR",
  "EXIT_INSTR",
  "S2RCTAID_INSTR",
+ "LD_CACHEMODE_INSTR",
 };
 
 const char *NV_renderer::s_labels[] = {
@@ -560,7 +561,7 @@ int NV_renderer::render_ve(const ve_base &ve, const struct nv_instr *i, const NV
   auto eid = ea->em->find(kvi->second);
   if ( eid != ea->em->end() )
     res += eid->second;
-  else return 1;
+  else { missed_enums++; return 1; }
   return 0;
 }
 
@@ -625,7 +626,7 @@ int NV_renderer::render_ve_list(const std::list<ve_base> &l, const struct nv_ins
       res += eid->second;
       has_prev = 1;
     } else {
-       missed++;
+       missed_enums++;
        continue;
     }
   }
@@ -1080,7 +1081,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
          if ( eid != ea->em->end() )
            res += eid->second;
          else {
-           missed++;
+           missed_enums++;
            break;
          }
          if ( is_abs ) res += '|';
