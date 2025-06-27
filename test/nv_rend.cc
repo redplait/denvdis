@@ -1057,6 +1057,12 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
          if ( kvi == kv.end() ) {
            kvi = kv.find(ea->ename);
            if ( kvi == kv.end() ) {
+             // special case - this is enum attached to opcode with single value
+             if ( ea->ignore && prev == R_opcode && 1 == ea->em->size() ) {
+               res += '.'; empty = 1;
+               res += ea->em->cbegin()->second;
+               break;
+             }
              if ( opt_m ) m_missed.insert(rn->name);
              missed++;
              idx++;
