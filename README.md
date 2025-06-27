@@ -13,6 +13,8 @@ sass disassembler - of course not a complete replica of nvdisasm (however you ca
  * [scheduling tables](https://redplait.blogspot.com/2025/05/nvidia-sass-latency-tables.html) with -S option
  * [predicates](https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-6.html) of instructions with -p option
 
+Also note that original nvdisasm can produce [ambigious](https://redplait.blogspot.com/2025/06/curse-of-imad.html) output
+
 ### ina
 interactive sass [assembler](https://redplait.blogspot.com/2025/05/nvidia-sass-assembler.html)
 
@@ -20,3 +22,5 @@ interactive sass [assembler](https://redplait.blogspot.com/2025/05/nvidia-sass-a
 parser of nvdisasm output - some [details](https://redplait.blogspot.com/2025/06/nvdisasm-sass-parser.html)
 
 You can run "strange loop" to consume output of nvd - for this later must use option *-c*
+
+By default all 3 trying to load corresponding sm_xx.so from current directory - but you can peek those dir with env var SM_DIR
