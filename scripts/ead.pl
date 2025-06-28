@@ -2552,6 +2552,11 @@ sub gen_enums
   my $fh = shift;
   my(@re, $res, $dot_name, %dotted);
   printf($fh "// ---- enums\n");
+  # in old MDs Predicate has 2 name for 7 - P7 & PT, on new only PT, so fix this
+  if ( exists $g_renums{'Predicate'} ) {
+    my $penum = $g_renums{'Predicate'};
+    $penum->{7} = 'PT';
+  }
   foreach my $ename ( keys %g_used_enums ) {
     printf($fh "NV_ENUM(%s) = {\n", c_enum_name($ename));
     my $renum = $g_renums{$ename};
