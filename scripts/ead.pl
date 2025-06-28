@@ -2557,6 +2557,11 @@ sub gen_enums
     my $penum = $g_renums{'Predicate'};
     $penum->{7} = 'PT';
   }
+  # and the same for UniformPredicate
+  if ( exists $g_renums{'UniformPredicate'} ) {
+    my $penum = $g_renums{'UniformPredicate'};
+    $penum->{7} = 'UPT';
+  }
   foreach my $ename ( keys %g_used_enums ) {
     printf($fh "NV_ENUM(%s) = {\n", c_enum_name($ename));
     my $renum = $g_renums{$ename};
@@ -2706,7 +2711,7 @@ sub bank_extract
   my($fh, $m, $n) = @_;
   my($mask, $size) = c_get_mask($m);
   printf($fh "auto c%d = fn(%s, %d);\n", $n, $mask, $size);
-  return mask_len($g_mnames{$m});
+  mask_len($g_mnames{$m});
 }
 # args: op, field name, format for field, ref to float conv ref, array wirh convertFloatType args
 sub parse_conv_float
