@@ -36,6 +36,8 @@ const char *NV_renderer::s_ltypes[] = {
  "EXIT_INSTR",
  "S2RCTAID_INSTR",
  "LD_CACHEMODE_INSTR",
+ "MBARRIER_INSTR",
+ "SW_WAR_MEMBAR_SYS_INSTR",
 };
 
 const char *NV_renderer::s_labels[] = {

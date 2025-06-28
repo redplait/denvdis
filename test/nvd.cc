@@ -483,7 +483,7 @@ void nv_dis::try_dis(Elf_Word idx)
     NV_res res;
     int get_res = m_dis->get(res);
     auto off = m_dis->offset();
-    if ( -1 == get_res ) { fprintf(m_out, "stop at %lX\n", off); break; }
+    if ( -1 == get_res ) { fprintf(m_out, "; stop at %lX\n", off); break; }
     dis_total++;
     if ( !get_res ) {
       dis_notfound++;
@@ -607,12 +607,18 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
           HexDump(m_out, (const unsigned char *)(data + 4), a_len);
         if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
           ltype = NVLType::Coop_grp;
-        else if ( attr == 0x1c ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
+        else if ( attr == 0x1c ) // EIATTR_EXIT_INSTR_OFFSETS
           ltype = NVLType::Exit;
-        else if ( attr == 0x1d ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
+        else if ( attr == 0x1d ) // EIATTR_S2RCTAID_INSTR_OFFSETS
           ltype = NVLType::S2Rctaid;
+        else if ( attr == 0x25 ) // EIATTR_LD_CACHEMOD_INSTR_OFFSETS
+          ltype = NVLType::Ld_cachemode;
         else if ( attr == 0x31 ) // EIATTR_INT_WARP_WIDE_INSTR_OFFSETS
           ltype = NVLType::Warp_wide;
+        else if ( attr == 0x39 ) // EIATTR_MBARRIER_INSTR_OFFSETS
+          ltype = NVLType::MBarier;
+        else if ( attr == 0x47 ) // EIATTR_SW_WAR_MEMBAR_SYS_INSTR_OFFSETS
+          ltype = NVLType::War_membar;
         // read offsets
         if ( ltype ) {
           auto ib = get_branch(sec->get_info());
