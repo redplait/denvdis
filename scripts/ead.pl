@@ -1121,7 +1121,7 @@ sub gen_inst_mask
    $cp =~ s/\{\s*\}//g;
    # and $( )$
    $cp =~ s/\$\(\s*\)\$//g;
-   $op->[22] = $cp;
+   $op->[23] = $cp;
   }
   remove_encs($op, \%rem) if ( scalar keys %rem );
   # process remained encodings
@@ -2229,7 +2229,7 @@ sub dump_dup_masks
       } else {
         printf("   %s line %d %s\n", $op->[1], $op->[4], $op->[8]);
       }
-      printf("   Unused %s\n", $op->[22]) if defined($op->[22]);
+      printf("   Unused %s\n", $op->[23]) if defined($op->[23]);
       # dump mask to enum mapping
       dump_mask2enum($op);
       dump_tenums($op->[13]) if defined($op->[13]);
@@ -3277,6 +3277,7 @@ sub gen_instr
       my $vas = form_vas($fh, $op);
       # predicates
       my $pred_name = gen_preds($fh, $op);
+      my $prop_name = gen_prop($fh, $op->[22], $op->[19]);
       # filter
       my $op_filter = gen_filter($op, $fh);
       # extractor
@@ -3322,6 +3323,8 @@ sub gen_instr
       }
       # predicates
       $write->($pred_name);
+      # properties
+      $write->($prop_name);
       # vf_conv
       $write->($conv_name);
       # vwidth
@@ -4425,6 +4428,113 @@ sub check_abs
   $p;
 }
 
+# properties logic
+my %prop_map = (
+  'IDEST_OPERAND_MAP' => 'IDEST',
+  'IDEST2_OPERAND_MAP' => 'IDEST2',
+  'ISRC_A_OPERAND_MAP' => 'ISRC_A',
+  'ISRC_B_OPERAND_MAP' => 'ISRC_B',
+  'ISRC_C_OPERAND_MAP' => 'ISRC_C',
+  'ISRC_E_OPERAND_MAP' => 'ISRC_E',
+);
+
+my %prop_type = (
+  'IDEST_OPERAND_TYPE' => 'IDEST',
+  'IDEST2_OPERAND_TYPE' => 'IDEST2',
+  'ISRC_A_OPERAND_TYPE' => 'ISRC_A',
+  'ISRC_B_OPERAND_TYPE' => 'ISRC_B',
+  'ISRC_C_OPERAND_TYPE' => 'ISRC_C',
+  'ISRC_E_OPERAND_TYPE' => 'ISRC_E',
+);
+
+my(%s_props_cache);
+my $s_props_idx = 0;
+
+# args: file handle, ref to props hash, instr index
+sub gen_prop
+{
+  my($fh, $ph, $idx) = @_;
+  return undef unless defined($ph);
+  my @ops;
+  while( my($k, $e) = each %$ph ) {
+    # compiund hash key
+    my $pk = $k . '|' . join(',', @{$e->[1]}) . '|' . $e->[0];
+    unless ( exists $s_props_cache{$pk} ) {
+      # push new NV_Prop and add to cache
+      my $pname = sprintf("%s_prop_%d", $opt_C, $s_props_idx++);
+      printf($fh "static const NV_Prop %s = {\n %s, %s, \n{ %s } };\n", $pname, $k, $e->[0],
+       join(',', map { '"' . $_ . '"'; } @{$e->[1]}) );
+      $s_props_cache{$pk} = $pname;
+    }
+    push @ops, $s_props_cache{$pk};
+  }
+  # gen NV_Props
+  my $pname = sprintf("%s_props_%d", $opt_C, $idx);
+  printf($fh "static const NV_Props %s{ %s };\n", $pname, join(',', map { '&' . $_; } @ops));
+  return $pname;
+}
+
+# try parse remained properties
+# args: string, hash to props where key is operand name and value is [ type, [ names ] ]
+# return 1 if it can parse this string
+sub try_props
+{
+  my($str, $ph) = @_;
+  return 0 unless ( $str =~ /\s+(\S+)\s*=\s*\((.*)\)\s*;/ );
+  my $kw = $1;
+  my $body = $2;
+  if ( exists $prop_map{$kw} ) {
+     my $op = $prop_map{$kw};
+    if ( $body =~ /NON_EXISTENT/ ) {
+      delete $ph->{$op};
+      return 1;
+    }
+    my @ops;
+    foreach my $curr ( split(/\s*\+\s*/, $body) ) {
+      push @ops, $1 if ( $curr =~ /INDEX\((\w+)\)/ );
+    }
+    return 0 unless scalar(@ops);
+    unless ( exists $ph->{$op} ) {
+      $ph->{$op} = [ undef, \@ops ];
+    } else {
+      $ph->{$op}->[1] = \@ops;
+    }
+    return 1;
+  }
+  # check type
+  if ( exists $prop_type{$kw} ) {
+     my $op = $prop_type{$kw};
+    if ( $body =~ /NON_EXISTENT/ ) {
+      delete $ph->{$op};
+      return 1;
+    }
+    # some type
+    return 0 if ( $body !~ /IOPERAND_TYPE_(\S+)/ );
+    unless ( exists $ph->{$op} ) {
+      $ph->{$op} = [ $1, undef ];
+    } else {
+      $ph->{$op}->[0] = $1;
+    }
+    return 1;
+  }
+  0;
+}
+
+sub filter_props
+{
+  my $ph = shift;
+  return undef unless defined($ph);
+  my %res;
+  my $cnt = 0;
+  while( my($k, $e) = each %$ph ) {
+    next if ( !defined($e->[0]) || !defined($e->[1]) );
+    $res{$k} = $e;
+    $cnt++;
+  }
+  return undef unless $cnt;
+  \%res;
+}
+
 ### main
 my $status = getopts("abBcEefFgimpPrtvwzT:N:C:");
 usage() if ( !$status );
@@ -4458,8 +4568,9 @@ $state = $line = 0;
 # [18] - idx
 # [19] - BRT properties
 # [20] - predicates
+# [21] - properties
 my($cname, $has_op, $op_line, @op, @enc, @nenc, @quoted, @multi_ops, @cb, @flist, @b_props,
- %ae, $alt, %values, %pipes, %preds, $format);
+ %ae, $alt, %values, %pipes, %preds, %props, $format);
 
 # table state - estate 3 when we expect table name, 4 - when next string with content
 # tref is ref to hash with table content
@@ -4570,6 +4681,7 @@ my $reset = sub {
   %values = ();
   %preds = ();
   %pipes = ();
+  %props = ();
 };
 # insert copy of current instruction
 my $ins_op = sub {
@@ -4629,6 +4741,7 @@ my $ins_op = sub {
   } else {
     $c[20] = undef;
   }
+  $c[21] = filter_props(\%props);
   if ( defined($opt_m) ) {
     if ( @multi_ops ) {
       foreach my $pair ( @multi_ops ) {
@@ -5137,6 +5250,7 @@ while( $str = <$fh> ) {
       $b_props[5] = $1;
       next;
     }
+    try_props($str, \%props) if ( defined($opt_p) );
   }
   # predicates
   if ( defined($opt_p) && $str =~ /^\s*PREDICATES/ ) {

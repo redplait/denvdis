@@ -18,6 +18,54 @@
 #define NV_TAB(name)   static const std::unordered_map<int, const unsigned short *> name
 #define NV_PRED(name)  static const NV_Preds name
 
+// properties were cut off somewhere in v12.7-12.8, so in best case we have MDs with properties up to sm90
+enum NVP_type {
+ INTEGER = 0,
+ SIGNED_INTEGER = 1,
+ UNSIGNED_INTEGER = 2,
+ FLOAT = 3,
+ DOUBLE = 4,
+ GENERIC_ADDRESS = 5,
+ SHARED_ADDRESS = 6,
+ LOCAL_ADDRESS = 7,
+ TRAM_ADDRESS = 8,
+ LOGICAL_ATTR_ADDRESS = 9,
+ PHYSICAL_ATTR_ADDRESS = 10,
+ GENERIC = 11,
+ NON_EXISTENT_OPERAND = 12, // in reality it should never occurs in generated data
+ CONSTANT_ADDRESS = 13,
+ VILD_INDEX = 14,
+ VOTE_INDEX = 15,
+ STP_INDEX = 16,
+ PIXLD_INDEX = 17,
+ PATCH_OFFSET_ADDRESS = 18,
+ RAW_ISBE_ACCESS = 19,
+ GLOBAL_ADDRESS = 20,
+ TEX = 21,
+ GS_STATE = 22,
+ SURFACE_COORDINATES = 23,
+ FP16SIMD = 24,
+ BINDLESS_CONSTANT_ADDRESS = 25,
+ VERTEX_HANDLE = 26,
+ MEMORY_DESCRIPTOR = 27,
+ FP8SIMD = 28,
+};
+
+enum NVP_ops {
+ IDEST = 0,
+ IDEST2 = 1,
+ ISRC_A = 2,
+ ISRC_B = 3,
+ ISRC_C = 4,
+ ISRC_E = 5,
+};
+
+struct NV_Prop {
+  NVP_ops op;
+  NVP_type t;
+  std::initializer_list<std::string_view> fields; // like Ra + Ra_URc + Ra_offset
+};
+
 enum NV_Format {
   NV_BITSET,
   NV_UImm,
@@ -89,6 +137,7 @@ struct nv_width {
   std::string_view name;
   short w;
 };
+typedef std::initializer_list<const NV_Prop*> NV_Props;
 typedef std::initializer_list<nv_width> NV_width;
 typedef std::initializer_list<nv_float_conv> NV_conv;
 typedef void (*nv_extract)(std::function<uint64_t(const std::pair<short, short> *, size_t)> &, NV_extracted &);
@@ -165,6 +214,7 @@ struct nv_instr {
  const char *cc_index;
  const char *sidl_name;
  const NV_Preds *predicated;
+ const NV_Props *props;
  const NV_conv *vf_conv;
  const NV_width *vwidth;
  const std::initializer_list<const nv_vattr> *vas;
