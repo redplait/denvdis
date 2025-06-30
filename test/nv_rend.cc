@@ -325,6 +325,59 @@ void NV_renderer::render_rel(std::string &res, const NV_rel *nr, const C &c) con
   res += ')';
 }
 
+static const char *prop_type_names[] = {
+ "INTEGER", // 0
+ "SIGNED_INTEGER", // 1
+ "UNSIGNED_INTEGER", // 2
+ "FLOAT", // 3
+ "DOUBLE", // 4
+ "GENERIC_ADDRESS", // 5
+ "SHARED_ADDRESS", // 6
+ "LOCAL_ADDRESS", // 7
+ "TRAM_ADDRESS", // 8
+ "LOGICAL_ATTR_ADDRESS", // 9
+ "PHYSICAL_ATTR_ADDRESS", // 10
+ "GENERIC", // 11
+ "NON_EXISTENT_OPERAND", // 12
+ "CONSTANT_ADDRESS", // 13
+ "VILD_INDEX", // 14
+ "VOTE_INDEX", // 15
+ "STP_INDEX", // 16
+ "PIXLD_INDEX", // 17
+ "PATCH_OFFSET_ADDRESS", // 18
+ "RAW_ISBE_ACCESS", // 19
+ "GLOBAL_ADDRESS", // 20
+ "TEX", // 21
+ "GS_STATE", // 22
+ "SURFACE_COORDINATES", // 23
+ "FP16SIMD", // 24
+ "BINDLESS_CONSTANT_ADDRESS", // 25
+ "VERTEX_HANDLE", // 26
+ "MEMORY_DESCRIPTOR", // 27
+ "FP8SIMD", // 28
+};
+
+const char *get_prop_type_name(int i) {
+  if ( i < 0 || i >= int(sizeof(prop_type_names) / sizeof(prop_type_names[0])) )
+    return nullptr;
+  return prop_type_names[i];
+}
+
+static const char *prop_op_names[] = {
+ "IDEST", // 0
+ "IDEST2", // 1
+ "ISRC_A", // 2
+ "ISRC_B", // 3
+ "ISRC_C", // 4
+ "ISRC_E", //  5
+};
+
+const char *get_prop_op_name(int i) {
+  if ( i < 0 || i >= int(sizeof(prop_op_names) / sizeof(prop_op_names[0])) )
+    return nullptr;
+  return prop_op_names[i];
+}
+
 void NV_renderer::dis_stat() const
 {
   if ( dis_total )

@@ -49,6 +49,9 @@ double longlong_as_double(long long);
 extern const float NVf_inf, NVf_nan;
 extern const double NVd_inf, NVd_nan;
 
+const char *get_prop_type_name(int i);
+const char *get_prop_op_name(int i);
+
 class NV_renderer {
  public:
    NV_renderer() {
