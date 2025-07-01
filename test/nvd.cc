@@ -650,7 +650,10 @@ void nv_dis::fill_eaddrs(NV_labels *l, int ltype, const char *data, int alen)
   for ( const char *bcurr = data + 4; data + 4 + alen - bcurr >= 0x4; bcurr += 0x4 )
   {
     uint32_t addr = *(uint32_t *)(bcurr);
-    (*l)[addr] = ltype;
+    // there can be several labels for some addr, so add only if not exists yet
+    auto ri = l->find(addr);
+    if ( ri == l->end() )
+      (*l)[addr] = ltype;
   }
 }
 
