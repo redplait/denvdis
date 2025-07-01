@@ -826,6 +826,11 @@ int INA::dump_i(const char *fname) const
     if ( ea )
       what = s_fields.find(ea->ea->ename);
     if ( what == s_fields.end() ) {
+      if ( ea && ea->ea->ignore && 1 == ea->ea->em->size() ) {
+        auto ei = ea->ea->em->cbegin();
+        printf("Pseudo op %s with value %d (%s)\n", fname, ei->first, ei->second);
+        return 1;
+      }
       printf("unknown field %s (%ld)\n", fname, s_fields.size()); return 0;
     }
   }
