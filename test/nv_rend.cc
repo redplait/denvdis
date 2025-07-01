@@ -1264,10 +1264,28 @@ int NV_renderer::dump_predicates(const struct nv_instr *i, const NV_extracted &k
   return ret;
 }
 
-void NV_renderer::dump_predicates(const struct nv_instr *i, const NV_extracted &kv) const
+int NV_renderer::dump_op_props(const struct nv_instr *i, FILE *fp, const char *pfx) const
 {
+  if ( !i->props ) return 0;
+  int res = 0;
+  for ( size_t pi = 0; pi < i->props->size(); pi++ ) {
+    auto curr = get_it(*i->props, pi);
+    fprintf(fp, "%s%s type %s: ", pfx, get_prop_op_name(curr->op), get_prop_type_name(curr->t));
+    for ( size_t fi = 0; fi < curr->fields.size(); ++fi ) {
+      if ( fi ) fputs(", ", fp);
+      dump_out(get_it(curr->fields, fi), fp);
+    }
+    fputc('\n', fp);
+  }
+  return res;
+}
+
+void NV_renderer::dump_predicates(const struct nv_instr *i, const NV_extracted &kv, const char *pfx) const
+{
+  if ( i->props )
+   dump_op_props(i, m_out, pfx);
   if ( !i->predicated ) return;
-  dump_predicates(i, kv, m_out, "P> ");
+  dump_predicates(i, kv, m_out, pfx);
 }
 
 void NV_renderer::dump_ops(const struct nv_instr *i, const NV_extracted &kv) const

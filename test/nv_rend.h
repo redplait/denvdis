@@ -153,8 +153,9 @@ class NV_renderer {
    int calc_miss(const struct nv_instr *, const NV_extracted &, int) const;
    int calc_index(const NV_res &, int) const;
    // predicates
-   void dump_predicates(const struct nv_instr *, const NV_extracted &) const;
+   void dump_predicates(const struct nv_instr *, const NV_extracted &, const char *pfx) const;
    int dump_predicates(const struct nv_instr *, const NV_extracted &, FILE *fp, const char *pfx) const;
+   int dump_op_props(const struct nv_instr *, FILE *fp, const char *pfx) const;
    // rend common suffixes logic
    template <typename F, typename T>
    int cs_rend(const NV_rlist *rlist, F f, T arg) const
