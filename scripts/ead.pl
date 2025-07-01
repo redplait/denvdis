@@ -9,12 +9,13 @@ use warnings;
 use Getopt::Std;
 use Carp;
 use Data::Dumper;
+use Storable;
 use v5.10;
 use feature qw( switch );
 no warnings qw( experimental::smartmatch );
 
 # options
-use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_E $opt_e $opt_f $opt_F $opt_g $opt_i $opt_m $opt_N $opt_p $opt_P $opt_r $opt_t $opt_T $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_B $opt_C $opt_c $opt_E $opt_e $opt_f $opt_F $opt_g $opt_i $opt_m $opt_N $opt_p $opt_P $opt_r $opt_t $opt_T $opt_v $opt_u $opt_U $opt_w $opt_z/;
 
 sub usage()
 {
@@ -39,6 +40,8 @@ Usage: $0 [options] md.txt
   -r - fill in reverse order
   -t - dump tables
   -T - test file
+  -u file - store properties to file
+  -U file - load and try to apply properties from file
   -v - verbose
   -w - dump warnings
   -z - remove fully filled tables patterns
@@ -4429,6 +4432,35 @@ sub check_abs
 }
 
 # properties logic
+sub store_props
+{
+  my(%hr, $ar);
+  my $cnt = 0;
+  my $dups = 0;
+  while( my($kmask, $op) = each(%g_masks) ) {
+    foreach my $inst ( @$op ) {
+      next if ( !$inst->[22] );
+      $cnt++;
+      # form ar: 0 - predicates, 1 - properties
+      $ar = [ $inst->[21], $inst->[22] ];
+      if ( exists $hr{$inst->[0]} ) {
+        my $v = $hr{$inst->[0]};
+        push @$v, $ar;
+        $dups++;
+      } else {
+        $hr{$inst->[0]} = [ $ar ];
+      }
+    }
+  }
+  printf("store %d, %d dups\n", $cnt, $dups);
+  if ( !$cnt ) {
+    printf("no properties\n");
+    return 0;
+  }
+  # store
+  store(\%hr, $opt_u);
+}
+
 my %prop_map = (
   'IDEST_OPERAND_MAP' => 'IDEST',
   'IDEST2_OPERAND_MAP' => 'IDEST2',
@@ -4457,7 +4489,7 @@ sub gen_prop
   return undef unless defined($ph);
   my @ops;
   while( my($k, $e) = each %$ph ) {
-    # compiund hash key
+    # compound hash key
     my $pk = $k . '|' . join(',', @{$e->[1]}) . '|' . $e->[0];
     unless ( exists $s_props_cache{$pk} ) {
       # push new NV_Prop and add to cache
@@ -4536,11 +4568,16 @@ sub filter_props
 }
 
 ### main
-my $status = getopts("abBcEefFgimpPrtvwzT:N:C:");
+my $status = getopts("abBcEefFgimpPrtvwzT:N:C:u:U:");
 usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
   exit(5);
+}
+# options validation
+if ( defined($opt_u) && defined($opt_U) ) {
+  printf("you cannot use both -u & -U\n");
+  usage();
 }
 
 my($fh, $state, $str, $line);
@@ -5414,6 +5451,8 @@ if ( defined($opt_m) ) {
     if ( defined($opt_B) ) {
       $g_dec_tree = build_tree();
       printf("min mask len %d\n", $g_min_len);
+      store_props() if defined($opt_u);
+      # apply_props() if defined($opt_U);
       gen_C() if defined($opt_C);
     } else {
       dump_dup_masks();
