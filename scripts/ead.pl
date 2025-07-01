@@ -4461,6 +4461,63 @@ sub store_props
   store(\%hr, $opt_u);
 }
 
+# try to load early stored props from opt_U
+sub apply_props
+{
+  unless ( -f $opt_U ) {
+    carp("cannot open $opt_U");
+    return;
+  }
+  my $hr = retrieve($opt_U);
+  unless ( defined $hr ) {
+    carp("cannot read from $opt_U");
+    return;
+  }
+  my $fc = 0;
+  my $notf = 0;
+  my $notm = 0;
+  my $app = 0;
+  # try to apply
+  while( my($kmask, $op) = each(%g_masks) ) {
+    foreach my $inst ( @$op ) {
+      unless ( exists($hr->{$inst->[0]}) ) {
+        $notf++;
+        printf("%s %s line %d\n", $inst->[0], $inst->[1], $inst->[4]);
+        next;
+      }
+      $fc++;
+      # check predicates
+      my $curr = $inst->[21];
+      my $pcurr = defined $curr;
+      my $old = $hr->{$inst->[0]}->[0]->[0];
+      my $pold = defined $old;
+      next if ( $pcurr ^ $pold );
+      my $match = 1;
+      if ( $pcurr && $pold ) {
+        foreach my $i ( keys %$curr ) {
+          next if ( $i eq 'VIRTUAL_QUEUE' or $i eq 'VQ' ); # skip checking of VIRTUAL_QUEUE
+          if ( !exists $old->{$i} ) { $match = 0; last; }
+          # also MASK_INSTR_PREDICATE can differs
+          if ( $curr->{$i} ne $old->{$i} and $i ne 'MASK_INSTR_PREDICATE') {
+            printf("not match %s: %s vs %s\n", $i, $curr->{$i}, $old->{$i});
+            $match = 0; last;
+          }
+        }
+      }
+      if ( !$match ) {
+        $notm++;
+        printf("not matched predicates: %s %s line %d\n", $inst->[0], $inst->[1], $inst->[4]);
+        next;
+      } else {
+        $inst->[22] = $hr->{$inst->[0]}->[0]->[1];
+        $app++;
+      }
+    }
+  }
+  printf("found %d classes, not found %d, not matched %d, applied %d\n", $fc, $notf, $notm, $app);
+}
+
+
 my %prop_map = (
   'IDEST_OPERAND_MAP' => 'IDEST',
   'IDEST2_OPERAND_MAP' => 'IDEST2',
@@ -5452,7 +5509,7 @@ if ( defined($opt_m) ) {
       $g_dec_tree = build_tree();
       printf("min mask len %d\n", $g_min_len);
       store_props() if defined($opt_u);
-      # apply_props() if defined($opt_U);
+      apply_props() if defined($opt_U);
       gen_C() if defined($opt_C);
     } else {
       dump_dup_masks();
