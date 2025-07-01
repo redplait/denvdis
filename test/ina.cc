@@ -730,6 +730,7 @@ int INA::re_rend()
      if ( opt_p && g_instr->predicated ) {
        printf("Predicates:\n");
        dump_predicates(p.first, p.second, stdout, " ");
+       dump_op_props(p.first, stdout, " ");
      }
      return 1;
    }
@@ -1250,6 +1251,7 @@ void INA::dump_ins(const NV_pair &p, size_t off)
     if ( opt_p && p.first->predicated ) {
       fprintf(m_out, "Predicates:\n");
       dump_predicates(p.first, p.second, m_out, " ");
+      dump_op_props(p.first, m_out, " ");
     }
   }
 }

@@ -461,7 +461,7 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
   } else
     fprintf(m_out, " NO_Render\n");
   if ( opt_O ) dump_ops( p.first, p.second );
-  if ( opt_p ) dump_predicates( p.first, p.second );
+  if ( opt_p ) dump_predicates( p.first, p.second, opt_c ? "; " : "P> " );
 }
 
 void nv_dis::try_dis(Elf_Word idx)
