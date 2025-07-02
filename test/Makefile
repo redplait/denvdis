@@ -19,7 +19,7 @@ nvd: nv_rend.cc nvd.cc
 	gcc -Wall -std=c++20 -g $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
 
 pa: nv_rend.cc pa.cc
-	gcc -Wall -std=c++20 -gdwarf-4 $(IFLAGS) $(FP16) -o $@ $^ -lstdc++ -ldl
+	gcc -Wall -std=c++20 -O -msse4 -mavx2 -gdwarf-4 $(IFLAGS) $(FP16) -o $@ $^ -lstdc++ -ldl
 
 sm120.so: sm120.cc
 	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
@@ -98,22 +98,24 @@ sm75.cc: $(EAD)
 
 # in data12
 sm80.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm80 ../data12/sm80_1.txt
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm80 ../data11/sm80_1.txt
 
 sm86.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm86 ../data12/sm86_1.txt
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm86 ../data11/sm86_1.txt
 
 sm89.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm89 ../data12/sm89_1.txt
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm89 ../data11/sm89_1.txt
 
-sm90.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm90 ../data12/sm90_1.txt
+sm90.cc 90.props: $(EAD)
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -u 90.props -C sm90 ../data11/sm90_1.txt
 
-sm100.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm100 ../data12/sm100_1.txt
+# try to apply properties from sm90 to sm100-sm120 from data12
 
-sm101.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm101 ../data12/sm101_1.txt
+sm100.cc: $(EAD) 90.props
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -U 90.props -C sm100 ../data12/sm100_1.txt
 
-sm120.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm120 ../data12/sm120_1.txt
+sm101.cc: $(EAD) 90.props
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -U 90.props -C sm101 ../data12/sm101_1.txt
+
+sm120.cc: $(EAD) 90.props
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -U 90.props -C sm120 ../data12/sm120_1.txt
