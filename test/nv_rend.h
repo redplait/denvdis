@@ -231,6 +231,9 @@ class NV_renderer {
      if ( ei ) return ei->ea;
      return try_by_ename(i, s);
    }
+   // check const bank[0][imm]
+   std::optional<long> check_cbank(const NV_rlist *r, const NV_extracted &kv) const;
+   std::optional<long> check_cbank_right(const std::list<ve_base> &l, const NV_extracted &kv) const;
    // renderer
    int rend_singleE(const struct nv_instr *, const render_base *r, std::string &res) const;
    template <typename Fs, typename Fl>

@@ -629,7 +629,7 @@ int NV_renderer::render_ve_list(const std::list<ve_base> &l, const struct nv_ins
     return render_ve(*l.begin(), i, kv, res);
   int missed = 0, has_prev = 0;
   int idx = 0;
-  for ( auto ve: l ) {
+  for ( auto &ve: l ) {
     if ( ve.type == R_value )
     {
       auto kvi = kv.find(ve.arg);
@@ -880,7 +880,7 @@ void NV_renderer::r_velist(const std::list<ve_base> &l, std::string &res) const
     return;
   }
   int idx = 0;
-  for ( auto ve: l ) {
+  for ( auto &ve: l ) {
     if ( ve.type == R_value )
     {
       if ( ve.pfx ) res += ve.pfx;
@@ -962,6 +962,36 @@ void NV_renderer::r_ve(const ve_base &ve, std::string &res) const
 {
   if ( ve.type == R_enum ) res += "E:";
   res += ve.arg;
+}
+
+std::optional<long> NV_renderer::check_cbank_right(const std::list<ve_base> &rl, const NV_extracted &kv) const
+{
+  for ( auto &ve: rl ) {
+    if ( ve.type == R_value )
+    {
+      auto kvi = kv.find(ve.arg);
+      if ( kvi == kv.end() ) continue;
+      return std::optional<long>(kvi->second);
+    }
+  }
+  return std::nullopt;
+}
+
+std::optional<long> NV_renderer::check_cbank(const NV_rlist *rl, const NV_extracted &kv) const
+{
+  for ( auto ri: *rl ) {
+    if ( ri->type == R_C || ri->type == R_CX ) {
+      const render_C *rn = (const render_C *)ri;
+      if ( rn->left.type != R_value )
+        return std::nullopt;
+      auto kvi = kv.find(rn->left.arg);
+      if ( kvi == kv.end() )
+        return std::nullopt;
+      if ( kvi->second ) return std::nullopt;
+      return check_cbank_right(rn->right, kv);
+    }
+  }
+  return std::nullopt;
 }
 
 int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i,
