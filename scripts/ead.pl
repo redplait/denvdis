@@ -4695,8 +4695,10 @@ my $parse_pair = sub {
   return 0 if ( $s eq '' );
   # simplest case - just some enum
   if ( $s =~ /^\"?([\w\.]+)\"?$/ ) {
+    my $ename = $1;
     $eref->{$1} = $curr_enum;
-    $erref->{$curr_enum} //= $1;
+    if ( $ename =~ /^SR_/ ) { $erref->{$curr_enum} = $ename; }
+    else { $erref->{$curr_enum} //= $ename; }
     $curr_enum++;
     return 1;
   }
