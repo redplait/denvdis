@@ -605,7 +605,26 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
         fprintf(m_out, " len %4.4X\n", a_len);
         if ( data + 4 + a_len <= end && opt_h )
           HexDump(m_out, (const unsigned char *)(data + 4), a_len);
-        if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
+        if ( attr == 0x17 ) // EIATTR_KPARAM_INFO
+        {
+          // from https://github.com/VivekPanyam/cudaparsers/blob/main/src/cubin.rs
+          if ( a_len != 0xc ) fprintf(m_out, "invalid size %X\n", a_len);
+          else {
+            const char *kp = data + 4;
+            fprintf(m_out, " Index: %X\n", *(uint32_t *)kp);
+            kp += 4;
+            fprintf(m_out, " ordinal: %d\n", *(unsigned short *)kp);
+            kp += 2;
+            fprintf(m_out, " offset: %X\n", *(unsigned short *)kp);
+            kp += 2;
+            uint32_t tmp = *(uint32_t *)kp;
+            if ( tmp & 0xff ) fprintf(m_out, " align %d\n", tmp & 0xff);
+            unsigned space = (tmp >> 0x8) & 0xf;
+            if ( space ) fprintf(m_out, " space %X\n", space);
+            int is_cbank = ((tmp >> 0x10) & 2) == 0;
+            fprintf(m_out, " size %X %s\n", (((tmp >> 0x10) & 0xffff) >> 2), is_cbank ? "cbank" : "");
+          }
+        } else if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
           ltype = NVLType::Coop_grp;
         else if ( attr == 0x1c ) // EIATTR_EXIT_INSTR_OFFSETS
           ltype = NVLType::Exit;
