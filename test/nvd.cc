@@ -223,6 +223,16 @@ struct cbank_per_section {
   Elf_Word section; // from EIATTR_PARAM_CBANK
   unsigned short size = 0;
   unsigned short offset = 0;
+  inline bool in_cb(unsigned short off) const {
+    return off >= offset && off < (offset + size);
+  }
+  const cb_param *find_param(unsigned short off) const {
+    auto pi = std::lower_bound(params.cbegin(), params.cend(), off, [](const cb_param &cb, unsigned short off) {
+      return cb.offset < off;
+    });
+    if ( pi == params.cend() ) return nullptr;
+    return &(*pi);
+  }
 };
 
 class nv_dis: public NV_renderer
@@ -335,6 +345,11 @@ class nv_dis: public NV_renderer
    // indirect branches
    std::unordered_map<Elf_Word, bt_per_section *> m_branches;
    // const banks
+   const cbank_per_section *get_cbank(Elf_Word idx) {
+     auto cb = m_cbanks.find(idx);
+     if ( cb == m_cbanks.end() ) return nullptr;
+     return cb->second;
+   }
    void add_cbank(Elf_Word, Elf_Word, unsigned short off, unsigned short size);
    void add_cparam(Elf_Word, int ordinal, uint32_t, unsigned short);
    void finalize_cparams(Elf_Word idx) {
@@ -523,6 +538,7 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
 void nv_dis::try_dis(Elf_Word idx)
 {
   auto branches = get_branch(idx);
+  auto cbank = get_cbank(idx);
   auto rels = m_srels.find(idx);
   if ( rels != m_srels.end() ) {
     has_relocs = true;
@@ -594,6 +610,21 @@ void nv_dis::try_dis(Elf_Word idx)
       if ( m_width == 88 && !dual_first && !dual_last )
         dual_first = check_dual(res[res_idx].second);
       dump_ins(res[res_idx], curr_label, branches ? &branches->labels: nullptr);
+      // check const bank
+      if ( cbank ) {
+        auto cb = check_cbank(m_dis->get_rend(res[res_idx].first->n), res[res_idx].second);
+        if ( cb.has_value() ) {
+          auto off = cb.value();
+          if ( cbank->in_cb(off) ) {
+            fprintf(m_out, " ; cb in section %d, offset %lX - %X = %lX\n",
+              cbank->section, off, cbank->offset, off - cbank->offset);
+          } else {
+            auto cp = cbank->find_param(off);
+            if ( cp )
+              fprintf(m_out, " ; cb param %d off %lX size %X\n", cp->ordinal, off, cp->size);
+          }
+        }
+      }
       if ( opt_S && res[res_idx].first->scbd_type != BB_ENDING_INST && !res[res_idx].first->brt ) // store sched rows of current instruction
         fill_sched(res[res_idx].first, res[res_idx].second);
       else
@@ -628,6 +659,7 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
   auto size = sec->get_size();
   if ( !size ) return;
   const char *data = sec->get_data();
+  auto sidx = sec->get_info();
   const char *start, *end = data + size;
   start = data;
   while( data < end )
@@ -639,6 +671,7 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
     char format = data[0];
     char attr = data[1];
     unsigned short a_len;
+    const char *kp = nullptr;
     auto a_i = s_ei.find(attr);
     int ltype = 0;
     if ( a_i != s_ei.end() )
@@ -667,12 +700,25 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
         fprintf(m_out, " len %4.4X\n", a_len);
         if ( data + 4 + a_len <= end && opt_h )
           HexDump(m_out, (const unsigned char *)(data + 4), a_len);
-        if ( attr == 0x17 ) // EIATTR_KPARAM_INFO
+        kp = data + 4;
+        if ( attr == 0xa ) { // EIATTR_PARAM_CBANK
+          if ( a_len != 8 ) fprintf(m_out, "invalid PARAM_CBANK size %X\n", a_len);
+          else {
+            uint32_t sec_id = *(uint32_t *)kp;
+            kp += 4;
+            fprintf(m_out, " section index: %d\n", sec_id);
+            unsigned short off = *(unsigned short *)kp;
+            fprintf(m_out, " offset: %X\n", off);
+            kp += 2;
+            unsigned short size = *(unsigned short *)kp;
+            fprintf(m_out, " size: %X\n", size);
+            add_cbank(sidx, sec_id, off, size);
+          }
+        } else if ( attr == 0x17 ) // EIATTR_KPARAM_INFO
         {
           // from https://github.com/VivekPanyam/cudaparsers/blob/main/src/cubin.rs
-          if ( a_len != 0xc ) fprintf(m_out, "invalid size %X\n", a_len);
+          if ( a_len != 0xc ) fprintf(m_out, "invalid KPARAM_INFO size %X\n", a_len);
           else {
-            const char *kp = data + 4;
             fprintf(m_out, " Index: %X\n", *(uint32_t *)kp);
             kp += 4;
             unsigned short ord = *(unsigned short *)kp;
@@ -688,7 +734,7 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             int is_cbank = ((tmp >> 0x10) & 2) == 0;
             uint32_t csize = (((tmp >> 0x10) & 0xffff) >> 2);
             fprintf(m_out, " size %X %s\n", csize, is_cbank ? "cbank" : "");
-            if ( is_cbank ) add_cparam(sec->get_info(), ord, off, csize);
+            if ( is_cbank ) add_cparam(sidx, ord, off, csize);
           }
         } else if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
           ltype = NVLType::Coop_grp;
@@ -706,11 +752,11 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
           ltype = NVLType::War_membar;
         // read offsets
         if ( ltype ) {
-          auto ib = get_branch(sec->get_info());
+          auto ib = get_branch(sidx);
           fill_eaddrs(&ib->labels, ltype, data, a_len);
         } else if ( attr == 0x34 ) {
           // collect indirect branches
-          auto ib = get_branch(sec->get_info());
+          auto ib = get_branch(sidx);
           for ( const char *bcurr = data + 4; data + 4 + a_len - bcurr >= 0x10; bcurr += 0x10 ) {
             // offset 0 - address of instruction
             // offset c - address of label
