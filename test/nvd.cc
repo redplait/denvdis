@@ -210,6 +210,21 @@ struct bt_per_section
   NV_labels labels; // offset of label
 };
 
+// const bank params
+struct cb_param {
+  int ordinal;
+  uint32_t size;
+  unsigned short offset;
+};
+
+// const banks per section
+struct cbank_per_section {
+  std::vector<cb_param> params;
+  Elf_Word section; // from EIATTR_PARAM_CBANK
+  unsigned short size = 0;
+  unsigned short offset = 0;
+};
+
 class nv_dis: public NV_renderer
 {
   public:
@@ -218,6 +233,7 @@ class nv_dis: public NV_renderer
     }
    ~nv_dis() {
      for ( auto bi: m_branches ) delete bi.second;
+     for ( auto cb: m_cbanks ) delete cb.second;
    }
    int open(const char *fname) {
      if ( !reader.load(fname) ) {
@@ -296,6 +312,7 @@ class nv_dis: public NV_renderer
    void dump_mrelocs(section *);
    void dump_crelocs(section *);
    void parse_attrs(Elf_Half idx, section *);
+   void _parse_attrs(Elf_Half idx, section *);
    int read_symbols();
    // branches
    bt_per_section *get_branch(Elf_Word i) {
@@ -317,7 +334,46 @@ class nv_dis: public NV_renderer
    void dump_csym(const asymbol *) const;
    // indirect branches
    std::unordered_map<Elf_Word, bt_per_section *> m_branches;
+   // const banks
+   void add_cbank(Elf_Word, Elf_Word, unsigned short off, unsigned short size);
+   void add_cparam(Elf_Word, int ordinal, uint32_t, unsigned short);
+   void finalize_cparams(Elf_Word idx) {
+     auto cb = m_cbanks.find(idx);
+     if ( cb == m_cbanks.end() ) return;
+     std::sort( cb->second->params.begin(), cb->second->params.end(), [](const cb_param &a, const cb_param &b) {
+       return a.offset < b.offset;
+     });
+   }
+   std::unordered_map<Elf_Word, cbank_per_section *> m_cbanks;
 };
+
+void nv_dis::add_cparam(Elf_Word idx, int ordinal, uint32_t size, unsigned short off)
+{
+  cbank_per_section *cps = nullptr;
+  auto cb = m_cbanks.find(idx);
+  if ( cb == m_cbanks.end() ) {
+    cps = new cbank_per_section;
+    m_cbanks[idx] = cps;
+  } else
+    cps = cb->second;
+  cps->params.push_back( { ordinal, size, off } );
+}
+
+void nv_dis::add_cbank(Elf_Word idx, Elf_Word s, unsigned short off, unsigned short size)
+{
+  auto cb = m_cbanks.find(idx);
+  if ( cb != m_cbanks.end() ) {
+    cb->second->section = s;
+    cb->second->offset = off;
+    cb->second->size = size;
+  } else {
+    cbank_per_section *cps = new cbank_per_section;
+    cps->section = s;
+    cps->offset = off;
+    cps->size = size;
+    m_cbanks[idx] = cps;
+  }
+}
 
 static const char *s_brts[4] = {
  "BRT_CALL",
@@ -561,6 +617,12 @@ void nv_dis::hdump_section(section *sec)
 
 void nv_dis::parse_attrs(Elf_Half idx, section *sec)
 {
+  _parse_attrs(idx, sec);
+  finalize_cparams(idx);
+}
+
+void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
+{
   if ( !opt_e ) return;
   if ( sec->get_type() == SHT_NOBITS ) return;
   auto size = sec->get_size();
@@ -613,16 +675,20 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
             const char *kp = data + 4;
             fprintf(m_out, " Index: %X\n", *(uint32_t *)kp);
             kp += 4;
-            fprintf(m_out, " ordinal: %d\n", *(unsigned short *)kp);
+            unsigned short ord = *(unsigned short *)kp;
+            fprintf(m_out, " ordinal: %d\n", ord);
             kp += 2;
-            fprintf(m_out, " offset: %X\n", *(unsigned short *)kp);
+            unsigned short off = *(unsigned short *)kp;
+            fprintf(m_out, " offset: %X\n", off);
             kp += 2;
             uint32_t tmp = *(uint32_t *)kp;
             if ( tmp & 0xff ) fprintf(m_out, " align %d\n", tmp & 0xff);
             unsigned space = (tmp >> 0x8) & 0xf;
             if ( space ) fprintf(m_out, " space %X\n", space);
             int is_cbank = ((tmp >> 0x10) & 2) == 0;
-            fprintf(m_out, " size %X %s\n", (((tmp >> 0x10) & 0xffff) >> 2), is_cbank ? "cbank" : "");
+            uint32_t csize = (((tmp >> 0x10) & 0xffff) >> 2);
+            fprintf(m_out, " size %X %s\n", csize, is_cbank ? "cbank" : "");
+            if ( is_cbank ) add_cparam(sec->get_info(), ord, off, csize);
           }
         } else if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
           ltype = NVLType::Coop_grp;
