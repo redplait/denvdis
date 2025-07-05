@@ -622,6 +622,8 @@ void nv_dis::try_dis(Elf_Word idx)
             auto cp = cbank->find_param(off);
             if ( cp )
               fprintf(m_out, " ; cb param %d off %lX size %X\n", cp->ordinal, off, cp->size);
+            else
+              fprintf(m_out, " ; unknown cb off %lX\n", off);
           }
         }
       }
@@ -649,7 +651,7 @@ void nv_dis::hdump_section(section *sec)
 void nv_dis::parse_attrs(Elf_Half idx, section *sec)
 {
   _parse_attrs(idx, sec);
-  finalize_cparams(idx);
+  finalize_cparams(sec->get_info());
 }
 
 void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
