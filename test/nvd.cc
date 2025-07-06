@@ -7,6 +7,7 @@ int opt_c = 0,
     opt_h = 0,
     opt_m = 0,
     opt_t = 0,
+    opt_T = 0,
     opt_p = 0,
     opt_r = 0,
     opt_S = 0,
@@ -202,6 +203,66 @@ struct asymbol
                 other = 0;
 };
 
+struct reg_history {
+  unsigned long off;
+  // 0x8000 - write, else read
+  typedef unsigned short RH;
+  RH kind;
+};
+
+// register tracks
+// there can be 4 groups of register
+// - general purpose registers
+// - predicate registers
+// and since sm75 also
+// - uniform gpr
+// - uniform predicates
+// keys are register index
+struct reg_pad {
+  typedef std::unordered_map<int, std::vector<reg_history> > RSet;
+  RSet gpr, pred, ugpr, upred;
+  // boring stuff
+  void _add(RSet &rs, int idx, unsigned long off, reg_history::RH k) {
+    auto ri = rs.find(idx);
+    if ( ri != rs.end() ) {
+      ri->second.push_back( { off, k } );
+    } else {
+     std::vector<reg_history> tmp;
+     tmp.push_back( { off, k } );
+     rs[idx] = std::move(tmp);
+    }
+  }
+  void add_rgpr(int r, unsigned long off, reg_history::RH k) {
+    _add(gpr, off, r, k);
+  }
+  void add_wgpr(int r, unsigned long off, reg_history::RH k) {
+    _add(gpr, r, off,k | 0x8000);
+  }
+  void add_rugpr(int r, unsigned long off, reg_history::RH k) {
+    _add(ugpr, off, r, k);
+  }
+  void add_wugpr(int r, unsigned long off, reg_history::RH k) {
+    _add(ugpr, r, off,k | 0x8000);
+  }
+  void add_rpred(int r, unsigned long off, reg_history::RH k) {
+    _add(pred, off, r, k);
+  }
+  void add_wpred(int r, unsigned long off, reg_history::RH k) {
+    _add(pred, off, r, k | 0x8000);
+  }
+  void add_rupred(int r, unsigned long off, reg_history::RH k) {
+    _add(upred, off, r, k);
+  }
+  void add_wupred(int r, unsigned long off, reg_history::RH k) {
+    _add(upred, off, r, k | 0x8000);
+  }
+  void clear() {
+     gpr.clear();
+     pred.clear();
+     ugpr.clear();
+     upred.clear();
+  }
+};
 
 // extracted from EIATTR_INDIRECT_BRANCH_TARGETS
 struct bt_per_section
@@ -244,6 +305,7 @@ class nv_dis: public NV_renderer
    ~nv_dis() {
      for ( auto bi: m_branches ) delete bi.second;
      for ( auto cb: m_cbanks ) delete cb.second;
+     if ( m_rtdb ) delete m_rtdb;
    }
    int open(const char *fname) {
      if ( !reader.load(fname) ) {
@@ -360,7 +422,44 @@ class nv_dis: public NV_renderer
      });
    }
    std::unordered_map<Elf_Word, cbank_per_section *> m_cbanks;
+   // regs track db
+   void dump_rt() const;
+   void dump_rset(const reg_pad::RSet &, const char *pfx) const;
+   reg_pad *m_rtdb = nullptr;
 };
+
+void nv_dis::dump_rt() const {
+  if ( !m_rtdb ) return;
+  if ( !m_rtdb->gpr.empty() ) {
+    fprintf(m_out, ";;; %ld GPR\n", m_rtdb->gpr.size());
+    dump_rset(m_rtdb->gpr, "R");
+  }
+  if ( !m_rtdb->ugpr.empty() ) {
+    fprintf(m_out, ";;; %ld UGPR\n", m_rtdb->ugpr.size());
+    dump_rset(m_rtdb->ugpr, "UR");
+  }
+  if ( !m_rtdb->pred.empty() ) {
+    fprintf(m_out, ";;; %ld PRED\n", m_rtdb->pred.size());
+    dump_rset(m_rtdb->pred, "P");
+  }
+  if ( !m_rtdb->upred.empty() ) {
+    fprintf(m_out, ";;; %ld UPRED\n", m_rtdb->upred.size());
+    dump_rset(m_rtdb->upred, "UP");
+  }
+}
+
+void nv_dis::dump_rset(const reg_pad::RSet &rs, const char *pfx) const
+{
+  for ( auto r: rs ) {
+    fprintf(m_out, " ;  %s%d %ld:\n", pfx, r.first, r.second.size());
+    for ( auto &tr: r.second ) {
+      if ( tr.kind & 0x8000 )
+        fprintf(m_out, " ;  %lX <- %X\n", tr.off, tr.kind & ~0x8000);
+      else
+        fprintf(m_out, " ;  %lX %X\n", tr.off, tr.kind);
+    }
+  }
+}
 
 void nv_dis::add_cparam(Elf_Word idx, int ordinal, uint32_t size, unsigned short off)
 {
@@ -550,6 +649,10 @@ void nv_dis::try_dis(Elf_Word idx)
 #endif
   }
   if ( opt_c ) grab_syms_for_section(idx);
+  if ( opt_T ) {
+    if ( !m_rtdb ) m_rtdb = new reg_pad;
+    else m_rtdb->clear();
+  }
   dual_first = dual_last = false;
   while(1) {
     NV_res res;
@@ -638,6 +741,8 @@ void nv_dis::try_dis(Elf_Word idx)
     } else if ( dual_last )
       dual_last = false;
   }
+  if ( m_rtdb )
+    dump_rt();
 }
 
 void nv_dis::hdump_section(section *sec)
@@ -976,6 +1081,7 @@ void usage(const char *prog)
   printf("-s index - disasm only single section withh index\n");
   printf("-S - dump sched info\n");
   printf("-t - dump symbols\n");
+  printf("-T - track registers\n");
   exit(6);
 }
 
@@ -985,7 +1091,7 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "cehmrtNOpSs:o:");
+    c = getopt(argc, argv, "cehmrtTNOpSs:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'c': opt_c = 1; break;
@@ -993,6 +1099,7 @@ int main(int argc, char **argv)
       case 'h': opt_h = 1; break;
       case 'm': opt_m = 1; break;
       case 't': opt_t = 1; break;
+      case 'T': opt_T = 1; break;
       case 'O': opt_O = 1; break;
       case 'p': opt_p = 1; break;
       case 'r': opt_r = 1; break;
