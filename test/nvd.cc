@@ -428,6 +428,18 @@ class nv_dis: public NV_renderer
    int track_regs(const NV_rlist *, const NV_pair &p, unsigned long off);
    void dump_rt() const;
    void dump_rset(const reg_pad::RSet &, const char *pfx) const;
+   inline bool is_pred(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
+     return !strcmp(ea->ename, "Predicate") && 7 != kvi->second;
+   }
+   inline bool is_upred(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
+     return !strcmp(ea->ename, "UniformPredicate") && 7 != kvi->second;
+   }
+   inline bool is_reg(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
+     return (!strcmp(ea->ename, "Register") || !strcmp(ea->ename, "NonZeroRegister")) && m_dis->rz != (int)kvi->second;
+   }
+   inline bool is_ureg(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
+     return (!strcmp(ea->ename, "UniformRegister") || !strcmp(ea->ename, "NonZeroUniformRegister")) && m_dis->rz != (int)kvi->second;
+   }
    reg_pad *m_rtdb = nullptr;
 };
 
@@ -562,11 +574,11 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       if ( ea->ignore ) continue;
       auto kvi = p.second.find(rn->name);
       if ( kvi == p.second.end() ) continue;
-      if ( !strcmp(ea->ename, "Predicate") && 7 != kvi->second )
+      if ( is_pred(ea, kvi) )
        { m_rtdb->rpred(kvi->second, off, 0); res++; }
-      else if ( !strcmp(ea->ename, "UniformPredicate") && 7 != kvi->second )
+      else if ( is_upred(ea, kvi) )
        { m_rtdb->rupred(kvi->second, off, 0); res++; }
-      else if ( (!strcmp(ea->ename, "Register") || !strcmp(ea->ename, "NonZeroRegister")) && m_dis->rz != (int)kvi->second )
+      else if ( is_reg(ea, kvi) )
       {
         if ( d_sv && cmp(*d_sv, rn->name) ) {
          if ( d_size <= 32 )
@@ -586,7 +598,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
          else res += gpr_multi(d2_size, kvi);
         } else
          { m_rtdb->rgpr(kvi->second, off, 0); res++; }
-      } else if ( (!strcmp(ea->ename, "UniformRegister") || !strcmp(ea->ename, "NonZeroUniformRegister")) && m_dis->rz != (int)kvi->second )
+      } else if ( is_ureg(ea, kvi) )
       {
         if ( d_sv && cmp(*d_sv, rn->name) ) {
          if ( d_size <= 32 )
@@ -606,6 +618,39 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
          else res += ugpr_multi(d2_size, kvi);
         } else
          { m_rtdb->rugpr(kvi->second, off, 0); res++; }
+      }
+      // ok, we have something compound
+      auto check_ve = [&](const ve_base &ve, reg_history::RH what) {
+        if ( ve.type == R_value ) return 0;
+        const nv_eattr *ea = find_ea(p.first, ve.arg);
+        if ( !ea ) return 0;
+        auto kvi = p.second.find(ve.arg);
+        if ( kvi == p.second.end() ) return 0;
+        // check what we have
+        if ( is_pred(ea, kvi) )
+        { m_rtdb->rpred(kvi->second, off, what); return 1; }
+        if ( is_upred(ea, kvi) )
+        { m_rtdb->rupred(kvi->second, off, what); return 1; }
+        if ( is_reg(ea, kvi) )
+        { m_rtdb->rgpr(kvi->second, off, what); return 1; }
+        if ( is_ureg(ea, kvi) )
+        { m_rtdb->rugpr(kvi->second, off, what); return 1; }
+        return 0;
+      };
+      auto check_ve_list = [&](const std::list<ve_base> &l, reg_history::RH what) {
+        int res = 0;
+        for ( auto &ve: l ) {
+          if ( ve.type == R_value ) continue;
+          const nv_eattr *ea = find_ea(p.first, ve.arg);
+          if ( ea->ignore ) continue;
+          res += check_ve(ve, what);
+        }
+        return res;
+      };
+      if ( r->type == R_C || r->type == R_CX ) {
+        const render_C *rn = (const render_C *)r;
+        res += check_ve(rn->left, 1 << 3);
+        res += check_ve_list(rn->right, 1 | (1 << 3));
       }
       idx++;
       continue;
