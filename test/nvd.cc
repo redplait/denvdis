@@ -427,6 +427,7 @@ class nv_dis: public NV_renderer
    // regs track db
    int track_regs(const NV_rlist *, const NV_pair &p, unsigned long off);
    void dump_rt() const;
+   void finalize_rt();
    void dump_rset(const reg_pad::RSet &, const char *pfx) const;
    inline bool is_pred(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
      return !strcmp(ea->ename, "Predicate") && 7 != kvi->second;
@@ -442,6 +443,33 @@ class nv_dis: public NV_renderer
    }
    reg_pad *m_rtdb = nullptr;
 };
+
+void nv_dis::finalize_rt() {
+ if ( !m_rtdb ) return;
+ // why we need to sort all those vectors? they already processed by ascending offsets
+ // for example: imad regZ, regZ will produce
+ // regZ <- off
+ // regZ off
+ // so actually we must just inverse 0x8000 for the same offsets
+ auto srt = [](const reg_history &a, const reg_history &b) -> bool {
+   if ( a.off == b.off ) {
+     bool res = ((a.kind & 0x8000) < (b.kind & 0x8000));
+#ifdef DEBUG
+ printf("a %lX %X <-> b %lX %X %d\n", a.off, a.kind, b.off, b.kind, res);
+#endif
+     return res;
+   }
+   return a.off < b.off;
+ };
+ if ( !m_rtdb->gpr.empty() )
+  for ( auto &r: m_rtdb->gpr ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !m_rtdb->ugpr.empty() )
+  for ( auto &r: m_rtdb->ugpr ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !m_rtdb->pred.empty() )
+  for ( auto &r: m_rtdb->pred ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !m_rtdb->upred.empty() )
+  for ( auto &r: m_rtdb->upred ) std::sort(r.second.begin(), r.second.end(), srt);
+}
 
 void nv_dis::dump_rt() const {
   if ( !m_rtdb ) return;
@@ -959,8 +987,10 @@ void nv_dis::try_dis(Elf_Word idx)
     } else if ( dual_last )
       dual_last = false;
   }
-  if ( m_rtdb )
+  if ( m_rtdb ) {
+    finalize_rt();
     dump_rt();
+  }
 }
 
 void nv_dis::hdump_section(section *sec)
