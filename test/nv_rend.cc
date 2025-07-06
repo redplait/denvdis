@@ -689,6 +689,19 @@ int NV_renderer::render_ve_list(const std::list<ve_base> &l, const struct nv_ins
   return missed;
 }
 
+bool NV_renderer::is_setp(const struct nv_instr *i) const
+{
+  auto ilen = strlen(i->name);
+  if ( ilen < 4 ) return false;
+  if ( i->name[ilen-1] == '2' ) {
+    if ( --ilen < 4 ) return false;
+  }
+  return (i->name[ilen-1] == 'P') &&
+    (i->name[ilen-2] == 'T') &&
+    (i->name[ilen-3] == 'E') &&
+    (i->name[ilen-4] == 'S');
+}
+
 bool NV_renderer::check_ret(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const
 {
   if ( i->brt != BRT_RETURN ) return false;
