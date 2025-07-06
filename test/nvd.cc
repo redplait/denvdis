@@ -58,6 +58,8 @@ void HexDump(FILE *f, const unsigned char *From, int Len)
 }
 
 using namespace ELFIO;
+// for sv literals
+using namespace std::string_view_literals;
 
 static std::map<char, const char *> s_ei = {
  { 0x1, "EIATTR_PAD" },
@@ -475,6 +477,16 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       if ( pr->op == IDEST2 && pr->fields.size() == 1 ) d2_sv = &get_it(pr->fields, 0);
     }
   }
+  // predicates
+  int d_size = 0, d2_size = 0;
+  if ( p.first->predicated ) {
+    auto pi = p.first->predicated->find("IDEST_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      d_size = pi->second(p.second);
+    pi = p.first->predicated->find("IDEST2_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      d2_size = pi->second(p.second);
+  }
   int idx = -1;
   for ( auto &r: *rend ) {
     // check if we have taul - then end loop
@@ -522,6 +534,26 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       idx = 0;
       continue;
     }
+    auto gpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+      int res = 0;
+      for ( unsigned short i = 0; i < dsize / 32; i++ ) {
+        reg_history::RH what = i;
+        if ( i >= m_dis->rz ) break;
+        m_rtdb->wgpr(kvi->second + i, off, what);
+        res++;
+      }
+      return res;
+    };
+    auto ugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+      int res = 0;
+      for ( unsigned short i = 0; i < dsize / 32; i++ ) {
+        reg_history::RH what = i;
+        if ( i >= m_dis->rz ) break;
+        m_rtdb->wugpr(kvi->second + i, off, what);
+        res++;
+      }
+      return res;
+    };
     // dest(2)
     if ( idx >= 0 && (r->type == R_predicate || r->type == R_enum) ) {
       const render_named *rn = (const render_named *)r;
@@ -536,19 +568,43 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
        { m_rtdb->rupred(kvi->second, off, 0); res++; }
       else if ( (!strcmp(ea->ename, "Register") || !strcmp(ea->ename, "NonZeroRegister")) && m_dis->rz != (int)kvi->second )
       {
-        if ( d_sv && cmp(*d_sv, rn->name) )
+        if ( d_sv && cmp(*d_sv, rn->name) ) {
+         if ( d_size <= 32 )
+          { m_rtdb->wgpr(kvi->second, off, 0); res++; }
+         else res += gpr_multi(d_size, kvi);
+        } else if ( d2_sv && cmp(*d2_sv, rn->name) ) {
+         if ( d2_size <= 32 )
          { m_rtdb->wgpr(kvi->second, off, 0); res++; }
-        else if ( d2_sv && cmp(*d2_sv, rn->name) )
-         { m_rtdb->wgpr(kvi->second, off, 0); res++; }
-        else
+         else res += gpr_multi(d2_size, kvi);
+        } else if ( !strcmp(rn->name, "Rd") ) {
+         if ( d_size <= 32 )
+          { m_rtdb->wgpr(kvi->second, off, 0); res++; }
+         else res += gpr_multi(d_size, kvi);
+        } else if ( !strcmp(rn->name, "Rd2") ) {
+         if ( d2_size <= 32 )
+          { m_rtdb->wgpr(kvi->second, off, 0); res++; }
+         else res += gpr_multi(d2_size, kvi);
+        } else
          { m_rtdb->rgpr(kvi->second, off, 0); res++; }
       } else if ( (!strcmp(ea->ename, "UniformRegister") || !strcmp(ea->ename, "NonZeroUniformRegister")) && m_dis->rz != (int)kvi->second )
       {
-        if ( d_sv && cmp(*d_sv, rn->name) )
-         { m_rtdb->wugpr(kvi->second, off, 0); res++; }
-        else if ( d2_sv && cmp(*d2_sv, rn->name) )
-         { m_rtdb->wugpr(kvi->second, off, 0); res++; }
-        else
+        if ( d_sv && cmp(*d_sv, rn->name) ) {
+         if ( d_size <= 32 )
+          { m_rtdb->wugpr(kvi->second, off, 0); res++; }
+          else res += ugpr_multi(d_size, kvi);
+        } else if ( d2_sv && cmp(*d2_sv, rn->name) ) {
+         if ( d2_size <= 32 )
+           { m_rtdb->wugpr(kvi->second, off, 0); res++; }
+         else res += ugpr_multi(d2_size, kvi);
+        } else if ( !strcmp(rn->name, "URd") ) {
+         if ( d_size <= 32 )
+          { m_rtdb->wugpr(kvi->second, off, 0); res++; }
+         else res += ugpr_multi(d_size, kvi);
+        } else if ( !strcmp(rn->name, "URd2") ) {
+         if ( d2_size <= 32 )
+          { m_rtdb->wugpr(kvi->second, off, 0); res++; }
+         else res += ugpr_multi(d2_size, kvi);
+        } else
          { m_rtdb->rugpr(kvi->second, off, 0); res++; }
       }
       idx++;
