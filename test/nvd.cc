@@ -232,29 +232,29 @@ struct reg_pad {
      rs[idx] = std::move(tmp);
     }
   }
-  void add_rgpr(int r, unsigned long off, reg_history::RH k) {
-    _add(gpr, off, r, k);
+  void rgpr(int r, unsigned long off, reg_history::RH k) {
+    _add(gpr, r, off, k);
   }
-  void add_wgpr(int r, unsigned long off, reg_history::RH k) {
-    _add(gpr, r, off,k | 0x8000);
+  void wgpr(int r, unsigned long off, reg_history::RH k) {
+    _add(gpr, r, off, k | 0x8000);
   }
-  void add_rugpr(int r, unsigned long off, reg_history::RH k) {
-    _add(ugpr, off, r, k);
+  void rugpr(int r, unsigned long off, reg_history::RH k) {
+    _add(ugpr, r, off, k);
   }
-  void add_wugpr(int r, unsigned long off, reg_history::RH k) {
-    _add(ugpr, r, off,k | 0x8000);
+  void wugpr(int r, unsigned long off, reg_history::RH k) {
+    _add(ugpr, r, off, k | 0x8000);
   }
-  void add_rpred(int r, unsigned long off, reg_history::RH k) {
-    _add(pred, off, r, k);
+  void rpred(int r, unsigned long off, reg_history::RH k) {
+    _add(pred, r, off, k);
   }
-  void add_wpred(int r, unsigned long off, reg_history::RH k) {
-    _add(pred, off, r, k | 0x8000);
+  void wpred(int r, unsigned long off, reg_history::RH k) {
+    _add(pred, r, off, k | 0x8000);
   }
-  void add_rupred(int r, unsigned long off, reg_history::RH k) {
-    _add(upred, off, r, k);
+  void rupred(int r, unsigned long off, reg_history::RH k) {
+    _add(upred, r, off, k);
   }
-  void add_wupred(int r, unsigned long off, reg_history::RH k) {
-    _add(upred, off, r, k | 0x8000);
+  void wupred(int r, unsigned long off, reg_history::RH k) {
+    _add(upred, r, off, k | 0x8000);
   }
   void clear() {
      gpr.clear();
@@ -423,6 +423,7 @@ class nv_dis: public NV_renderer
    }
    std::unordered_map<Elf_Word, cbank_per_section *> m_cbanks;
    // regs track db
+   int track_regs(const NV_rlist *, const NV_pair &p, unsigned long off);
    void dump_rt() const;
    void dump_rset(const reg_pad::RSet &, const char *pfx) const;
    reg_pad *m_rtdb = nullptr;
@@ -454,11 +455,107 @@ void nv_dis::dump_rset(const reg_pad::RSet &rs, const char *pfx) const
     fprintf(m_out, " ;  %s%d %ld:\n", pfx, r.first, r.second.size());
     for ( auto &tr: r.second ) {
       if ( tr.kind & 0x8000 )
-        fprintf(m_out, " ;  %lX <- %X\n", tr.off, tr.kind & ~0x8000);
+        fprintf(m_out, " ;   %lX <- %X\n", tr.off, tr.kind & ~0x8000);
       else
-        fprintf(m_out, " ;  %lX %X\n", tr.off, tr.kind);
+        fprintf(m_out, " ;   %lX %X\n", tr.off, tr.kind);
     }
   }
+}
+
+int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off)
+{
+  int res = 0;
+  bool has_props = p.first->props != nullptr;
+  const std::string_view *d_sv = nullptr,
+   *d2_sv = nullptr;
+  bool setp = is_setp(p.first);
+  if ( has_props ) {
+    for ( auto pr: *p.first->props ) {
+      if ( pr->op == IDEST && pr->fields.size() == 1 ) d_sv = &get_it(pr->fields, 0);
+      if ( pr->op == IDEST2 && pr->fields.size() == 1 ) d2_sv = &get_it(pr->fields, 0);
+    }
+  }
+  int idx = -1;
+  for ( auto &r: *rend ) {
+    // check if we have taul - then end loop
+    if ( r->type == R_value ) {
+      const render_named *rn = (const render_named *)r;
+      auto vi = find(p.first->vas, rn->name);
+      if ( vi && vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4) ) break;
+      idx++;
+      continue;
+    }
+    // predicate - before opcode
+    if ( idx < 0 && r->type == R_predicate ) {
+      // check if this is not PT
+      const render_named *rn = (const render_named *)r;
+      const nv_eattr *ea = find_ea(p.first, rn->name);
+      if ( !ea ) continue;
+      auto kvi = p.second.find(rn->name);
+      if ( kvi == p.second.end() ) continue;
+      if ( kvi->second == 7 ) continue;
+      if ( !strcmp(ea->ename, "Predicate") )
+       { m_rtdb->rpred(kvi->second, off, 0); res++; }
+      else if ( !strcmp(ea->ename, "UniformPredicate") )
+       { m_rtdb->rupred(kvi->second, off, 0); res++; }
+      else
+       fprintf(m_out, "unknown predicate %s at %lX\n", ea->ename, off);
+      continue;
+    }
+    // xxSETP
+    if ( setp && !idx && (r->type == R_predicate || r->type == R_enum) ) {
+      const render_named *rn = (const render_named *)r;
+      const nv_eattr *ea = find_ea(p.first, rn->name);
+      if ( !ea ) continue;
+      if ( ea->ignore ) continue;
+      auto kvi = p.second.find(rn->name);
+      if ( kvi == p.second.end() ) continue;
+      if ( kvi->second == 7 ) continue;
+      if ( !strcmp(ea->ename, "Predicate") )
+       { m_rtdb->wpred(kvi->second, off, 0); res++; }
+      else if ( !strcmp(ea->ename, "UniformPredicate") )
+       { m_rtdb->wupred(kvi->second, off, 0); res++; }
+      idx++;
+      continue;
+    }
+    if ( r->type == R_opcode ) {
+      idx = 0;
+      continue;
+    }
+    // dest(2)
+    if ( idx >= 0 && (r->type == R_predicate || r->type == R_enum) ) {
+      const render_named *rn = (const render_named *)r;
+      const nv_eattr *ea = find_ea(p.first, rn->name);
+      if ( !ea ) continue;
+      if ( ea->ignore ) continue;
+      auto kvi = p.second.find(rn->name);
+      if ( kvi == p.second.end() ) continue;
+      if ( !strcmp(ea->ename, "Predicate") && 7 != kvi->second )
+       { m_rtdb->rpred(kvi->second, off, 0); res++; }
+      else if ( !strcmp(ea->ename, "UniformPredicate") && 7 != kvi->second )
+       { m_rtdb->rupred(kvi->second, off, 0); res++; }
+      else if ( (!strcmp(ea->ename, "Register") || !strcmp(ea->ename, "NonZeroRegister")) && m_dis->rz != (int)kvi->second )
+      {
+        if ( d_sv && cmp(*d_sv, rn->name) )
+         { m_rtdb->wgpr(kvi->second, off, 0); res++; }
+        else if ( d2_sv && cmp(*d2_sv, rn->name) )
+         { m_rtdb->wgpr(kvi->second, off, 0); res++; }
+        else
+         { m_rtdb->rgpr(kvi->second, off, 0); res++; }
+      } else if ( (!strcmp(ea->ename, "UniformRegister") || !strcmp(ea->ename, "NonZeroUniformRegister")) && m_dis->rz != (int)kvi->second )
+      {
+        if ( d_sv && cmp(*d_sv, rn->name) )
+         { m_rtdb->wugpr(kvi->second, off, 0); res++; }
+        else if ( d2_sv && cmp(*d2_sv, rn->name) )
+         { m_rtdb->wugpr(kvi->second, off, 0); res++; }
+        else
+         { m_rtdb->rugpr(kvi->second, off, 0); res++; }
+      }
+      idx++;
+      continue;
+    }
+  }
+  return res;
 }
 
 void nv_dis::add_cparam(Elf_Word idx, int ordinal, uint32_t size, unsigned short off)
@@ -714,8 +811,9 @@ void nv_dis::try_dis(Elf_Word idx)
         dual_first = check_dual(res[res_idx].second);
       dump_ins(res[res_idx], curr_label, branches ? &branches->labels: nullptr);
       // check const bank
+      auto rend = m_dis->get_rend(res[res_idx].first->n);
       if ( cbank ) {
-        auto cb = check_cbank(m_dis->get_rend(res[res_idx].first->n), res[res_idx].second);
+        auto cb = check_cbank(rend, res[res_idx].second);
         if ( cb.has_value() ) {
           auto off = cb.value();
           if ( cbank->in_cb(off) ) {
@@ -730,6 +828,8 @@ void nv_dis::try_dis(Elf_Word idx)
           }
         }
       }
+      if ( m_rtdb )
+        track_regs(rend, res[res_idx], off);
       if ( opt_S && res[res_idx].first->scbd_type != BB_ENDING_INST && !res[res_idx].first->brt ) // store sched rows of current instruction
         fill_sched(res[res_idx].first, res[res_idx].second);
       else
