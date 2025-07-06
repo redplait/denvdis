@@ -619,8 +619,9 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
         } else
          { m_rtdb->rugpr(kvi->second, off, 0); res++; }
       }
-      // ok, we have something compound
-      auto check_ve = [&](const ve_base &ve, reg_history::RH what) {
+    }
+    // ok, we have something compound
+    auto check_ve = [&](const ve_base &ve, reg_history::RH what) {
         if ( ve.type == R_value ) return 0;
         const nv_eattr *ea = find_ea(p.first, ve.arg);
         if ( !ea ) return 0;
@@ -636,25 +637,41 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
         if ( is_ureg(ea, kvi) )
         { m_rtdb->rugpr(kvi->second, off, what); return 1; }
         return 0;
-      };
-      auto check_ve_list = [&](const std::list<ve_base> &l, reg_history::RH what) {
+    };
+    auto check_ve_list = [&](const std::list<ve_base> &l, reg_history::RH what) {
         int res = 0;
         for ( auto &ve: l ) {
           if ( ve.type == R_value ) continue;
           const nv_eattr *ea = find_ea(p.first, ve.arg);
+          if ( !ea ) continue;
           if ( ea->ignore ) continue;
           res += check_ve(ve, what);
         }
         return res;
-      };
-      if ( r->type == R_C || r->type == R_CX ) {
-        const render_C *rn = (const render_C *)r;
-        res += check_ve(rn->left, 1 << 3);
-        res += check_ve_list(rn->right, 1 | (1 << 3));
-      }
-      idx++;
-      continue;
+    };
+#ifdef DEBUG
+ fprintf(m_out, "@%lX: r->type %d\n", off, r->type);
+#endif
+    if ( r->type == R_C || r->type == R_CX ) {
+      const render_C *rn = (const render_C *)r;
+      res += check_ve(rn->left, 1 << 3);
+      res += check_ve_list(rn->right, 4 | (1 << 3));
+    } else if ( r->type == R_desc ) {
+      const render_desc *rd = (const render_desc *)r;
+      res += check_ve(rd->left, 2 << 3);
+      res += check_ve_list(rd->right, 4 | (2 << 3));
+    } else if ( r->type == R_mem ) {
+      const render_mem *rm = (const render_mem *)r;
+      res += check_ve_list(rm->right, 4 | (3 << 3));
+    } else if ( r->type == R_TTU ) {
+      const render_TTU *rt = (const render_TTU *)r;
+      res += check_ve(rt->left, 3 << 3);
+    } else if ( r->type == R_M1 ) {
+      const render_M1 *rt = (const render_M1 *)r;
+      res += check_ve(rt->left, 3 << 3);
     }
+    idx++;
+    continue;
   }
   return res;
 }
