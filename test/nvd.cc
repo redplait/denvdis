@@ -606,13 +606,34 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       if ( ea->ignore ) continue;
       auto kvi = p.second.find(rn->name);
       if ( kvi == p.second.end() ) continue;
-      if ( kvi->second == 7 ) continue;
+      if ( kvi->second == 7 ) { idx++; continue; } // I don't know if assign to RT is legal
       if ( !strcmp(ea->ename, "Predicate") )
        { m_rtdb->wpred(kvi->second, off, 0); res++; }
       else if ( !strcmp(ea->ename, "UniformPredicate") )
        { m_rtdb->wupred(kvi->second, off, 0); res++; }
       idx++;
       continue;
+    }
+    // it seems that some SETP variants can assign 2 predicate register in one instruction, like
+    //  DSETP.MAX.AND P2, P3, R2, R12, PT
+    // here first predicate in MD described as Pu and next as Pv
+    // those second Pv will have idx == 1 (Pu - 0)
+    if ( setp && idx == 1 && (r->type == R_predicate || r->type == R_enum) ) {
+      const render_named *rn = (const render_named *)r;
+      if ( !strcmp("Pv", rn->name) || !strcmp("UPv", rn->name) ) {
+        const nv_eattr *ea = find_ea(p.first, rn->name);
+        if ( !ea ) continue;
+        if ( ea->ignore ) continue;
+        auto kvi = p.second.find(rn->name);
+        if ( kvi == p.second.end() ) continue;
+        if ( kvi->second == 7 ) { idx++; continue; }
+        if ( !strcmp(ea->ename, "Predicate") )
+         { m_rtdb->wpred(kvi->second, off, 0); res++; }
+        else if ( !strcmp(ea->ename, "UniformPredicate") )
+         { m_rtdb->wupred(kvi->second, off, 0); res++; }
+        idx++;
+        continue;
+      }
     }
     if ( r->type == R_opcode ) {
       idx = 0;
@@ -622,7 +643,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
-        if ( kvi->second + i >= m_dis->rz ) break;
+        if ( (int)kvi->second + i >= m_dis->rz ) break;
         m_rtdb->rgpr(kvi->second + i, off, what);
         res++;
       }
@@ -632,7 +653,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
-        if ( kvi->second + i >= m_dis->rz ) break;
+        if ( (int)kvi->second + i >= m_dis->rz ) break;
         m_rtdb->wgpr(kvi->second + i, off, what);
         res++;
       }
@@ -642,7 +663,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
-        if ( kvi->second + i >= m_dis->rz ) break;
+        if ( (int)kvi->second + i >= m_dis->rz ) break;
         m_rtdb->rugpr(kvi->second + i, off, what);
         res++;
       }
@@ -652,7 +673,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
-        if ( kvi->second + i >= m_dis->rz ) break;
+        if ( (int)kvi->second + i >= m_dis->rz ) break;
         m_rtdb->wugpr(kvi->second + i, off, what);
         res++;
       }
