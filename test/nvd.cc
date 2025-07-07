@@ -208,8 +208,21 @@ struct asymbol
 struct reg_history {
   unsigned long off;
   // 0x8000 - write, else read
+  // 0x4000 - Uniform predicate, else just predicate
+  // next 3 bits are predicate reg index + 1 (bcs T == 7 and 0 is perfectly valid predicate)
   typedef unsigned short RH;
   RH kind;
+  inline bool is_upred() const {
+    return kind & 0x4000;
+  }
+  inline bool has_pred(int &p) const {
+    p = (kind >> 11) & 0x7;
+    if ( p ) {
+      p--;
+      return true;
+    }
+    return false;
+  }
 };
 
 // register tracks
@@ -223,8 +236,10 @@ struct reg_history {
 struct reg_pad {
   typedef std::unordered_map<int, std::vector<reg_history> > RSet;
   RSet gpr, pred, ugpr, upred;
+  reg_history::RH pred_mask = 0;
   // boring stuff
   void _add(RSet &rs, int idx, unsigned long off, reg_history::RH k) {
+    k |= pred_mask;
     auto ri = rs.find(idx);
     if ( ri != rs.end() ) {
       if ( !ri->second.empty() ) { // check if prev item is the same
@@ -263,6 +278,7 @@ struct reg_pad {
     _add(upred, r, off, k | 0x8000);
   }
   void clear() {
+     pred_mask = 0;
      gpr.clear();
      pred.clear();
      ugpr.clear();
@@ -498,13 +514,24 @@ void nv_dis::dump_rt() const {
 
 void nv_dis::dump_rset(const reg_pad::RSet &rs, const char *pfx) const
 {
+  constexpr int mask = (1 << 11) - 1;
   for ( auto r: rs ) {
     fprintf(m_out, " ;  %s%d %ld:\n", pfx, r.first, r.second.size());
     for ( auto &tr: r.second ) {
+      int pred = 0;
+      bool is_pred = tr.has_pred(pred);
       if ( tr.kind & 0x8000 )
-        fprintf(m_out, " ;   %lX <- %X\n", tr.off, tr.kind & ~0x8000);
-      else
-        fprintf(m_out, " ;   %lX %X\n", tr.off, tr.kind);
+      {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX <- %X P%d\n", tr.off, tr.kind & mask, pred);
+        else
+          fprintf(m_out, " ;   %lX <- %X\n", tr.off, tr.kind & mask);
+      } else {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX %X P%d\n", tr.off, tr.kind & mask, pred);
+        else
+          fprintf(m_out, " ;   %lX %X\n", tr.off, tr.kind & mask);
+      }
     }
   }
 }
@@ -533,6 +560,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       d2_size = pi->second(p.second);
   }
   int idx = -1;
+  m_rtdb->pred_mask = 0;
   for ( auto &r: *rend ) {
     // check if we have taul - then end loop
     if ( r->type == R_value ) {
@@ -552,9 +580,11 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       if ( kvi == p.second.end() ) continue;
       if ( kvi->second == 7 ) continue;
       if ( !strcmp(ea->ename, "Predicate") )
-       { m_rtdb->rpred(kvi->second, off, 0); res++; }
+       { m_rtdb->pred_mask = (1 + (unsigned short)kvi->second) << 11;
+         m_rtdb->rpred(kvi->second, off, 0); res++; }
       else if ( !strcmp(ea->ename, "UniformPredicate") )
-       { m_rtdb->rupred(kvi->second, off, 0); res++; }
+       { m_rtdb->pred_mask = 0x4000 | (1 + (unsigned short)kvi->second) << 11;
+         m_rtdb->rupred(kvi->second, off, 0); res++; }
       else
        fprintf(m_out, "unknown predicate %s at %lX\n", ea->ename, off);
       continue;
