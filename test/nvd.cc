@@ -550,7 +550,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
     }
   }
   // predicates
-  int d_size = 0, d2_size = 0;
+  int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, c_size = 0;
   if ( p.first->predicated ) {
     auto pi = p.first->predicated->find("IDEST_SIZE"sv);
     if ( pi != p.first->predicated->end() )
@@ -558,6 +558,15 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
     pi = p.first->predicated->find("IDEST2_SIZE"sv);
     if ( pi != p.first->predicated->end() )
       d2_size = pi->second(p.second);
+    pi = p.first->predicated->find("ISRC_A_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      a_size = pi->second(p.second);
+    pi = p.first->predicated->find("ISRC_B_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      b_size = pi->second(p.second);
+    pi = p.first->predicated->find("ISRC_C_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      c_size = pi->second(p.second);
   }
   int idx = -1;
   m_rtdb->pred_mask = 0;
@@ -609,12 +618,32 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       idx = 0;
       continue;
     }
+    auto rgpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+      int res = 0;
+      for ( unsigned short i = 0; i < dsize / 32; i++ ) {
+        reg_history::RH what = i;
+        if ( i >= m_dis->rz ) break;
+        m_rtdb->rgpr(kvi->second + i, off, what);
+        res++;
+      }
+      return res;
+    };
     auto gpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
         if ( i >= m_dis->rz ) break;
         m_rtdb->wgpr(kvi->second + i, off, what);
+        res++;
+      }
+      return res;
+    };
+    auto rugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+      int res = 0;
+      for ( unsigned short i = 0; i < dsize / 32; i++ ) {
+        reg_history::RH what = i;
+        if ( i >= m_dis->rz ) break;
+        m_rtdb->rugpr(kvi->second + i, off, what);
         res++;
       }
       return res;
@@ -659,8 +688,16 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
          if ( d2_size <= 32 )
           { m_rtdb->wgpr(kvi->second, off, 0); res++; }
          else res += gpr_multi(d2_size, kvi);
-        } else
+        } else {
+         if ( !strcmp(rn->name, "Ra") && a_size > 32 )
+          res += rgpr_multi(a_size, kvi);
+         else if ( !strcmp(rn->name, "Rb") && b_size > 32 )
+          res += rgpr_multi(b_size, kvi);
+         else if ( !strcmp(rn->name, "Rc") && c_size > 32 )
+          res += rgpr_multi(c_size, kvi);
+         else
          { m_rtdb->rgpr(kvi->second, off, 0); res++; }
+        }
       } else if ( is_ureg(ea, kvi) )
       {
         if ( d_sv && cmp(*d_sv, rn->name) ) {
@@ -679,8 +716,16 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
          if ( d2_size <= 32 )
           { m_rtdb->wugpr(kvi->second, off, 0); res++; }
          else res += ugpr_multi(d2_size, kvi);
-        } else
+        } else {
+         if ( !strcmp(rn->name, "URa") && a_size > 32 )
+          res += rugpr_multi(a_size, kvi);
+         else if ( !strcmp(rn->name, "URb") && b_size > 32 )
+          res += rugpr_multi(b_size, kvi);
+         else if ( !strcmp(rn->name, "URc") && c_size > 32 )
+          res += rugpr_multi(c_size, kvi);
+         else
          { m_rtdb->rugpr(kvi->second, off, 0); res++; }
+        }
       }
     }
     // ok, we have something compound
