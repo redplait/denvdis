@@ -622,7 +622,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
-        if ( i >= m_dis->rz ) break;
+        if ( kvi->second + i >= m_dis->rz ) break;
         m_rtdb->rgpr(kvi->second + i, off, what);
         res++;
       }
@@ -632,7 +632,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
-        if ( i >= m_dis->rz ) break;
+        if ( kvi->second + i >= m_dis->rz ) break;
         m_rtdb->wgpr(kvi->second + i, off, what);
         res++;
       }
@@ -642,7 +642,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
-        if ( i >= m_dis->rz ) break;
+        if ( kvi->second + i >= m_dis->rz ) break;
         m_rtdb->rugpr(kvi->second + i, off, what);
         res++;
       }
@@ -652,7 +652,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
-        if ( i >= m_dis->rz ) break;
+        if ( kvi->second + i >= m_dis->rz ) break;
         m_rtdb->wugpr(kvi->second + i, off, what);
         res++;
       }
