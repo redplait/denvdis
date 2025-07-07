@@ -227,6 +227,10 @@ struct reg_pad {
   void _add(RSet &rs, int idx, unsigned long off, reg_history::RH k) {
     auto ri = rs.find(idx);
     if ( ri != rs.end() ) {
+      if ( !ri->second.empty() ) { // check if prev item is the same
+        auto &last = ri->second.back();
+        if ( last.off == off && last.kind == k ) return;
+      }
       ri->second.push_back( { off, k } );
     } else {
      std::vector<reg_history> tmp;
@@ -447,10 +451,11 @@ class nv_dis: public NV_renderer
 void nv_dis::finalize_rt() {
  if ( !m_rtdb ) return;
  // why we need to sort all those vectors? they already processed by ascending offsets
- // for example: imad regZ, regZ will produce
- // regZ <- off
- // regZ off
- // so actually we must just inverse 0x8000 for the same offsets
+ // well, bcs we processing operands from left to right
+ // so for example: 'imad regZ, regZ' will produce assign first
+ //  regZ <- off
+ //  regZ off
+ // therefore we must sort by mask 0x8000 for the same offsets
  auto srt = [](const reg_history &a, const reg_history &b) -> bool {
    if ( a.off == b.off ) {
      bool res = ((a.kind & 0x8000) < (b.kind & 0x8000));
