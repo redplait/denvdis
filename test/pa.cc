@@ -1448,7 +1448,7 @@ int ParseSASS::fill_forms(NV_Forms &forms, const std::vector<const nv_instr *> &
           rn = (const render_named *)*ri;
           auto vi = find(ins->vas, rn->name);
           // need to check name of field too bcs we can have DEPBAR with dep_scbd having type NV_BITSET too
-          if ( vi && vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4)) goto out;
+          if ( is_tail(vi, rn) ) goto out;
           of.ops.push_back( new form_list(*ri) );
         }
         break;

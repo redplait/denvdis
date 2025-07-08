@@ -1040,7 +1040,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
         }
         auto vi = find(i->vas, rn->name);
         if ( !vi ) { missed++; empty = 1; break; }
-        if ( vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4) ) was_bs = 1;
+        if ( is_tail(vi, rn) ) was_bs = 1;
         if ( was_bs && opt_c ) {
           // unfortunatelly nvdisasm can dump only 4 fields at tail
           // req_bit_set: &req={bit mask}

@@ -141,6 +141,14 @@ class NV_renderer {
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist);
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, NV_Tabset *);
    void dump_ops(const struct nv_instr *, const NV_extracted &) const;
+   inline bool is_tail(const nv_vattr *vi, const render_named *rn) const {
+     return vi && vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4);
+   }
+   inline bool is_tail(const struct nv_instr *i, const render_base *r) const {
+     if ( r->type != R_value ) return false;
+     const render_named *rn = (const render_named *)r;
+     return is_tail(find(i->vas, rn->name), rn);
+   }
    // string_view methods
    static bool cmp(const std::string_view &, const char *);
    static bool is_sv(const std::string_view *sv, const char *name)

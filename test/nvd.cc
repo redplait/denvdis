@@ -593,7 +593,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
     if ( r->type == R_value ) {
       const render_named *rn = (const render_named *)r;
       auto vi = find(p.first->vas, rn->name);
-      if ( vi && vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4) ) break;
+      if ( is_tail(vi, rn) ) break;
       idx++;
       continue;
     }
