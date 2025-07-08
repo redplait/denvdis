@@ -461,6 +461,9 @@ class nv_dis: public NV_renderer
    inline bool is_ureg(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
      return (!strcmp(ea->ename, "UniformRegister") || !strcmp(ea->ename, "NonZeroUniformRegister")) && m_dis->rz != (int)kvi->second;
    }
+   inline bool is_bd(const nv_eattr *ea) const {
+     return !strcmp(ea->ename, "BD");
+   }
    reg_pad *m_rtdb = nullptr;
 };
 
@@ -544,6 +547,11 @@ static bool is_sv(const std::string_view *sv, const char *name)
     if ( *c != sv->at(i) ) return false;
   }
   return i == sv->size();
+}
+
+static bool is_sv(const std::string_view *sv, const char *name, const char *pfx)
+{
+  return is_sv(sv, name) || !strcmp(name, pfx);
 }
 
 int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off)
@@ -731,13 +739,13 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
           { m_rtdb->wgpr(kvi->second, off, 0); res++; }
          else res += gpr_multi(d2_size, kvi);
         } else {
-         if ( (is_sv(a_sv, rn->name) || !strcmp(rn->name, "Ra")) && a_size > 32 )
+         if ( a_size > 32 && is_sv(a_sv, rn->name, "Ra") )
           res += rgpr_multi(a_size, kvi);
-         else if ( (is_sv(b_sv, rn->name) || !strcmp(rn->name, "Rb")) && b_size > 32 )
+         else if ( b_size > 32 && is_sv(b_sv, rn->name, "Rb") )
           res += rgpr_multi(b_size, kvi);
-         else if ( (is_sv(c_sv, rn->name) || !strcmp(rn->name, "Rc")) && c_size > 32 )
+         else if ( c_size > 32 && is_sv(c_sv, rn->name, "Rc") )
           res += rgpr_multi(c_size, kvi);
-         else if ( (is_sv(e_sv, rn->name) || !strcmp(rn->name, "Re")) && e_size > 32 )
+         else if ( e_size > 32 && is_sv(e_sv, rn->name, "Re") )
           res += rgpr_multi(e_size, kvi);
          else
          { m_rtdb->rgpr(kvi->second, off, 0); res++; }
@@ -761,13 +769,13 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
           { m_rtdb->wugpr(kvi->second, off, 0); res++; }
          else res += ugpr_multi(d2_size, kvi);
         } else {
-         if ( (is_sv(a_sv, rn->name) || !strcmp(rn->name, "URa")) && a_size > 32 )
+         if ( a_size > 32 && is_sv(a_sv, rn->name, "URa") )
           res += rugpr_multi(a_size, kvi);
-         else if ( (is_sv(b_sv, rn->name) || !strcmp(rn->name, "URb")) && b_size > 32 )
+         else if ( b_size > 32 && is_sv(b_sv, rn->name, "URb") )
           res += rugpr_multi(b_size, kvi);
-         else if ( (is_sv(c_sv, rn->name) || !strcmp(rn->name, "URc")) && c_size > 32 )
+         else if ( c_size > 32 && is_sv(c_sv, rn->name, "URc") )
           res += rugpr_multi(c_size, kvi);
-         else  if ( (is_sv(e_sv, rn->name) || !strcmp(rn->name, "URe")) && e_size > 32 )
+         else if ( e_size > 32 && is_sv(e_sv, rn->name, "URe") )
           res += rugpr_multi(e_size, kvi);
          else
          { m_rtdb->rugpr(kvi->second, off, 0); res++; }
