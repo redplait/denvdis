@@ -465,6 +465,7 @@ static int is_rend_type(const char *buf)
     case 'M': // R_M1
     case 'd': // R_desc
     case 'm': // R_mem
+    case 'u': // uniform register
      return 1;
   }
   return 0;
@@ -478,18 +479,24 @@ int INA::apply_sel_filter(bool plus, const char *buf)
 printf("filter %c%s\n", plus ? '+' : '-', buf);
 #endif
   if ( is_rend_type(buf) ) {
-    auto sel = [buf](const render_base *rb) -> bool {
+    auto sel = [&,buf](const nv_instr *ip, const render_base *rb) -> bool {
         switch(buf[0]) {
           case 'C': return rb->type == R_C || rb->type == R_CX;
           case 'T': return rb->type == R_TTU;
           case 'M': return rb->type == R_M1;
           case 'd': return rb->type == R_desc;
           case 'm': return rb->type == R_mem;
+          case 'u': if ( rb->type == R_enum ) {
+            struct render_named *rn = (struct render_named *)rb;
+            const nv_eattr *ea = find_ea(ip, rn->name);
+            if ( ea )
+              return (!strcmp(ea->ename, "UniformRegister") || !strcmp(ea->ename, "NonZeroUniformRegister"));
+          }
         }
         return false;
     };
     std::copy_if( m_irs.begin(), m_irs.end(), std::back_inserter(new_irs), [plus,&sel](const IRPair &p) -> bool {
-      return ( std::any_of(p.second->begin(), p.second->end(), sel) == plus );
+      return ( std::any_of(p.second->begin(), p.second->end(), std::bind(sel, p.first, std::placeholders::_1)) == plus );
     });
     if ( new_irs.empty() ) {
       printf("no items with %c%c found\n", plus ? '+' : '-', buf[0]);
