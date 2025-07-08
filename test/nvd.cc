@@ -376,6 +376,10 @@ class nv_dis: public NV_renderer
    // key - section index
    std::unordered_map<int, SRels> m_srels;
    mutable SRels::const_iterator riter;
+   static bool is_sv2(const std::string_view *sv, const char *name, const char *pfx)
+   {
+     return NV_renderer::is_sv(sv, name) || !strcmp(name, pfx);
+   }
    SRels::const_iterator riter_end;
    virtual const std::string *try_name(unsigned long off) const override {
      auto si = m_curr_syms.find(off);
@@ -537,21 +541,6 @@ void nv_dis::dump_rset(const reg_pad::RSet &rs, const char *pfx) const
       }
     }
   }
-}
-
-static bool is_sv(const std::string_view *sv, const char *name)
-{
-  if ( !sv ) return false;
-  size_t i = 0;
-  for ( auto c = sv->cbegin(); c != sv->cend(); ++c, ++i ) {
-    if ( *c != sv->at(i) ) return false;
-  }
-  return i == sv->size();
-}
-
-static bool is_sv(const std::string_view *sv, const char *name, const char *pfx)
-{
-  return is_sv(sv, name) || !strcmp(name, pfx);
 }
 
 int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off)
@@ -739,13 +728,13 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
           { m_rtdb->wgpr(kvi->second, off, 0); res++; }
          else res += gpr_multi(d2_size, kvi);
         } else {
-         if ( a_size > 32 && is_sv(a_sv, rn->name, "Ra") )
+         if ( a_size > 32 && is_sv2(a_sv, rn->name, "Ra") )
           res += rgpr_multi(a_size, kvi);
-         else if ( b_size > 32 && is_sv(b_sv, rn->name, "Rb") )
+         else if ( b_size > 32 && is_sv2(b_sv, rn->name, "Rb") )
           res += rgpr_multi(b_size, kvi);
-         else if ( c_size > 32 && is_sv(c_sv, rn->name, "Rc") )
+         else if ( c_size > 32 && is_sv2(c_sv, rn->name, "Rc") )
           res += rgpr_multi(c_size, kvi);
-         else if ( e_size > 32 && is_sv(e_sv, rn->name, "Re") )
+         else if ( e_size > 32 && is_sv2(e_sv, rn->name, "Re") )
           res += rgpr_multi(e_size, kvi);
          else
          { m_rtdb->rgpr(kvi->second, off, 0); res++; }
@@ -769,13 +758,13 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
           { m_rtdb->wugpr(kvi->second, off, 0); res++; }
          else res += ugpr_multi(d2_size, kvi);
         } else {
-         if ( a_size > 32 && is_sv(a_sv, rn->name, "URa") )
+         if ( a_size > 32 && is_sv2(a_sv, rn->name, "URa") )
           res += rugpr_multi(a_size, kvi);
-         else if ( b_size > 32 && is_sv(b_sv, rn->name, "URb") )
+         else if ( b_size > 32 && is_sv2(b_sv, rn->name, "URb") )
           res += rugpr_multi(b_size, kvi);
-         else if ( c_size > 32 && is_sv(c_sv, rn->name, "URc") )
+         else if ( c_size > 32 && is_sv2(c_sv, rn->name, "URc") )
           res += rugpr_multi(c_size, kvi);
-         else if ( e_size > 32 && is_sv(e_sv, rn->name, "URe") )
+         else if ( e_size > 32 && is_sv2(e_sv, rn->name, "URe") )
           res += rugpr_multi(e_size, kvi);
          else
          { m_rtdb->rugpr(kvi->second, off, 0); res++; }

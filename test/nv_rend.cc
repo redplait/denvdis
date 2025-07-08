@@ -433,13 +433,12 @@ void NV_renderer::dump_outln(const std::string_view &sv, FILE *fp) const
   fputc('\n', fp);
 }
 
-int NV_renderer::cmp(const std::string_view &sv, const char *s) const
-{
+bool NV_renderer::cmp(const std::string_view &sv, const char *s) {
   size_t i = 0;
   for ( auto c = sv.cbegin(); c != sv.cend(); ++c, ++i ) {
-    if ( *c != s[i] ) return 0;
+    if ( *c != s[i] ) return false;
   }
-  return 1;
+  return true;
 }
 
 bool NV_renderer::contain(const std::string_view &sv, char sym) const

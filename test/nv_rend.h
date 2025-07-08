@@ -142,7 +142,16 @@ class NV_renderer {
    bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, NV_Tabset *);
    void dump_ops(const struct nv_instr *, const NV_extracted &) const;
    // string_view methods
-   int cmp(const std::string_view &, const char *) const;
+   static bool cmp(const std::string_view &, const char *);
+   static bool is_sv(const std::string_view *sv, const char *name)
+   {
+     if ( !sv ) return false;
+     size_t i = 0;
+     for ( auto c = sv->cbegin(); c != sv->cend(); ++c, ++i ) {
+       if ( *c != sv->at(i) ) return false;
+     }
+    return i == sv->size();
+   }
    void dump_sv(const std::string_view &) const;
    void dump_out(const std::string_view &) const;
    void dump_outln(const std::string_view &) const;
