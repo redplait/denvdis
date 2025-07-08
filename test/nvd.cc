@@ -523,12 +523,12 @@ void nv_dis::dump_rset(const reg_pad::RSet &rs, const char *pfx) const
       if ( tr.kind & 0x8000 )
       {
         if ( is_pred )
-          fprintf(m_out, " ;   %lX <- %X P%d\n", tr.off, tr.kind & mask, pred);
+          fprintf(m_out, " ;   %lX <- %X %s%d\n", tr.off, tr.kind & mask, tr.kind & 0x4000 ? "UP" : "P", pred);
         else
           fprintf(m_out, " ;   %lX <- %X\n", tr.off, tr.kind & mask);
       } else {
         if ( is_pred )
-          fprintf(m_out, " ;   %lX %X P%d\n", tr.off, tr.kind & mask, pred);
+          fprintf(m_out, " ;   %lX %X %s%d\n", tr.off, tr.kind & mask, tr.kind & 0x4000 ? "UP" : "P", pred);
         else
           fprintf(m_out, " ;   %lX %X\n", tr.off, tr.kind & mask);
       }
@@ -606,7 +606,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
       if ( ea->ignore ) continue;
       auto kvi = p.second.find(rn->name);
       if ( kvi == p.second.end() ) continue;
-      if ( kvi->second == 7 ) { idx++; continue; } // I don't know if assign to RT is legal
+      if ( kvi->second == 7 ) { idx++; continue; } // I don't know if assign to PT is legal
       if ( !strcmp(ea->ename, "Predicate") )
        { m_rtdb->wpred(kvi->second, off, 0); res++; }
       else if ( !strcmp(ea->ename, "UniformPredicate") )
