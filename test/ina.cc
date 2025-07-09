@@ -444,6 +444,27 @@ printf("flush res %d\n", res);
     g_found = nullptr;
     m_irs.clear();
   }
+  template <typename F>
+  bool any_filter(const IRPair &p, F &&f) const {
+    for ( auto &r: *p.second )
+    {
+      if ( is_tail(p.first, r) ) break;
+      if ( f(p.first, r) ) return true;
+    }
+    return false;
+  }
+  template <typename F>
+  bool any_vfilter(const IRPair &p, F &&f) const {
+    for ( auto &r: *p.second )
+    {
+      if ( r->type != R_value ) continue;
+      const render_named *rn = (const render_named *)r;
+      auto *rv = find(p.first->vas, rn->name);
+      if ( is_tail(rv, rn) ) break;
+      if ( rv && f(p.first, rv) ) return true;
+    }
+    return false;
+  }
   int fill_irs();
   void dump_irs() const;
   // members
@@ -478,7 +499,27 @@ int INA::apply_sel_filter(bool plus, const char *buf)
 #ifdef DEBUG
 printf("filter %c%s\n", plus ? '+' : '-', buf);
 #endif
-  if ( is_rend_type(buf) ) {
+  // is float imm operand
+  auto is_fv = [](const nv_instr *ip, const nv_vattr *rv) {
+    return rv->kind == NV_F64Imm || rv->kind == NV_F32Imm || rv->kind == NV_F16Imm;
+  };
+  if ( buf[0] == 'f' ) {
+    std::copy_if( m_irs.begin(), m_irs.end(), std::back_inserter(new_irs), [&, plus](const IRPair &p) -> bool {
+      return plus == any_vfilter(p, is_fv);
+    });
+    if ( new_irs.empty() ) {
+      printf("no %cfloating imms found\n", plus ? '+' : '-');
+      return 0;
+    }
+  } else if ( buf[0] == 'i' ) {
+    std::copy_if( m_irs.begin(), m_irs.end(), std::back_inserter(new_irs), [&, plus](const IRPair &p) -> bool {
+      return plus == any_vfilter(p, std::not_fn(is_fv));
+    });
+    if ( new_irs.empty() ) {
+      printf("no %cimms found\n", plus ? '+' : '-');
+      return 0;
+    }
+  } else if ( is_rend_type(buf) ) {
     auto sel = [&,buf](const nv_instr *ip, const render_base *rb) -> bool {
         switch(buf[0]) {
           case 'C': return rb->type == R_C || rb->type == R_CX;
