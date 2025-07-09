@@ -250,6 +250,7 @@ class NV_renderer {
    }
    // check for xxSETP
    bool is_setp(const struct nv_instr *) const;
+   bool is_s2xx(const struct nv_instr *) const; // (C)S2(U)R
    // check const bank[0][imm]
    std::optional<long> check_cbank(const NV_rlist *r, const NV_extracted &kv) const;
    std::optional<long> check_cbank_right(const std::list<ve_base> &l, const NV_extracted &kv) const;

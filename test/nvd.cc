@@ -210,6 +210,7 @@ struct reg_history {
   // 0x8000 - write, else read
   // 0x4000 - Uniform predicate, else just predicate
   // next 3 bits are predicate reg index + 1 (bcs T == 7 and 0 is perfectly valid predicate)
+  // next 1 bit - if was load from Special Reg (1 << 10)
   typedef unsigned short RH;
   RH kind;
   inline bool is_upred() const {
@@ -588,6 +589,7 @@ int nv_dis::track_regs(const NV_rlist *rend, const NV_pair &p, unsigned long off
   }
   int idx = -1;
   m_rtdb->pred_mask = 0;
+  if ( is_s2xx(p.first) ) m_rtdb->pred_mask = (1 << 10);
   for ( auto &r: *rend ) {
     // check if we have taul - then end loop
     if ( r->type == R_value ) {

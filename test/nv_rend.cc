@@ -688,6 +688,13 @@ int NV_renderer::render_ve_list(const std::list<ve_base> &l, const struct nv_ins
   return missed;
 }
 
+bool NV_renderer::is_s2xx(const struct nv_instr *i) const
+{
+  return !strcmp(i->name, "S2R") ||
+   !strcmp(i->name, "CS2R") ||
+   !strcmp(i->name, "S2UR");
+}
+
 bool NV_renderer::is_setp(const struct nv_instr *i) const
 {
   auto ilen = strlen(i->name);
