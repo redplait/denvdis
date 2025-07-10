@@ -18,7 +18,7 @@ ina: nv_rend.cc ina.cc
 nvd: nv_rend.cc nvd.cc
 	gcc -Wall -std=c++20 -g $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
 
-pa: nv_rend.cc pa.cc
+pa: nv_rend.cc pa.cc sass_parser.cc
 	gcc -Wall -std=c++20 -O -msse4 -mavx2 -gdwarf-4 $(IFLAGS) $(FP16) -o $@ $^ -lstdc++ -ldl
 
 sm120.so: sm120.cc
