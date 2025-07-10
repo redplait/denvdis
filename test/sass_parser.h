@@ -29,13 +29,13 @@ class ParseSASS: public NV_renderer
    ParseSASS(): NV_renderer()
    { }
    virtual int init(const std::string &s) = 0;
-   int add(const std::string &s);
+   int add(const std::string &s, int idx = 0);
    inline int fsize() const {
      return (int)m_forms.size();
    }
   protected:
    int init_guts();
-   int add_internal(const std::string &s);
+   int add_internal(const std::string &s, int idx);
    struct LTuple {
      const render_base *first;
      const nv_eattr *second;

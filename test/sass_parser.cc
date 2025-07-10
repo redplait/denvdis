@@ -1216,9 +1216,9 @@ int ParseSASS::enum_tail(int idx, const std::string_view &head)
   return 1;
 }
 
-int ParseSASS::add(const std::string &s)
+int ParseSASS::add(const std::string &s, int idx)
 {
-  int ares = add_internal(s);
+  int ares = add_internal(s, idx);
   if ( !ares ) return 0;
   if ( skip_final_cut ) return ares;
   // final cut
@@ -1275,10 +1275,9 @@ int ParseSASS::add(const std::string &s)
   return !m_forms.empty();
 }
 
-int ParseSASS::add_internal(const std::string &s)
+int ParseSASS::add_internal(const std::string &s, int idx)
 {
   reset_pred();
-  int idx = 0;
   // skip initial spaces
   for ( ; idx < (int)s.size(); idx++ ) if ( !isspace(s.at(idx)) ) break;
   // check { for dual-issued instructions
