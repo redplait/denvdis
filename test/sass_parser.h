@@ -33,6 +33,7 @@ class ParseSASS: public NV_renderer
    inline int fsize() const {
      return (int)m_forms.size();
    }
+   int extract(NV_extracted &);
   protected:
    int init_guts();
    int add_internal(const std::string &s, int idx);

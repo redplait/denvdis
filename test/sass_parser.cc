@@ -30,6 +30,43 @@ void ParseSASS::dump(const form_list *fl, const nv_instr *instr) const
   printf("%s\n", res.c_str());
 }
 
+int ParseSASS::extract(NV_extracted &res)
+{
+  if ( m_forms.empty() ) return 0;
+  // if there are several - no difference which to use so let it be first
+  const one_form *of = &m_forms.at(0);
+  // add locals
+  res.insert(of->l_kv.begin(), of->l_kv.end());
+  // check if we have predicate
+  if ( has_pred() ) {
+    auto first_r = *of->rend->begin();
+    if ( first_r->type != R_predicate ) return 0;
+    // map name in m_pred to key
+    const render_named *rn = (const render_named *)first_r;
+    auto ea = find_ea(of->instr, rn->name);
+    if ( !ea ) return 0;
+    // check if it has enum in s
+    auto en = m_renums->find(ea->ename);
+    if ( en == m_renums->end() ) return 0;
+    auto aiter = en->second->find(m_pred);
+    if ( aiter == en->second->end() ) {
+      fprintf(stderr, "cannot map predicate %s (%s)\n", m_pred.c_str(), ea->ename);
+      return 0;
+    }
+    res[rn->name] = aiter->second;
+    if ( has_ast ) {
+      std::string ast = rn->name;
+      ast += "@not";
+      auto pair = m_kv.emplace(std::make_pair(ast, 1));
+      res[pair.first->first] = 1;
+    }
+  }
+  // merge m_kv
+  for ( auto &pkv: m_kv )
+    res[pkv.first] = pkv.second;
+  return 1;
+}
+
 int ParseSASS::parse_pred(int idx, const std::string &s)
 {
   if ( s.at(idx) != '@' ) return 0;
