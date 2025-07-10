@@ -461,7 +461,10 @@ class nv_dis: public NV_renderer
      return !strcmp(ea->ename, "UniformPredicate") && 7 != kvi->second;
    }
    inline bool is_reg(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
-     return (!strcmp(ea->ename, "Register") || !strcmp(ea->ename, "NonZeroRegister")) && m_dis->rz != (int)kvi->second;
+     return (!strcmp(ea->ename, "Register") || !strcmp(ea->ename, "NonZeroRegister") ||
+             !strcmp(ea->ename, "RegisterFAU") || !strcmp(ea->ename, "NonZeroRegisterFAU")
+            )
+      && m_dis->rz != (int)kvi->second;
    }
    inline bool is_ureg(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
      return (!strcmp(ea->ename, "UniformRegister") || !strcmp(ea->ename, "NonZeroUniformRegister")) && m_dis->rz != (int)kvi->second;
