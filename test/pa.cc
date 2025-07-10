@@ -9,6 +9,7 @@ int opt_d = 0,
     opt_m = 0,
     opt_s = 0,
     skip_op_parsing = 0,
+    opt_T = 0,
     opt_v = 0;
 
 // for sv literals
@@ -18,9 +19,35 @@ class MyParseSASS: public ParseSASS
 {
   public:
    MyParseSASS(): ParseSASS()
-   { }
+   {
+     if ( opt_T ) m_rtdb = new reg_pad;
+   }
+   virtual ~MyParseSASS() {
+     if ( m_rtdb ) delete m_rtdb;
+   }
    virtual int init(const std::string &s) override;
    int print_fsummary(FILE *) const;
+   void dump_rt(const std::string &pfx) {
+     if ( !m_rtdb || m_rtdb->empty() ) return;
+     finalize_rt(m_rtdb);
+     fprintf(m_out, "; %s\n", pfx.c_str());
+     ParseSASS::dump_rt(m_rtdb);
+     m_rtdb->clear();
+   }
+   int add_with_rt(const std::string &s, unsigned long off) {
+     int res = add(s);
+     if ( res ) {
+       const one_form *of = &m_forms.at(0);
+       NV_pair p;
+       p.first = of->instr;
+       if ( extract(p.second) )
+         track_regs(m_rtdb, of->rend, p, off);
+     }
+     return res;
+   }
+  protected:
+   // regs track db
+   reg_pad *m_rtdb = nullptr;
 };
 
 int MyParseSASS::init(const std::string &s)
@@ -108,6 +135,7 @@ void usage(const char *prog)
   printf(" -o - skip operands parsing\n");
   printf(" -s - print forms summary\n");
   printf(" -S - print stat\n");
+  printf(" -T - track registers\n");
   printf(" -v - verbose mode\n");
   exit(6);
 }
@@ -145,7 +173,7 @@ int main(int argc, char **argv)
 {
   int c, opt_S = 0;
   while(1) {
-    c = getopt(argc, argv, "dekmosSv");
+    c = getopt(argc, argv, "dekmosSTv");
     if ( c == -1 ) break;
     switch(c) {
       case 'd': opt_d = 1; break;
@@ -155,6 +183,7 @@ int main(int argc, char **argv)
       case 'o': skip_op_parsing = 1; break;
       case 's': opt_s = 1; break;
       case 'S': opt_S = 1; break;
+      case 'T': opt_T = 1; break;
       case 'v': opt_v = 1; break;
       case '?':
       default: usage(argv[0]);
@@ -183,11 +212,12 @@ int main(int argc, char **argv)
   std::regex tgt("\\.target\\s+sm_(\\d+)");
   std::regex hdr("\\.headerflags\\s+.*EF_CUDA_SM(\\d+)");
   std::regex cmt("^\\s*\\/\\/");
-  std::regex section("^\\s+\\.section\\s+\\.(\\w+)");
-  std::regex code("^\\s*(?:\\[.+\\]\\s+)?\\/\\*.*\\*\\/\\s+(.*)\\s*;");
+  std::regex section("^\\s+\\.section\\s+\\.(\\S+)");
+  std::regex code("^\\s*(?:\\[.+\\]\\s+)?\\/\\*(.*)\\*\\/\\s+(.*)\\s*;");
   unsigned long total = 0,
    succ = 0,
    forms = 0;
+  std::string text_sname;
   for( ; std::getline(*is->is, s); ++ln ) {
     std::smatch matches;
 // printf("line %d state %d\n", ln, state);
@@ -202,16 +232,27 @@ int main(int argc, char **argv)
     // check .text sections
     if ( std::regex_search(s, cmt) ) continue;
     if ( std::regex_search(s, matches, section) ) {
+      if ( opt_T ) {
+        pa.dump_rt(text_sname);
+      }
       auto pfx = matches[1].str();
-      if ( pfx.starts_with("text") ) state = 2;
+      if ( pfx.starts_with("text") ) { text_sname = pfx; state = 2; }
       continue;
     }
     if ( 2 == state ) {
       if ( std::regex_search(s, matches, code) ) {
-        auto what = matches[1].str();
+        auto what = matches[2].str();
         if ( opt_v ) printf("%d %s\n", ln, what.c_str());
         total++;
-        if ( !pa.add(what) ) printf("[!] %d %s\n", ln, what.c_str());
+        int add_res = 0;
+        if ( opt_T ) {
+          // parse offset in matches[1]
+          char *end;
+          unsigned long off = strtoul(matches[1].str().c_str(), &end, 16);
+          add_res = pa.add_with_rt(what, off);
+        } else
+          add_res = pa.add(what);
+        if ( !add_res ) printf("[!] %d %s\n", ln, what.c_str());
         else {
           succ++;
           forms += pa.fsize();
@@ -220,6 +261,8 @@ int main(int argc, char **argv)
       }
     }
   }
+  if ( opt_T )
+    pa.dump_rt(text_sname);
   delete is;
   if ( opt_S && total ) {
     printf("total %ld succ %ld forms %ld rate %f avg %f\n", total, succ, forms,
