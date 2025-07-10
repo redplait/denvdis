@@ -3,6 +3,8 @@
 #include "nv_rend.h"
 
 extern int opt_m;
+// for sv literals
+using namespace std::string_view_literals;
 
 // ripped from sm_version.txt
 std::map<int, std::pair<const char *, const char *> > NV_renderer::s_sms = {
@@ -687,6 +689,364 @@ int NV_renderer::render_ve_list(const std::list<ve_base> &l, const struct nv_ins
   }
   return missed;
 }
+
+void NV_renderer::finalize_rt(reg_pad *rtdb) {
+ if ( !rtdb ) return;
+ // why we need to sort all those vectors? they already processed by ascending offsets
+ // well, bcs we processing operands from left to right
+ // so for example: 'imad regZ, regZ' will produce assign first
+ //  regZ <- off
+ //  regZ off
+ // therefore we must sort by mask 0x8000 for the same offsets
+ auto srt = [](const reg_history &a, const reg_history &b) -> bool {
+   if ( a.off == b.off ) {
+     bool res = ((a.kind & 0x8000) < (b.kind & 0x8000));
+#ifdef DEBUG
+ printf("a %lX %X <-> b %lX %X %d\n", a.off, a.kind, b.off, b.kind, res);
+#endif
+     return res;
+   }
+   return a.off < b.off;
+ };
+ if ( !rtdb->gpr.empty() )
+  for ( auto &r: rtdb->gpr ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !rtdb->ugpr.empty() )
+  for ( auto &r: rtdb->ugpr ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !rtdb->pred.empty() )
+  for ( auto &r: rtdb->pred ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !rtdb->upred.empty() )
+  for ( auto &r: rtdb->upred ) std::sort(r.second.begin(), r.second.end(), srt);
+}
+
+void NV_renderer::dump_rt(reg_pad *rtdb) const {
+  if ( !rtdb ) return;
+  if ( !rtdb->gpr.empty() ) {
+    fprintf(m_out, ";;; %ld GPR\n", rtdb->gpr.size());
+    dump_rset(rtdb->gpr, "R");
+  }
+  if ( !rtdb->ugpr.empty() ) {
+    fprintf(m_out, ";;; %ld UGPR\n", rtdb->ugpr.size());
+    dump_rset(rtdb->ugpr, "UR");
+  }
+  if ( !rtdb->pred.empty() ) {
+    fprintf(m_out, ";;; %ld PRED\n", rtdb->pred.size());
+    dump_rset(rtdb->pred, "P");
+  }
+  if ( !rtdb->upred.empty() ) {
+    fprintf(m_out, ";;; %ld UPRED\n", rtdb->upred.size());
+    dump_rset(rtdb->upred, "UP");
+  }
+}
+
+void NV_renderer::dump_rset(const reg_pad::RSet &rs, const char *pfx) const
+{
+  constexpr int mask = (1 << 11) - 1;
+  for ( auto r: rs ) {
+    fprintf(m_out, " ;  %s%d %ld:\n", pfx, r.first, r.second.size());
+    for ( auto &tr: r.second ) {
+      int pred = 0;
+      bool is_pred = tr.has_pred(pred);
+      if ( tr.kind & 0x8000 )
+      {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX <- %X %s%d\n", tr.off, tr.kind & mask, tr.kind & 0x4000 ? "UP" : "P", pred);
+        else
+          fprintf(m_out, " ;   %lX <- %X\n", tr.off, tr.kind & mask);
+      } else {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX %X %s%d\n", tr.off, tr.kind & mask, tr.kind & 0x4000 ? "UP" : "P", pred);
+        else
+          fprintf(m_out, " ;   %lX %X\n", tr.off, tr.kind & mask);
+      }
+    }
+  }
+}
+
+int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &p, unsigned long off)
+{
+  int res = 0;
+  bool has_props = p.first->props != nullptr;
+  const std::string_view *d_sv = nullptr,
+   *d2_sv = nullptr,
+   *a_sv = nullptr,
+   *b_sv = nullptr,
+   *c_sv = nullptr,
+   *e_sv = nullptr;
+  bool setp = is_setp(p.first);
+  if ( has_props ) {
+    for ( auto pr: *p.first->props ) {
+      if ( pr->op == IDEST && pr->fields.size() == 1 ) d_sv = &get_it(pr->fields, 0);
+      if ( pr->op == IDEST2 && pr->fields.size() == 1 ) d2_sv = &get_it(pr->fields, 0);
+      if ( pr->op == ISRC_A && pr->fields.size() == 1 ) a_sv = &get_it(pr->fields, 0);
+      if ( pr->op == ISRC_B && pr->fields.size() == 1 ) b_sv = &get_it(pr->fields, 0);
+      if ( pr->op == ISRC_C && pr->fields.size() == 1 ) c_sv = &get_it(pr->fields, 0);
+      if ( pr->op == ISRC_E && pr->fields.size() == 1 ) e_sv = &get_it(pr->fields, 0);
+    }
+  }
+  // predicates
+  int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, c_size = 0, e_size = 0;
+  if ( p.first->predicated ) {
+    auto pi = p.first->predicated->find("IDEST_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      d_size = pi->second(p.second);
+    pi = p.first->predicated->find("IDEST2_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      d2_size = pi->second(p.second);
+    pi = p.first->predicated->find("ISRC_A_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      a_size = pi->second(p.second);
+    pi = p.first->predicated->find("ISRC_B_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      b_size = pi->second(p.second);
+    pi = p.first->predicated->find("ISRC_C_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      c_size = pi->second(p.second);
+    pi = p.first->predicated->find("ISRC_E_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      e_size = pi->second(p.second);
+  }
+  int idx = -1;
+  rtdb->pred_mask = 0;
+  if ( is_s2xx(p.first) ) rtdb->pred_mask = (1 << 10);
+  for ( auto &r: *rend ) {
+    // check if we have taul - then end loop
+    if ( r->type == R_value ) {
+      const render_named *rn = (const render_named *)r;
+      auto vi = find(p.first->vas, rn->name);
+      if ( is_tail(vi, rn) ) break;
+      idx++;
+      continue;
+    }
+    // predicate - before opcode
+    if ( idx < 0 && r->type == R_predicate ) {
+      // check if this is not PT
+      const render_named *rn = (const render_named *)r;
+      const nv_eattr *ea = find_ea(p.first, rn->name);
+      if ( !ea ) continue;
+      auto kvi = p.second.find(rn->name);
+      if ( kvi == p.second.end() ) continue;
+      if ( kvi->second == 7 ) continue;
+      if ( !strcmp(ea->ename, "Predicate") )
+       { rtdb->pred_mask = (1 + (unsigned short)kvi->second) << 11;
+         rtdb->rpred(kvi->second, off, 0); res++; }
+      else if ( !strcmp(ea->ename, "UniformPredicate") )
+       { rtdb->pred_mask = 0x4000 | (1 + (unsigned short)kvi->second) << 11;
+         rtdb->rupred(kvi->second, off, 0); res++; }
+      else
+       fprintf(m_out, "unknown predicate %s at %lX\n", ea->ename, off);
+      continue;
+    }
+    // xxSETP
+    if ( setp && !idx && (r->type == R_predicate || r->type == R_enum) ) {
+      const render_named *rn = (const render_named *)r;
+      const nv_eattr *ea = find_ea(p.first, rn->name);
+      if ( !ea ) continue;
+      if ( ea->ignore ) continue;
+      auto kvi = p.second.find(rn->name);
+      if ( kvi == p.second.end() ) continue;
+      if ( kvi->second == 7 ) { idx++; continue; } // I don't know if assign to PT is legal
+      if ( !strcmp(ea->ename, "Predicate") )
+       { rtdb->wpred(kvi->second, off, 0); res++; }
+      else if ( !strcmp(ea->ename, "UniformPredicate") )
+       { rtdb->wupred(kvi->second, off, 0); res++; }
+      idx++;
+      continue;
+    }
+    // it seems that some SETP variants can assign 2 predicate register in one instruction, like
+    //  DSETP.MAX.AND P2, P3, R2, R12, PT
+    // here first predicate in MD described as Pu and next as Pv
+    // those second Pv will have idx == 1 (Pu - 0)
+    if ( setp && idx == 1 && (r->type == R_predicate || r->type == R_enum) ) {
+      const render_named *rn = (const render_named *)r;
+      if ( !strcmp("Pv", rn->name) || !strcmp("UPv", rn->name) ) {
+        const nv_eattr *ea = find_ea(p.first, rn->name);
+        if ( !ea ) continue;
+        if ( ea->ignore ) continue;
+        auto kvi = p.second.find(rn->name);
+        if ( kvi == p.second.end() ) continue;
+        if ( kvi->second == 7 ) { idx++; continue; }
+        if ( !strcmp(ea->ename, "Predicate") )
+         { rtdb->wpred(kvi->second, off, 0); res++; }
+        else if ( !strcmp(ea->ename, "UniformPredicate") )
+         { rtdb->wupred(kvi->second, off, 0); res++; }
+        idx++;
+        continue;
+      }
+    }
+    if ( r->type == R_opcode ) {
+      idx = 0;
+      continue;
+    }
+    auto rgpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+      int res = 0;
+      for ( unsigned short i = 0; i < dsize / 32; i++ ) {
+        reg_history::RH what = i;
+        if ( (int)kvi->second + i >= m_dis->rz ) break;
+        rtdb->rgpr(kvi->second + i, off, what);
+        res++;
+      }
+      return res;
+    };
+    auto gpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+      int res = 0;
+      for ( unsigned short i = 0; i < dsize / 32; i++ ) {
+        reg_history::RH what = i;
+        if ( (int)kvi->second + i >= m_dis->rz ) break;
+        rtdb->wgpr(kvi->second + i, off, what);
+        res++;
+      }
+      return res;
+    };
+    auto rugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+      int res = 0;
+      for ( unsigned short i = 0; i < dsize / 32; i++ ) {
+        reg_history::RH what = i;
+        if ( (int)kvi->second + i >= m_dis->rz ) break;
+        rtdb->rugpr(kvi->second + i, off, what);
+        res++;
+      }
+      return res;
+    };
+    auto ugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+      int res = 0;
+      for ( unsigned short i = 0; i < dsize / 32; i++ ) {
+        reg_history::RH what = i;
+        if ( (int)kvi->second + i >= m_dis->rz ) break;
+        rtdb->wugpr(kvi->second + i, off, what);
+        res++;
+      }
+      return res;
+    };
+    // dest(2)
+    if ( idx >= 0 && (r->type == R_predicate || r->type == R_enum) ) {
+      const render_named *rn = (const render_named *)r;
+      const nv_eattr *ea = find_ea(p.first, rn->name);
+      if ( !ea ) continue;
+      if ( ea->ignore ) continue;
+      auto kvi = p.second.find(rn->name);
+      if ( kvi == p.second.end() ) continue;
+      if ( is_pred(ea, kvi) )
+       { rtdb->rpred(kvi->second, off, 0); res++; }
+      else if ( is_upred(ea, kvi) )
+       { rtdb->rupred(kvi->second, off, 0); res++; }
+      else if ( is_reg(ea, kvi) )
+      {
+        if ( is_sv(d_sv, rn->name) ) {
+         if ( d_size <= 32 )
+          { rtdb->wgpr(kvi->second, off, 0); res++; }
+         else res += gpr_multi(d_size, kvi);
+        } else if ( is_sv(d2_sv, rn->name) ) {
+         if ( d2_size <= 32 )
+         { rtdb->wgpr(kvi->second, off, 0); res++; }
+         else res += gpr_multi(d2_size, kvi);
+        } else if ( !strcmp(rn->name, "Rd") ) {
+         if ( d_size <= 32 )
+          { rtdb->wgpr(kvi->second, off, 0); res++; }
+         else res += gpr_multi(d_size, kvi);
+        } else if ( !strcmp(rn->name, "Rd2") ) {
+         if ( d2_size <= 32 )
+          { rtdb->wgpr(kvi->second, off, 0); res++; }
+         else res += gpr_multi(d2_size, kvi);
+        } else {
+         if ( a_size > 32 && is_sv2(a_sv, rn->name, "Ra") )
+          res += rgpr_multi(a_size, kvi);
+         else if ( b_size > 32 && is_sv2(b_sv, rn->name, "Rb") )
+          res += rgpr_multi(b_size, kvi);
+         else if ( c_size > 32 && is_sv2(c_sv, rn->name, "Rc") )
+          res += rgpr_multi(c_size, kvi);
+         else if ( e_size > 32 && is_sv2(e_sv, rn->name, "Re") )
+          res += rgpr_multi(e_size, kvi);
+         else
+         { rtdb->rgpr(kvi->second, off, 0); res++; }
+        }
+      } else if ( is_ureg(ea, kvi) )
+      {
+        if ( is_sv(d_sv, rn->name) ) {
+         if ( d_size <= 32 )
+          { rtdb->wugpr(kvi->second, off, 0); res++; }
+          else res += ugpr_multi(d_size, kvi);
+        } else if ( is_sv(d2_sv, rn->name) ) {
+         if ( d2_size <= 32 )
+           { rtdb->wugpr(kvi->second, off, 0); res++; }
+         else res += ugpr_multi(d2_size, kvi);
+        } else if ( !strcmp(rn->name, "URd") ) {
+         if ( d_size <= 32 )
+          { rtdb->wugpr(kvi->second, off, 0); res++; }
+         else res += ugpr_multi(d_size, kvi);
+        } else if ( !strcmp(rn->name, "URd2") ) {
+         if ( d2_size <= 32 )
+          { rtdb->wugpr(kvi->second, off, 0); res++; }
+         else res += ugpr_multi(d2_size, kvi);
+        } else {
+         if ( a_size > 32 && is_sv2(a_sv, rn->name, "URa") )
+          res += rugpr_multi(a_size, kvi);
+         else if ( b_size > 32 && is_sv2(b_sv, rn->name, "URb") )
+          res += rugpr_multi(b_size, kvi);
+         else if ( c_size > 32 && is_sv2(c_sv, rn->name, "URc") )
+          res += rugpr_multi(c_size, kvi);
+         else if ( e_size > 32 && is_sv2(e_sv, rn->name, "URe") )
+          res += rugpr_multi(e_size, kvi);
+         else
+         { rtdb->rugpr(kvi->second, off, 0); res++; }
+        }
+      }
+    }
+    // ok, we have something compound
+    auto check_ve = [&](const ve_base &ve, reg_history::RH what) {
+        if ( ve.type == R_value ) return 0;
+        const nv_eattr *ea = find_ea(p.first, ve.arg);
+        if ( !ea ) return 0;
+        auto kvi = p.second.find(ve.arg);
+        if ( kvi == p.second.end() ) return 0;
+        // check what we have
+        if ( is_pred(ea, kvi) )
+        { rtdb->rpred(kvi->second, off, what); return 1; }
+        if ( is_upred(ea, kvi) )
+        { rtdb->rupred(kvi->second, off, what); return 1; }
+        if ( is_reg(ea, kvi) )
+        { rtdb->rgpr(kvi->second, off, what); return 1; }
+        if ( is_ureg(ea, kvi) )
+        { rtdb->rugpr(kvi->second, off, what); return 1; }
+        return 0;
+    };
+    auto check_ve_list = [&](const std::list<ve_base> &l, reg_history::RH what) {
+        int res = 0;
+        for ( auto &ve: l ) {
+          if ( ve.type == R_value ) continue;
+          const nv_eattr *ea = find_ea(p.first, ve.arg);
+          if ( !ea ) continue;
+          if ( ea->ignore ) continue;
+          res += check_ve(ve, what);
+        }
+        return res;
+    };
+#ifdef DEBUG
+ fprintf(m_out, "@%lX: r->type %d\n", off, r->type);
+#endif
+    if ( r->type == R_C || r->type == R_CX ) {
+      const render_C *rn = (const render_C *)r;
+      res += check_ve(rn->left, 1 << 3);
+      res += check_ve_list(rn->right, 4 | (1 << 3));
+    } else if ( r->type == R_desc ) {
+      const render_desc *rd = (const render_desc *)r;
+      res += check_ve(rd->left, 2 << 3);
+      res += check_ve_list(rd->right, 4 | (2 << 3));
+    } else if ( r->type == R_mem ) {
+      const render_mem *rm = (const render_mem *)r;
+      res += check_ve_list(rm->right, 4 | (3 << 3));
+    } else if ( r->type == R_TTU ) {
+      const render_TTU *rt = (const render_TTU *)r;
+      res += check_ve(rt->left, 3 << 3);
+    } else if ( r->type == R_M1 ) {
+      const render_M1 *rt = (const render_M1 *)r;
+      res += check_ve(rt->left, 3 << 3);
+    }
+    idx++;
+    continue;
+  }
+  return res;
+}
+
 
 bool NV_renderer::is_s2xx(const struct nv_instr *i) const
 {

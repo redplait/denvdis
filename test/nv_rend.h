@@ -41,6 +41,91 @@ inline std::string& rstrip(std::string &s)
   return s;
 }
 
+struct reg_history {
+  unsigned long off;
+  // 0x8000 - write, else read
+  // 0x4000 - Uniform predicate, else just predicate
+  // next 3 bits are predicate reg index + 1 (bcs T == 7 and 0 is perfectly valid predicate)
+  // next 1 bit - if was load from Special Reg (1 << 10)
+  typedef unsigned short RH;
+  RH kind;
+  inline bool is_upred() const {
+    return kind & 0x4000;
+  }
+  inline bool has_pred(int &p) const {
+    p = (kind >> 11) & 0x7;
+    if ( p ) {
+      p--;
+      return true;
+    }
+    return false;
+  }
+};
+
+// register tracks
+// there can be 4 groups of register
+// - general purpose registers
+// - predicate registers
+// and since sm75 also
+// - uniform gpr
+// - uniform predicates
+// keys are register index
+struct reg_pad {
+  typedef std::unordered_map<int, std::vector<reg_history> > RSet;
+  RSet gpr, pred, ugpr, upred;
+  reg_history::RH pred_mask = 0;
+  // boring stuff
+  void _add(RSet &rs, int idx, unsigned long off, reg_history::RH k) {
+    k |= pred_mask;
+    auto ri = rs.find(idx);
+    if ( ri != rs.end() ) {
+      if ( !ri->second.empty() ) { // check if prev item is the same
+        auto &last = ri->second.back();
+        if ( last.off == off && last.kind == k ) return;
+      }
+      ri->second.push_back( { off, k } );
+    } else {
+     std::vector<reg_history> tmp;
+     tmp.push_back( { off, k } );
+     rs[idx] = std::move(tmp);
+    }
+  }
+  void rgpr(int r, unsigned long off, reg_history::RH k) {
+    _add(gpr, r, off, k);
+  }
+  void wgpr(int r, unsigned long off, reg_history::RH k) {
+    _add(gpr, r, off, k | 0x8000);
+  }
+  void rugpr(int r, unsigned long off, reg_history::RH k) {
+    _add(ugpr, r, off, k);
+  }
+  void wugpr(int r, unsigned long off, reg_history::RH k) {
+    _add(ugpr, r, off, k | 0x8000);
+  }
+  void rpred(int r, unsigned long off, reg_history::RH k) {
+    _add(pred, r, off, k);
+  }
+  void wpred(int r, unsigned long off, reg_history::RH k) {
+    _add(pred, r, off, k | 0x8000);
+  }
+  void rupred(int r, unsigned long off, reg_history::RH k) {
+    _add(upred, r, off, k);
+  }
+  void wupred(int r, unsigned long off, reg_history::RH k) {
+    _add(upred, r, off, k | 0x8000);
+  }
+  bool empty() const {
+    return gpr.empty() && pred.empty() && ugpr.empty() && upred.empty();
+  }
+  void clear() {
+     pred_mask = 0;
+     gpr.clear();
+     pred.clear();
+     ugpr.clear();
+     upred.clear();
+  }
+};
+
 const char* get_merc_reloc_name(unsigned t);
 const char* get_cuda_reloc_name(unsigned t);
 float int_as_float(int);
@@ -57,7 +142,7 @@ class NV_renderer {
    NV_renderer() {
      m_out = stdout;
    }
-  ~NV_renderer() {
+  virtual ~NV_renderer() {
     if ( m_dis != nullptr ) delete m_dis;
     if ( m_out && m_out != stdout) fclose(m_out);
   }
@@ -276,6 +361,33 @@ class NV_renderer {
    bool extract(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    bool check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    bool check_ret(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
+   // reg_pads
+   static bool is_sv2(const std::string_view *sv, const char *name, const char *pfx)
+   {
+     return NV_renderer::is_sv(sv, name) || !strcmp(name, pfx);
+   }
+   int track_regs(reg_pad *, const NV_rlist *, const NV_pair &p, unsigned long off);
+   void dump_rt(reg_pad *) const;
+   void finalize_rt(reg_pad *);
+   void dump_rset(const reg_pad::RSet &, const char *pfx) const;
+   inline bool is_pred(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
+     return !strcmp(ea->ename, "Predicate") && 7 != kvi->second;
+   }
+   inline bool is_upred(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
+     return !strcmp(ea->ename, "UniformPredicate") && 7 != kvi->second;
+   }
+   inline bool is_reg(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
+     return (!strcmp(ea->ename, "Register") || !strcmp(ea->ename, "NonZeroRegister") ||
+             !strcmp(ea->ename, "RegisterFAU") || !strcmp(ea->ename, "NonZeroRegisterFAU")
+            )
+      && m_dis->rz != (int)kvi->second;
+   }
+   inline bool is_ureg(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
+     return (!strcmp(ea->ename, "UniformRegister") || !strcmp(ea->ename, "NonZeroUniformRegister")) && m_dis->rz != (int)kvi->second;
+   }
+   inline bool is_bd(const nv_eattr *ea) const {
+     return !strcmp(ea->ename, "BD");
+   }
 
    FILE *m_out;
    INV_disasm *m_dis = nullptr;
