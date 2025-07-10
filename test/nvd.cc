@@ -278,6 +278,9 @@ struct reg_pad {
   void wupred(int r, unsigned long off, reg_history::RH k) {
     _add(upred, r, off, k | 0x8000);
   }
+  bool empty() const {
+    return gpr.empty() && pred.empty() && ugpr.empty() && upred.empty();
+  }
   void clear() {
      pred_mask = 0;
      gpr.clear();
