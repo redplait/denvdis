@@ -212,7 +212,7 @@ int main(int argc, char **argv)
   std::regex tgt("\\.target\\s+sm_(\\d+)");
   std::regex hdr("\\.headerflags\\s+.*EF_CUDA_SM(\\d+)");
   std::regex cmt("^\\s*\\/\\/");
-  std::regex section("^\\s+\\.section\\s+\\.(\\S+)");
+  std::regex section("^\\s+\\.section\\s+\\.([\\w_@\\.]+)");
   std::regex code("^\\s*(?:\\[.+\\]\\s+)?\\/\\*(.*)\\*\\/\\s+(.*)\\s*;");
   unsigned long total = 0,
    succ = 0,
