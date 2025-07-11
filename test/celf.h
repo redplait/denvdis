@@ -74,6 +74,7 @@ class CElf: public T {
      if ( opt ) {
        fprintf(this->m_out, "%ld symbols\n", sym_no);
      }
+     m_syms.reserve(sym_no);
      for ( Elf_Xword i = 0; i < sym_no; ++i )
      {
         asymbol sym;
