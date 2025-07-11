@@ -1,5 +1,4 @@
-#include "elfio/elfio.hpp"
-#include "nv_rend.h"
+#include "celf.h"
 #include <unistd.h>
 
 int opt_c = 0,
@@ -56,10 +55,6 @@ void HexDump(FILE *f, const unsigned char *From, int Len)
      }
      fprintf(f, "\n");
 }
-
-using namespace ELFIO;
-// for sv literals
-using namespace std::string_view_literals;
 
 static std::map<char, const char *> s_ei = {
  { 0x1, "EIATTR_PAD" },
@@ -193,18 +188,6 @@ static std::map<unsigned int, const char *> s_sht = {
  { 0x70000075, "SHT_CUDA_CONSTANT_B17" },
 };
 
-struct asymbol
-{
-  std::string name;
-  Elf64_Addr addr;
-  Elf_Xword idx = 0;
-  Elf_Xword size = 0;
-  Elf_Half section;
-  unsigned char bind = 0,
-                type = 0,
-                other = 0;
-};
-
 // extracted from EIATTR_INDIRECT_BRANCH_TARGETS
 struct bt_per_section
 {
@@ -237,48 +220,13 @@ struct cbank_per_section {
   }
 };
 
-class nv_dis: public NV_renderer
+class nv_dis: public CElf<NV_renderer>
 {
   public:
-   nv_dis(): NV_renderer() {
-      n_sec = 0;
-    }
    virtual ~nv_dis() {
      for ( auto bi: m_branches ) delete bi.second;
      for ( auto cb: m_cbanks ) delete cb.second;
      if ( m_rtdb ) delete m_rtdb;
-   }
-   int open(const char *fname) {
-     if ( !reader.load(fname) ) {
-       fprintf(stderr, "cannot load\n");
-       return 0;
-     }
-     if ( reader.get_machine() != 190 ) {
-      fprintf(stderr, "not CUBIN\n");
-       return 0;
-     }
-     // try load smXX
-     int sm = (reader.get_flags() >> 0x10) & 0xff;
-     if ( !sm ) sm = (reader.get_flags() >> 8) & 0xff;
-     auto smi = s_sms.find(sm);
-     if ( smi == s_sms.end() ) {
-      fprintf(stderr, "unknown SM %X\n", sm);
-       return 0;
-     }
-     // check SM_DIR env
-     std::string sm_name;
-     char *sm_dir = getenv("SM_DIR");
-     if ( sm_dir ) {
-      sm_name = sm_dir;
-      if ( !sm_name.ends_with("/") ) sm_name += '/';
-     } else {
-      sm_name = "./";
-     }
-     sm_name += smi->second.second ? smi->second.second : smi->second.first;
-     sm_name += ".so";
-     if ( opt_c ) printf(".target sm_%d\n", sm);
-     else printf("load %s\n", sm_name.c_str());
-     return NV_renderer::load(sm_name);
    }
    void process();
    int single_section(int idx);
@@ -290,10 +238,6 @@ class nv_dis: public NV_renderer
         sfilters, sfilters_succ, scond_count, scond_succ, scond_hits);
    }
   protected:
-   // relocs. key - offset
-   typedef std::map<unsigned long, NV_rel> SRels;
-   // key - section index
-   std::unordered_map<int, SRels> m_srels;
    mutable SRels::const_iterator riter;
    SRels::const_iterator riter_end;
    virtual const std::string *try_name(unsigned long off) const override {
@@ -316,7 +260,6 @@ class nv_dis: public NV_renderer
      }
      return res;
    }
-   int fill_rels();
    void fill_eaddrs(NV_labels *, int ltype, const char *, int alen);
    void try_dis(Elf_Word idx);
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
@@ -336,15 +279,10 @@ class nv_dis: public NV_renderer
      return res;
    }
 
-   Elf_Half n_sec;
-   elfio reader;
-   // symbols
-   std::vector<asymbol> m_syms;
    std::map<unsigned long, asymbol *> m_curr_syms;
    std::map<unsigned long, asymbol *>::const_iterator m_curr_siter = m_curr_syms.cend();
    int grab_syms_for_section(int);
    int next_csym(unsigned long);
-   void dump_csym(const asymbol *) const;
    // indirect branches
    std::unordered_map<Elf_Word, bt_per_section *> m_branches;
    // const banks
@@ -404,39 +342,9 @@ static const char *s_brts[4] = {
 
 int nv_dis::read_symbols()
 {
-  section *sym_sec = nullptr;
-  for ( Elf_Half i = 0; i < n_sec; ++i )
-  {
-    section* sec = reader.sections[i];
-    if ( sec->get_type() == SHT_SYMTAB ) { sym_sec = sec; break; }
-  }
-  if ( !sym_sec ) return 0;
-  // read symtab
-  symbol_section_accessor symbols( reader, sym_sec );
-  Elf_Xword sym_no = symbols.get_symbols_num();
-  if ( !sym_no )
-  {
-    fprintf(m_out, "no symbols\n");
-    return 0;
-  }
-  if ( opt_t ) {
-    fprintf(m_out, "%ld symbols\n", sym_no);
-  }
-  for ( Elf_Xword i = 0; i < sym_no; ++i )
-  {
-    asymbol sym;
-    sym.idx = i;
-    symbols.get_symbol( i, sym.name, sym.addr, sym.size, sym.bind, sym.type, sym.section, sym.other );
-    if ( opt_t ) {
-      if ( sym.type != STT_SECTION )
-        fprintf(m_out, " [%ld] %lX sec %d type %d %s\n", i, sym.addr, sym.section, sym.type, sym.name.c_str());
-    }
-    if ( opt_r )
-      m_syms.push_back(sym);
-  }
-  int res = !m_syms.empty();
-  if ( !res ) return res;
-  if ( opt_r ) return fill_rels();
+  int res = _read_symbols(opt_t, [&](asymbol &sym) { if ( opt_r ) m_syms.push_back(std::move(sym)); });
+  if ( !res || m_syms.empty() ) return res;
+  if ( opt_r ) fill_rels();
   next_csym(0);
   return res;
 }
@@ -448,42 +356,6 @@ int nv_dis::next_csym(unsigned long off)
   dump_csym(m_curr_siter->second);
   ++m_curr_siter;
   return 1;
-}
-
-void nv_dis::dump_csym(const asymbol *as) const
-{
-  if ( as->bind == STB_GLOBAL )
-    fprintf(m_out, "\t.global %s\n", as->name.c_str());
-  if ( as->type == STT_OBJECT )
-    fprintf(m_out, "\t.type %s,@object\n", as->name.c_str());
-  else if ( as->type == STT_FUNC )
-    fprintf(m_out, "\t.type %s,@function\n", as->name.c_str());
-  if ( as->size )
-    fprintf(m_out, "\t.size %lX\n", as->size);
-  if ( as->other ) {
-    fprintf(m_out, "\t.other %s, @\"", as->name.c_str());
-    char upE = as->other & 0xE0;
-    char lo2 = as->other & 3;
-    int idx = 0;
-    // as far I understod order is not matters
-#define _DA(c) { if ( idx ) fputc(' ', m_out); fprintf(m_out, "%s", c); idx++; }
-    if ( as->other & 0x10 ) _DA("STO_CUDA_ENTRY")
-    if ( as->other & 0x4 )  _DA("STO_CUDA_MANAGED")
-    if ( as->other & 0x8 )  _DA("STO_CUDA_OBSCURE")
-    if ( upE == 0x20 ) _DA("STO_CUDA_GLOBAL")
-    if ( upE == 0x40 ) _DA("STO_CUDA_SHARED")
-    if ( upE == 0x60 ) _DA("STO_CUDA_LOCAL")
-    if ( upE == 0x80 ) _DA("STO_CUDA_CONSTANT")
-    if ( upE == 0xa0 ) _DA("STO_CUDA_RESERVED_SHARED")
-    if ( lo2 ) {
-      if ( lo2 == 1 ) _DA("STV_INTERNAL")
-      else if ( lo2 == 2 ) _DA("STV_HIDDEN")
-      else if ( lo2 == 3 ) _DA("STV_PROTECTED")
-    } else
-     _DA("STV_DEFAULT")
-    fprintf(m_out, "\"\n");
-#undef _DA
-  }
 }
 
 int nv_dis::grab_syms_for_section(int s_idx)
@@ -874,51 +746,6 @@ void nv_dis::dump_crelocs(section *sec)
   }
 }
 
-int nv_dis::fill_rels()
-{
-  for ( Elf_Half i = 0; i < n_sec; ++i ) {
-    section *sec = reader.sections[i];
-    auto st = sec->get_type();
-    if ( st == SHT_REL || st == SHT_RELA ) {
-      auto slink = sec->get_info();
-      section *ls = reader.sections[slink];
-#ifdef DEBUG
- fprintf(m_out, "link %d %s\n", slink, ls->get_name().c_str());
-#endif
-      auto st2 = ls->get_type();
-      if ( st2 == SHT_NOBITS || !ls->get_size() ) continue;
-      if ( strncmp(ls->get_name().c_str(), ".text.", 6) ) continue;
-      // yup, this is our client
-      const_relocation_section_accessor rsa(reader, sec);
-      auto n = rsa.get_entries_num();
-      SRels srels;
-      for ( Elf_Xword ri = 0; ri < n; ri++ ) {
-        Elf64_Addr addr;
-        Elf_Word sym;
-        unsigned type;
-        Elf_Sxword add;
-        if ( rsa.get_entry(ri, addr, sym, type, add) ) {
-          srels[addr] = { type, sym };
-        }
-      }
-#ifdef DEBUG
-      fprintf(m_out, "store %ld relocs for section %d %s\n", srels.size(), slink, ls->get_name().c_str());
-#endif
-      if ( !srels.empty() )
-      {
-        auto prev = m_srels.find(slink);
-        if ( prev == m_srels.end() )
-          m_srels[slink] = std::move(srels);
-        else {
-          SRels &old = prev->second;
-          for ( auto &p: srels ) old[p.first] = std::move(p.second);
-        }
-      }
-    }
-  }
-  return !m_srels.empty();
-}
-
 void nv_dis::process()
 {
   n_sec = reader.sections.size();
@@ -1030,7 +857,7 @@ int main(int argc, char **argv)
     printf("%s:\n", argv[i]);
     nv_dis dis;
     if ( o_fname ) dis.open_log(o_fname);
-    if ( dis.open(argv[i]) )
+    if ( dis.open(argv[i], opt_c) )
     {
       if ( s != -1 )
         dis.single_section(s);
