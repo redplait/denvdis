@@ -1,6 +1,4 @@
-#include <fstream>
 #include <unistd.h>
-#include <iostream>
 #include "sass_parser.h"
 
 int opt_d = 0,
@@ -11,9 +9,6 @@ int opt_d = 0,
     skip_op_parsing = 0,
     opt_T = 0,
     opt_v = 0;
-
-// for sv literals
-using namespace std::string_view_literals;
 
 class MyParseSASS: public ParseSASS
 {
@@ -140,35 +135,6 @@ void usage(const char *prog)
   exit(6);
 }
 
-class istr
-{
-  public:
-   std::istream *is = nullptr;
-   virtual ~istr() {}
-};
-
-class Istr: public istr
-{
-  public:
-   Istr() {
-     is = &std::cin;
-   }
-};
-
-class Fstr: public istr
-{
-  public:
-   virtual ~Fstr() {}
-   Fstr(const char *fname): m_f(fname) {
-     is = &m_f;
-   }
-   bool is_open() const {
-     return m_f.is_open();
-   }
-  protected:
-   std::ifstream m_f;
-};
-
 int main(int argc, char **argv)
 {
   int c, opt_S = 0;
@@ -189,18 +155,9 @@ int main(int argc, char **argv)
       default: usage(argv[0]);
     }
   }
-  istr *is;
-  if ( argc == optind ) {
-    is = new Istr();
-  } else {
-    auto fs = new Fstr(argv[optind]);
-    if ( !fs->is_open() ) {
-      printf("cannot open %s\n", argv[optind]);
-      delete fs;
-      return 1;
-    }
-    is = fs;
-  }
+  ParseSASS::Istr *is = ParseSASS::try_open(argc == optind ? nullptr : argv[optind]);
+  if ( !is )
+     return 1;
   MyParseSASS pa;
   int ln = 1, state = 0;
   std::string s;

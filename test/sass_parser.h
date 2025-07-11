@@ -3,6 +3,8 @@
 #include "nv_rend.h"
 #include <fp16.h>
 #include <regex>
+#include <iostream>
+#include <fstream>
 
 // black magic to get lambda arity from https://stackoverflow.com/questions/40411241/c-lambda-does-not-have-operator
 template <typename T>
@@ -34,6 +36,44 @@ class ParseSASS: public NV_renderer
      return (int)m_forms.size();
    }
    int extract(NV_extracted &);
+   // instream from file or cin
+   class Istr
+   {
+     public:
+      std::istream *is = nullptr;
+      virtual ~Istr() = default;
+   };
+ protected:
+   class cin_str: public Istr
+   {
+     public:
+      cin_str() {
+       is = &std::cin;
+      }
+   };
+   class Fstr: public Istr
+   {
+     public:
+       Fstr(const char *fname): m_f(fname) {
+       is = &m_f;
+     }
+     bool is_open() const {
+       return m_f.is_open();
+     }
+    protected:
+     std::ifstream m_f;
+  };
+ public:
+  static Istr *try_open(const char *fn) {
+    if ( !fn ) return new cin_str();
+    Fstr *f = new Fstr(fn);
+    if ( !f->is_open() ) {
+      fprintf(stderr, "cannot open %ss\n", fn);
+      delete f;
+      return nullptr;
+    }
+    return f;
+  }
   protected:
    int init_guts();
    int add_internal(const std::string &s, int idx);
