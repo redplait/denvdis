@@ -18,6 +18,16 @@ Also note that original nvdisasm can produce [ambigious](https://redplait.blogsp
 ### ina
 interactive sass [assembler](https://redplait.blogspot.com/2025/05/nvidia-sass-assembler.html)
 
+because the instruction can have many forms (for example LDG have 14) I add filtering for forms selection, format is (+|-)letter where letter can be
+ * f - floating point imm operand
+ * i - integer imm operand
+ * C - const bank
+ * m - memory ref operand
+ * d - desc ref operand
+ * u - [uniform register](https://redplait.blogspot.com/2025/07/sass-instructions-uniform-registers.html)
+
+You can reset filters with '!'
+
 ### pa
 parser of nvdisasm output - some [details](https://redplait.blogspot.com/2025/06/nvdisasm-sass-parser.html)
 
