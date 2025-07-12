@@ -40,6 +40,21 @@ class MyParseSASS: public ParseSASS
      }
      return res;
    }
+   int verify(unsigned long off) {
+     NV_extracted ex;
+     if ( m_forms.empty() ) return 0;
+     // if there are several - no difference which to use so let it be first
+     const one_form *of = &m_forms.at(0);
+     if ( !extract_full(ex) ) {
+       fprintf(m_out, "[!] %lX - extract_full failed\n", off);
+       return 0;
+     }
+     if ( !validate_tabs(of->instr, ex) ) {
+       fprintf(m_out, "[!] %lX - validate_tabs failed\n", off);
+       return 0;
+     }
+     return 1;
+   }
   protected:
    // regs track db
    reg_pad *m_rtdb = nullptr;
@@ -132,14 +147,15 @@ void usage(const char *prog)
   printf(" -S - print stat\n");
   printf(" -T - track registers\n");
   printf(" -v - verbose mode\n");
+  printf(" -V - verify instructions, very slow\n");
   exit(6);
 }
 
 int main(int argc, char **argv)
 {
-  int c, opt_S = 0;
+  int c, opt_S = 0, opt_V = 0;
   while(1) {
-    c = getopt(argc, argv, "dekmosSTv");
+    c = getopt(argc, argv, "dekmosSTvV");
     if ( c == -1 ) break;
     switch(c) {
       case 'd': opt_d = 1; break;
@@ -151,6 +167,7 @@ int main(int argc, char **argv)
       case 'S': opt_S = 1; break;
       case 'T': opt_T = 1; break;
       case 'v': opt_v = 1; break;
+      case 'V': opt_V = 1; break;
       case '?':
       default: usage(argv[0]);
     }
@@ -202,17 +219,21 @@ int main(int argc, char **argv)
         if ( opt_v ) printf("%d %s\n", ln, what.c_str());
         total++;
         int add_res = 0;
-        if ( opt_T ) {
+        unsigned long off = 0;
+        if ( opt_T || opt_V ) {
           // parse offset in matches[1]
           char *end;
-          unsigned long off = strtoul(matches[1].str().c_str(), &end, 16);
+          off = strtoul(matches[1].str().c_str(), &end, 16);
+        }
+        if ( opt_T )
           add_res = pa.add_with_rt(what, off);
-        } else
+        else
           add_res = pa.add(what);
         if ( !add_res ) printf("[!] %d %s\n", ln, what.c_str());
         else {
           succ++;
           forms += pa.fsize();
+          if ( opt_V ) pa.verify(off);
           if ( opt_s ) pa.print_fsummary(stdout);
         }
       }
