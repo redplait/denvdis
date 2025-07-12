@@ -45,7 +45,7 @@ class MyParseSASS: public ParseSASS
      if ( m_forms.empty() ) return 0;
      // if there are several - no difference which to use so let it be first
      const one_form *of = &m_forms.at(0);
-     if ( !extract_full(ex) ) {
+     if ( !_extract_full(ex, of) ) {
        fprintf(m_out, "[!] %lX - extract_full failed\n", off);
        return 0;
      }

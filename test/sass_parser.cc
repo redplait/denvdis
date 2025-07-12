@@ -52,6 +52,11 @@ int ParseSASS::extract_full(NV_extracted &res)
   if ( m_forms.empty() ) return 0;
   // if there are several - no difference which to use so let it be first
   const one_form *of = &m_forms.at(0);
+  return _extract_full(res, of);
+}
+
+int ParseSASS::_extract_full(NV_extracted &res, const one_form *of)
+{
   int retval = _extract(res, of);
   if ( !retval ) return retval;
   // lets fill all non-zero defaults
