@@ -36,6 +36,7 @@ class ParseSASS: public NV_renderer
      return (int)m_forms.size();
    }
    int extract(NV_extracted &);
+   int extract_full(NV_extracted &);
    // instream from file or cin
    class Istr
    {
@@ -257,6 +258,9 @@ class ParseSASS: public NV_renderer
      return !f.empty();
    }
 
+   int _extract(NV_extracted &, const one_form *of);
+   int _extract_ve(NV_extracted &, const one_form *of, const ve_base &);
+   int _extract_vel(NV_extracted &, const one_form *of, const std::list<ve_base> &);
    int set_num_value(const nv_vattr *, const char *name, one_form &f);
    typedef std::vector< std::pair<const std::list<ve_base> *, one_form *> > OFRights;
    template <typename C, typename F>

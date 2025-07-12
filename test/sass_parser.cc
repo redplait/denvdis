@@ -30,11 +30,69 @@ void ParseSASS::dump(const form_list *fl, const nv_instr *instr) const
   printf("%s\n", res.c_str());
 }
 
+int ParseSASS::_extract_ve(NV_extracted &res, const one_form *of, const ve_base &vb)
+{
+  if ( vb.type != R_enum ) return 1;
+  auto ea = find_ea(of->instr, vb.arg);
+  if ( !ea ) return 0;
+  if ( !ea->has_def_value || !ea->def_value ) return 1;
+  res[vb.arg] = ea->def_value;
+  return 1;
+}
+
+int ParseSASS::_extract_vel(NV_extracted &res, const one_form *of, const std::list<ve_base> &rl)
+{
+  for ( auto &r: rl )
+    if ( !_extract_ve(res, of, r) ) return 0;
+  return 1;
+}
+
+int ParseSASS::extract_full(NV_extracted &res)
+{
+  if ( m_forms.empty() ) return 0;
+  // if there are several - no difference which to use so let it be first
+  const one_form *of = &m_forms.at(0);
+  int retval = _extract(res, of);
+  if ( !retval ) return retval;
+  // lets fill all non-zero defaults
+  for ( auto r: *(of->rend) ) {
+    if ( r->type == R_enum || r->type == R_predicate ) {
+     const render_named *rn = (const render_named *)r;
+     auto ea = find_ea(of->instr, rn->name);
+     if ( !ea ) return 0;
+     if ( !ea->has_def_value || !ea->def_value ) continue;
+     // add this field
+     res[rn->name] = ea->def_value;
+    } else if ( r->type == R_mem ) {
+      const render_mem *rm = (const render_mem *)r;
+      if ( !_extract_vel(res, of, rm->right) ) return 0;
+    } else if ( r->type == R_C || r->type == R_CX ) {
+      const render_C *rn = (const render_C *)r;
+      if ( !_extract_ve(res, of, rn->left) || !_extract_vel(res, of, rn->right) ) return 0;
+    } else if ( r->type == R_desc ) {
+      const render_desc *rd = (const render_desc *)r;
+      if ( !_extract_ve(res, of, rd->left) || !_extract_vel(res, of, rd->right) ) return 0;
+    } else if ( r->type == R_TTU ) {
+      const render_TTU *rt = (const render_TTU *)r;
+      if ( !_extract_ve(res, of, rt->left) ) return 0;
+    } else if ( r->type == R_M1 ) {
+      const render_M1 *rt = (const render_M1 *)r;
+      if ( !_extract_ve(res, of, rt->left) ) return 0;
+    }
+  }
+  return retval;
+}
+
 int ParseSASS::extract(NV_extracted &res)
 {
   if ( m_forms.empty() ) return 0;
   // if there are several - no difference which to use so let it be first
   const one_form *of = &m_forms.at(0);
+  return _extract(res, of);
+}
+
+int ParseSASS::_extract(NV_extracted &res, const one_form *of)
+{
   // add locals
   res.insert(of->l_kv.begin(), of->l_kv.end());
   // check if we have predicate
