@@ -762,6 +762,35 @@ void NV_renderer::dump_rset(const reg_pad::RSet &rs, const char *pfx) const
   }
 }
 
+int NV_renderer::validate_tabs(const struct nv_instr *ins, NV_extracted &res)
+{
+  if ( !ins->tab_fields.size() ) return 1; // nothing to check
+  // calc max size of tab
+  size_t mt = 0;
+  for ( auto tf: ins->tab_fields ) mt = std::max(mt, tf->fields.size());
+  std::vector<unsigned short> usd;
+  usd.reserve(mt);
+  int tab_idx = 0;
+  for ( auto tf: ins->tab_fields ) {
+    usd.clear();
+    for ( int i = 0; i < int(tf->fields.size()); i++ ) {
+      auto &cfname = get_it(tf->fields, i);
+      auto kvi = res.find(cfname);
+      if ( kvi == res.end() )
+        usd.push_back(0);
+      else
+        usd.push_back((unsigned short)kvi->second);
+    }
+    int res_val = 0;
+    if ( !ins->check_tab(tf->tab, usd, res_val) ) {
+      fprintf(m_out, "check_tab(%d) failed for %d\n", tab_idx, ins->line);
+      return 0;
+    }
+    tab_idx++;
+  }
+  return 1;
+}
+
 int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &p, unsigned long off)
 {
   int res = 0;

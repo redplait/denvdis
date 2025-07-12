@@ -9,6 +9,22 @@
 #include <unordered_set>
 #include "include/nv_types.h"
 
+template <typename T>
+struct dumb_freea
+{
+  dumb_freea(T *ptr)
+    : m_ptr(ptr)
+   { }
+  void operator=(T *arg)
+   {
+     if ( (m_ptr != NULL) && (m_ptr != arg) )
+       delete []m_ptr;
+     m_ptr = arg;
+   }
+  protected:
+   T *m_ptr;
+};
+
 // labels type
 enum NVLType {
   Label = 0,
@@ -388,6 +404,8 @@ class NV_renderer {
    inline bool is_bd(const nv_eattr *ea) const {
      return !strcmp(ea->ename, "BD");
    }
+   // validation
+   int validate_tabs(const struct nv_instr *, NV_extracted &);
 
    FILE *m_out;
    INV_disasm *m_dis = nullptr;
