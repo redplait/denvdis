@@ -15,7 +15,10 @@ int opt_d = 0,
 class CEd: public CElf<ParseSASS> {
   public:
    virtual ~CEd() {
-     if ( m_cubin_fp ) fclose(m_cubin_fp);
+     if ( m_cubin_fp ) {
+      flush_buf();
+      fclose(m_cubin_fp);
+     }
    }
    virtual int init(const std::string &s) override {
      return 0;
@@ -71,9 +74,10 @@ class CEd: public CElf<ParseSASS> {
    PState m_state = Fresh;
    int m_ln = 1; // line number
    Elf_Word s_idx = 0;
-   unsigned long m_obj_off = 0,
-     m_obj_size = 0,
-     m_file_off = 0;
+   unsigned long m_obj_off = 0, // start offset of selected section (0)/function inside section
+     m_obj_size = 0, // size of selected section/function
+     m_file_off = 0, // offset of m_obj_off in file
+     m_buf_off = -1; // offset of buf in file
    const SRels *m_cur_srels = nullptr;
    int setup_srelocs(int s_idx) {
      auto si = m_srels.find(s_idx);
@@ -119,6 +123,18 @@ class CEd: public CElf<ParseSASS> {
    // key - section name, value - index
    std::unordered_map<std::string, int> m_named_cs;
 };
+
+int CEd::flush_buf()
+{
+  if ( !m_cubin_fp || !block_dirty ) return 1;
+  fseek(m_cubin_fp, m_buf_off, SEEK_SET);
+  if ( 1 != fwrite(buf, block_size, 1, m_cubin_fp) ) {
+    fprintf(stderr, "fwrite at %lX failed, error %d (%s)\n", m_buf_off, errno, strerror(errno));
+    return 0;
+  }
+  block_dirty = 0;
+  return 1;
+}
 
 int CEd::prepare(const char *fn)
 {
