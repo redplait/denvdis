@@ -230,6 +230,25 @@ class NV_renderer {
      }
      return nullptr;
    }
+   // fields types
+   template <typename S>
+   const NV_cbank *is_cb_field(const struct nv_instr *ins, const S& fn) const
+   {
+     if ( !ins->cb_field ) return nullptr;
+     if ( ins->cb_field->f1 == fn ) return ins->cb_field;
+     if ( ins->cb_field->f2 == fn ) return ins->cb_field;
+     return nullptr;
+   }
+   template <typename S>
+   const NV_tab_fields *is_tab_field(const struct nv_instr *ins, const S& fn) const
+   {
+     if ( !ins->tab_fields.size() ) return nullptr;
+     for ( auto tf: ins->tab_fields ) {
+       for ( auto &s: tf->fields )
+         if ( s == fn ) return tf;
+     }
+     return nullptr;
+   }
 
    bool check_dual(const NV_extracted &);
    template <typename C>
