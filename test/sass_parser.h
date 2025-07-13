@@ -112,7 +112,7 @@ class ParseSASS: public NV_renderer
        return ltype != 0;
      }
      int ltype = 0;
-     std::list<form_list *>::iterator lop = ops.end();
+     const form_list *label_op = nullptr; // operator having label value - I hope there is only one such
      std::string lname; // name of label
      // boring stuff
      one_form& operator=(one_form&& other) = default;

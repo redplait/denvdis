@@ -336,7 +336,7 @@ int ParseSASS::reduce_label(int type, int ltype, std::string &s)
   auto apply_label = [&](one_form &f, auto &ci) {
     f.ltype = ltype;
     f.lname = s;
-    f.lop = ci;
+    f.label_op = *ci;
   };
   return apply_op2(m_forms, [&](form_list *fl, one_form &f, auto &ci) -> bool {
 #ifdef DEBUG
