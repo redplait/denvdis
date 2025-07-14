@@ -443,6 +443,20 @@ struct nv64: public NV_base_decoder {
     }
     return 0;
   }
+  int _set_idx(int idx) {
+    if ( !idx ) return 1;
+    if ( idx < 0 || idx >= 7 ) return 0;
+    // check that we have space for least 8 64 qwords
+    if ( end - curr < 8 * 8 ) return 0;
+    cqword = (uint64_t *)curr;
+    curr += 8;
+    // 6 bit - 3f, << 2 = 0xfc
+    opcode = ((*cqword) & 0x3) | (((*cqword) >> (64 - 8)) & 0xfc);
+    // set idx to prev value
+    m_idx = idx;
+    curr += 8 * idx;
+    return 1;
+  }
   // if idx == 0 - read control word, then first opcode
   int next() {
     if ( !is_inited() ) return 0;
@@ -553,6 +567,14 @@ struct nv88: public NV_base_decoder {
       return (curr >= end);
     }
     return 0;
+  }
+  // called from init and must set data for next(idx)
+  int _set_idx(int idx) {
+    if ( !idx ) return 1;
+    if ( idx != 1 && idx != 2 ) return 0;
+    int res = next();
+    if ( !res || idx == 1 ) return res;
+    return next();
   }
   // if idx == 0 - read control word, then first opcode
   int next() {
@@ -666,6 +688,9 @@ struct nv128: public NV_base_decoder {
       return _check_bit(q1, idx);
     return _check_bit(q2, idx - 64);
 #endif
+  }
+  int _set_idx(int idx) {
+    return !idx;
   }
   int gen_mask(std::string &res) const
   {
@@ -1033,7 +1058,7 @@ typedef std::vector<std::pair<const std::string_view, const std::vector<const nv
 
 // disasm interface
 struct INV_disasm {
-  virtual void init(const unsigned char *buf, size_t size) = 0;
+  virtual int init(const unsigned char *buf, size_t size, int idx = 0) = 0;
   virtual int get(std::vector< std::pair<const struct nv_instr *, NV_extracted> > &, int do_next = 1) = 0;
   // reverse method of check_mask - generate mask from currently instruction, for -N option
   virtual int gen_mask(std::string &) = 0;
@@ -1082,8 +1107,11 @@ struct NV_disasm: public INV_disasm, T
   virtual int width() const { return T::_width; }
   virtual size_t offset() const { return T::curr_off(); }
   virtual size_t off_next() const { return T::offset_next(); }
-  virtual void init(const unsigned char *buf, size_t size) {
+  virtual int init(const unsigned char *buf, size_t size, int idx = 0) {
     T::_init(buf, size);
+    if ( idx )
+     return T::_set_idx(idx);
+    return 1;
   }
   virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const {
    _op = T::opcode;
