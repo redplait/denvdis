@@ -762,6 +762,52 @@ void NV_renderer::dump_rset(const reg_pad::RSet &rs, const char *pfx) const
   }
 }
 
+// fill values for tail
+int NV_renderer::copy_tail_values(const struct nv_instr *ins, const NV_rlist *rl,
+  const NV_extracted &in_values, NV_extracted &out_res) const
+{
+  int state = 0;
+  int res = 0;
+  for ( auto r: *rl ) {
+    if ( !state ) {
+      if ( !is_tail(ins, r) ) continue;
+      state = 1;
+    }
+    if ( r->type != R_enum && r->type != R_value ) continue; // wtd?
+    const render_named *rn = (const render_named *)r;
+    // check if out_res already contains thus values
+    auto ip = out_res.find(rn->name);
+    if ( ip != out_res.end() ) continue;
+    auto iv = in_values.find(rn->name);
+    if ( iv == in_values.end() ) continue;
+    out_res[rn->name] = iv->second;
+    res++;
+  }
+  return res;
+}
+
+int NV_renderer::make_tab_row(int optv, const struct nv_instr *ins, const NV_tab_fields *tf,
+     const NV_extracted &ex, std::vector<unsigned short> &res, int ignore) const
+{
+  res.clear();
+  res.resize(tf->fields.size());
+  int bad_cnt = 0;
+  for ( int i = 0; int(tf->fields.size()); i++ ) {
+    if ( i == ignore ) continue;
+    auto &cfname = get_it(tf->fields, i);
+    auto kvi = ex.find(cfname);
+    if ( kvi == ex.end() ) {
+      res[i] = 0;
+      if ( optv ) {
+        fprintf(m_out, "make_tab_row; cannot find "); dump_outln(cfname);
+      }
+      bad_cnt++;
+    } else
+      res[i] = (unsigned short)kvi->second;
+  }
+  return bad_cnt;
+}
+
 int NV_renderer::validate_tabs(const struct nv_instr *ins, NV_extracted &res)
 {
   if ( !ins->tab_fields.size() ) return 1; // nothing to check

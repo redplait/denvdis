@@ -240,6 +240,14 @@ class NV_renderer {
      return nullptr;
    }
    template <typename S>
+   const NV_cbank *is_cb_field(const struct nv_instr *ins, const S& fn, int idx) const
+   {
+     if ( !ins->cb_field ) return nullptr;
+     if ( ins->cb_field->f1 == fn ) { idx = 0; return ins->cb_field; }
+     if ( ins->cb_field->f2 == fn ) { idx = 1; return ins->cb_field; }
+     return nullptr;
+   }
+   template <typename S>
    const NV_tab_fields *is_tab_field(const struct nv_instr *ins, const S& fn) const
    {
      if ( !ins->tab_fields.size() ) return nullptr;
@@ -249,6 +257,22 @@ class NV_renderer {
      }
      return nullptr;
    }
+   template <typename S>
+   const NV_tab_fields *is_tab_field(const struct nv_instr *ins, const S& fn, int &idx) const
+   {
+     if ( !ins->tab_fields.size() ) return nullptr;
+     for ( auto tf: ins->tab_fields ) {
+       idx = 0;
+       for ( auto &s: tf->fields ) {
+         if ( s == fn ) return tf;
+         ++idx;
+       }
+     }
+     return nullptr;
+   }
+   int copy_tail_values(const struct nv_instr *, const NV_rlist *, const NV_extracted &, NV_extracted &out_res) const;
+   int make_tab_row(int optv, const struct nv_instr *ins, const NV_tab_fields *,
+     const NV_extracted &, std::vector<unsigned short> &res, int ignore) const;
 
    bool check_dual(const NV_extracted &);
    template <typename C>
