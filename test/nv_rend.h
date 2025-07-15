@@ -300,7 +300,9 @@ class NV_renderer {
      if ( !sv ) return false;
      size_t i = 0;
      for ( auto c = sv->cbegin(); c != sv->cend(); ++c, ++i ) {
-       if ( *c != sv->at(i) ) return false;
+       char nc = name[i];
+       if ( !nc ) return false;
+       if ( *c != nc ) return false;
      }
     return i == sv->size();
    }

@@ -850,12 +850,12 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
   bool setp = is_setp(p.first);
   if ( has_props ) {
     for ( auto pr: *p.first->props ) {
-      if ( pr->op == IDEST && pr->fields.size() == 1 ) d_sv = &get_it(pr->fields, 0);
-      if ( pr->op == IDEST2 && pr->fields.size() == 1 ) d2_sv = &get_it(pr->fields, 0);
-      if ( pr->op == ISRC_A && pr->fields.size() == 1 ) a_sv = &get_it(pr->fields, 0);
-      if ( pr->op == ISRC_B && pr->fields.size() == 1 ) b_sv = &get_it(pr->fields, 0);
-      if ( pr->op == ISRC_C && pr->fields.size() == 1 ) c_sv = &get_it(pr->fields, 0);
-      if ( pr->op == ISRC_E && pr->fields.size() == 1 ) e_sv = &get_it(pr->fields, 0);
+      if ( pr->op == IDEST && pr->fields.size() == 1 ) { d_sv = &get_it(pr->fields, 0); continue; }
+      if ( pr->op == IDEST2 && pr->fields.size() == 1 ) { d2_sv = &get_it(pr->fields, 0); continue; }
+      if ( pr->op == ISRC_A && pr->fields.size() == 1 ) { a_sv = &get_it(pr->fields, 0); continue; }
+      if ( pr->op == ISRC_B && pr->fields.size() == 1 ) { b_sv = &get_it(pr->fields, 0); continue; }
+      if ( pr->op == ISRC_C && pr->fields.size() == 1 ) { c_sv = &get_it(pr->fields, 0); continue; }
+      if ( pr->op == ISRC_E && pr->fields.size() == 1 ) { e_sv = &get_it(pr->fields, 0); continue; }
     }
   }
   // predicates
