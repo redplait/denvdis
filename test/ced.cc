@@ -307,6 +307,40 @@ int CEd::parse_tail(int idx, std::string &s)
     fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   }
+  char c = s.at(idx);
+  if ( 'r' == c ) {
+    for ( idx++; idx < int(s.size()); idx++ )
+    {
+      c = s.at(idx);
+      if ( !isspace(c) ) break;
+    }
+    if ( idx >= int(s.size()) ) {
+      fprintf(stderr, "invalid r syntax: %s, line %d\n", s.c_str(), m_ln);
+      return 0;
+    }
+    int add_res = add(s, idx);
+    if ( !add_res ) {
+      fprintf(stderr, "cannot parse %s, line %d\n", s.c_str(), m_ln);
+      return 0;
+    }
+    if ( opt_k ) {
+      NV_extracted kv;
+      extract_full(kv);
+      dump_ops(curr_dis.first, kv);
+    }
+    return 1;
+  } else if ( '!' == c || '@' == c ) {
+    bool has_neg = false;
+    if ( c == '!' ) {
+      has_neg = true;
+      c = s.at(++idx);
+      if ( c != '@' ) {
+        fprintf(stderr, "invalid r syntax: %s, line %d\n", s.c_str(), m_ln);
+        return 0;
+      }
+    }
+    return 1;
+  }
   return 1;
 }
 
@@ -378,10 +412,9 @@ int CEd::verify_off(unsigned long off)
     return 0;
   }
   // dump if need
-  if ( opt_d )
-    dump_ins(off);
-  if ( opt_v )
-    dump_render();
+  if ( opt_d ) dump_ins(off);
+  if ( opt_k ) dump_ops(curr_dis.first, curr_dis.second);
+  if ( opt_v ) dump_render();
   return 1;
 }
 
