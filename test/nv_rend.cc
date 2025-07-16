@@ -847,7 +847,8 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
    *b_sv = nullptr,
    *c_sv = nullptr,
    *e_sv = nullptr;
-  bool setp = is_setp(p.first);
+  int ends2 = 0;
+  bool setp = is_setp(p.first, ends2);
   if ( has_props ) {
     for ( auto pr: *p.first->props ) {
       if ( pr->op == IDEST && pr->fields.size() == 1 ) { d_sv = &get_it(pr->fields, 0); continue; }
@@ -931,7 +932,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     //  DSETP.MAX.AND P2, P3, R2, R12, PT
     // here first predicate in MD described as Pu and next as Pv
     // those second Pv will have idx == 1 (Pu - 0)
-    if ( setp && idx == 1 && (r->type == R_predicate || r->type == R_enum) ) {
+    if ( setp && ends2 && idx == 1 && (r->type == R_predicate || r->type == R_enum) ) {
       const render_named *rn = (const render_named *)r;
       if ( !strcmp("Pv", rn->name) || !strcmp("UPv", rn->name) ) {
         const nv_eattr *ea = find_ea(p.first, rn->name);
@@ -1122,6 +1123,17 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
   return res;
 }
 
+const char *NV_renderer::has_predicate(const NV_rlist *rl) const
+{
+  for ( auto r: *rl ) {
+    if ( r->type == R_predicate ) {
+      const render_named *rn = (const render_named *)r;
+      return rn->name;
+    }
+    if ( r->type == R_opcode ) break;
+  }
+  return nullptr;
+}
 
 bool NV_renderer::is_s2xx(const struct nv_instr *i) const
 {
@@ -1130,12 +1142,14 @@ bool NV_renderer::is_s2xx(const struct nv_instr *i) const
    !strcmp(i->name, "S2UR");
 }
 
-bool NV_renderer::is_setp(const struct nv_instr *i) const
+bool NV_renderer::is_setp(const struct nv_instr *i, int &ends2) const
 {
+  ends2 = 0;
   auto ilen = strlen(i->name);
   if ( ilen < 4 ) return false;
   if ( i->name[ilen-1] == '2' ) {
     if ( --ilen < 4 ) return false;
+    ends2 = 1;
   }
   return (i->name[ilen-1] == 'P') &&
     (i->name[ilen-2] == 'T') &&

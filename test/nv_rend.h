@@ -231,6 +231,7 @@ class NV_renderer {
      return nullptr;
    }
    // fields types
+   const char *has_predicate(const NV_rlist *) const;
    template <typename S>
    const NV_cbank *is_cb_field(const struct nv_instr *ins, const S& fn) const
    {
@@ -304,7 +305,7 @@ class NV_renderer {
        if ( !nc ) return false;
        if ( *c != nc ) return false;
      }
-    return i == sv->size();
+    return !name[i] && (i == sv->size());
    }
    void dump_sv(const std::string_view &) const;
    void dump_out(const std::string_view &) const;
@@ -395,7 +396,7 @@ class NV_renderer {
      return try_by_ename(i, s);
    }
    // check for xxSETP
-   bool is_setp(const struct nv_instr *) const;
+   bool is_setp(const struct nv_instr *, int &ends2) const;
    bool is_s2xx(const struct nv_instr *) const; // (C)S2(U)R
    // check const bank[0][imm]
    std::optional<long> check_cbank(const NV_rlist *r, const NV_extracted &kv) const;
