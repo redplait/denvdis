@@ -121,6 +121,10 @@ class CEd: public CElf<ParseSASS> {
    int flush_buf();
    // disasm results
    NV_pair curr_dis;
+   // just wrappers to reduce repeating typing
+   inline const nv_instr *ins() const { return curr_dis.first; }
+   inline const NV_extracted &ex() const { return curr_dis.second; }
+   // renderer
    const NV_rlist *m_rend = nullptr;
    void dump_ins(unsigned long off) const;
    void dump_render() const;
@@ -303,18 +307,19 @@ int CEd::parse_s(int idx, std::string &s)
 int CEd::parse_tail(int idx, std::string &s)
 {
   rstrip(s);
+  int s_size = int(s.size());
   if ( s.empty() ) {
     fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   }
   char c = s.at(idx);
   if ( 'r' == c ) {
-    for ( idx++; idx < int(s.size()); idx++ )
+    for ( idx++; idx < s_size; idx++ )
     {
       c = s.at(idx);
       if ( !isspace(c) ) break;
     }
-    if ( idx >= int(s.size()) ) {
+    if ( idx >= s_size ) {
       fprintf(stderr, "invalid r syntax: %s, line %d\n", s.c_str(), m_ln);
       return 0;
     }
@@ -329,19 +334,60 @@ int CEd::parse_tail(int idx, std::string &s)
       dump_ops(curr_dis.first, kv);
     }
     return 1;
-  } else if ( '!' == c || '@' == c ) {
-    bool has_neg = false;
+  } else if ( '!' == c || '@' == c ) { // [!]@digit to patch initial predicate
+    bool has_not = false;
     if ( c == '!' ) {
-      has_neg = true;
+      has_not = true;
       c = s.at(++idx);
       if ( c != '@' ) {
         fprintf(stderr, "invalid r syntax: %s, line %d\n", s.c_str(), m_ln);
         return 0;
       }
     }
+    // parse value
+    if ( idx + 1 >= s_size ) {
+        fprintf(stderr, "invalid predicate syntax: %s, line %d\n", s.c_str(), m_ln);
+        return 0;
+    }
+    int v = atoi(s.c_str() + idx + 1);
+    auto p_name = has_predicate(m_rend);
+    if ( !p_name ) {
+      fprintf(stderr, "instr %d don't have predicates. ignoring\n", ins()->n);
+      return 1;
+    }
+    auto p_field = find_field(ins(), std::string_view(p_name));
+    if ( !p_field ) {
+      fprintf(stderr, "instr %d don't have predicate %s. ignoring\n", ins()->n, p_name);
+      return 1;
+    }
+    // patch predicate
+    m_dis->put(p_field->mask, p_field->mask_size, v);
+    block_dirty = true;
+    // make pred@not and find field for it
+    std::string pnot = p_name;
+    pnot += "@not";
+    auto pnot_field = find_field(ins(), pnot);
+    if ( !pnot_field ) {
+      fprintf(stderr, "instr %d don't have !predicate %s. ignoring\n", ins()->n, pnot.c_str());
+    } else {
+      v = has_not ? 1 : 0;
+      m_dis->put(pnot_field->mask, pnot_field->mask_size, v);
+    }
+    if ( !m_dis->flush() ) {
+      fprintf(stderr, "predicate flush failed\n");
+      return 0;
+    }
+    flush_buf();
+    m_state = WantOff;
+    return 1;
+  } else if ( c == 'p' ) {
     return 1;
   }
-  return 1;
+  if ( !strcmp(s.c_str() + idx, "nop") ) {
+    return 1;
+  }
+  fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
+  return 0;
 }
 
 int CEd::verify_off(unsigned long off)
@@ -456,6 +502,9 @@ int CEd::process(ParseSASS::Istr *is)
       m_state = HasOff;
       auto tail = matches[1].str();
       if ( !tail.empty() ) {
+#ifdef DEBUG
+ printf("parse_tail %s\n", tail.c_str());
+#endif
         if ( !parse_tail(0, tail) ) break;
       }
       continue;
