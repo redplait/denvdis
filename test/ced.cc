@@ -103,6 +103,7 @@ class CEd: public CElf<ParseSASS> {
    int parse_s(int idx, std::string &);
    int parse_f(int idx, std::string &);
    int parse_tail(int idx, std::string &);
+   int verify_off(unsigned long);
    // stored cubin name
    std::string m_cubin;
    FILE *m_cubin_fp = nullptr;
@@ -115,6 +116,7 @@ class CEd: public CElf<ParseSASS> {
    unsigned char buf[buf_size];
    size_t block_size = 0;
    int mask_size = 0;
+   unsigned long flush_cnt = 0;
    int flush_buf();
    // named symbols
    std::unordered_map<std::string_view, const asymbol *> m_named;
@@ -132,6 +134,7 @@ int CEd::flush_buf()
     fprintf(stderr, "fwrite at %lX failed, error %d (%s)\n", m_buf_off, errno, strerror(errno));
     return 0;
   }
+  flush_cnt++;
   block_dirty = 0;
   return 1;
 }
@@ -301,6 +304,54 @@ int CEd::parse_tail(int idx, std::string &s)
   return 1;
 }
 
+int CEd::verify_off(unsigned long off)
+{
+  // check that offset is valid
+  if ( off < m_obj_off || off >= (m_obj_off + m_obj_size) ) {
+    fprintf(stderr, "invalid offset %lX, should be within %lX - %lX, line %d\n",
+       off, m_obj_off, m_obj_off + m_obj_size, m_ln);
+    return 0;
+  }
+  // check if offset is properly aligned
+  unsigned long off_mask = (1 << mask_size) - 1;
+  if ( off & off_mask ) {
+    fprintf(stderr, "warning: offset %lX is not aligned on 2 ^ %d (off_mask %lX)\n", off, mask_size, off_mask);
+    off &= ~off_mask;
+  }
+  // extract index inside block
+  int block_idx = 0;
+  unsigned long block_off = m_file_off + (off - m_obj_off);
+  if ( m_width != 128 ) {
+    auto b_off = off & ~(block_size - 1);
+    if ( b_off == off ) {
+      fprintf(stderr, "warning: offset %lX points to Ctrl Word, change to %lX\n", off, off + 8);
+      off += 8;
+      block_idx = 1;
+    } else {
+      block_idx = (off - 8 - b_off) / 8;
+    }
+    block_off = m_file_off + (b_off - m_obj_off);
+    if ( opt_d )
+      fprintf(m_out, "block_off %lX off %lX block_idx %d\n", b_off, off, block_idx);
+  }
+  // check if we have reloc on real offset
+  check_rel(off);
+  if ( block_off != m_buf_off ) {
+    // need to read new buffer
+    fseek(m_cubin_fp, block_off, SEEK_SET);
+    if ( 1 != fread(buf, block_size, 1, m_cubin_fp) ) {
+      fprintf(stderr, "fread at %lX failed, error %d (%s)\n", m_buf_off, errno, strerror(errno));
+      return 0;
+    }
+  }
+  m_buf_off = block_off;
+  if ( !m_dis->init(buf, block_size, block_idx) ) {
+    fprintf(stderr, "dis init failed\n");
+    return 0;
+  }
+  return 1;
+}
+
 int CEd::process(ParseSASS::Istr *is)
 {
   int res = 0;
@@ -335,13 +386,7 @@ int CEd::process(ParseSASS::Istr *is)
         fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
         break;
       }
-      // check that offset is valid
-      if ( off < m_obj_off || off >= (m_obj_off + m_obj_size) ) {
-        fprintf(stderr, "invalid offset %lX, should be within %lX - %lX, line %d\n",
-          off, m_obj_off, m_obj_off + m_obj_size, m_ln);
-        break;
-      }
-      check_rel(off);
+      if ( !verify_off(off) ) break;
       m_state = HasOff;
       auto tail = matches[1].str();
       if ( !tail.empty() ) {
