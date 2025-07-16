@@ -116,8 +116,14 @@ class CEd: public CElf<ParseSASS> {
    unsigned char buf[buf_size];
    size_t block_size = 0;
    int mask_size = 0;
-   unsigned long flush_cnt = 0;
+   unsigned long flush_cnt = 0,
+    rdr_cnt = 0;
    int flush_buf();
+   // disasm results
+   NV_pair curr_dis;
+   const NV_rlist *m_rend = nullptr;
+   void dump_ins(unsigned long off) const;
+   void dump_render() const;
    // named symbols
    std::unordered_map<std::string_view, const asymbol *> m_named;
    // allowed sections with code
@@ -326,7 +332,7 @@ int CEd::verify_off(unsigned long off)
     if ( b_off == off ) {
       fprintf(stderr, "warning: offset %lX points to Ctrl Word, change to %lX\n", off, off + 8);
       off += 8;
-      block_idx = 1;
+      block_idx = 0;
     } else {
       block_idx = (off - 8 - b_off) / 8;
     }
@@ -343,12 +349,39 @@ int CEd::verify_off(unsigned long off)
       fprintf(stderr, "fread at %lX failed, error %d (%s)\n", m_buf_off, errno, strerror(errno));
       return 0;
     }
+    rdr_cnt++;
   }
   m_buf_off = block_off;
   if ( !m_dis->init(buf, block_size, block_idx) ) {
     fprintf(stderr, "dis init failed\n");
     return 0;
   }
+  // disasm instruction at offset
+  NV_res res;
+  int get_res = m_dis->get(res);
+  if ( -1 == get_res ) {
+    fprintf(stderr, "cannot disasm at offset %lX\n", off);
+    return 0;
+  }
+  int res_idx = 0;
+  if ( res.size() > 1 ) res_idx = calc_index(res, m_dis->rz);
+  if ( -1 == res_idx ) {
+    fprintf(stderr, "warning: ambigious instruction at %lX, has %ld formst\n", off, res.size());
+    // lets choose 1st
+    res_idx = 0;
+  }
+  // store disasm result
+  curr_dis = std::move(res[res_idx]);
+  m_rend = m_dis->get_rend(curr_dis.first->n);
+  if ( !m_rend ) {
+    fprintf(stderr, "cannot get render at %lX, n %d\n", off, curr_dis.first->n);
+    return 0;
+  }
+  // dump if need
+  if ( opt_d )
+    dump_ins(off);
+  if ( opt_v )
+    dump_render();
   return 1;
 }
 
@@ -401,7 +434,29 @@ int CEd::process(ParseSASS::Istr *is)
     fprintf(stderr, "unknown command %s, state %d, line %d\n", s.c_str(), m_state, m_ln);
     break;
   }
+  if ( opt_v )
+    printf("%ld reads, %ld flush\n", rdr_cnt, flush_cnt);
   return res;
+}
+
+void CEd::dump_render() const
+{
+  std::string r;
+  rend_rendererE(curr_dis.first, m_rend, r);
+  printf("%s\n", r.c_str());
+}
+
+void CEd::dump_ins(unsigned long off) const
+{
+  std::string r;
+  int miss = render(m_rend, r, curr_dis.first, curr_dis.second, nullptr, 1);
+  if ( miss ) {
+   fprintf(m_out, "; %d missed:", miss);
+   for ( auto &ms: m_missed ) fprintf(m_out, " %s", ms.c_str());
+   fputc('\n', m_out);
+  }
+  fprintf(m_out, " /*%lX*/ %s\n", off, r.c_str());
+  dump_predicates(curr_dis.first, curr_dis.second, "P> ");
 }
 
 //
