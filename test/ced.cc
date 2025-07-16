@@ -104,6 +104,25 @@ class CEd: public CElf<ParseSASS> {
    int parse_f(int idx, std::string &);
    int parse_tail(int idx, std::string &);
    int verify_off(unsigned long);
+   int patch(const NV_field *nf, unsigned long v, const std::string_view &what) {
+     if ( !m_dis->put(nf->mask, nf->mask_size, v) )
+     {
+       fputs("cannot patch ", stderr); dump_out(what);
+       fprintf(stderr, ", line %d\n", m_ln);
+       return 0;
+     }
+     block_dirty = true;
+     return 1;
+   }
+   int patch(const NV_field *nf, unsigned long v, const char *what) {
+     if ( !m_dis->put(nf->mask, nf->mask_size, v) )
+     {
+       fprintf(stderr, "cannot patch %s, line %d\n", what, m_ln);
+       return 0;
+     }
+     block_dirty = true;
+     return 1;
+   }
    // stored cubin name
    std::string m_cubin;
    FILE *m_cubin_fp = nullptr;
@@ -361,8 +380,7 @@ int CEd::parse_tail(int idx, std::string &s)
       return 1;
     }
     // patch predicate
-    m_dis->put(p_field->mask, p_field->mask_size, v);
-    block_dirty = true;
+    if ( !patch(p_field, v, p_name) ) return 0;
     // make pred@not and find field for it
     std::string pnot = p_name;
     pnot += "@not";
@@ -370,14 +388,12 @@ int CEd::parse_tail(int idx, std::string &s)
     if ( !pnot_field ) {
       fprintf(stderr, "instr %d don't have !predicate %s. ignoring\n", ins()->n, pnot.c_str());
     } else {
-      v = has_not ? 1 : 0;
-      m_dis->put(pnot_field->mask, pnot_field->mask_size, v);
+      patch(pnot_field, has_not ? 1 : 0, pnot.c_str());
     }
-    if ( !m_dis->flush() ) {
+    if ( !m_dis->flush() || flush_buf() ) {
       fprintf(stderr, "predicate flush failed\n");
       return 0;
     }
-    flush_buf();
     m_state = WantOff;
     return 1;
   } else if ( c == 'p' ) {
