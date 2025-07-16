@@ -231,6 +231,14 @@ class NV_renderer {
      return nullptr;
    }
    // fields types
+   template <typename S>
+   const NV_field *find_field(const struct nv_instr *ins, const S& fn) const {
+     auto fi = std::lower_bound(ins->fields.begin(), ins->fields.end(), fn, [](const NV_field &f, const S& fn) {
+        return f.name < fn;
+      });
+     if ( fi == ins->fields.end() ) return nullptr;
+     return &(*fi);
+   }
    const char *has_predicate(const NV_rlist *) const;
    template <typename S>
    const NV_cbank *is_cb_field(const struct nv_instr *ins, const S& fn) const
