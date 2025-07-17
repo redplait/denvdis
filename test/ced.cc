@@ -79,6 +79,8 @@ class CEd: public CElf<ParseSASS> {
      m_file_off = 0, // offset of m_obj_off in file
      m_buf_off = -1; // offset of buf in file
    const SRels *m_cur_srels = nullptr;
+   const asymbol *m_cur_rsym = nullptr;
+   const NV_rel *m_cur_rel = nullptr;
    int setup_srelocs(int s_idx) {
      auto si = m_srels.find(s_idx);
      if ( si == m_srels.end() ) {
@@ -90,15 +92,28 @@ class CEd: public CElf<ParseSASS> {
      return 1;
    }
    int check_rel(unsigned long off) {
+     m_cur_rsym = nullptr;
+     m_cur_rel = nullptr;
      if ( !m_cur_srels ) return 0;
      auto si = m_cur_srels->find(off);
      if ( si == m_cur_srels->end() ) return 0;
      // ups, this offset contains reloc - make warning
      fprintf(m_out, "Warning: offset %lX has reloc %d\n", off, si->second.first);
+     m_cur_rel = &si->second;
+     m_cur_rsym = &m_syms[si->second.second];
      return 1;
+   }
+   virtual const NV_rel *next_reloc(std::string_view &sv) const override {
+     if ( !m_cur_rel ) return nullptr;
+     sv = { m_cur_rsym->name.cbegin(), m_cur_rsym->name.cend() };
+     return m_cur_rel;
    }
    // nop instruction
    const nv_instr *m_nop = nullptr;
+   const NV_rlist *m_nop_rend = nullptr;
+   inline bool has_nop() const {
+     return m_nop && m_nop_rend;
+   }
    // parsers
    int parse_s(int idx, std::string &);
    int parse_f(int idx, std::string &);
@@ -215,6 +230,11 @@ int CEd::prepare(const char *fn)
    fprintf(stderr, "Warning: cannot find NOP\n");
   } else {
     m_nop = nop->second.at(0);
+    m_nop_rend = m_dis->get_rend(m_nop->n);
+    if ( !m_nop_rend ) {
+      fprintf(stderr, "Warning: cannot find NOP render\n");
+      m_nop = nullptr;
+    }
   }
   // read symbols
   return _read_symbols(opt_t, [&](asymbol &sym) {
