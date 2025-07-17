@@ -141,6 +141,7 @@ class CEd: public CElf<ParseSASS> {
    // generate some ins from fresh values
    // used in noping and patch from r instruction text
    int generic_ins(const nv_instr *, NV_extracted &);
+   int generic_cb(const nv_instr *, unsigned long c1, unsigned long c2);
    unsigned long get_def_value(const nv_instr *, const std::string_view &);
    // stored cubin name
    std::string m_cubin;
@@ -511,23 +512,28 @@ int CEd::generic_ins(const nv_instr *ins, NV_extracted &kv)
      c2 = kvi->second;
     else
      c2 = get_def_value(ins, ins->cb_field->f2);
-    if ( ins->cb_field->scale )
-      c2 /= ins->cb_field->scale;
-    // mask can have size 2 or 3. see details in ina.cc kv_field::patch method
-    if ( ins->cb_field->mask3 ) {
-     auto lo = c1 & 0xf;
-     auto hi = (c1 >> 4) & 0xf;
-     m_dis->put(ins->cb_field->mask1, ins->cb_field->mask1_size, hi);
-     m_dis->put(ins->cb_field->mask2, ins->cb_field->mask2_size, lo);
-     m_dis->put(ins->cb_field->mask3, ins->cb_field->mask3_size, c2);
-    } else {
-      // simple 2 mask
-      m_dis->put(ins->cb_field->mask1, ins->cb_field->mask1_size, c1);
-      m_dis->put(ins->cb_field->mask2, ins->cb_field->mask2_size, c2);
-    }
+    generic_cb(ins, c1, c2);
   }
   m_dis->flush();
   block_dirty = 1;
+  return 1;
+}
+
+int CEd::generic_cb(const nv_instr *ins, unsigned long c1, unsigned long c2) {
+  if ( ins->cb_field->scale )
+    c2 /= ins->cb_field->scale;
+  // mask can have size 2 or 3. see details in ina.cc kv_field::patch method
+  if ( ins->cb_field->mask3 ) {
+    auto lo = c1 & 0xf;
+    auto hi = (c1 >> 4) & 0xf;
+    m_dis->put(ins->cb_field->mask1, ins->cb_field->mask1_size, hi);
+    m_dis->put(ins->cb_field->mask2, ins->cb_field->mask2_size, lo);
+    m_dis->put(ins->cb_field->mask3, ins->cb_field->mask3_size, c2);
+  } else {
+    // simple 2 mask
+    m_dis->put(ins->cb_field->mask1, ins->cb_field->mask1_size, c1);
+    m_dis->put(ins->cb_field->mask2, ins->cb_field->mask2_size, c2);
+  }
   return 1;
 }
 
@@ -730,7 +736,7 @@ int main(int argc, char **argv)
   if ( !ced.prepare(argv[optind]) ) return 5;
   if ( opt_v ) printf("%ld symbols\n", ced.syms_size());
   // edit script
-  auto is = ParseSASS::ParseSASS::try_open(argc == optind + 1 ? nullptr : argv[optind + 1]);
+  auto is = ParseSASS::try_open(argc == optind + 1 ? nullptr : argv[optind + 1]);
   if ( !is ) return 0;
   ced.process(is);
   delete is;
