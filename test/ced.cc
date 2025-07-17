@@ -138,6 +138,10 @@ class CEd: public CElf<ParseSASS> {
      block_dirty = true;
      return 1;
    }
+   // generate some ins from fresh values
+   // used in noping and patch from r instruction text
+   int generic_ins(const nv_instr *, NV_extracted &);
+   unsigned long get_def_value(const nv_instr *, const std::string_view &);
    // stored cubin name
    std::string m_cubin;
    FILE *m_cubin_fp = nullptr;
@@ -363,15 +367,28 @@ int CEd::parse_tail(int idx, std::string &s)
       return 0;
     }
     int add_res = add(s, idx);
-    if ( !add_res ) {
+    if ( !add_res || m_forms.empty() ) {
       fprintf(stderr, "cannot parse %s, line %d\n", s.c_str(), m_ln);
       return 0;
     }
-    if ( opt_k ) {
-      NV_extracted kv;
-      extract_full(kv);
-      dump_ops(curr_dis.first, kv);
+    const one_form *of = &m_forms.at(0);
+    if ( of->label_op ) {
+      fprintf(stderr, "instructions with labels not supported, line %d\n", m_ln);
+      return 1;
     }
+    NV_extracted kv;
+    if ( !_extract_full(kv, of) ) {
+      fprintf(stderr, "cannot extract values for %s, line %d\n", s.c_str(), m_ln);
+      return 0;
+    }
+    if ( opt_k ) dump_ops(of->instr, kv);
+    copy_tail_values(of->instr, of->rend, ex(), kv);
+    if ( !generic_ins(of->instr, kv) ) return 0;
+    if ( !flush_buf() ) {
+      fprintf(stderr, "instr %s flush failed\n", s.c_str());
+      return 0;
+    }
+    m_state = WantOff;
     return 1;
   } else if ( '!' == c || '@' == c ) { // [!]@digit to patch initial predicate
     bool has_not = false;
@@ -410,7 +427,8 @@ int CEd::parse_tail(int idx, std::string &s)
     } else {
       patch(pnot_field, has_not ? 1 : 0, pnot.c_str());
     }
-    if ( !m_dis->flush() || flush_buf() ) {
+    m_dis->flush();
+    if ( !flush_buf() ) {
       fprintf(stderr, "predicate flush failed\n");
       return 0;
     }
@@ -420,9 +438,108 @@ int CEd::parse_tail(int idx, std::string &s)
     return 1;
   }
   if ( !strcmp(s.c_str() + idx, "nop") ) {
+    if ( !m_nop ) {
+      fprintf(stderr, "warning: cannot patch nop\n");
+      return 1;
+    }
+    NV_extracted out_res;
+    copy_tail_values(ins(), m_nop_rend, ex(), out_res);
+    if ( !generic_ins(ins(), out_res) ) return 0;
+    if ( !flush_buf() ) {
+      fprintf(stderr, "nop flush failed\n");
+      return 0;
+    }
+    m_state = WantOff;
     return 1;
   }
   fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
+  return 0;
+}
+
+int CEd::generic_ins(const nv_instr *ins, NV_extracted &kv)
+{
+  if ( !m_dis->set_mask(ins->mask) ) {
+    fprintf(stderr, "set_mask for %s %d failed\n", ins->name, ins->line);
+    return 0;
+  }
+  // enum fields
+  for ( auto &f: ins->fields ) {
+    unsigned long v = 0;
+    auto kvi = kv.find(f.name);
+    if ( kvi != kv.end() )
+     v = kvi->second;
+    else
+     v = get_def_value(ins, f.name);
+    if ( f.scale ) v /= f.scale;
+    m_dis->put(f.mask, f.mask_size, v);
+  }
+  // tabs
+  if ( ins->tab_fields.size() ) {
+    std::vector<unsigned short> row;
+    int row_idx = 0;
+    for ( auto tf: ins->tab_fields ) {
+      for ( auto &sv: tf->fields ) {
+        unsigned long v;
+        auto kvi = kv.find(sv);
+        if ( kvi != kv.end() )
+         v = kvi->second;
+        else
+         v = get_def_value(ins, sv);
+        row.push_back((unsigned short)v);
+      }
+      int res_val = 0;
+      if ( !ins->check_tab(tf->tab, row, res_val) ) {
+        fprintf(stderr, "check_tab index %d for %s %d failed\n", row_idx, ins->name, ins->line);
+        return 0;
+      }
+      m_dis->put(tf->mask, tf->mask_size, res_val);
+      row.clear();
+      row_idx++;
+    }
+  }
+  // const bank
+  if ( ins->cb_field )
+  {
+    unsigned long c1, c2;
+    auto kvi = kv.find(ins->cb_field->f1);
+    if ( kvi != kv.end() )
+     c1 = kvi->second;
+    else
+     c1 = get_def_value(ins, ins->cb_field->f1);
+    kvi = kv.find(ins->cb_field->f2);
+    if ( kvi != kv.end() )
+     c2 = kvi->second;
+    else
+     c2 = get_def_value(ins, ins->cb_field->f2);
+    if ( ins->cb_field->scale )
+      c2 /= ins->cb_field->scale;
+    // mask can have size 2 or 3. see details in ina.cc kv_field::patch method
+    if ( ins->cb_field->mask3 ) {
+     auto lo = c1 & 0xf;
+     auto hi = (c1 >> 4) & 0xf;
+     m_dis->put(ins->cb_field->mask1, ins->cb_field->mask1_size, hi);
+     m_dis->put(ins->cb_field->mask2, ins->cb_field->mask2_size, lo);
+     m_dis->put(ins->cb_field->mask3, ins->cb_field->mask3_size, c2);
+    } else {
+      // simple 2 mask
+      m_dis->put(ins->cb_field->mask1, ins->cb_field->mask1_size, c1);
+      m_dis->put(ins->cb_field->mask2, ins->cb_field->mask2_size, c2);
+    }
+  }
+  m_dis->flush();
+  block_dirty = 1;
+  return 1;
+}
+
+unsigned long CEd::get_def_value(const nv_instr *ins, const std::string_view &s)
+{
+  if ( ins->vas ) {
+    auto va = find(ins->vas, s);
+    if ( va ) return va->dval;
+  }
+  auto ea = find_ea(ins, s);
+  if ( ea && ea->has_def_value ) return ea->def_value;
+  // hz - lets return zero
   return 0;
 }
 
