@@ -119,6 +119,7 @@ class CEd: public CElf<ParseSASS> {
    int parse_f(int idx, std::string &);
    int parse_tail(int idx, std::string &);
    int verify_off(unsigned long);
+   int process_p(std::string &p, int idx, std::string &tail);
    int patch(const NV_field *nf, unsigned long v, const std::string_view &what) {
      if ( !m_dis->put(nf->mask, nf->mask_size, v) )
      {
@@ -357,7 +358,7 @@ int CEd::parse_tail(int idx, std::string &s)
     return 0;
   }
   char c = s.at(idx);
-  if ( 'r' == c ) {
+  if ( 'r' == c ) { // 'r' for replace some instruction. parser in base class ParseSASS
     for ( idx++; idx < s_size; idx++ )
     {
       c = s.at(idx);
@@ -435,10 +436,43 @@ int CEd::parse_tail(int idx, std::string &s)
     }
     m_state = WantOff;
     return 1;
-  } else if ( c == 'p' ) {
-    return 1;
+  } else if ( c == 'p' ) { // actually this is hardest part, bcs
+     // fields args have different formats depending from it's type - like int/float
+     // field can be part of table and current value can be bad combination - for this I postpone actual patching
+     // and finally field can be in const bank
+    for ( idx++; idx < s_size; idx++ )
+    {
+      c = s.at(idx);
+      if ( !isspace(c) ) break;
+    }
+    if ( idx >= s_size ) {
+      fprintf(stderr, "invalid p syntax: %s, line %d\n", s.c_str(), m_ln);
+      return 0;
+    }
+    // extract field name - stupid stl missed copy_while algo and take_while presents in ranges only
+    std::string what;
+    for ( ; idx < s_size; idx++ ) {
+      c = s.at(idx);
+      if ( isspace(c) ) break;
+      what.push_back(c);
+    }
+    if ( idx >= s_size ) {
+      fprintf(stderr, "invalid p syntax: %s, line %d\n", s.c_str(), m_ln);
+      return 0;
+    }
+    // and skip spaces after field name in what
+    for ( idx++; idx < s_size; idx++ )
+    {
+      c = s.at(idx);
+      if ( !isspace(c) ) break;
+    }
+    if ( idx >= s_size ) {
+      fprintf(stderr, "invalid p syntax - where is value?: %s, line %d\n", s.c_str(), m_ln);
+      return 0;
+    }
+    return process_p(what, idx, s);
   }
-  if ( !strcmp(s.c_str() + idx, "nop") ) {
+  if ( !strcmp(s.c_str() + idx, "nop") ) { // wipe-out some instruction with NOP
     if ( !m_nop ) {
       fprintf(stderr, "warning: cannot patch nop\n");
       return 1;
@@ -454,6 +488,47 @@ int CEd::parse_tail(int idx, std::string &s)
     return 1;
   }
   fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
+  return 0;
+}
+
+int CEd::process_p(std::string &p, int idx, std::string &tail)
+{
+  // lets try to find field with name p
+  auto in_s = ins();
+  const NV_tab_fields *tab = nullptr;
+  const nv_eattr *ea = nullptr;
+  const nv_vattr *va = nullptr;
+  int cb_idx = 0, tab_idx = 0;
+  const NV_cbank *cb = is_cb_field(in_s, p, cb_idx);
+  if ( !cb ) {
+    tab = is_tab_field(in_s, p, tab_idx);
+    if ( !tab ) {
+      auto field = std::lower_bound(in_s->fields.begin(), in_s->fields.end(), p,
+       [](const NV_field &f, const std::string &w) {
+         return f.name < w;
+      });
+      if ( field == in_s->fields.end() ) {
+        fprintf(stderr, "unknown field %s, line %d\n", p.c_str(), m_ln);
+        return 0;
+      }
+      // cool, some real field
+      ea = find_ea(in_s, p);
+      if ( !ea && in_s->vas )
+        va = find(in_s->vas, p);
+    }
+  }
+  if ( opt_d ) {
+    printf("field %s: ", p.c_str());
+    if ( ea )
+     printf("enum %s", ea->ename);
+    else if ( va )
+     printf("val %s", s_fmts[va->kind]);
+    if ( cb )
+     printf(" cb idx %d scale %d", cb_idx, cb->scale);
+    else if ( tab )
+     printf(" tab idx %d\n", tab_idx);
+    fputc('\n', stdout);
+  }
   return 0;
 }
 
