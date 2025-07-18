@@ -72,6 +72,14 @@ class CEd: public CElf<ParseSASS> {
      HasP = 3, // patch something, probably not finished
    };
    PState m_state = Fresh;
+   int new_state() {
+     if ( m_state == HasP ) {
+       m_dis->flush();
+       block_dirty = true;
+       return flush_buf();
+     }
+     return 1;
+   }
    int m_ln = 1; // line number
    Elf_Word s_idx = 0;
    unsigned long m_obj_off = 0, // start offset of selected section (0)/function inside section
@@ -269,7 +277,7 @@ int CEd::prepare(const char *fn)
 int CEd::parse_f(int idx, std::string &s)
 {
   rstrip(s);
-  // TODO: add here state check
+  if ( !new_state() ) return 0;
   char c = s.at(idx++);
   int s_size = (int)s.size();
   if ( c != 'n' || idx >= s_size ) {
@@ -316,7 +324,7 @@ int CEd::parse_s(int idx, std::string &s)
     return 0;
   }
   s_idx = 0;
-  // TODO: add here state check
+  if ( !new_state() ) return 0;
   char c = s.at(idx);
   if ( isspace(c) ) { // s index
     for ( ++idx; idx < int(s.size()); idx++ )
@@ -481,6 +489,7 @@ int CEd::parse_tail(int idx, std::string &s)
       fprintf(stderr, "invalid p syntax - where is value?: %s, line %d\n", s.c_str(), m_ln);
       return 0;
     }
+    m_state = HasP;
     return process_p(what, idx, s);
   }
   if ( !strcmp(s.c_str() + idx, "nop") ) { // wipe-out some instruction with NOP
@@ -587,6 +596,8 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
         return 1;
       }
       m_v = edi->second;
+      if ( opt_d )
+        fprintf(m_out, "%s in %s has value %ld\n", tail.c_str(), ea->ename, m_v);
     }
   } else {
     fprintf(stderr, "unknown field %s, line %d - ignoring\n", p.c_str(), m_ln);
@@ -847,7 +858,6 @@ int CEd::verify_off(unsigned long off)
 
 int CEd::process(ParseSASS::Istr *is)
 {
-  int res = 0;
   std::string s;
   std::regex off("^[0-9a-f]+\\s+(.*)\\s*$", std::regex_constants::icase);
   for( ; std::getline(*is->is, s); ++m_ln ) {
@@ -856,6 +866,7 @@ int CEd::process(ParseSASS::Istr *is)
     // skip comments
     char c = s.at(0);
     if ( c == '#' ) continue;
+    if ( c == 'q' ) break; // q to quit - for debugging
     if ( c == 's' ) {
       if ( !parse_s(1, s) ) break;
       if ( opt_d ) printf("state %d off %lX\n", m_state, m_obj_off);
@@ -899,7 +910,7 @@ int CEd::process(ParseSASS::Istr *is)
   }
   if ( opt_v )
     printf("%ld reads, %ld flush\n", rdr_cnt, flush_cnt);
-  return res;
+  return new_state();
 }
 
 void CEd::dump_render() const
