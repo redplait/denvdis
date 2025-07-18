@@ -140,6 +140,15 @@ class CEd: public CElf<ParseSASS> {
      block_dirty = true;
      return 1;
    }
+   int patch(const NV_tab_fields *tf, unsigned long v, const char *what) {
+     if ( !m_dis->put(tf->mask, tf->mask_size, v) )
+     {
+       fprintf(stderr, "cannot patch tab value %s, line %d\n", what, m_ln);
+       return 0;
+     }
+     block_dirty = true;
+     return 1;
+   }
    // generate some ins from fresh values
    // used in noping and patch from r instruction text
    int generic_ins(const nv_instr *, NV_extracted &);
@@ -563,7 +572,21 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
       }
       m_v = e;
     } else {
-      
+      if ( !m_renums ) {
+        fprintf(stderr, "no renums for field %s, enum %s, line %d\n", p.c_str(), ea->ename, m_ln);
+        return 1;
+      }
+      auto ed = m_renums->find(ea->ename);
+      if ( ed == m_renums->end() ) {
+        fprintf(stderr, "cannot find enum %s for field %s, line %d\n", ea->ename, p.c_str(), m_ln);
+        return 1;
+      }
+      auto edi = ed->second->find(tail);
+      if ( edi == ed->second->end() ) {
+        fprintf(stderr, "cannot find %s in enum %s for field %s, line %d\n", tail.c_str(), ea->ename, p.c_str(), m_ln);
+        return 1;
+      }
+      m_v = edi->second;
     }
   } else {
     fprintf(stderr, "unknown field %s, line %d - ignoring\n", p.c_str(), m_ln);
@@ -591,6 +614,24 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
       c1 = value_or_def(ins(), cb->f1, kv);
     }
     return generic_cb(ins(), c1, c2);
+  }
+  if ( tab ) {
+    // check if provided value is valid for table
+    std::vector<unsigned short> tab_row;
+    if ( make_tab_row(opt_v, ins(), tab, ex(), tab_row, tab_idx) ) return 0;
+    tab_row[tab_idx] = (unsigned short)m_v;
+    int tab_value = 0;
+    if ( !ins()->check_tab(tab->tab, tab_row, tab_value) ) {
+      NV_extracted &kv = curr_dis.second;
+      kv[p] = m_v;
+      if ( opt_v )
+        fprintf(stderr, "Warning: value %ld for %s invalid in table, line %d\n", m_v, p.c_str(), m_ln);
+      return 1;
+    } else
+     return patch(tab, tab_value, p.c_str());
+  } else {
+    fprintf(stderr, "dont know how to patch %s, line %d\n", p.c_str(), m_ln);
+    return 0;
   }
   return 0;
 }
