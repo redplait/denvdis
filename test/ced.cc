@@ -193,7 +193,10 @@ class CEd: public CElf<ParseSASS> {
    std::unordered_set<int> m_code_sects;
    // key - section name, value - index
    std::unordered_map<std::string, int> m_named_cs;
+   static std::regex rs_digits;
 };
+
+std::regex CEd::rs_digits("^\\d+");
 
 int CEd::flush_buf()
 {
@@ -558,25 +561,27 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
     fputc('\n', stdout);
   }
   m_v = 0;
+  std::string sv = { tail.c_str() + idx, tail.size() - idx };
   // try to parse
   if ( va ) {
-    if ( !parse_num(va->kind, tail) ) {
-     fprintf(stderr, "cannot parse num %s, line %d\n", tail.c_str(), m_ln);
+    if ( !parse_num(va->kind, sv) ) {
+     fprintf(stderr, "cannot parse num %s, line %d\n", sv.c_str(), m_ln);
      return 0;
     }
   } else if ( ctr ) {
-     if ( !parse_num(NV_UImm, tail) ) {
-      fprintf(stderr, "cannot parse Ctrl %s, line %d\n", tail.c_str(), m_ln);
+     if ( !parse_num(NV_UImm, sv) ) {
+      fprintf(stderr, "cannot parse Ctrl %s, line %d\n", sv.c_str(), m_ln);
       return 0;
     }
   } else if ( ea ) {
     // check if tail is just number - then check if it is valid for some enum
-    if ( std::regex_search(tail, s_digits) ) {
-      int e = parse_num(NV_SImm, tail);
+    if ( std::regex_search(sv, rs_digits) ) {
+      int e = parse_num(NV_SImm, sv);
+ if ( opt_d ) printf("parse_num %d\n", e);
       // check if this e present in ea->em
       auto ei = ea->em->find(e);
       if ( ei == ea->em->end() ) {
-        fprintf(stderr, "value %s for field %s not in enum %s, line %d\n", tail.c_str(), p.c_str(), ea->ename, m_ln);
+        fprintf(stderr, "value %s for field %s not in enum %s, line %d\n", sv.c_str(), p.c_str(), ea->ename, m_ln);
         return 1;
       }
       m_v = e;
@@ -590,24 +595,27 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
         fprintf(stderr, "cannot find enum %s for field %s, line %d\n", ea->ename, p.c_str(), m_ln);
         return 1;
       }
-      auto edi = ed->second->find(tail);
+      auto edi = ed->second->find(sv);
       if ( edi == ed->second->end() ) {
-        fprintf(stderr, "cannot find %s in enum %s for field %s, line %d\n", tail.c_str(), ea->ename, p.c_str(), m_ln);
+        fprintf(stderr, "cannot find %s in enum %s for field %s, line %d\n", sv.c_str(), ea->ename, p.c_str(), m_ln);
         return 1;
       }
       m_v = edi->second;
       if ( opt_d )
-        fprintf(m_out, "%s in %s has value %ld\n", tail.c_str(), ea->ename, m_v);
+        fprintf(m_out, "%s in %s has value %ld\n", sv.c_str(), ea->ename, m_v);
     }
   } else {
     fprintf(stderr, "unknown field %s, line %d - ignoring\n", p.c_str(), m_ln);
     return 1;
   }
   // check how this field should be patched
-  if ( ctr )
+  if ( ctr ) {
+    if ( opt_d ) fprintf(m_out, "write Ctrl %lX\n", m_v);
     return m_dis->put_ctrl(m_v);
+  }
   if ( field ) {
     if ( field->scale ) m_v /= field->scale;
+    if ( opt_d ) fprintf(m_out, "write field %s %lX\n", p.c_str(), m_v);
     return patch(field, m_v, p.c_str());
   }
   if ( cb ) {
@@ -624,6 +632,7 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
       kv[cb->f2] = m_v;
       c1 = value_or_def(ins(), cb->f1, kv);
     }
+    if ( opt_d ) fprintf(m_out, "write cbank c1 %lX c2 %lX\n", c1, c2);
     return generic_cb(ins(), c1, c2);
   }
   if ( tab ) {
@@ -637,6 +646,7 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
       kv[p] = m_v;
       if ( opt_v )
         fprintf(stderr, "Warning: value %ld for %s invalid in table, line %d\n", m_v, p.c_str(), m_ln);
+      // TODO - dump possible table values for opt_d
       return 1;
     } else
      return patch(tab, tab_value, p.c_str());
