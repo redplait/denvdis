@@ -28,6 +28,9 @@ class CEd: public CElf<ParseSASS> {
      return m_named.size();
    }
    int process(ParseSASS::Istr *);
+   inline void summary() const {
+     fprintf(m_out, "%ld reads, %ld flush\n", rdr_cnt, flush_cnt);
+   }
   protected:
    /* even though this is essentially just PoC - syntax is extremely ugly and uses spaces as sign for continuation
       (to the delight of all python fans, if there are any in the wild)
@@ -918,8 +921,6 @@ int CEd::process(ParseSASS::Istr *is)
     fprintf(stderr, "unknown command %s, state %d, line %d\n", s.c_str(), m_state, m_ln);
     break;
   }
-  if ( opt_v )
-    printf("%ld reads, %ld flush\n", rdr_cnt, flush_cnt);
   return new_state();
 }
 
@@ -941,6 +942,12 @@ void CEd::dump_ins(unsigned long off) const
   }
   fprintf(m_out, " /*%lX*/ %s\n", off, r.c_str());
   dump_predicates(curr_dis.first, curr_dis.second, "P> ");
+  if ( m_width < 128 ) {
+    uint8_t c = 0, op = 0;
+    m_dis->get_ctrl(op, c);
+    if ( op ) fprintf(m_out, " Ctrl %X op %X\n", c, op);
+    else fprintf(m_out, " Ctrl %X\n", c);
+  }
 }
 
 //
@@ -982,5 +989,7 @@ int main(int argc, char **argv)
   auto is = ParseSASS::try_open(argc == optind + 1 ? nullptr : argv[optind + 1]);
   if ( !is ) return 0;
   ced.process(is);
+  if ( opt_v )
+    ced.summary();
   delete is;
 }
