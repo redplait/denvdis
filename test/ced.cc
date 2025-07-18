@@ -120,6 +120,7 @@ class CEd: public CElf<ParseSASS> {
    int parse_tail(int idx, std::string &);
    int verify_off(unsigned long);
    int process_p(std::string &p, int idx, std::string &tail);
+   int parse_num(NV_Format, std::string &);
    int patch(const NV_field *nf, unsigned long v, const std::string_view &what) {
      if ( !m_dis->put(nf->mask, nf->mask_size, v) )
      {
@@ -499,8 +500,9 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
   const nv_eattr *ea = nullptr;
   const nv_vattr *va = nullptr;
   int cb_idx = 0, tab_idx = 0;
+  bool ctr = p == "Ctrl";
   const NV_cbank *cb = is_cb_field(in_s, p, cb_idx);
-  if ( !cb ) {
+  if ( !ctr && !cb ) {
     tab = is_tab_field(in_s, p, tab_idx);
     if ( !tab ) {
       auto field = std::lower_bound(in_s->fields.begin(), in_s->fields.end(), p,
@@ -529,7 +531,56 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
      printf(" tab idx %d\n", tab_idx);
     fputc('\n', stdout);
   }
+  m_v = 0;
+  // try to parse
+  if ( va ) {
+    if ( !parse_num(va->kind, tail) ) {
+     fprintf(stderr, "cannot parse num %s, line %d\n", tail.c_str(), m_ln);
+     return 0;
+    }
+  } else if ( ctr ) {
+     if ( !parse_num(NV_UImm, tail) ) {
+      fprintf(stderr, "cannot parse Ctrl %s, line %d\n", tail.c_str(), m_ln);
+      return 0;
+    }
+  }
   return 0;
+}
+
+// try to reuse as much code from base ParseSASS as possible
+// actual value in m_v
+int CEd::parse_num(NV_Format fmt, std::string &tail)
+{
+  if ( fmt == NV_BITSET && tail.at(0) == '{' ) {
+    parse_bitset(1, tail);
+    return 1;
+  }
+  m_minus = 0;
+  int idx = 0;
+  if ( tail.at(0) == '-' ) {
+    idx++;
+    m_minus = 1;
+  }
+  if ( fmt < NV_F64Imm ) {
+    int i = 0;
+    parse_digit(tail.c_str() + idx, i);
+    if ( m_minus ) i = -i;
+    m_v = i;
+    return 1;
+  }
+  // this is floating value
+  parse_float_tail(idx, std::string_view(tail));
+  if ( m_minus ) m_d = -m_d;
+  if ( fmt == NV_F64Imm )
+  {
+    m_v = *(uint64_t *)&m_d;
+  } else if ( fmt == NV_F32Imm ) {
+    float fl = (float)this->m_d;
+    *(float *)&m_v = fl;
+  } else if ( fmt == NV_F16Imm ) {
+    m_v = fp16_ieee_from_fp32_value(float(m_d));
+  } else return 0;
+  return 1;
 }
 
 int CEd::generic_ins(const nv_instr *ins, NV_extracted &kv)
