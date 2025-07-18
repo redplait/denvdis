@@ -144,6 +144,7 @@ class CEd: public CElf<ParseSASS> {
    // used in noping and patch from r instruction text
    int generic_ins(const nv_instr *, NV_extracted &);
    int generic_cb(const nv_instr *, unsigned long c1, unsigned long c2);
+   unsigned long value_or_def(const nv_instr *, const std::string_view &, const NV_extracted &);
    unsigned long get_def_value(const nv_instr *, const std::string_view &);
    // stored cubin name
    std::string m_cubin;
@@ -497,15 +498,20 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
   // lets try to find field with name p
   auto in_s = ins();
   const NV_tab_fields *tab = nullptr;
+  const NV_field *field = nullptr;
   const nv_eattr *ea = nullptr;
   const nv_vattr *va = nullptr;
   int cb_idx = 0, tab_idx = 0;
   bool ctr = p == "Ctrl";
+  if ( ctr && m_width == 128 ) {
+    fprintf(stderr, "Ctrl not supported for 128bit\n");
+    return 1;
+  }
   const NV_cbank *cb = is_cb_field(in_s, p, cb_idx);
   if ( !ctr && !cb ) {
     tab = is_tab_field(in_s, p, tab_idx);
     if ( !tab ) {
-      auto field = std::lower_bound(in_s->fields.begin(), in_s->fields.end(), p,
+      field = std::lower_bound(in_s->fields.begin(), in_s->fields.end(), p,
        [](const NV_field &f, const std::string &w) {
          return f.name < w;
       });
@@ -521,6 +527,8 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
   }
   if ( opt_d ) {
     printf("field %s: ", p.c_str());
+    if ( field && field->scale )
+     printf("scale %d ", field->scale);
     if ( ea )
      printf("enum %s", ea->ename);
     else if ( va )
@@ -528,7 +536,7 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
     if ( cb )
      printf(" cb idx %d scale %d", cb_idx, cb->scale);
     else if ( tab )
-     printf(" tab idx %d\n", tab_idx);
+     printf(" tab idx %d with %ld items\n", tab_idx, tab->fields.size());
     fputc('\n', stdout);
   }
   m_v = 0;
@@ -543,6 +551,24 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
       fprintf(stderr, "cannot parse Ctrl %s, line %d\n", tail.c_str(), m_ln);
       return 0;
     }
+  }
+  // check how this field should be patched
+  if ( ctr )
+    return m_dis->put_ctrl(m_v);
+  if ( field ) {
+    if ( field->scale ) m_v /= field->scale;
+    return patch(field, m_v, p.c_str());
+  }
+  if ( cb ) {
+    unsigned long c1 = 0, c2 = 0;
+    if ( !cb_idx ) {
+      c1 = m_v;
+      c2 = value_or_def(ins(), cb->f2, ex());
+    } else {
+      c2 = m_v;
+      c1 = value_or_def(ins(), cb->f1, ex());
+    }
+    return generic_cb(ins(), c1, c2);
   }
   return 0;
 }
@@ -661,6 +687,13 @@ int CEd::generic_cb(const nv_instr *ins, unsigned long c1, unsigned long c2) {
     m_dis->put(ins->cb_field->mask2, ins->cb_field->mask2_size, c2);
   }
   return 1;
+}
+
+unsigned long CEd::value_or_def(const nv_instr *ins, const std::string_view &s, const NV_extracted &kv)
+{
+  auto kvi = kv.find(s);
+  if ( kvi != kv.end() ) return kvi->second;
+  return get_def_value(ins, s);
 }
 
 unsigned long CEd::get_def_value(const nv_instr *ins, const std::string_view &s)
