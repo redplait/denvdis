@@ -551,6 +551,23 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
       fprintf(stderr, "cannot parse Ctrl %s, line %d\n", tail.c_str(), m_ln);
       return 0;
     }
+  } else if ( ea ) {
+    // check if tail is just number - then check if it is valid for some enum
+    if ( std::regex_search(tail, s_digits) ) {
+      int e = parse_num(NV_SImm, tail);
+      // check if this e present in ea->em
+      auto ei = ea->em->find(e);
+      if ( ei == ea->em->end() ) {
+        fprintf(stderr, "value %s for field %s not in enum %s, line %d\n", tail.c_str(), p.c_str(), ea->ename, m_ln);
+        return 1;
+      }
+      m_v = e;
+    } else {
+      
+    }
+  } else {
+    fprintf(stderr, "unknown field %s, line %d - ignoring\n", p.c_str(), m_ln);
+    return 1;
   }
   // check how this field should be patched
   if ( ctr )
@@ -561,12 +578,17 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
   }
   if ( cb ) {
     unsigned long c1 = 0, c2 = 0;
+    NV_extracted &kv = curr_dis.second;
     if ( !cb_idx ) {
       c1 = m_v;
-      c2 = value_or_def(ins(), cb->f2, ex());
+      // store into current kv bcs next p can patch second cbank value
+      kv[cb->f1] = m_v;
+      c2 = value_or_def(ins(), cb->f2, kv);
     } else {
       c2 = m_v;
-      c1 = value_or_def(ins(), cb->f1, ex());
+      // store into current kv bcs next p can patch second cbank value
+      kv[cb->f2] = m_v;
+      c1 = value_or_def(ins(), cb->f1, kv);
     }
     return generic_cb(ins(), c1, c2);
   }
