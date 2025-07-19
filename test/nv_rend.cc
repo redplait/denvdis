@@ -920,10 +920,9 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       if ( ea->ignore ) continue;
       auto kvi = p.second.find(rn->name);
       if ( kvi == p.second.end() ) continue;
-      if ( kvi->second == 7 ) { idx++; continue; } // I don't know if assign to PT is legal
-      if ( !strcmp(ea->ename, "Predicate") )
+      if ( !strcmp(ea->ename, "Predicate") && kvi->second != 7 )
        { rtdb->wpred(kvi->second, off, 0); res++; }
-      else if ( !strcmp(ea->ename, "UniformPredicate") )
+      else if ( !strcmp(ea->ename, "UniformPredicate") && kvi->second != 7 )
        { rtdb->wupred(kvi->second, off, 0); res++; }
       idx++;
       continue;
@@ -942,10 +941,9 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
         if ( ea->ignore ) continue;
         auto kvi = p.second.find(rn->name);
         if ( kvi == p.second.end() ) continue;
-        if ( kvi->second == 7 ) { idx++; continue; }
-        if ( !strcmp(ea->ename, "Predicate") )
+        if ( !strcmp(ea->ename, "Predicate") && kvi->second != 7 )
          { rtdb->wpred(kvi->second, off, 0); res++; }
-        else if ( !strcmp(ea->ename, "UniformPredicate") )
+        else if ( !strcmp(ea->ename, "UniformPredicate") && kvi->second != 7 )
          { rtdb->wupred(kvi->second, off, 0); res++; }
         idx++;
         continue;
@@ -1149,6 +1147,15 @@ bool NV_renderer::is_setp(const struct nv_instr *i, int &ends2) const
   ends2 = 0;
   auto ilen = strlen(i->name);
   if ( ilen < 4 ) return false;
+  // FCHK in sm57 has first predicate with name 'Pd'
+  if ( !strcmp(i->name, "FCHK") ) return 1;
+  // and LOP & LOP3 too
+  if ( !strcmp(i->name, "LOP") ) return 1;
+  if ( !strcmp(i->name, "LOP3") ) return 1;
+  // and even SHFL & AL2P
+  if ( !strcmp(i->name, "SHFL") || !strcmp(i->name, "AL2P")) return 1;
+  // TEX/TLD/TLD4/TXD
+  if ( !strcmp(i->name, "TEX") || !strcmp(i->name, "TXD") || !strcmp(i->name, "TLD") || !strcmp(i->name, "TLD4") ) return 1;
   // fsetp/psetp has 2 dest pred - Pd & nPd
   if ( !strcmp(i->name, "PSETP") || !strcmp(i->name, "FSETP") || !strcmp(i->name, "DSETP") || !strcmp(i->name, "VSETP") ) {
     ends2 = 1;
