@@ -404,7 +404,15 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
     else
       fprintf(m_out, " %s", r.c_str());
     if ( dual_last ) fputs(" }", m_out);
-    if ( opt_c ) fputc(';', m_out);
+    if ( opt_c ) {
+      int lut = 0;
+      fputc(';', m_out);
+      if ( check_lut(p.first, rend, p.second, lut) ) {
+        auto lut_op = get_lut(lut);
+        if ( lut_op ) fprintf(m_out, " LUT %X: %s\n", lut, lut_op);
+        else fprintf(m_out, " unknown LUT %X", lut);
+      }
+    }
     fputc('\n', m_out);
   } else
     fprintf(m_out, " NO_Render\n");

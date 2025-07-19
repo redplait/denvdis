@@ -152,6 +152,7 @@ extern const double NVd_inf, NVd_nan;
 
 const char *get_prop_type_name(int i);
 const char *get_prop_op_name(int i);
+const char *get_lut(int i);
 
 class NV_renderer {
  public:
@@ -403,6 +404,8 @@ class NV_renderer {
      if ( ei ) return ei->ea;
      return try_by_ename(i, s);
    }
+   // LUT imm
+   bool check_lut(const struct nv_instr *, const NV_rlist *r, const NV_extracted &kv, int &idx) const;
    // check for xxSETP
    bool is_setp(const struct nv_instr *, int &ends2) const;
    bool is_s2xx(const struct nv_instr *) const; // (C)S2(U)R

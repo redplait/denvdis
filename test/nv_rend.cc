@@ -380,6 +380,17 @@ const char *get_prop_op_name(int i) {
   return prop_op_names[i];
 }
 
+static const char *lut_ops[] = {
+#include "lut/lut.inc"
+};
+
+const char *get_lut(int i) {
+  if ( i < 0 ) return nullptr;
+  if ( --i >= int(sizeof(lut_ops) / sizeof(lut_ops[0])) )
+    return nullptr;
+  return lut_ops[i];
+}
+
 void NV_renderer::dis_stat() const
 {
   if ( dis_total )
@@ -837,6 +848,41 @@ int NV_renderer::validate_tabs(const struct nv_instr *ins, NV_extracted &res)
   return 1;
 }
 
+bool NV_renderer::check_lut(const struct nv_instr *ins, const NV_rlist *rend, const NV_extracted &kv, int &idx) const
+{
+  // 1 - opcode, 2 - has enum LUTOnly
+  int state = 0;
+  idx = 0;
+  for ( auto &r: *rend ) {
+    if ( r->type == R_opcode ) {
+      state = 1;
+      continue;
+    }
+    // check if we have tail - then end loop
+    if ( r->type == R_value ) {
+      if ( 2 != state ) return 0;
+      const render_named *rn = (const render_named *)r;
+      auto vi = find(ins->vas, rn->name);
+      if ( is_tail(vi, rn) ) break;
+      if ( 2 == state && (!strcasecmp(rn->name, "imm8") || !strcasecmp(rn->name, "uimm8")) ) {
+        auto kvi = kv.find(rn->name);
+        if ( kvi == kv.end() ) return 0;
+        idx = (int)kvi->second;
+        return 1;
+      }
+    }
+    // check LUTOnly enum
+    if ( state == 1 && r->type == R_enum ) {
+      const render_named *rn = (const render_named *)r;
+      const nv_eattr *ea = find_ea(ins, rn->name);
+      if ( !ea ) continue;
+      if ( !ea->ignore ) return 0;
+      if ( !strcmp(ea->ename, "LUTOnly") ) state = 2;
+    }
+  }
+  return 0;
+}
+
 int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &p, unsigned long off)
 {
   int res = 0;
@@ -885,7 +931,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
   rtdb->pred_mask = 0;
   if ( is_s2xx(p.first) ) rtdb->pred_mask = (1 << 10);
   for ( auto &r: *rend ) {
-    // check if we have taul - then end loop
+    // check if we have tail - then end loop
     if ( r->type == R_value ) {
       const render_named *rn = (const render_named *)r;
       auto vi = find(p.first->vas, rn->name);
