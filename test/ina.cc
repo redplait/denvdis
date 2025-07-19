@@ -317,7 +317,11 @@ struct INA: public NV_renderer {
       if ( *end ) { printf("bad index %s\n", buf); free(buf); continue; }
       free(buf);
       if ( idx < 1 || idx > (int)m_irs.size() ) { printf("invalid index %ld\n", idx); continue; }
-      if ( pre_build( m_irs[idx - 1] ) ) return &ops_fill;
+      if ( pre_build( m_irs[idx - 1] ) ) {
+        if ( m_irs[idx - 1].first->cname ) printf("%s ", m_irs[idx - 1].first->cname);
+        printf("line %d\n", m_irs[idx - 1].first->line);
+        return &ops_fill;
+      }
     }
     return nullptr;
   } };
