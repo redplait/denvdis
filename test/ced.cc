@@ -40,7 +40,7 @@ class CEd: public CElf<ParseSASS> {
         * section index (for example obtained via readelf -S): s decimal
         * section name: sn name
         * function name: fn name
-      Now we know what section to patch and state should be HasOff (with boundaries stored in m_obj_off & m_obj_size)
+      Now we know what section to patch and state should be WantOff (with boundaries stored in m_obj_off & m_obj_size)
 
       Next we may patch or replace instruction at some offset - to make copy-pasting from nvd/nvdisasm easier let offsets
        always be hexadecimal number without 0x prefix
@@ -84,7 +84,7 @@ class CEd: public CElf<ParseSASS> {
      return 1;
    }
    int m_ln = 1; // line number
-   Elf_Word s_idx = 0;
+   Elf_Word s_idx = 0; // section index
    unsigned long m_obj_off = 0, // start offset of selected section (0)/function inside section
      m_obj_size = 0, // size of selected section/function
      m_file_off = 0, // offset of m_obj_off in file
@@ -131,7 +131,7 @@ class CEd: public CElf<ParseSASS> {
    int parse_tail(int idx, std::string &);
    int verify_off(unsigned long);
    int process_p(std::string &p, int idx, std::string &tail);
-   int parse_num(NV_Format, std::string &);
+   int parse_num(NV_Format, std::string_view &);
    int patch(const NV_field *nf, unsigned long v, const std::string_view &what) {
      if ( !m_dis->put(nf->mask, nf->mask_size, v) )
      {
@@ -564,30 +564,30 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
     fputc('\n', stdout);
   }
   m_v = 0;
-  std::string sv = { tail.c_str() + idx, tail.size() - idx };
+  std::string_view sv = { tail.c_str() + idx, tail.size() - idx };
+  int sv_len = int(sv.size());
   // try to parse
   if ( va ) {
     if ( !parse_num(va->kind, sv) ) {
-     fprintf(stderr, "cannot parse num %s, line %d\n", sv.c_str(), m_ln);
+     fprintf(stderr, "cannot parse num %.*s, line %d\n", sv_len, sv.data(), m_ln);
      return 0;
     }
   } else if ( ctr ) {
      if ( !parse_num(NV_UImm, sv) ) {
-      fprintf(stderr, "cannot parse Ctrl %s, line %d\n", sv.c_str(), m_ln);
+      fprintf(stderr, "cannot parse Ctrl %.*s, line %d\n", sv_len, sv.data(), m_ln);
       return 0;
     }
   } else if ( ea ) {
     // check if tail is just number - then check if it is valid for some enum
-    if ( std::regex_search(sv, rs_digits) ) {
-      int e = parse_num(NV_SImm, sv);
- if ( opt_d ) printf("parse_num %d\n", e);
+    if ( std::regex_search(sv.begin(), sv.end(), rs_digits) ) {
+      parse_num(NV_SImm, sv);
+ if ( opt_d ) printf("parse_num %ld\n", m_v );
       // check if this e present in ea->em
-      auto ei = ea->em->find(e);
+      auto ei = ea->em->find(m_v);
       if ( ei == ea->em->end() ) {
-        fprintf(stderr, "value %s for field %s not in enum %s, line %d\n", sv.c_str(), p.c_str(), ea->ename, m_ln);
+        fprintf(stderr, "value %.*s for field %s not in enum %s, line %d\n", sv_len, sv.data(), p.c_str(), ea->ename, m_ln);
         return 1;
       }
-      m_v = e;
     } else {
       if ( !m_renums ) {
         fprintf(stderr, "no renums for field %s, enum %s, line %d\n", p.c_str(), ea->ename, m_ln);
@@ -600,12 +600,12 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
       }
       auto edi = ed->second->find(sv);
       if ( edi == ed->second->end() ) {
-        fprintf(stderr, "cannot find %s in enum %s for field %s, line %d\n", sv.c_str(), ea->ename, p.c_str(), m_ln);
+        fprintf(stderr, "cannot find %.*s in enum %s for field %s, line %d\n", sv_len, sv.data(), ea->ename, p.c_str(), m_ln);
         return 1;
       }
       m_v = edi->second;
       if ( opt_d )
-        fprintf(m_out, "%s in %s has value %ld\n", sv.c_str(), ea->ename, m_v);
+        fprintf(m_out, "%.*s in %s has value %ld\n", sv_len, sv.data(), ea->ename, m_v);
     }
   } else {
     fprintf(stderr, "unknown field %s, line %d - ignoring\n", p.c_str(), m_ln);
@@ -662,7 +662,7 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
 
 // try to reuse as much code from base ParseSASS as possible
 // actual value in m_v
-int CEd::parse_num(NV_Format fmt, std::string &tail)
+int CEd::parse_num(NV_Format fmt, std::string_view &tail)
 {
   if ( fmt == NV_BITSET && tail.at(0) == '{' ) {
     parse_bitset(1, tail);
@@ -676,13 +676,13 @@ int CEd::parse_num(NV_Format fmt, std::string &tail)
   }
   if ( fmt < NV_F64Imm ) {
     int i = 0;
-    parse_digit(tail.c_str() + idx, i);
+    parse_digit(tail.data() + idx, i);
     if ( m_minus ) i = -i;
     m_v = i;
     return 1;
   }
   // this is floating value
-  parse_float_tail(idx, std::string_view(tail));
+  parse_float_tail(idx, tail);
   if ( m_minus ) m_d = -m_d;
   if ( fmt == NV_F64Imm )
   {
