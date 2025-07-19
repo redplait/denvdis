@@ -932,9 +932,11 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     //  DSETP.MAX.AND P2, P3, R2, R12, PT
     // here first predicate in MD described as Pu and next as Pv
     // those second Pv will have idx == 1 (Pu - 0)
-    if ( setp && ends2 && idx == 1 && (r->type == R_predicate || r->type == R_enum) ) {
+    // also PSETP in old MDs has fields Pd & nPd
+    if ( setp && idx == 1 && (r->type == R_predicate || r->type == R_enum) ) {
       const render_named *rn = (const render_named *)r;
-      if ( !strcmp("Pv", rn->name) || !strcmp("UPv", rn->name) ) {
+      if ( !strcmp("nPd", rn->name) ||
+           (ends2 && (!strcmp("Pv", rn->name) || !strcmp("UPv", rn->name))) ) {
         const nv_eattr *ea = find_ea(p.first, rn->name);
         if ( !ea ) continue;
         if ( ea->ignore ) continue;
@@ -1147,6 +1149,11 @@ bool NV_renderer::is_setp(const struct nv_instr *i, int &ends2) const
   ends2 = 0;
   auto ilen = strlen(i->name);
   if ( ilen < 4 ) return false;
+  // fsetp/psetp has 2 dest pred - Pd & nPd
+  if ( !strcmp(i->name, "PSETP") || !strcmp(i->name, "FSETP") || !strcmp(i->name, "DSETP") || !strcmp(i->name, "VSETP") ) {
+    ends2 = 1;
+    return true;
+  }
   if ( i->name[ilen-1] == '2' ) {
     if ( --ilen < 4 ) return false;
     ends2 = 1;
