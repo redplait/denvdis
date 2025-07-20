@@ -404,6 +404,8 @@ class NV_renderer {
      if ( ei ) return ei->ea;
      return try_by_ename(i, s);
    }
+   // PRMT mask
+   bool check_prmt(const struct nv_instr *, const NV_rlist *r, const NV_extracted &kv, unsigned long &mask) const;
    // LUT imm
    bool check_lut(const struct nv_instr *, const NV_rlist *r, const NV_extracted &kv, int &idx) const;
    // check for xxSETP

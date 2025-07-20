@@ -848,6 +848,30 @@ int NV_renderer::validate_tabs(const struct nv_instr *ins, NV_extracted &res)
   return 1;
 }
 
+bool NV_renderer::check_prmt(const struct nv_instr *ins, const NV_rlist *rend, const NV_extracted &kv, unsigned long &mask) const
+{
+  int state = 0;
+  mask = 0;
+  for ( auto &r: *rend ) {
+    if ( r->type == R_opcode ) {
+      state = 1;
+      continue;
+    }
+    if ( r->type == R_value ) {
+      const render_named *rn = (const render_named *)r;
+      auto vi = find(ins->vas, rn->name);
+      if ( is_tail(vi, rn) ) break;
+      if ( state && (vi->kind == NV_SImm || vi->kind == NV_UImm) ) {
+        auto kvi = kv.find(rn->name);
+        if ( kvi == kv.end() ) return false;
+        mask = (int)kvi->second;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 bool NV_renderer::check_lut(const struct nv_instr *ins, const NV_rlist *rend, const NV_extracted &kv, int &idx) const
 {
   // 1 - opcode, 2 - has enum LUTOnly
@@ -860,15 +884,15 @@ bool NV_renderer::check_lut(const struct nv_instr *ins, const NV_rlist *rend, co
     }
     // check if we have tail - then end loop
     if ( r->type == R_value ) {
-      if ( 2 != state ) return 0;
+      if ( 2 != state ) return false;
       const render_named *rn = (const render_named *)r;
       auto vi = find(ins->vas, rn->name);
       if ( is_tail(vi, rn) ) break;
       if ( 2 == state && (!strcasecmp(rn->name, "imm8") || !strcasecmp(rn->name, "uimm8")) ) {
         auto kvi = kv.find(rn->name);
-        if ( kvi == kv.end() ) return 0;
+        if ( kvi == kv.end() ) return false;
         idx = (int)kvi->second;
-        return 1;
+        return true;
       }
     }
     // check LUTOnly enum
@@ -876,11 +900,11 @@ bool NV_renderer::check_lut(const struct nv_instr *ins, const NV_rlist *rend, co
       const render_named *rn = (const render_named *)r;
       const nv_eattr *ea = find_ea(ins, rn->name);
       if ( !ea ) continue;
-      if ( !ea->ignore ) return 0;
+      if ( !ea->ignore ) return false;
       if ( !strcmp(ea->ename, "LUTOnly") ) state = 2;
     }
   }
-  return 0;
+  return false;
 }
 
 int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &p, unsigned long off)
