@@ -917,29 +917,7 @@ int INA::dump_i(const char *fname) const
     dump_out(what->first);
     fputs("):\n\t", stdout);
     need_nl = 0;
-    // make offsets of fields names
-    std::vector<int> offsets;
-    int prev = 8;
-    for ( size_t i = 0; i < what->second.t->fields.size(); ++i ) {
-      auto fn = get_it(what->second.t->fields, i);
-      offsets.push_back(prev);
-      prev += fn.size() + 1;
-      dump_out(fn);
-      fputc(' ', stdout);
-    }
-    fputc('\n', stdout);
-    // dump whole tab
-    auto tab = what->second.t->tab;
-    for ( auto &titer: *tab ) {
-      printf(" %d\t", titer.first);
-      auto ar = titer.second;
-      prev = 8;
-      for ( int i = 1; i <= ar[0]; ++i ) {
-        for ( int p = prev; p < offsets.at(i - 1); ++p ) fputc(' ', stdout);
-        prev = offsets.at(i - 1) + printf("%d", ar[i]);
-      }
-      fputc('\n', stdout);
-    }
+    dump_tab_fields(what->second.t);
   }
   if ( need_nl ) fputc('\n', stdout);
   return 1;

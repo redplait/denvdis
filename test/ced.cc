@@ -647,9 +647,10 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
     if ( !ins()->check_tab(tab->tab, tab_row, tab_value) ) {
       NV_extracted &kv = curr_dis.second;
       kv[p] = m_v;
-      if ( opt_v )
+      if ( opt_v ) {
         fprintf(stderr, "Warning: value %ld for %s invalid in table, line %d\n", m_v, p.c_str(), m_ln);
-      // TODO - dump possible table values for opt_d
+        dump_tab_fields(tab);
+      }
       return 1;
     } else
      return patch(tab, tab_value, p.c_str());

@@ -459,6 +459,33 @@ bool NV_renderer::contain(const std::string_view &sv, char sym) const
   return sv.find(sym) != std::string::npos;
 }
 
+void NV_renderer::dump_tab_fields(const NV_tab_fields *t) const
+{
+  // make offsets of fields names
+  std::vector<int> offsets;
+  int prev = 8;
+  for ( size_t i = 0; i < t->fields.size(); ++i ) {
+      auto fn = get_it(t->fields, i);
+      offsets.push_back(prev);
+      prev += fn.size() + 1;
+      dump_out(fn);
+      fputc(' ', m_out);
+  }
+  fputc('\n', m_out);
+  // dump whole tab
+  auto tab = t->tab;
+  for ( auto &titer: *tab ) {
+    fprintf(m_out, " %d\t", titer.first);
+    auto ar = titer.second;
+    prev = 8;
+    for ( int i = 1; i <= ar[0]; ++i ) {
+      for ( int p = prev; p < offsets.at(i - 1); ++p ) fputc(' ', m_out);
+      prev = offsets.at(i - 1) + fprintf(m_out, "%d", ar[i]);
+    }
+    fputc('\n', m_out);
+  }
+}
+
 void NV_renderer::dump_value(const nv_vattr &a, uint64_t v, NV_Format kind, std::string &res) const
 {
   constexpr int buf_size = 63;

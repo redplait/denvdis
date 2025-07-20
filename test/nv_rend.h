@@ -316,6 +316,7 @@ class NV_renderer {
      }
     return !name[i] && (i == sv->size());
    }
+   void dump_tab_fields(const NV_tab_fields *) const;
    void dump_sv(const std::string_view &) const;
    void dump_out(const std::string_view &) const;
    void dump_outln(const std::string_view &) const;
