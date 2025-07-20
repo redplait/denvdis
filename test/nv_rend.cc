@@ -385,7 +385,7 @@ static const char *lut_ops[] = {
 };
 
 const char *get_lut(int i) {
-  if ( i < 0 ) return nullptr;
+  if ( i <= 0 ) return nullptr;
   if ( --i >= int(sizeof(lut_ops) / sizeof(lut_ops[0])) )
     return nullptr;
   return lut_ops[i];
