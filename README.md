@@ -13,6 +13,7 @@ sass disassembler - of course not a complete replica of nvdisasm (however you ca
  * [scheduling tables](https://redplait.blogspot.com/2025/05/nvidia-sass-latency-tables.html) with -S option
  * [predicates](https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-6.html) of instructions with -p option
  * [registers tracking](https://redplait.blogspot.com/2025/07/sass-instructions-registers-tracking.html) with -T option
+ * [LUT](https://forums.developer.nvidia.com/t/what-does-lop3-lut-mean-how-is-it-executed/227472) operations - see details in my [blog](https://redplait.blogspot.com/2025/07/sass-instructions-lut-operations.html)
 
 Also note that original nvdisasm can produce [ambigious](https://redplait.blogspot.com/2025/06/curse-of-imad.html) output
 
