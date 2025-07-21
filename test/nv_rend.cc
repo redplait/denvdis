@@ -8,6 +8,7 @@ using namespace std::string_view_literals;
 
 // ripped from sm_version.txt
 std::map<int, std::pair<const char *, const char *> > NV_renderer::s_sms = {
+ { 0x14, { "sm2", nullptr } },
  { 0x1E, { "sm30", "sm3" } },
  { 0x20, { "sm32", "sm4" } },
  { 0x23, { "sm35", "sm4" } },
