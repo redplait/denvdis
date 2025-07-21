@@ -49,6 +49,11 @@ EOF
   exit(8);
 }
 
+sub is_sm2
+{
+  defined($opt_C) && $opt_C eq 'sm2';
+}
+
 # some hardcoded tabs
 my %pmode = (
  IDX => 0,
@@ -2608,6 +2613,7 @@ sub gen_tabs
 {
   my $fh = shift;
   printf($fh "// ---- tables\n");
+  $g_used_tabs{'CIntSize'} //= 1 if ( is_sm2() );
   foreach my $ename ( keys %g_used_tabs ) {
     my $t = $g_tabs{$ename};
     my @cont;
@@ -2769,6 +2775,14 @@ sub parse_conv_float
   $fc->{$fname} = \@res;
   1;
 }
+# check for field scale CIntSize(field2) - can be found in sm2
+# return array ref [masl, field1, field2]
+sub is_CInt
+{
+  my $enc = shift;
+  return if ( $enc !~ /^([\w\.]+)\s*=\*?\s(\S+)\s+SCALE\s+CIntSize\(([^\)]+)\)/ );
+  return [$1, $2, $3];
+}
 my(%g_cached_tab_fields, %g_cbanks);
 my $g_tab_fields_idx = 0;
 my $g_cbanks_idx = 0;
@@ -2782,6 +2796,15 @@ sub gen_extr
   return 'nullptr' unless defined($enc);
   my $name = sprintf("%s_%d_extr", $opt_C, $op->[19]);
   printf($fh "\nstatic void %s(std::function<uint64_t(const std::pair<short, short> *, size_t)>  &fn, NV_extracted &res) {\n", $name);
+  my(%cfields);
+  if ( is_sm2() ) {
+    foreach my $m ( @$enc ) {
+      my $cres = is_CInt($m);
+      next unless defined($cres);
+      # store to cfields, key field2 in cres->[2]
+      $cfields{$cres->[2]} = $cres;
+    }
+  }
   # c++ impl of dump_values
   my $index = 0;
   my @cached_tabs;
@@ -2808,12 +2831,23 @@ sub gen_extr
         printf($fh "auto i%d = %s.find(v%d); if ( i%d != %s.end() ) {\n", $index, $tab_name, $index, $index, $tab_name);
         printf($fh " auto &ctab = i%d->second;\n", $index);
         my @fa = split /\s*,\s*/, $3;
+        my $ci = 0;
         for ( my $i = 0; $i < @fa; $i++ ) {
           $fa[$i] =~ s/\s+$//;
           next if ( $fa[$i] =~ /^\d+$/ ); # skip constant
           printf($fh " res[\"%s\"] = ctab[%d];\n", $fa[$i], $i+1);
           push @cf_tab, $fa[$i];
           $ckey .= '.' . $fa[$i];
+          # check if this field used in cfields for CIntSize scaling
+          if ( exists $cfields{$fa[$i]} ) {
+            my $tab_name = c_tab_name('CIntSize');
+            my $rf = $cfields{$fa[$i]};
+            printf($fh " // scale %s for %s mask %s\n", $rf->[1], $rf->[2], $rf->[0]);
+            printf($fh " auto ci%d = %s.find( ctab[%d] );\n", $ci, $tab_name, $i+1);
+            printf($fh " if ( ci%d != %s.end() ) res[\"%s\"] = ci%d->second[1] * ", $ci, $tab_name, $rf->[1], $ci);
+            inl_extract2($fh, $rf->[0]);
+            $ci++;
+          }
         }
         printf($fh "}\n");
         unless ( exists $g_cached_tab_fields{$ckey} ) {
@@ -2877,7 +2911,11 @@ sub gen_extr
       }
       $index++; next;
     } else {
-      printf("unknown encoding %s for %s line %d\n", $m, $op->[1], $op->[4]);
+      my $dump = 1;
+      if ( is_sm2() ) {
+        $dump = 0 if ( is_CInt($m) );
+      }
+      printf("unknown encoding %s for %s line %d\n", $m, $op->[1], $op->[4]) if ( $dump );
     }
   }
   my($cb_key, $cb, $cb_len, $cb_scale, @fcb);
