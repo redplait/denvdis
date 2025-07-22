@@ -696,6 +696,10 @@ int CEd::parse_num(NV_Format fmt, std::string_view &tail)
   if ( tail.at(idx) == '+' ) tidx++;;
   float fl;
   if ( !strcasecmp(tail.data() + tidx, "inf") ) {
+   if ( fmt == NV_F64Imm ) {
+     *(double *)&m_v = m_minus ? -INFINITY: INFINITY;
+     return 1;
+   }
    const uint32_t positive_infinity_f32 = uint32_t(0x7F800000);
    const uint32_t negative_infinity_f32 = uint32_t(0xFF800000);
    fl = *(float *)( m_minus ? &negative_infinity_f32 : &positive_infinity_f32 );
@@ -707,6 +711,10 @@ int CEd::parse_num(NV_Format fmt, std::string_view &tail)
      return 1;
    }
   } else if ( !strcasecmp(tail.data() + tidx, "nan") || !strcasecmp(tail.data() + tidx, "qnan") ) {
+   if ( fmt == NV_F64Imm ) {
+     *(double *)&m_v = m_minus ? -NAN: NAN;
+     return 1;
+   }
     const uint32_t positive_nan_f32 = uint32_t(0x7FFFFFFF);
     const uint32_t negative_nan_f32 = uint32_t(0xFFFFFFFF);
    fl = *(float *)( m_minus ? &negative_nan_f32 : &positive_nan_f32 );
