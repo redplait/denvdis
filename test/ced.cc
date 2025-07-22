@@ -77,10 +77,15 @@ class CEd: public CElf<ParseSASS> {
    PState m_state = Fresh;
    int new_state() {
      if ( m_state == HasP ) {
+       auto inc_size = m_inc_tabs.size();
+       if ( inc_size )
+         fprintf(stderr, "Warning: %ld non-completed tables\n", inc_size);
+       m_inc_tabs.clear();
        m_dis->flush();
        block_dirty = true;
        return flush_buf();
      }
+     m_inc_tabs.clear();
      return 1;
    }
    int m_ln = 1; // line number
@@ -157,6 +162,7 @@ class CEd: public CElf<ParseSASS> {
        fprintf(stderr, "cannot patch tab value %s, line %d\n", what, m_ln);
        return 0;
      }
+     m_inc_tabs.erase(tf);
      block_dirty = true;
      return 1;
    }
@@ -186,6 +192,8 @@ class CEd: public CElf<ParseSASS> {
    // just wrappers to reduce repeating typing
    inline const nv_instr *ins() const { return curr_dis.first; }
    inline const NV_extracted &ex() const { return curr_dis.second; }
+   // incompleted tabs
+   std::unordered_set<const NV_tab_fields *> m_inc_tabs;
    // renderer
    const NV_rlist *m_rend = nullptr;
    void dump_ins(unsigned long off) const;
@@ -647,6 +655,7 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
     if ( !ins()->check_tab(tab->tab, tab_row, tab_value) ) {
       NV_extracted &kv = curr_dis.second;
       kv[p] = m_v;
+      m_inc_tabs.insert(tab);
       if ( opt_v ) {
         fprintf(stderr, "Warning: value %ld for %s invalid in table, line %d\n", m_v, p.c_str(), m_ln);
         dump_tab_fields(tab);
@@ -699,6 +708,7 @@ int CEd::parse_num(NV_Format fmt, std::string_view &tail)
 
 int CEd::generic_ins(const nv_instr *ins, NV_extracted &kv)
 {
+  m_inc_tabs.clear();
   if ( !m_dis->set_mask(ins->mask) ) {
     fprintf(stderr, "set_mask for %s %d failed\n", ins->name, ins->line);
     return 0;
@@ -798,6 +808,7 @@ unsigned long CEd::get_def_value(const nv_instr *ins, const std::string_view &s)
 
 int CEd::verify_off(unsigned long off)
 {
+  m_inc_tabs.clear();
   // check that offset is valid
   if ( off < m_obj_off || off >= (m_obj_off + m_obj_size) ) {
     fprintf(stderr, "invalid offset %lX, should be within %lX - %lX, line %d\n",
