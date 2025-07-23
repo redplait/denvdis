@@ -6,7 +6,10 @@ NVidia sass disassembler. See chaotic and incomplete documentation in my [blog](
 
 I used gcc built-in __uint128_t type, so probably on other platforms it's better to use something like abseil [Numeric](https://github.com/abseil/abseil-cpp/tree/master/absl/numeric)
 
-As an illustration sub-dir [test](https://github.com/redplait/denvdis/tree/master/test) contains 3 small applications:
+As an illustration sub-dir [test](https://github.com/redplait/denvdis/tree/master/test) contains 4 small applications:
+### ced
+sed-like tool for inline patching of sass instructions within cubin files. See details in my [blog](https://redplait.blogspot.com/2025/07/ced-sed-like-cubin-editor.html)
+
 ### nvd
 sass disassembler - of course not a complete replica of nvdisasm (however you can have syntax compatible with nvdisasm with -c option), instead it can show
  * values of all encoding fields with -O option
