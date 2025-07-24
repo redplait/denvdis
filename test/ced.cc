@@ -97,6 +97,9 @@ class CEd: public CElf<ParseSASS> {
    const SRels *m_cur_srels = nullptr;
    const asymbol *m_cur_rsym = nullptr;
    const NV_rel *m_cur_rel = nullptr;
+   // labels from EATTRs
+   NV_labels m_labels;
+   int setup_labels(int idx);
    int setup_srelocs(int s_idx) {
      auto si = m_srels.find(s_idx);
      if ( si == m_srels.end() ) {
@@ -105,6 +108,13 @@ class CEd: public CElf<ParseSASS> {
      }
      m_cur_srels = &si->second;
      if ( opt_v ) fprintf(m_out, "%ld relocs\n", m_cur_srels->size());
+     return 1;
+   }
+   int check_off(unsigned long off) {
+     if ( m_labels.empty() ) return 0;
+     auto li = m_labels.find(off);
+     if ( li == m_labels.end() ) return 0;
+     fprintf(m_out, "Warning: offset %lX has label from %s\n", off, s_ltypes[li->second]);
      return 1;
    }
    int check_rel(unsigned long off) {
@@ -201,8 +211,8 @@ class CEd: public CElf<ParseSASS> {
    void dump_render() const;
    // named symbols
    std::unordered_map<std::string_view, const asymbol *> m_named;
-   // allowed sections with code
-   std::unordered_set<int> m_code_sects;
+   // allowed sections with code, key is .text section index and value is index of section with attributes
+   std::unordered_map<int, int> m_code_sects;
    // key - section name, value - index
    std::unordered_map<std::string, int> m_named_cs;
    static std::regex rs_digits;
@@ -227,15 +237,32 @@ int CEd::prepare(const char *fn)
 {
   if ( !init_guts() ) return 0;
   n_sec = reader.sections.size();
-  // iterate on sections
+  // iterate on sections to collect section with attributes
+  std::unordered_map<int, int> attrs; // key - link section, value - index of section with attributes
+  for ( Elf_Half i = 0; i < n_sec; ++i ) {
+    section *sec = reader.sections[i];
+    auto st = sec->get_type();
+    if ( st == SHT_NOBITS || !sec->get_size() ) continue;
+    if ( st == 0x70000000 ) attrs[sec->get_info()] = i;
+  }
+  // iterate on sections to collect code sections
   for ( Elf_Half i = 0; i < n_sec; ++i ) {
    section *sec = reader.sections[i];
    if ( sec->get_type() == SHT_NOBITS || !sec->get_size() ) continue;
    auto sname = sec->get_name();
    if ( !strncmp(sname.c_str(), ".text.", 6) ) {
-     m_code_sects.insert(i);
+     auto ai = attrs.find(i);
+     if ( ai == attrs.end() )
+       m_code_sects[i] = 0;
+     else
+       m_code_sects[i] = ai->second;
      m_named_cs[sname] = i;
-     if ( opt_v ) printf("section %d: %s, size %lX\n", i, sname.c_str(), sec->get_size());
+     if ( opt_v ) {
+       if ( ai == attrs.end() )
+         printf("section %d: %s, size %lX\n", i, sname.c_str(), sec->get_size());
+       else
+         printf("section %d: %s, size %lX attrs in section %d\n", i, sname.c_str(), sec->get_size(), ai->second);
+     }
    }
   }
   if ( m_code_sects.empty() ) {
@@ -875,6 +902,7 @@ int CEd::verify_off(unsigned long off)
   }
   // check if we have reloc on real offset
   check_rel(off);
+  check_off(off);
   if ( block_off != m_buf_off ) {
     // need to read new buffer
     fseek(m_cubin_fp, block_off, SEEK_SET);
