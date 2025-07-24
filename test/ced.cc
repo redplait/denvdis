@@ -89,7 +89,7 @@ class CEd: public CElf<ParseSASS> {
      return 1;
    }
    int m_ln = 1; // line number
-   Elf_Word s_idx = 0; // section index
+   Elf_Word m_idx = 0; // section index
    unsigned long m_obj_off = 0, // start offset of selected section (0)/function inside section
      m_obj_size = 0, // size of selected section/function
      m_file_off = 0, // offset of m_obj_off in file
@@ -233,6 +233,71 @@ int CEd::flush_buf()
   return 1;
 }
 
+int CEd::setup_labels(int idx)
+{
+  if ( idx == (int)m_idx ) return 1;
+  // get appr attributes section
+  m_labels.clear();
+  auto si = m_code_sects.find(idx);
+  if ( si == m_code_sects.end() || !si->second ) return 0;
+  section *sec = reader.sections[si->second];
+  // similar to nv_dis::_parse_attrs
+  const char *data = sec->get_data();
+  const char *start = data, *end = data + sec->get_size();
+  while( data < end )
+  {
+    if ( end - data < 2 ) {
+      fprintf(stderr, "bad attrs data. section %d\n", si->second);
+      return 0;
+    }
+    char format = data[0];
+    char attr = data[1];
+    unsigned short a_len;
+    int ltype = 0;
+    switch (format)
+    {
+      case 1: data += 2;
+        // check align
+        if ( (data - start) & 0x3 ) data += 4 - ((data - start) & 0x3);
+        break;
+      case 2:
+        data += 3;
+        // check align
+        if ( (data - start) & 0x1 ) data++;
+       break;
+      case 3:
+        data += 4;
+       break;
+      case 4:
+        a_len = *(unsigned short *)(data + 2);
+        if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
+          ltype = NVLType::Coop_grp;
+        else if ( attr == 0x1c ) // EIATTR_EXIT_INSTR_OFFSETS
+          ltype = NVLType::Exit;
+        else if ( attr == 0x1d ) // EIATTR_S2RCTAID_INSTR_OFFSETS
+          ltype = NVLType::S2Rctaid;
+        else if ( attr == 0x25 ) // EIATTR_LD_CACHEMOD_INSTR_OFFSETS
+          ltype = NVLType::Ld_cachemode;
+        else if ( attr == 0x31 ) // EIATTR_INT_WARP_WIDE_INSTR_OFFSETS
+          ltype = NVLType::Warp_wide;
+        else if ( attr == 0x39 ) // EIATTR_MBARRIER_INSTR_OFFSETS
+          ltype = NVLType::MBarier;
+        else if ( attr == 0x47 ) // EIATTR_SW_WAR_MEMBAR_SYS_INSTR_OFFSETS
+          ltype = NVLType::War_membar;
+        // read offsets
+        if ( ltype ) {
+          fill_eaddrs(&m_labels, ltype, data, a_len);
+        }
+        data += 4 + a_len;
+        break;
+      default: fprintf(stderr, "unknown format %d, section %d off %lX (%s)\n",
+        format, idx, data - start, sec->get_name().c_str());
+         return 0;
+    }
+  }
+  return 1;
+}
+
 int CEd::prepare(const char *fn)
 {
   if ( !init_guts() ) return 0;
@@ -342,13 +407,15 @@ int CEd::parse_f(int idx, std::string &s)
     fprintf(stderr, "unknown fn: %s, line %d\n", s.c_str() + idx, m_ln);
     return 0;
   }
-  s_idx = fiter->second->section;
+  auto s_idx = fiter->second->section;
   auto siter = m_code_sects.find(s_idx);
   if ( siter == m_code_sects.end() ) {
     fprintf(stderr, "section %d don't have code, %s: line %d\n", s_idx, s.c_str(), m_ln);
     return 0;
   }
+  setup_labels(s_idx);
   section *sec = reader.sections[s_idx];
+  m_idx = s_idx;
   m_obj_off = fiter->second->addr;
   m_obj_size = fiter->second->size;
   m_file_off = sec->get_offset() + m_obj_off;
@@ -365,7 +432,7 @@ int CEd::parse_s(int idx, std::string &s)
     fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   }
-  s_idx = 0;
+  int s_idx = 0;
   if ( !new_state() ) return 0;
   char c = s.at(idx);
   if ( isspace(c) ) { // s index
@@ -401,7 +468,9 @@ int CEd::parse_s(int idx, std::string &s)
     s_idx = siter->second;
   }
   // index of found section in s_idx
+  setup_labels(s_idx);
   section *sec = reader.sections[s_idx];
+  m_idx = s_idx;
   m_obj_off = 0;
   m_obj_size = sec->get_size();
   m_file_off = sec->get_offset();
