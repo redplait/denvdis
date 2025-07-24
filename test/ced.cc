@@ -191,7 +191,8 @@ class CEd: public CElf<ParseSASS> {
    NV_pair curr_dis;
    // just wrappers to reduce repeating typing
    inline const nv_instr *ins() const { return curr_dis.first; }
-   inline const NV_extracted &ex() const { return curr_dis.second; }
+   inline const NV_extracted &cex() const { return curr_dis.second; }
+   inline NV_extracted &ex() { return curr_dis.second; }
    // incompleted tabs
    std::unordered_set<const NV_tab_fields *> m_inc_tabs;
    // renderer
@@ -417,7 +418,7 @@ int CEd::parse_tail(int idx, std::string &s)
       return 0;
     }
     if ( opt_k ) dump_ops(of->instr, kv);
-    copy_tail_values(of->instr, of->rend, ex(), kv);
+    copy_tail_values(of->instr, of->rend, cex(), kv);
     if ( !generic_ins(of->instr, kv) ) return 0;
     if ( !flush_buf() ) {
       fprintf(stderr, "instr %s flush failed\n", s.c_str());
@@ -512,7 +513,7 @@ int CEd::parse_tail(int idx, std::string &s)
       return 1;
     }
     NV_extracted out_res;
-    copy_tail_values(ins(), m_nop_rend, ex(), out_res);
+    copy_tail_values(ins(), m_nop_rend, cex(), out_res);
     if ( !generic_ins(ins(), out_res) ) return 0;
     if ( !flush_buf() ) {
       fprintf(stderr, "nop flush failed\n");
@@ -631,7 +632,7 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
   }
   if ( cb ) {
     unsigned long c1 = 0, c2 = 0;
-    NV_extracted &kv = curr_dis.second;
+    auto kv = ex();
     if ( !cb_idx ) {
       c1 = m_v;
       // store into current kv bcs next p can patch second cbank value
@@ -649,11 +650,11 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
   if ( tab ) {
     // check if provided value is valid for table
     std::vector<unsigned short> tab_row;
-    if ( make_tab_row(opt_v, ins(), tab, ex(), tab_row, tab_idx) ) return 0;
+    if ( make_tab_row(opt_v, ins(), tab, cex(), tab_row, tab_idx) ) return 0;
     tab_row[tab_idx] = (unsigned short)m_v;
     int tab_value = 0;
     if ( !ins()->check_tab(tab->tab, tab_row, tab_value) ) {
-      NV_extracted &kv = curr_dis.second;
+      NV_extracted &kv = ex();
       kv[p] = m_v;
       m_inc_tabs.insert(tab);
       if ( opt_v ) {
@@ -911,7 +912,7 @@ int CEd::verify_off(unsigned long off)
   }
   // dump if need
   if ( opt_d ) dump_ins(off);
-  if ( opt_k ) dump_ops(curr_dis.first, curr_dis.second);
+  if ( opt_k ) dump_ops(curr_dis.first, cex());
   if ( opt_v ) dump_render();
   return 1;
 }
@@ -981,14 +982,14 @@ void CEd::dump_render() const
 void CEd::dump_ins(unsigned long off) const
 {
   std::string r;
-  int miss = render(m_rend, r, curr_dis.first, curr_dis.second, nullptr, 1);
+  int miss = render(m_rend, r, curr_dis.first, cex(), nullptr, 1);
   if ( miss ) {
    fprintf(m_out, "; %d missed:", miss);
    for ( auto &ms: m_missed ) fprintf(m_out, " %s", ms.c_str());
    fputc('\n', m_out);
   }
   fprintf(m_out, " /*%lX*/ %s\n", off, r.c_str());
-  dump_predicates(curr_dis.first, curr_dis.second, "P> ");
+  dump_predicates(curr_dis.first, cex(), "P> ");
   if ( m_width < 128 ) {
     uint8_t c = 0, op = 0;
     m_dis->get_ctrl(op, c);

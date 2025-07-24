@@ -260,7 +260,6 @@ class nv_dis: public CElf<NV_renderer>
      }
      return res;
    }
-   void fill_eaddrs(NV_labels *, int ltype, const char *, int alen);
    void try_dis(Elf_Word idx);
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
    // boring ELF related stuff
@@ -671,18 +670,6 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
         format, idx, data - start, sec->get_name().c_str());
          return;
     }
-  }
-}
-
-void nv_dis::fill_eaddrs(NV_labels *l, int ltype, const char *data, int alen)
-{
-  for ( const char *bcurr = data + 4; data + 4 + alen - bcurr >= 0x4; bcurr += 0x4 )
-  {
-    uint32_t addr = *(uint32_t *)(bcurr);
-    // there can be several labels for some addr, so add only if not exists yet
-    auto ri = l->find(addr);
-    if ( ri == l->end() )
-      (*l)[addr] = ltype;
   }
 }
 
