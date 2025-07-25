@@ -1249,7 +1249,7 @@ bool NV_renderer::is_setp(const struct nv_instr *i, int &ends2) const
   if ( !strcmp(i->name, "FCHK") ) return 1;
   // and LOP & LOP3 too
   if ( !strcmp(i->name, "LOP") ) return 1;
-  if ( !strcmp(i->name, "LOP3") ) return 1;
+  if ( !strcmp(i->name, "LOP3") || !strcmp(i->name, "PLOP3") ) return 1;
   // and even SHFL & AL2P
   if ( !strcmp(i->name, "SHFL") || !strcmp(i->name, "AL2P")) return 1;
   // TEX/TLD/TLD4/TXD
