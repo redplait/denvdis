@@ -1242,31 +1242,11 @@ bool NV_renderer::is_s2xx(const struct nv_instr *i) const
 
 bool NV_renderer::is_setp(const struct nv_instr *i, int &ends2) const
 {
-  ends2 = 0;
-  auto ilen = strlen(i->name);
-  if ( ilen < 4 ) return false;
-  // FCHK in sm57 has first predicate with name 'Pd'
-  if ( !strcmp(i->name, "FCHK") ) return 1;
-  // and LOP & LOP3 too
-  if ( !strcmp(i->name, "LOP") ) return 1;
-  if ( !strcmp(i->name, "LOP3") || !strcmp(i->name, "PLOP3") ) return 1;
-  // and even SHFL & AL2P
-  if ( !strcmp(i->name, "SHFL") || !strcmp(i->name, "AL2P")) return 1;
-  // TEX/TLD/TLD4/TXD
-  if ( !strcmp(i->name, "TEX") || !strcmp(i->name, "TXD") || !strcmp(i->name, "TLD") || !strcmp(i->name, "TLD4") ) return 1;
-  // fsetp/psetp has 2 dest pred - Pd & nPd
-  if ( !strcmp(i->name, "PSETP") || !strcmp(i->name, "FSETP") || !strcmp(i->name, "DSETP") || !strcmp(i->name, "VSETP") ) {
-    ends2 = 1;
-    return true;
-  }
-  if ( i->name[ilen-1] == '2' ) {
-    if ( --ilen < 4 ) return false;
-    ends2 = 1;
-  }
-  return (i->name[ilen-1] == 'P') &&
-    (i->name[ilen-2] == 'T') &&
-    (i->name[ilen-3] == 'E') &&
-    (i->name[ilen-4] == 'S');
+  if ( 2 == i->setp )
+   ends2 = 1;
+  else
+   ends2 = 0;
+  return i->setp;
 }
 
 bool NV_renderer::check_ret(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const
