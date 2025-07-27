@@ -3298,23 +3298,28 @@ sub gen_preds
 }
 # perl impl of NV_renderer::is_setp
 # it's better to precalculate is_setp once per instruction instead of run-time
-my %s_setp = qw(
- FCHK => 1,
- LOP => 1,
- LOP3 => 1,
- PLOP3 => 1,
- SHFL => 1,
- AL2P => 1,
- TEX => 1,
- TXD => 1,
- TLD => 1,
- TLD4 => 1,
+my %s_setp = (
+ 'FCHK' => 1,
+ 'LOP' => 1,
+ 'LOP32I' => 1,
+ 'ULOP' => 1,
+ 'ULOP32I' => 1,
+ 'LOP3' => 1,
+ 'PLOP3' => 1,
+ 'ULOP3' => 1,
+ 'UPLOP3' => 1,
+ 'SHFL' => 1,
+ 'AL2P' => 1,
+ 'TEX' => 1,
+ 'TXD' => 1,
+ 'TLD' => 1,
+ 'TLD4' => 1,
 );
 sub is_setp
 {
   my $op = shift;
-  my $name = $op->[0];
-  my $res = 0;
+  my $name = $op->[1];
+  my $res = 1;
   $res = 2 if ( $name =~ /2$/ );
   return 1 if ( exists $s_setp{$name} );
   return $res if ( $name =~ /SETP/ );
@@ -3378,7 +3383,7 @@ sub gen_instr
       }
       # dump instruction
       printf($fh "static const struct nv_instr %s = {\n", $iname);
-      # name mask line n alt setp meaning_bits
+      # class name mask line n alt setp meaning_bits
       printf($fh "\"%s\",\n \"%s\",\n \"%s\", %d, %d, %d, %d, %d,\n", $m,
         $op->[0],$op->[1],$op->[4], $op->[19], $op->[7], is_setp($op), $op->[14]);
       # brt properties
