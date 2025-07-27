@@ -775,6 +775,11 @@ void NV_renderer::dump_rt(reg_pad *rtdb) const {
     fprintf(m_out, ";;; %ld UPRED\n", rtdb->upred.size());
     dump_rset(rtdb->upred, "UP");
   }
+  if ( !rtdb->cbs.empty() ) {
+   fprintf(m_out, ";;; %ld CBanks\n", rtdb->cbs.size());
+   for ( auto &c: rtdb->cbs )
+     fprintf(m_out, " ;   %lX: %X %lX size %d\n", c.off, c.cb_num, c.cb_off, c.kind & 0xf);
+  }
 }
 
 void NV_renderer::dump_rset(const reg_pad::RSet &rs, const char *pfx) const
@@ -988,6 +993,13 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       const render_named *rn = (const render_named *)r;
       auto vi = find(p.first->vas, rn->name);
       if ( is_tail(vi, rn) ) break;
+      idx++;
+      continue;
+    }
+    unsigned short cb_idx = 0;
+    unsigned long cb_off = 0;
+    if ( check_cbank(p.first, r, p.second, cb_idx, cb_off) ) {
+      rtdb->add_cb(off, cb_off, cb_idx, d_size >> 3);
       idx++;
       continue;
     }
@@ -1552,6 +1564,23 @@ std::optional<long> NV_renderer::check_cbank(const NV_rlist *rl, const NV_extrac
     }
   }
   return std::nullopt;
+}
+
+bool NV_renderer::check_cbank(const struct nv_instr *i, const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
+     unsigned long &cb_off) const
+{
+  if ( rb->type != R_C && rb->type != R_CX ) return false;
+  const render_C *rn = (const render_C *)rb;
+  if ( rn->left.type != R_value )
+    return false;
+  auto kvi = kv.find(rn->left.arg);
+  if ( kvi == kv.end() )
+    return false;
+  cb_idx = (unsigned short)kvi->second;
+  auto res = check_cbank_right(rn->right, kv);
+  if ( !res.has_value() ) return false;
+  cb_off = res.value();
+  return true;
 }
 
 int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i,

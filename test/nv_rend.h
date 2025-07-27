@@ -78,6 +78,12 @@ struct reg_history {
   }
 };
 
+struct cbank_history {
+  unsigned long off, cb_off;
+  // kind - low 4 bits is size in bytes
+  unsigned short cb_num, kind;
+};
+
 // register tracks
 // there can be 4 groups of register
 // - general purpose registers
@@ -89,8 +95,12 @@ struct reg_history {
 struct reg_pad {
   typedef std::unordered_map<int, std::vector<reg_history> > RSet;
   RSet gpr, pred, ugpr, upred;
+  std::vector<cbank_history> cbs;
   reg_history::RH pred_mask = 0;
   // boring stuff
+  void add_cb(unsigned long off, unsigned long cb_off, unsigned short cb_num, unsigned short k) {
+    cbs.push_back( { off, cb_off, cb_num, k });
+  }
   void _add(RSet &rs, int idx, unsigned long off, reg_history::RH k) {
     k |= pred_mask;
     auto ri = rs.find(idx);
@@ -131,7 +141,7 @@ struct reg_pad {
     _add(upred, r, off, k | 0x8000);
   }
   bool empty() const {
-    return gpr.empty() && pred.empty() && ugpr.empty() && upred.empty();
+    return gpr.empty() && pred.empty() && ugpr.empty() && upred.empty() && cbs.empty();
   }
   void clear() {
      pred_mask = 0;
@@ -139,6 +149,7 @@ struct reg_pad {
      pred.clear();
      ugpr.clear();
      upred.clear();
+     cbs.clear();
   }
 };
 
@@ -405,6 +416,8 @@ class NV_renderer {
      if ( ei ) return ei->ea;
      return try_by_ename(i, s);
    }
+   bool check_cbank(const struct nv_instr *, const render_base *, const NV_extracted &kv, unsigned short &cb_idx,
+     unsigned long &cb_off) const;
    // PRMT mask
    bool check_prmt(const struct nv_instr *, const NV_rlist *r, const NV_extracted &kv, unsigned long &mask) const;
    // LUT imm
