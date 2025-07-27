@@ -2776,12 +2776,20 @@ sub parse_conv_float
   1;
 }
 # check for field scale CIntSize(field2) - can be found in sm2
-# return array ref [masl, field1, field2]
+# return array ref [mask, field1, field2]
 sub is_CInt
 {
   my $enc = shift;
   return if ( $enc !~ /^([\w\.]+)\s*=\*?\s(\S+)\s+SCALE\s+CIntSize\(([^\)]+)\)/ );
   return [$1, $2, $3];
+}
+# check for SCALE (QInteger+1)*4
+# return array ref [mask, field]
+sub is_QInt
+{
+  my $enc = shift;
+  return if ( $enc !~ /^([\w\.]+)\s*=\*?\s(\S+)\s+SCALE\s+\(QInteger\+1\)\*4/ );
+  return [$1, $2];
 }
 my(%g_cached_tab_fields, %g_cbanks);
 my $g_tab_fields_idx = 0;
@@ -3288,6 +3296,30 @@ sub gen_preds
   printf($fh "};\n");
   $res;
 }
+# perl impl of NV_renderer::is_setp
+# it's better to precalculate is_setp once per instruction instead of run-time
+my %s_setp = qw(
+ FCHK => 1,
+ LOP => 1,
+ LOP3 => 1,
+ PLOP3 => 1,
+ SHFL => 1,
+ AL2P => 1,
+ TEX => 1,
+ TXD => 1,
+ TLD => 1,
+ TLD4 => 1,
+);
+sub is_setp
+{
+  my $op = shift;
+  my $name = $op->[0];
+  my $res = 0;
+  $res = 2 if ( $name =~ /2$/ );
+  return 1 if ( exists $s_setp{$name} );
+  return $res if ( $name =~ /SETP/ );
+  0;
+}
 sub gen_instr
 {
   my $fh = shift;
@@ -3346,8 +3378,9 @@ sub gen_instr
       }
       # dump instruction
       printf($fh "static const struct nv_instr %s = {\n", $iname);
-      # name mask line n alt meaning_bits
-      printf($fh "\"%s\",\n \"%s\",\n \"%s\", %d, %d, %d, %d,\n", $m,$op->[0],$op->[1],$op->[4], $op->[19], $op->[7], $op->[14]);
+      # name mask line n alt setp meaning_bits
+      printf($fh "\"%s\",\n \"%s\",\n \"%s\", %d, %d, %d, %d, %d,\n", $m,
+        $op->[0],$op->[1],$op->[4], $op->[19], $op->[7], is_setp($op), $op->[14]);
       # brt properties
       if ( defined $op->[20] ) {
         my $brt = $op->[20];

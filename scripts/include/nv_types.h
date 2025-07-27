@@ -205,7 +205,8 @@ struct nv_instr {
  const char *name;
  int line;
  short n; // number for formatting
- char alt;
+ char alt, // this instruction has ALTERNATE keyword
+   setp;   // precalculated is_setp
  short meaning_bits;
  char brt,   // NV_Brt or 0
   scbd,      // NV_Scbd or 0
