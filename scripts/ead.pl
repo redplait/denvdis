@@ -3310,10 +3310,21 @@ my %s_setp = (
  'UPLOP3' => 1,
  'SHFL' => 1,
  'AL2P' => 1,
+ 'ATOM' => 1,
+ 'SUATOM' => 1,
+ 'PIXLD' => 1,
+ 'SULD' => 1,
+ 'LEA' => 1,
  'TEX' => 1,
  'TXD' => 1,
  'TLD' => 1,
  'TLD4' => 1,
+ 'CSETP' => 2,
+ 'PSETP' => 2,
+ 'FSETP' => 2,
+ 'DSETP' => 2,
+ 'ISETP' => 2,
+ 'VSETP' => 2,
 );
 sub is_setp
 {
@@ -3321,7 +3332,8 @@ sub is_setp
   my $name = $op->[1];
   my $res = 1;
   $res = 2 if ( $name =~ /2$/ );
-  return 1 if ( exists $s_setp{$name} );
+  return $s_setp{$name} if ( exists $s_setp{$name} );
+  # rest like hsetp2 etc
   return $res if ( $name =~ /SETP/ );
   0;
 }
