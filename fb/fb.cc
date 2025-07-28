@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <unistd.h>
 #include "elfio/elfio.hpp"
+#include <unordered_map>
 
 static const char hexes[] = "0123456789ABCDEF";
 
@@ -113,14 +115,81 @@ struct  __attribute__((__packed__)) fat_text_header
 
 class CFatBin {
  public:
-   int open(const char *);
+   int open(const char *, int opt_h, int opt_v);
  protected:
+   std::unordered_map<int, std::pair<ptrdiff_t, fat_text_header> > m_map;
+   // from https://zhuanlan.zhihu.com/p/29424681490
+   size_t decompress(const uint8_t *input, size_t input_size, uint8_t *output, size_t output_size);
    Elf_Half n_sec = 0, m_ctrl = 0, m_fb = 0;
    unsigned long fb_size;
    elfio reader;
 };
 
-int CFatBin::open(const char *fn)
+size_t CFatBin::decompress(const uint8_t *input, size_t input_size, uint8_t *output, size_t output_size)
+{
+  {
+    size_t ipos = 0, opos = 0;
+    uint64_t next_nclen;  // length of next non-compressed segment
+    uint64_t next_clen;   // length of next compressed segment
+    uint64_t back_offset; // negative offset where redudant data is located, relative to current opos
+
+    while (ipos < input_size) {
+        next_nclen = (input[ipos] & 0xf0) >> 4;
+        next_clen = 4 + (input[ipos] & 0xf);
+        if (next_nclen == 0xf) {
+            do {
+                next_nclen += input[++ipos];
+            } while (input[ipos] == 0xff);
+        }
+
+        if (memcpy(output + opos, input + (++ipos), next_nclen) == NULL) {
+            fprintf(stderr, "Error copying data");
+            return 0;
+        }
+#ifdef FATBIN_DECOMPRESS_DEBUG
+        printf("%#04zx/%#04zx nocompress (len:%#zx):\n", opos, ipos, next_nclen);
+        HexDump(stdout, output + opos, next_nclen);
+#endif
+        ipos += next_nclen;
+        opos += next_nclen;
+        if (ipos >= input_size || opos >= output_size) {
+            break;
+        }
+        back_offset = input[ipos] + (input[ipos + 1] << 8);
+        ipos += 2;
+        if (next_clen == 0xf + 4) {
+            do {
+                next_clen += input[ipos++];
+            } while (input[ipos - 1] == 0xff);
+        }
+#ifdef FATBIN_DECOMPRESS_DEBUG
+        printf("%#04zx/%#04zx compress (decompressed len: %#zx, back_offset %#zx):\n", opos, ipos, next_clen,
+               back_offset);
+#endif
+        if (next_clen <= back_offset) {
+            if (memcpy(output + opos, output + opos - back_offset, next_clen) == NULL) {
+                fprintf(stderr, "Error copying data");
+                return 0;
+            }
+        } else {
+            if (memcpy(output + opos, output + opos - back_offset, back_offset) == NULL) {
+                fprintf(stderr, "Error copying data");
+                return 0;
+            }
+            for (size_t i = back_offset; i < next_clen; i++) {
+                output[opos + i] = output[opos + i - back_offset];
+            }
+        }
+#ifdef FATBIN_DECOMPRESS_DEBUG
+        HexDump(stdout, output + opos, next_clen);
+#endif
+        opos += next_clen;
+    }
+    return opos;
+}
+}
+
+int CFatBin::open(const char *fn, int opt_h, int opt_v)
 {
   if ( !reader.load(fn) ) {
     fprintf(stderr, "cannot open %s\n", fn);
@@ -182,8 +251,10 @@ int CFatBin::open(const char *fn)
   auto data = sec->get_data();
   auto dend = data + fb_size;
   auto fb_hdr = (const fatBinaryHeader *)data;
+  int idx = 0;
   while ( (const char *)fb_hdr < dend ) {
- HexDump(stdout, (const unsigned char *)fb_hdr, sizeof(*fb_hdr));
+    if ( opt_h )
+      HexDump(stdout, (const unsigned char *)fb_hdr, sizeof(*fb_hdr));
     if ( fb_hdr->magic != FATBIN_MAGIC ) {
       fprintf(stderr, "unknown magic %X\n", fb_hdr->magic);
       return 0;
@@ -203,29 +274,58 @@ int CFatBin::open(const char *fn)
     while ( (const char *)(fth + 1) < next_fb )
     {
       if ( fth->header_size != sizeof(fat_text_header) ) break;
-      HexDump(stdout, (const unsigned char *)fth, sizeof(*fth));
-      printf("off %p kind %X flag %lX header_size %X (%lX) size %lX arch %X major %d minor %d name_off %X mame_len %X\n",
-        sec->get_address() + (const char *)fth - data, fth->kind, fth->flags, fth->header_size,
-        sizeof(fat_text_header), fth->size, fth->arch, fth->major, fth->minor,
+      if ( opt_v ) printf("off %p\n", sec->get_address() + (const char *)fth - data);
+      if ( opt_h )
+        HexDump(stdout, (const unsigned char *)fth, sizeof(*fth));
+      printf("[%d] kind %X flag %lX header_size %X (%lX) size %lX arch %X major %d minor %d",
+        idx, fth->kind, fth->flags, fth->header_size,
+        sizeof(fat_text_header), fth->size, fth->arch, fth->major, fth->minor
         fth->obj_name_offset, fth->obj_name_len
       );
+      if ( fth->obj_name_offset || fth->obj_name_len )
+        printf(" name_off %X mame_len %X", fth->obj_name_offset, fth->obj_name_len);
       if ( fth->flags & FATBIN_FLAG_COMPRESS || fth->flags & FATBIN_FLAG_COMPRESS2 ) {
-        printf(" compressed %X deconpressed %lX zero %lX\n", fth->compressed_size, fth->decompressed_size, fth->zero);
+        printf(" compressed %X decompressed %lX zero %lX", fth->compressed_size, fth->decompressed_size, fth->zero);
       // break;
       }
+      putc('\n', stdout);
+      m_map[idx] = { (const char *)fth - data, *fth };
+      idx++;
       fth = (const fat_text_header *)((const char *)(fth + 1) + fth->size);
     }
     fb_hdr = (const fatBinaryHeader *)next_fb;
-    printf("next %p\n", sec->get_address() + (const char *)fb_hdr - data);
+    if ( opt_v )
+      printf("next %p\n", sec->get_address() + (const char *)fb_hdr - data);
   }
   return 1;
 }
 
+void usage(const char *prog)
+{
+  printf("%s usage: [options] fatbin", prog);
+  printf("Options:\n");
+  printf("-h - hex dump\n");
+  printf("-i - index of entry");
+  printf("-v - verbose mode\n");
+  exit(6);
+}
+
 int main(int argc, char **argv) {
-  if ( argc < 2 ) {
-    fprintf(stderr, "where is file?\n");
+  int c, opt_h = 0, opt_v = 0;
+  const char *o_fname = nullptr;
+  while(1) {
+    c = getopt(argc, argv, "hvi:");
+    if ( c == -1 ) break;
+    switch(c) {
+      case 'h': opt_h = 1; break;
+      case 'v': opt_v = 1; break;
+      default: usage(argv[0]);
+    }
+  }
+  if ( argc == optind ) {
+    usage(argv[0]);
     return 6;
   }
   CFatBin fb;
-  fb.open(argv[1]);
+  fb.open(argv[optind], opt_h, opt_v);
 }
