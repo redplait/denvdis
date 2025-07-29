@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include "elfio/elfio.hpp"
 #include <unordered_map>
@@ -125,6 +126,7 @@ class CFatBin {
    typedef std::unordered_map<int, std::pair<ptrdiff_t, fat_text_header> > FBItems;
    FBItems m_map;
    int _extract(const FBItems::iterator &, const char *, FILE *);
+   int _replace(ptrdiff_t, const fat_text_header&, FILE *);
    inline bool compressed(const fat_text_header &ft) const {
      return ft.flags & FATBIN_FLAG_COMPRESS || ft.flags & FATBIN_FLAG_COMPRESS2;
    }
@@ -133,6 +135,7 @@ class CFatBin {
    Elf_Half n_sec = 0, m_ctrl = 0, m_fb = 0;
    unsigned long fb_size;
    elfio reader;
+   std::string rdr_fname;
 };
 
 size_t CFatBin::decompress(const uint8_t *input, size_t input_size, uint8_t *output, size_t output_size)
@@ -203,6 +206,7 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
     fprintf(stderr, "cannot open %s\n", fn);
     return 0;
   }
+  rdr_fname = fn;
   // try to find control section
   n_sec = reader.sections.size();
   for ( Elf_Half i = 0; i < n_sec; ++i ) {
@@ -309,6 +313,78 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
   return 1;
 }
 
+int CFatBin::try_replace(int idx, const char *rf)
+{
+  // check idx
+  auto ii = m_map.find(idx);
+  if ( ii == m_map.end() ) {
+    fprintf(stderr, "invalid index %d\n", idx);
+    return 0;
+  }
+  if ( compressed(ii->second.second) ) {
+    fprintf(stderr, "file with index %d compressed\n", idx);
+    return 0;
+  }
+  // calculate offset
+  auto sec = reader.sections[m_fb];
+  ptrdiff_t off = sec->get_offset() + ii->second.first + ii->second.second.header_size;
+  // open rf
+  FILE *fp = fopen(rf, "rb");
+  if ( !fp ) {
+    fprintf(stderr, "cannot open %s, errno %d (%s)\n", rf, errno, strerror(errno));
+    return 0;
+  }
+  // check file size
+  struct stat st;
+  if ( fstat(fileno(fp), &st) ) {
+    fprintf(stderr, "cannot fstat %s, errno %d (%s)\n", rf, errno, strerror(errno));
+    fclose(fp);
+    return 0;
+  }
+  if ( st.st_size != (long int)ii->second.second.size ) {
+    fprintf(stderr, "sizes mismatch: file %s has size %lX, in fat binary %lX \n", rf, st.st_size, ii->second.second.size );
+    fclose(fp);
+    return 0;
+  }
+  int res = _replace(off, ii->second.second, fp);
+  fclose(fp);
+  return res;
+}
+
+int CFatBin::_replace(ptrdiff_t off, const fat_text_header &ft, FILE *inf)
+{
+  // try open original fat binary
+  FILE *outf = fopen(rdr_fname.c_str(), "r+b");
+  if ( !outf ) {
+    fprintf(stderr, "cannot open fat binary %s, errno %d (%s)\n", rdr_fname.c_str(), errno, strerror(errno));
+    return 0;
+  }
+  // alloc buffer
+  char *buf = (char *)malloc(ft.size);
+  if ( !buf ) {
+    fprintf(stderr, "cannot alloc %lX bytes\n", ft.size);
+    fclose(outf);
+    return 0;
+  }
+  // try to read whole content of inf file
+  if ( 1 != fread(buf, ft.size, 1, inf) ) {
+    fprintf(stderr, "read error %d (%s)\n", errno, strerror(errno));
+    fclose(outf);
+    free(buf);
+    return 0;
+  }
+  int res = 0;
+  // write
+  fseek(outf, off, SEEK_SET);
+  if ( 1 == fwrite(buf, ft.size, 1, outf) )
+    res = 1;
+  else
+    fprintf(stderr, "write error %d (%s)\n", errno, strerror(errno));
+  fclose(outf);
+  free(buf);
+  return res;
+}
+
 int CFatBin::extract(int idx, const char *of)
 {
   // check idx
@@ -402,4 +478,7 @@ int main(int argc, char **argv) {
   }
   if ( o_fname )
     return fb.extract(idx, o_fname);
+  if ( r_fname )
+    return fb.try_replace(idx, r_fname);
+  return 0;
 }
