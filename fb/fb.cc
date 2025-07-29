@@ -115,9 +115,19 @@ struct  __attribute__((__packed__)) fat_text_header
 
 class CFatBin {
  public:
+   // returns non-zero when succeed
    int open(const char *, int opt_h, int opt_v);
+   // extract file at index idx to file of
+   int extract(int idx, const char *of);
+   // try to replace file at index idx to file rf
+   int try_replace(int idx, const char *rf);
  protected:
-   std::unordered_map<int, std::pair<ptrdiff_t, fat_text_header> > m_map;
+   typedef std::unordered_map<int, std::pair<ptrdiff_t, fat_text_header> > FBItems;
+   FBItems m_map;
+   int _extract(const FBItems::iterator &, const char *, FILE *);
+   inline bool compressed(const fat_text_header &ft) const {
+     return ft.flags & FATBIN_FLAG_COMPRESS || ft.flags & FATBIN_FLAG_COMPRESS2;
+   }
    // from https://zhuanlan.zhihu.com/p/29424681490
    size_t decompress(const uint8_t *input, size_t input_size, uint8_t *output, size_t output_size);
    Elf_Half n_sec = 0, m_ctrl = 0, m_fb = 0;
@@ -127,7 +137,6 @@ class CFatBin {
 
 size_t CFatBin::decompress(const uint8_t *input, size_t input_size, uint8_t *output, size_t output_size)
 {
-  {
     size_t ipos = 0, opos = 0;
     uint64_t next_nclen;  // length of next non-compressed segment
     uint64_t next_clen;   // length of next compressed segment
@@ -186,7 +195,6 @@ size_t CFatBin::decompress(const uint8_t *input, size_t input_size, uint8_t *out
         opos += next_clen;
     }
     return opos;
-}
 }
 
 int CFatBin::open(const char *fn, int opt_h, int opt_v)
@@ -277,13 +285,14 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
       if ( opt_v ) printf("off %p\n", sec->get_address() + (const char *)fth - data);
       if ( opt_h )
         HexDump(stdout, (const unsigned char *)fth, sizeof(*fth));
-      printf("[%d] kind %X flag %lX header_size %X (%lX) size %lX arch %X major %d minor %d",
+      // keep all fth data in single line for easy grepping
+      printf("[%d] kind %X flag %lX header_size %X size %lX arch %X major %d minor %d",
         idx, fth->kind, fth->flags, fth->header_size,
-        sizeof(fat_text_header), fth->size, fth->arch, fth->major, fth->minor
+        fth->size, fth->arch, fth->major, fth->minor
       );
       if ( fth->obj_name_offset || fth->obj_name_len )
         printf(" name_off %X mame_len %X", fth->obj_name_offset, fth->obj_name_len);
-      if ( fth->flags & FATBIN_FLAG_COMPRESS || fth->flags & FATBIN_FLAG_COMPRESS2 ) {
+      if ( compressed(*fth) ) {
         printf(" compressed %X decompressed %lX", fth->compressed_size, fth->decompressed_size);
         if ( fth->zero ) printf(" zero %lX", fth->zero);
       // break;
@@ -300,25 +309,83 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
   return 1;
 }
 
+int CFatBin::extract(int idx, const char *of)
+{
+  // check idx
+  auto ii = m_map.find(idx);
+  if ( ii == m_map.end() ) {
+    fprintf(stderr, "invalid index %d\n", idx);
+    return 0;
+  }
+  // try open of
+  FILE *ofp = fopen(of, "wb");
+  if ( !ofp ) {
+    fprintf(stderr, "cannot open %s, error %d (%s)\n", of, errno, strerror(errno));
+    return 0;
+  }
+  int res = _extract(ii, of, ofp);
+  fclose(ofp);
+  return res;
+}
+
+int CFatBin::_extract(const FBItems::iterator &ii, const char *of, FILE *ofp)
+{
+  // seek to item in ii
+  auto sec = reader.sections[m_fb];
+  auto data = sec->get_data() + ii->second.first + ii->second.second.header_size;
+  if ( compressed(ii->second.second) ) {
+    uint8_t *out_buf = (uint8_t *)malloc(ii->second.second.decompressed_size);
+    if ( !out_buf ) {
+      fprintf(stderr, "cannot alloc %lX bytes for decompressed buffer\n", ii->second.second.decompressed_size);
+      return 0;
+    }
+    int res = decompress((const uint8_t*)data, ii->second.second.compressed_size, out_buf, ii->second.second.decompressed_size);
+    if ( !res ) {
+      fprintf(stderr, "cannot decompress\n");
+      free(out_buf);
+      return 0;
+    }
+    if ( 1 != fwrite(out_buf, ii->second.second.decompressed_size, 1, ofp) ) {
+      fprintf(stderr, "fwrite decompressed failed, error %d (%s)\n", errno, strerror(errno));
+      free(out_buf);
+      return 0;
+    }
+    free(out_buf);
+  } else {
+    if ( 1 != fwrite(data, ii->second.second.size, 1, ofp) ) {
+      fprintf(stderr, "fwrite failed, error %d (%s)\n", errno, strerror(errno));
+      return 0;
+    }
+  }
+  return 1;
+}
+
 void usage(const char *prog)
 {
   printf("%s usage: [options] fatbin", prog);
   printf("Options:\n");
   printf("-h - hex dump\n");
-  printf("-i - index of entry");
+  printf("-i - index of entry\n");
+  printf("-o - output file name\n");
+  printf("-r - input file name to replace for some index\n");
   printf("-v - verbose mode\n");
   exit(6);
 }
 
 int main(int argc, char **argv) {
-  int c, opt_h = 0, opt_v = 0;
-  const char *o_fname = nullptr;
+  int c, opt_h = 0, opt_v = 0, idx = -1;
+  const char *o_fname = nullptr,
+   *r_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "hvi:");
+    c = getopt(argc, argv, "hvi:o:r:");
     if ( c == -1 ) break;
     switch(c) {
       case 'h': opt_h = 1; break;
       case 'v': opt_v = 1; break;
+      case 'i': idx = atoi(optarg);
+       break;
+      case 'o': o_fname = optarg; break;
+      case 'r': r_fname = optarg; break;
       default: usage(argv[0]);
     }
   }
@@ -327,5 +394,12 @@ int main(int argc, char **argv) {
     return 6;
   }
   CFatBin fb;
-  fb.open(argv[optind], opt_h, opt_v);
+  if ( !fb.open(argv[optind], opt_h, opt_v) ) return 2;
+  if ( idx == -1 ) return 0; // no index
+  if ( o_fname && r_fname ) {
+    printf("you cannot use both -o & -r options\n");
+    return 6;
+  }
+  if ( o_fname )
+    return fb.extract(idx, o_fname);
 }
