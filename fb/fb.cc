@@ -280,12 +280,12 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
       printf("[%d] kind %X flag %lX header_size %X (%lX) size %lX arch %X major %d minor %d",
         idx, fth->kind, fth->flags, fth->header_size,
         sizeof(fat_text_header), fth->size, fth->arch, fth->major, fth->minor
-        fth->obj_name_offset, fth->obj_name_len
       );
       if ( fth->obj_name_offset || fth->obj_name_len )
         printf(" name_off %X mame_len %X", fth->obj_name_offset, fth->obj_name_len);
       if ( fth->flags & FATBIN_FLAG_COMPRESS || fth->flags & FATBIN_FLAG_COMPRESS2 ) {
-        printf(" compressed %X decompressed %lX zero %lX", fth->compressed_size, fth->decompressed_size, fth->zero);
+        printf(" compressed %X decompressed %lX", fth->compressed_size, fth->decompressed_size);
+        if ( fth->zero ) printf(" zero %lX", fth->zero);
       // break;
       }
       putc('\n', stdout);
