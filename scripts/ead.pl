@@ -4527,7 +4527,7 @@ sub store_props
   my $dups = 0;
   while( my($kmask, $op) = each(%g_masks) ) {
     foreach my $inst ( @$op ) {
-      next if ( !$inst->[22] );
+      # next if ( !$inst->[22] );
       $cnt++;
       # form ar: 0 - predicates, 1 - properties
       $ar = [ $inst->[21], $inst->[22] ];
@@ -4551,20 +4551,20 @@ sub store_props
 
 # try to load early stored props from opt_U
 my %s_caliases = (
- 'imma_' => 'imma_',
- 'depbar__LE' => 'depbar__LE',
- 'ldsm__sImmOffset' => 'ldsm__sImmOffset',
+ 'sel_64__RUR' => 'sel__RUR_RUR',
  'usel_64__UUU' => 'usel__URURUR_UUU',
 );
 sub hack_props
 {
   my($i, $hr) = @_;
-  my $alias;
+  my $alias = $i->[0];
   # try to find some similar instr i in retrieved db %$hr
   if ( $i->[0] =~ /_64/ ) {
-    $alias = $i->[0];
     $alias =~ s/_64//;
-  } elsif ( exists $s_caliases{$i->[0]} ) {
+  } elsif ( $i->[0] =~ /_reliability/ ) {
+    $alias =~ s/_reliability//;
+  }
+  if ( exists $s_caliases{$i->[0]} ) {
     $alias = $s_caliases{$i->[0]};
   }
   if ( defined $alias && exists($hr->{$alias}) ) {
