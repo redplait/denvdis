@@ -4553,22 +4553,53 @@ sub store_props
 my %s_caliases = (
  'imma_' => 'imma_',
  'depbar__LE' => 'depbar__LE',
- 'iadd_64_noimm__RUR_RUR' => 'iadd_noimm__RUR_RUR',
- 'iadd_64_noimm__RRR_RRR' => 'iadd_noimm__RRR_RRR',
- 'iadd_64_imm__RsIR_RIR' => 'iadd_imm__RsIR_RIR',
- 'isetp_64__RUR_RUR_noEX' => 'isetp__RUR_RUR_noEX',
- 'mov_64__RU' => 'mov__RU',
+ 'ldsm__sImmOffset' => 'ldsm__sImmOffset',
+ 'usel_64__UUU' => 'usel__URURUR_UUU',
 );
 sub hack_props
 {
   my($i, $hr) = @_;
   my $alias;
   # try to find some similar instr i in retrieved db %$hr
-  if ( exists $s_caliases{$i->[0]} ) {
+  if ( $i->[0] =~ /_64/ ) {
+    $alias = $i->[0];
+    $alias =~ s/_64//;
+  } elsif ( exists $s_caliases{$i->[0]} ) {
     $alias = $s_caliases{$i->[0]};
   }
   if ( defined $alias && exists($hr->{$alias}) ) {
     $i->[22] = $hr->{$alias}->[0]->[1];
+    return 1;
+  }
+  if ( 'uimnmx_64__UUU_URURUR' eq $i->[0] or 'mnmx__UUU_URURUR' eq $i->[0] ) {
+    my %u = (
+     'IDEST' => [ 'INTEGER', [ 'URd' ] ],
+     'ISRC_A' => [ 'INTEGER',[ 'URa' ] ],
+     'ISRC_B' => [ 'INTEGER',[ 'URb' ] ],
+    );
+    $i->[22] = \%u;
+    return 1;
+  } elsif ( 'uvimnmx__URIR_URsIUR' eq $i->[0] ) {
+    my %u = (
+     'IDEST' => [ 'INTEGER', [ 'URd' ] ],
+     'ISRC_A' => [ 'INTEGER',[ 'URa' ] ],
+     'ISRC_B' => [ 'INTEGER',[ 'Sb' ] ],
+    );
+    $i->[22] = \%u;
+    return 1;
+  } elsif ( 'cs2ur_' eq $i->[0] ) {
+    my %u = (
+     'IDEST' => [ 'GENERIC', [ 'URd' ] ],
+     'ISRC_A' => [ 'GENERIC',[ 'SRa' ] ],
+    );
+    $i->[22] = \%u;
+    return 1;
+  } elsif ( 'ui2fp__URuIR' eq $i->[0] ) {
+    my %u = (
+     'IDEST' => [ 'FLOAT', [ 'URd' ] ],
+     'ISRC_B' => [ 'INTEGER',[ 'Sb' ] ],
+    );
+    $i->[22] = \%u;
     return 1;
   }
   0;
