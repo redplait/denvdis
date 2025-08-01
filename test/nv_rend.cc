@@ -1245,6 +1245,25 @@ const char *NV_renderer::has_predicate(const NV_rlist *rl) const
   return nullptr;
 }
 
+bool NV_renderer::always_false(const struct nv_instr *i, const NV_rlist *rl, const NV_extracted &kv) const
+{
+  for ( auto r: *rl ) {
+    if ( r->type == R_opcode ) break;
+    if ( r->type == R_predicate ) {
+      const render_named *rn = (const render_named *)r;
+      // check for value 7
+      auto kvi = kv.find(rn->name);
+      if ( kvi != kv.end() && kvi->second != 7 ) return false;
+      // check for @not
+      std::string n_not = rn->name;
+      n_not += "@not";
+      kvi = kv.find(n_not);
+      return ( kvi != kv.end() && kvi->second);
+    }
+  }
+  return false;
+}
+
 bool NV_renderer::is_s2xx(const struct nv_instr *i) const
 {
   return !strcmp(i->name, "S2R") ||
