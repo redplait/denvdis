@@ -4550,6 +4550,30 @@ sub store_props
 }
 
 # try to load early stored props from opt_U
+my %s_caliases = (
+ 'imma_' => 'imma_',
+ 'depbar__LE' => 'depbar__LE',
+ 'iadd_64_noimm__RUR_RUR' => 'iadd_noimm__RUR_RUR',
+ 'iadd_64_noimm__RRR_RRR' => 'iadd_noimm__RRR_RRR',
+ 'iadd_64_imm__RsIR_RIR' => 'iadd_imm__RsIR_RIR',
+ 'isetp_64__RUR_RUR_noEX' => 'isetp__RUR_RUR_noEX',
+ 'mov_64__RU' => 'mov__RU',
+);
+sub hack_props
+{
+  my($i, $hr) = @_;
+  my $alias;
+  # try to find some similar instr i in retrieved db %$hr
+  if ( exists $s_caliases{$i->[0]} ) {
+    $alias = $s_caliases{$i->[0]};
+  }
+  if ( defined $alias && exists($hr->{$alias}) ) {
+    $i->[22] = $hr->{$alias}->[0]->[1];
+    return 1;
+  }
+  0;
+}
+
 sub apply_props
 {
   unless ( -f $opt_U ) {
@@ -4568,6 +4592,7 @@ sub apply_props
   # try to apply
   while( my($kmask, $op) = each(%g_masks) ) {
     foreach my $inst ( @$op ) {
+      if ( hack_props($inst, $hr) ) { $app++; next; }
       unless ( exists($hr->{$inst->[0]}) ) {
         $notf++;
         printf("%s %s line %d\n", $inst->[0], $inst->[1], $inst->[4]);
@@ -4639,6 +4664,7 @@ sub gen_prop
     unless ( exists $s_props_cache{$pk} ) {
       # push new NV_Prop and add to cache
       my $pname = sprintf("%s_prop_%d", $opt_C, $s_props_idx++);
+      # k - name of property, $e->[0] - type, $e->[1] - ref to fields array
       printf($fh "static const NV_Prop %s = {\n %s, %s, \n{ %s } };\n", $pname, $k, $e->[0],
        join(',', map { '"' . $_ . '"'; } @{$e->[1]}) );
       $s_props_cache{$pk} = $pname;
