@@ -8,6 +8,7 @@ int opt_c = 0,
     opt_t = 0,
     opt_T = 0,
     opt_p = 0,
+    opt_P = 0,
     opt_r = 0,
     opt_S = 0,
     opt_N = 0,
@@ -233,6 +234,11 @@ class nv_dis: public CElf<NV_renderer>
    void dump_total() const
    {
     dis_stat();
+    if ( !m_nopi.empty() ) {
+      fprintf(m_out, "%ld instructions without properties\n", m_nopi.size());
+      for ( auto pi: m_nopi )
+       fprintf(m_out, " %d %s (%s) - %ld\n", pi.first->line, pi.first->name, pi.first->cname, pi.second);
+    }
     if ( opt_S )
       fprintf(m_out, "filters %ld success %ld, conditions %ld (%ld) cached %ld\n",
         sfilters, sfilters_succ, scond_count, scond_succ, scond_hits);
@@ -302,6 +308,16 @@ class nv_dis: public CElf<NV_renderer>
    std::unordered_map<Elf_Word, cbank_per_section *> m_cbanks;
    // regs track db
    reg_pad *m_rtdb = nullptr;
+   // no properties instructions
+   std::unordered_map<const nv_instr *, unsigned long> m_nopi;
+   void add_nopi(const nv_instr *i) {
+     if ( !strcmp(i->name, "NOP") ) return;
+     auto iter = m_nopi.find(i);
+     if ( iter == m_nopi.end() )
+       m_nopi[i] = 1;
+     else
+       iter->second++;
+   }
 };
 
 void nv_dis::add_cparam(Elf_Word idx, int ordinal, uint32_t size, unsigned short off)
@@ -516,8 +532,14 @@ void nv_dis::try_dis(Elf_Word idx)
           }
         }
       }
-      if ( m_rtdb )
-        track_regs(m_rtdb, rend, res[res_idx], off);
+      bool skip_false = false;
+      if ( m_rtdb ) {
+        skip_false = always_false(res[res_idx].first, rend, res[res_idx].second);
+        if ( !skip_false )
+          track_regs(m_rtdb, rend, res[res_idx], off);
+      }
+      if ( !skip_false && !res[res_idx].first->props )
+        add_nopi(res[res_idx].first);
       if ( opt_S && res[res_idx].first->scbd_type != BB_ENDING_INST && !res[res_idx].first->brt ) // store sched rows of current instruction
         fill_sched(res[res_idx].first, res[res_idx].second);
       else
@@ -810,6 +832,7 @@ void usage(const char *prog)
   printf("-o - output file\n");
   printf("-O - dump operands\n");
   printf("-p - dump predicates\n");
+  printf("-P - dump instructions without properties\n");
   printf("-r - dump relocs\n");
   printf("-s index - disasm only single section withh index\n");
   printf("-S - dump sched info\n");
@@ -824,7 +847,7 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "cehmrtTNOpSs:o:");
+    c = getopt(argc, argv, "cehmrtTNOpPSs:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'c': opt_c = 1; break;
@@ -835,6 +858,7 @@ int main(int argc, char **argv)
       case 'T': opt_T = 1; break;
       case 'O': opt_O = 1; break;
       case 'p': opt_p = 1; break;
+      case 'P': opt_P = 1; break;
       case 'r': opt_r = 1; break;
       case 'N': opt_N = 1; break;
       case 'S': opt_S = 1; break;
