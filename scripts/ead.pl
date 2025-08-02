@@ -4551,8 +4551,13 @@ sub store_props
 
 # try to load early stored props from opt_U
 my %s_caliases = (
+ 'fadd2_imm__RRI' => 'fadd__RRI_RI',
+ 'fadd2_rc__RRR' => 'fadd__RRR_RR',
  'sel_64__RUR' => 'sel__RUR_RUR',
+ 'sel_64__RRR' => 'sel__RRR_RRR',
+ 'sel_64__RIR' => 'sel__RuIR_RIR',
  'usel_64__UUU' => 'usel__URURUR_UUU',
+ 'usel_64__URIR' => 'usel__URuIUR_URIR',
 );
 sub hack_props
 {
