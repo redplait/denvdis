@@ -48,6 +48,9 @@ sub enum_files
     push @res, [ $i, $hr ] if ( defined $opt_a );
     if ( defined $opt_v ) {
       printf("[%d] kind %d arch %X flags %X size %X", $i, $hr->{'kind'}, $hr->{'arch'}, $hr->{'flags'}, $hr->{'size'});
+      my $n_o = $hr->{'name_off'};
+      my $n_l = $hr->{'name_len'};
+      printf(" name_off %X name_len %X", $n_o, $n_l) if ( defined($n_o) || defined($n_l) );
       printf(" C %X", $hr->{'decsize'}) if ( exists $hr->{'decsize'} );
       printf("\n");
     }
