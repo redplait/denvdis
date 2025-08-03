@@ -978,12 +978,21 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
    *b_sv = nullptr,
    *c_sv = nullptr,
    *e_sv = nullptr;
+  NVP_type t1 = GENERIC, t2 = GENERIC;
   int ends2 = 0;
   bool setp = is_setp(p.first, ends2);
   if ( has_props ) {
     for ( auto pr: *p.first->props ) {
-      if ( pr->op == IDEST && pr->fields.size() == 1 ) { d_sv = &get_it(pr->fields, 0); continue; }
-      if ( pr->op == IDEST2 && pr->fields.size() == 1 ) { d2_sv = &get_it(pr->fields, 0); continue; }
+      if ( pr->op == IDEST ) {
+        t1 = pr->t;
+        if ( pr->fields.size() == 1 ) d_sv = &get_it(pr->fields, 0);
+        continue;
+      }
+      if ( pr->op == IDEST2 ) {
+        t2 = pr->t;
+        if ( pr->fields.size() == 1 ) d2_sv = &get_it(pr->fields, 0);
+        continue;
+      }
       if ( pr->op == ISRC_A && pr->fields.size() == 1 ) { a_sv = &get_it(pr->fields, 0); continue; }
       if ( pr->op == ISRC_B && pr->fields.size() == 1 ) { b_sv = &get_it(pr->fields, 0); continue; }
       if ( pr->op == ISRC_C && pr->fields.size() == 1 ) { c_sv = &get_it(pr->fields, 0); continue; }
@@ -1101,12 +1110,12 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       }
       return res;
     };
-    auto gpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+    auto gpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
         if ( (int)kvi->second + i >= m_dis->rz ) break;
-        rtdb->wgpr(kvi->second + i, off, what);
+        rtdb->wgpr(kvi->second + i, off, what, _t);
         res++;
       }
       return res;
@@ -1121,12 +1130,12 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       }
       return res;
     };
-    auto ugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+    auto ugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
         if ( (int)kvi->second + i >= m_dis->rz ) break;
-        rtdb->wugpr(kvi->second + i, off, what);
+        rtdb->wugpr(kvi->second + i, off, what, _t);
         res++;
       }
       return res;
@@ -1147,20 +1156,20 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       {
         if ( is_sv(d_sv, rn->name) ) {
          if ( d_size <= 32 )
-          { rtdb->wgpr(kvi->second, off, 0); res++; }
-         else res += gpr_multi(d_size, kvi);
+          { rtdb->wgpr(kvi->second, off, 0, t1); res++; }
+         else res += gpr_multi(d_size, kvi, t1);
         } else if ( is_sv(d2_sv, rn->name) ) {
          if ( d2_size <= 32 )
-         { rtdb->wgpr(kvi->second, off, 0); res++; }
-         else res += gpr_multi(d2_size, kvi);
+         { rtdb->wgpr(kvi->second, off, 0, t2); res++; }
+         else res += gpr_multi(d2_size, kvi, t2);
         } else if ( !strcmp(rn->name, "Rd") ) {
          if ( d_size <= 32 )
-          { rtdb->wgpr(kvi->second, off, 0); res++; }
-         else res += gpr_multi(d_size, kvi);
+          { rtdb->wgpr(kvi->second, off, 0, t1); res++; }
+         else res += gpr_multi(d_size, kvi, t1);
         } else if ( !strcmp(rn->name, "Rd2") ) {
          if ( d2_size <= 32 )
-          { rtdb->wgpr(kvi->second, off, 0); res++; }
-         else res += gpr_multi(d2_size, kvi);
+          { rtdb->wgpr(kvi->second, off, 0, t2); res++; }
+         else res += gpr_multi(d2_size, kvi, t2);
         } else {
          if ( a_size > 32 && is_sv2(a_sv, rn->name, "Ra") )
           res += rgpr_multi(a_size, kvi);
@@ -1177,20 +1186,20 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       {
         if ( is_sv(d_sv, rn->name) ) {
          if ( d_size <= 32 )
-          { rtdb->wugpr(kvi->second, off, 0); res++; }
-          else res += ugpr_multi(d_size, kvi);
+          { rtdb->wugpr(kvi->second, off, 0, t1); res++; }
+          else res += ugpr_multi(d_size, kvi, t1);
         } else if ( is_sv(d2_sv, rn->name) ) {
          if ( d2_size <= 32 )
-           { rtdb->wugpr(kvi->second, off, 0); res++; }
-         else res += ugpr_multi(d2_size, kvi);
+           { rtdb->wugpr(kvi->second, off, 0, t2); res++; }
+         else res += ugpr_multi(d2_size, kvi, t2);
         } else if ( !strcmp(rn->name, "URd") ) {
          if ( d_size <= 32 )
-          { rtdb->wugpr(kvi->second, off, 0); res++; }
-         else res += ugpr_multi(d_size, kvi);
+          { rtdb->wugpr(kvi->second, off, 0, t1); res++; }
+         else res += ugpr_multi(d_size, kvi, t1);
         } else if ( !strcmp(rn->name, "URd2") ) {
          if ( d2_size <= 32 )
-          { rtdb->wugpr(kvi->second, off, 0); res++; }
-         else res += ugpr_multi(d2_size, kvi);
+          { rtdb->wugpr(kvi->second, off, 0, t2); res++; }
+         else res += ugpr_multi(d2_size, kvi, t2);
         } else {
          if ( a_size > 32 && is_sv2(a_sv, rn->name, "URa") )
           res += rugpr_multi(a_size, kvi);
