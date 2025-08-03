@@ -1245,6 +1245,14 @@ const char *NV_renderer::has_predicate(const NV_rlist *rl) const
   return nullptr;
 }
 
+bool NV_renderer::has_not(const render_named *rn, const NV_extracted &kv) const
+{
+  std::string n_not = rn->name;
+  n_not += "@not";
+  auto kvi = kv.find(n_not);
+  return ( kvi != kv.end() && kvi->second);
+}
+
 bool NV_renderer::always_false(const struct nv_instr *i, const NV_rlist *rl, const NV_extracted &kv) const
 {
   for ( auto r: *rl ) {
@@ -1255,10 +1263,7 @@ bool NV_renderer::always_false(const struct nv_instr *i, const NV_rlist *rl, con
       auto kvi = kv.find(rn->name);
       if ( kvi != kv.end() && kvi->second != 7 ) return false;
       // check for @not
-      std::string n_not = rn->name;
-      n_not += "@not";
-      kvi = kv.find(n_not);
-      return ( kvi != kv.end() && kvi->second);
+      return has_not(rn, kv);
     }
   }
   return false;
@@ -1803,7 +1808,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
            missed++;
            break;
          }
-         if ( ea->def_value == (int)kvi->second ) { empty = 1; break; }
+         if ( ea->def_value == (int)kvi->second && !has_not(rn, kv) ) { empty = 1; break; }
          if ( rn->pfx ) res += rn->pfx;
          else if ( idx ) res += ' ';
          if ( rn->mod ) check_mod(rn->mod, kv, rn->name, res);
