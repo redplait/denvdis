@@ -978,7 +978,8 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
    *b_sv = nullptr,
    *c_sv = nullptr,
    *e_sv = nullptr;
-  NVP_type t1 = GENERIC, t2 = GENERIC;
+  NVP_type t1 = GENERIC, t2 = GENERIC,
+   t_a = GENERIC, t_b = GENERIC, t_c = GENERIC, t_e = GENERIC;
   int ends2 = 0;
   bool setp = is_setp(p.first, ends2);
   if ( has_props ) {
@@ -993,10 +994,26 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
         if ( pr->fields.size() == 1 ) d2_sv = &get_it(pr->fields, 0);
         continue;
       }
-      if ( pr->op == ISRC_A && pr->fields.size() == 1 ) { a_sv = &get_it(pr->fields, 0); continue; }
-      if ( pr->op == ISRC_B && pr->fields.size() == 1 ) { b_sv = &get_it(pr->fields, 0); continue; }
-      if ( pr->op == ISRC_C && pr->fields.size() == 1 ) { c_sv = &get_it(pr->fields, 0); continue; }
-      if ( pr->op == ISRC_E && pr->fields.size() == 1 ) { e_sv = &get_it(pr->fields, 0); continue; }
+      if ( pr->op == ISRC_A ) {
+        t_a = pr->t;
+        if ( pr->fields.size() == 1 ) a_sv = &get_it(pr->fields, 0);
+        continue;
+      }
+      if ( pr->op == ISRC_B ) {
+        t_b = pr->t;
+        if ( pr->fields.size() == 1 ) b_sv = &get_it(pr->fields, 0);
+        continue;
+      }
+      if ( pr->op == ISRC_C ) {
+        t_c = pr->t;
+        if ( pr->fields.size() == 1 ) c_sv = &get_it(pr->fields, 0);
+        continue;
+      }
+      if ( pr->op == ISRC_E ) {
+        t_e = pr->t;
+        if ( pr->fields.size() == 1 ) e_sv = &get_it(pr->fields, 0);
+        continue;
+      }
     }
   }
   // predicates
@@ -1100,12 +1117,12 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       idx = 0;
       continue;
     }
-    auto rgpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+    auto rgpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
         if ( (int)kvi->second + i >= m_dis->rz ) break;
-        rtdb->rgpr(kvi->second + i, off, what);
+        rtdb->rgpr(kvi->second + i, off, what, _t);
         res++;
       }
       return res;
@@ -1120,12 +1137,12 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       }
       return res;
     };
-    auto rugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi) {
+    auto rugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
         if ( (int)kvi->second + i >= m_dis->rz ) break;
-        rtdb->rugpr(kvi->second + i, off, what);
+        rtdb->rugpr(kvi->second + i, off, what, _t);
         res++;
       }
       return res;
@@ -1172,15 +1189,26 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
          else res += gpr_multi(d2_size, kvi, t2);
         } else {
          if ( a_size > 32 && is_sv2(a_sv, rn->name, "Ra") )
-          res += rgpr_multi(a_size, kvi);
+          res += rgpr_multi(a_size, kvi, t_a);
          else if ( b_size > 32 && is_sv2(b_sv, rn->name, "Rb") )
-          res += rgpr_multi(b_size, kvi);
+          res += rgpr_multi(b_size, kvi, t_b);
          else if ( c_size > 32 && is_sv2(c_sv, rn->name, "Rc") )
-          res += rgpr_multi(c_size, kvi);
+          res += rgpr_multi(c_size, kvi, t_c);
          else if ( e_size > 32 && is_sv2(e_sv, rn->name, "Re") )
-          res += rgpr_multi(e_size, kvi);
+          res += rgpr_multi(e_size, kvi, t_e);
          else
-         { rtdb->rgpr(kvi->second, off, 0); res++; }
+         {
+           if ( is_sv2(a_sv, rn->name, "Ra") )
+             rtdb->rgpr(kvi->second, off, 0, t_a);
+           else if ( is_sv2(a_sv, rn->name, "Rb") )
+             rtdb->rgpr(kvi->second, off, 0, t_b);
+           else if ( is_sv2(a_sv, rn->name, "Rc") )
+             rtdb->rgpr(kvi->second, off, 0, t_c);
+           else if ( is_sv2(a_sv, rn->name, "Re") )
+             rtdb->rgpr(kvi->second, off, 0, t_e);
+           else rtdb->rgpr(kvi->second, off, 0);
+           res++;
+         }
         }
       } else if ( is_ureg(ea, kvi) )
       {
@@ -1202,19 +1230,40 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
          else res += ugpr_multi(d2_size, kvi, t2);
         } else {
          if ( a_size > 32 && is_sv2(a_sv, rn->name, "URa") )
-          res += rugpr_multi(a_size, kvi);
+          res += rugpr_multi(a_size, kvi, t_a);
          else if ( b_size > 32 && is_sv2(b_sv, rn->name, "URb") )
-          res += rugpr_multi(b_size, kvi);
+          res += rugpr_multi(b_size, kvi, t_b);
          else if ( c_size > 32 && is_sv2(c_sv, rn->name, "URc") )
-          res += rugpr_multi(c_size, kvi);
+          res += rugpr_multi(c_size, kvi, t_c);
          else if ( e_size > 32 && is_sv2(e_sv, rn->name, "URe") )
-          res += rugpr_multi(e_size, kvi);
+          res += rugpr_multi(e_size, kvi, t_e);
          else
-         { rtdb->rugpr(kvi->second, off, 0); res++; }
+         {
+           if ( is_sv2(a_sv, rn->name, "URa") )
+             rtdb->rugpr(kvi->second, off, 0, t_a);
+           else if ( is_sv2(a_sv, rn->name, "URb") )
+             rtdb->rugpr(kvi->second, off, 0, t_b);
+           else if ( is_sv2(a_sv, rn->name, "URc") )
+             rtdb->rugpr(kvi->second, off, 0, t_c);
+           else if ( is_sv2(a_sv, rn->name, "URe") )
+             rtdb->rugpr(kvi->second, off, 0, t_e);
+           else rtdb->rugpr(kvi->second, off, 0);
+           res++;
+         }
         }
       }
     }
     // ok, we have something compound
+    auto ve_type = [&](const ve_base &ve) -> NVP_type {
+      auto len = strlen(ve.arg);
+      if ( len < 2 ) return GENERIC;
+      if ( len > 7 && !strcmp(ve.arg + len - 7, "_offset") ) len -= 7;
+      if ( ve.arg[len - 2] != 'R' ) return GENERIC;
+      if ( ve.arg[len - 1] == 'a' ) return t_a;
+      if ( ve.arg[len - 1] == 'b' ) return t_b;
+      if ( ve.arg[len - 1] == 'e' ) return t_e;
+      return GENERIC;
+    };
     auto check_ve = [&](const ve_base &ve, reg_history::RH what) {
         if ( ve.type == R_value ) return 0;
         const nv_eattr *ea = find_ea(p.first, ve.arg);
@@ -1227,9 +1276,9 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
         if ( is_upred(ea, kvi) )
         { rtdb->rupred(kvi->second, off, what); return 1; }
         if ( is_reg(ea, kvi) )
-        { rtdb->rgpr(kvi->second, off, what); return 1; }
+        { rtdb->rgpr(kvi->second, off, what, ve_type(ve)); return 1; }
         if ( is_ureg(ea, kvi) )
-        { rtdb->rugpr(kvi->second, off, what); return 1; }
+        { rtdb->rugpr(kvi->second, off, what, ve_type(ve)); return 1; }
         return 0;
     };
     auto check_ve_list = [&](const std::list<ve_base> &l, reg_history::RH what) {
