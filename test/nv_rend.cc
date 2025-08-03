@@ -761,11 +761,11 @@ void NV_renderer::dump_rt(reg_pad *rtdb) const {
   if ( !rtdb ) return;
   if ( !rtdb->gpr.empty() ) {
     fprintf(m_out, ";;; %ld GPR\n", rtdb->gpr.size());
-    dump_rset(rtdb->gpr, "R");
+    dump_trset(rtdb->gpr, "R");
   }
   if ( !rtdb->ugpr.empty() ) {
     fprintf(m_out, ";;; %ld UGPR\n", rtdb->ugpr.size());
-    dump_rset(rtdb->ugpr, "UR");
+    dump_trset(rtdb->ugpr, "UR");
   }
   if ( !rtdb->pred.empty() ) {
     fprintf(m_out, ";;; %ld PRED\n", rtdb->pred.size());
@@ -802,6 +802,34 @@ void NV_renderer::dump_rset(const reg_pad::RSet &rs, const char *pfx) const
         else
           fprintf(m_out, " ;   %lX %X\n", tr.off, tr.kind & mask);
       }
+    }
+  }
+}
+
+void NV_renderer::dump_trset(const reg_pad::TRSet &rs, const char *pfx) const
+{
+  constexpr int mask = (1 << 11) - 1;
+  for ( auto r: rs ) {
+    fprintf(m_out, " ;  %s%d %ld:\n", pfx, r.first, r.second.size());
+    for ( auto &tr: r.second ) {
+      int pred = 0;
+      const char *tname = nullptr;
+      if ( tr.type != GENERIC ) tname = get_prop_type_name(tr.type);
+      bool is_pred = tr.has_pred(pred);
+      if ( tr.kind & 0x8000 )
+      {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX <- %X %s%d", tr.off, tr.kind & mask, tr.kind & 0x4000 ? "UP" : "P", pred);
+        else
+          fprintf(m_out, " ;   %lX <- %X", tr.off, tr.kind & mask);
+      } else {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX %X %s%d", tr.off, tr.kind & mask, tr.kind & 0x4000 ? "UP" : "P", pred);
+        else
+          fprintf(m_out, " ;   %lX %X", tr.off, tr.kind & mask);
+      }
+      if ( tname ) fprintf(m_out, " %s\n", tname);
+      else fputc('\n', m_out);
     }
   }
 }

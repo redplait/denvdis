@@ -78,6 +78,10 @@ struct reg_history {
   }
 };
 
+struct typed_reg_history: public reg_history {
+  NVP_type type = GENERIC;
+};
+
 struct cbank_history {
   unsigned long off, cb_off;
   // kind - low 4 bits is size in bytes
@@ -94,7 +98,9 @@ struct cbank_history {
 // keys are register index
 struct reg_pad {
   typedef std::unordered_map<int, std::vector<reg_history> > RSet;
-  RSet gpr, pred, ugpr, upred;
+  typedef std::unordered_map<int, std::vector<typed_reg_history> > TRSet;
+  TRSet gpr, ugpr;
+  RSet pred, upred;
   std::vector<cbank_history> cbs;
   reg_history::RH pred_mask = 0;
   // boring stuff
@@ -116,17 +122,32 @@ struct reg_pad {
      rs[idx] = std::move(tmp);
     }
   }
-  void rgpr(int r, unsigned long off, reg_history::RH k) {
-    _add(gpr, r, off, k);
+  void _add(TRSet &rs, int idx, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+    k |= pred_mask;
+    auto ri = rs.find(idx);
+    if ( ri != rs.end() ) {
+      if ( !ri->second.empty() ) { // check if prev item is the same
+        auto &last = ri->second.back();
+        if ( last.off == off && last.kind == k ) return;
+      }
+      ri->second.push_back( { off, k, t } );
+    } else {
+     std::vector<typed_reg_history> tmp;
+     tmp.push_back( { off, k, t } );
+     rs[idx] = std::move(tmp);
+    }
   }
-  void wgpr(int r, unsigned long off, reg_history::RH k) {
-    _add(gpr, r, off, k | 0x8000);
+  void rgpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+    _add(gpr, r, off, k, t);
   }
-  void rugpr(int r, unsigned long off, reg_history::RH k) {
-    _add(ugpr, r, off, k);
+  void wgpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+    _add(gpr, r, off, k | 0x8000, t);
   }
-  void wugpr(int r, unsigned long off, reg_history::RH k) {
-    _add(ugpr, r, off, k | 0x8000);
+  void rugpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+    _add(ugpr, r, off, k, t);
+  }
+  void wugpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+    _add(ugpr, r, off, k | 0x8000, t);
   }
   void rpred(int r, unsigned long off, reg_history::RH k) {
     _add(pred, r, off, k);
@@ -462,6 +483,7 @@ class NV_renderer {
    void dump_rt(reg_pad *) const;
    void finalize_rt(reg_pad *);
    void dump_rset(const reg_pad::RSet &, const char *pfx) const;
+   void dump_trset(const reg_pad::TRSet &, const char *pfx) const;
    inline bool is_pred(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
      return !strcmp(ea->ename, "Predicate") && 7 != kvi->second;
    }
