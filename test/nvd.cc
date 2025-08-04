@@ -14,49 +14,6 @@ int opt_c = 0,
     opt_N = 0,
     opt_O = 0;
 
-static const char hexes[] = "0123456789ABCDEF";
-
-void HexDump(FILE *f, const unsigned char *From, int Len)
-{
- int i;
- int j,k;
- char buffer[256];
- char *ptr;
-
- for(i=0;i<Len;)
-     {
-          ptr = buffer;
-          sprintf(ptr, "%08X ",i);
-          ptr += 9;
-          for(j=0;j<16 && i<Len;j++,i++)
-          {
-             *ptr++ = j && !(j%4)?(!(j%8)?'|':'-'):' ';
-             *ptr++ = hexes[From[i] >> 4];
-             *ptr++ = hexes[From[i] & 0xF];
-          }
-          for(k=16-j;k!=0;k--)
-          {
-            ptr[0] = ptr[1] = ptr[2] = ' ';
-            ptr += 3;
-
-          }
-          ptr[0] = ptr[1] = ' ';
-          ptr += 2;
-          for(;j!=0;j--)
-          {
-               if(From[i-j]>=0x20 && From[i-j]<0x80)
-                    *ptr = From[i-j];
-
-               else
-                    *ptr = '.';
-               ptr++;
-          }
-          *ptr = 0;
-          fprintf(f, "%s\n", buffer);
-     }
-     fprintf(f, "\n");
-}
-
 static std::map<char, const char *> s_ei = {
  { 0x1, "EIATTR_PAD" },
  { 0x2, "EIATTR_IMAGE_SLOT" },
@@ -311,7 +268,11 @@ class nv_dis: public CElf<NV_renderer>
    // no properties instructions
    std::unordered_map<const nv_instr *, unsigned long> m_nopi;
    void add_nopi(const nv_instr *i) {
-     if ( !strcmp(i->name, "NOP") ) return;
+     if ( !strcmp(i->name, "NOP") ||
+          !strcmp(i->name, "EXIT") ||
+          !strcmp(i->name, "DEPBAR") ||
+          !strcmp(i->name, "MEMPBAR")
+        ) return;
      auto iter = m_nopi.find(i);
      if ( iter == m_nopi.end() )
        m_nopi[i] = 1;

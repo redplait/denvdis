@@ -6,6 +6,50 @@ extern int opt_m;
 // for sv literals
 using namespace std::string_view_literals;
 
+static const char hexes[] = "0123456789ABCDEF";
+
+void HexDump(FILE *f, const unsigned char *From, int Len)
+{
+ int i;
+ int j,k;
+ char buffer[256];
+ char *ptr;
+
+ for(i=0;i<Len;)
+     {
+          ptr = buffer;
+          sprintf(ptr, "%08X ",i);
+          ptr += 9;
+          for(j=0;j<16 && i<Len;j++,i++)
+          {
+             *ptr++ = j && !(j%4)?(!(j%8)?'|':'-'):' ';
+             *ptr++ = hexes[From[i] >> 4];
+             *ptr++ = hexes[From[i] & 0xF];
+          }
+          for(k=16-j;k!=0;k--)
+          {
+            ptr[0] = ptr[1] = ptr[2] = ' ';
+            ptr += 3;
+
+          }
+          ptr[0] = ptr[1] = ' ';
+          ptr += 2;
+          for(;j!=0;j--)
+          {
+               if(From[i-j]>=0x20 && From[i-j]<0x80)
+                    *ptr = From[i-j];
+
+               else
+                    *ptr = '.';
+               ptr++;
+          }
+          *ptr = 0;
+          fprintf(f, "%s\n", buffer);
+     }
+     fprintf(f, "\n");
+}
+
+
 // ripped from sm_version.txt
 std::map<int, std::pair<const char *, const char *> > NV_renderer::s_sms = {
  { 0x14, { "sm2", nullptr } },

@@ -174,6 +174,7 @@ struct reg_pad {
   }
 };
 
+void HexDump(FILE *f, const unsigned char *From, int Len);
 const char* get_merc_reloc_name(unsigned t);
 const char* get_cuda_reloc_name(unsigned t);
 float int_as_float(int);
