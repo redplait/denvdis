@@ -526,6 +526,7 @@ struct nv88: public NV_base_decoder {
   {
     if ( !is_inited() ) return 0;
     if ( !value ) value = (uint64_t *)(curr + 8);
+    *value = 0;
     int j, i = 87;
     uint64_t m = 1L;
     *value = 0; cword = 0;
@@ -538,6 +539,11 @@ struct nv88: public NV_base_decoder {
       if ( '1' == mask[i] ) cword |= m;
       m <<= 1;
     }
+#ifdef DEBUG
+ std::string deb_mask;
+ gen_mask(deb_mask);
+ printf("%s\n", deb_mask.c_str());
+#endif
     return 1;
   }
   int check_mask(const char *mask) const
@@ -558,15 +564,32 @@ struct nv88: public NV_base_decoder {
     return 1;
   }
   int flush() {
-    *cqword |= (cword & 0x1fffff) << (21 * m_idx);
+#ifdef DEBUG
+ std::string deb_mask;
+ gen_mask(deb_mask);
+ printf("%s\n", deb_mask.c_str());
+#endif
+    int shift = 21 * m_idx;
+    // zero old bits
+    *cqword &= ~(0x1fffffL << shift);
+    // put new value from cword
+    *cqword |= (cword & 0x1fffff) << shift;
+
+#ifdef DEBUG
+printf("cqword %p (%lX) value %p (%lX) m_idx %d\n", cqword, *cqword, value, *value, m_idx);
+ deb_mask.clear();
+ gen_mask(deb_mask);
+ printf("%s-\n", deb_mask.c_str());
+#endif
+
     value++;
     m_idx++;
     if ( 3 == m_idx ) {
       m_idx = 0;
       value = nullptr;
       curr += 4 * 8;
+      if ( curr >= end ) return 1;
       cqword = (uint64_t *)curr;
-      return (curr >= end);
     }
     return 0;
   }
@@ -577,6 +600,13 @@ struct nv88: public NV_base_decoder {
     int res = next();
     if ( !res || idx == 1 ) return res;
     return next();
+  }
+  int _prev() {
+    if ( !curr ) return -4;
+    curr -= 8;
+    if ( !m_idx ) m_idx = 2;
+    else m_idx--;
+    return 1;
   }
   // if idx == 0 - read control word, then first opcode
   int next() {
@@ -629,6 +659,11 @@ struct nv88: public NV_base_decoder {
        v >>= 1;
      }
     }
+#ifdef DEBUG
+ std::string deb_mask;
+ gen_mask(deb_mask);
+ printf("%s\n", deb_mask.c_str());
+#endif
     return 1;
   }
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
