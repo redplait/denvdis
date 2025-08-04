@@ -356,6 +356,7 @@ struct NV_base_decoder {
   inline uint64_t get_cword() const {
     return 0;
   }
+  int _prev() { return -3; }
   template <typename T>
   inline T bit_set(T number, int n, int x) {
     return (number & ~(1L << n)) | ((T)x << n);
@@ -801,6 +802,11 @@ printf("stop0 %d\n", i);
 #endif
     return (curr >= end);
   }
+  int _prev() {
+    if ( !curr ) return -4;
+    curr -= 16;
+    return 1;
+  }
   int next() {
     if ( !is_inited() ) return 0;
     if ( end - curr < 2 * 8 ) return 0;
@@ -1135,6 +1141,10 @@ struct NV_disasm: public INV_disasm, T
   {
     if ( do_next ) {
       if ( !T::next() ) return -1;
+      if ( do_next == 2 ) {
+        int rprev = T::_prev();
+        if ( rprev < 0 ) return rprev;
+      }
     } else {
       if ( !T::is_inited() ) return -1;
     }
