@@ -4549,8 +4549,11 @@ sub store_props
   store(\%hr, $opt_u);
 }
 
-# try to load early stored props from opt_U
+# remapping classes from sm1xx to sm90
+# keep it in sorted order
 my %s_caliases = (
+ 'atoms_cas__RaRZ' => 'atoms_cas__RaRZ_CAS',
+ 'atoms_cas__RaNonRZ' => 'atoms_cas__RaNonRZ_CAS',
  'fadd2_imm__RRI' => 'fadd__RRI_RI',
  'fadd2_rc__RRR' => 'fadd__RRR_RR',
  'sel_64__RUR' => 'sel__RUR_RUR',
@@ -4559,6 +4562,8 @@ my %s_caliases = (
  'usel_64__UUU' => 'usel__URURUR_UUU',
  'usel_64__URIR' => 'usel__URuIUR_URIR',
 );
+
+# try to load early stored props from opt_U
 sub hack_props
 {
   my($i, $hr) = @_;
