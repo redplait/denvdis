@@ -14906,6 +14906,33 @@ CLASS "a b BAR Sync"
       !Nenc62;
       !Sync;
 
+CLASS "3f BAR Sync"
+    FORMAT PREDICATE @[!]Predicate(PT):Pg Opcode /BarSync:barmode
+            UImm(4):barNum ',' UImm(12/0):uImm;
+
+
+
+    OPCODES
+        BARfe_pipe =  0b010100_0_100;
+        BAR =  0b010100_0_100;
+
+    ENCODING
+      Opcode18 = Opcode;
+      BarOp =* BarSync;
+      Pred = Pg;
+      PredNot = Pg@not;
+      RegA = barNum;
+      Imm12 = uImm;
+      !DstPred;
+       SrcPred = `Predicate@PT;
+       SrcNot = 0;
+
+      AFix_BAR=1;
+      BFix_BAR=1;
+      !BarRedOp;
+      !Nenc62;
+      !Sync;
+
 CLASS "a BAR Sync"
     FORMAT PREDICATE @[!]Predicate(PT):Pg Opcode /BarSync:barmode
             UImm(4):barNum ',' Register:Rb;
