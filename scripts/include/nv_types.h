@@ -368,10 +368,10 @@ struct NV_base_decoder {
   }
  protected:
    inline size_t curr_off() const {
-      return curr - start - 8;
+      return curr - start - 8 + m_delta;
    }
    inline size_t offset_next() const {
-     return curr - start;
+     return curr - start + m_delta;
    }
    static void to_str(uint64_t v, std::string &res, int idx = 63) {
      for ( int i = idx; i >= 0; i-- )
@@ -380,15 +380,20 @@ struct NV_base_decoder {
        else res.push_back('0');
      }
    }
-   const unsigned char *start = nullptr, *curr = nullptr, *end;
+   const unsigned char *start = nullptr, // start of buffer
+     *curr = nullptr, // used for offsets calculation in curr_off & next_off, so keep it pointing +8 from current instruction
+     *end; // end of buffer
    int m_idx = 0;
+   // delta between start & real start of section
+   ptrdiff_t m_delta = 0;
    inline int is_inited() const
    { return (curr != nullptr) && (curr < end); }
-   void _init(const unsigned char *buf, size_t size) {
+   void _init(const unsigned char *buf, size_t size, ptrdiff_t _d = 0) {
      start = curr = buf;
      end = buf + size;
      m_idx = 0;
      opcode = ctrl = 0;
+     m_delta = _d;
    }
 };
 
@@ -396,8 +401,8 @@ struct nv64: public NV_base_decoder {
  protected:
   const int _width = 64;
   uint64_t *value = nullptr, *cqword = nullptr;
-  void _init(const unsigned char *buf, size_t size) {
-    NV_base_decoder::_init(buf, size);
+  void _init(const unsigned char *buf, size_t size, ptrdiff_t _d = 0) {
+    NV_base_decoder::_init(buf, size, _d);
     cqword = (uint64_t *)curr;
   }
   inline int check_bit(int idx) const {
@@ -432,14 +437,15 @@ struct nv64: public NV_base_decoder {
   }
   int flush() {
     // make cqword
-    *cqword |= (ctrl & 0xff) << (8 * m_idx + 2);
+    int shift = 8 * m_idx + 2;
+    *cqword &= ~(0xffL << shift);
+    *cqword |= (ctrl & 0xff) << shift;
     curr += 8;
     value++;
     m_idx++;
     if ( 7 == m_idx ) {
       value = nullptr;
       m_idx = 0;
-      curr += 8 * 8;
       cqword = (uint64_t *)curr;
       return (curr >= end);
     }
@@ -502,8 +508,8 @@ struct nv88: public NV_base_decoder {
  protected:
   const int _width = 88;
   uint64_t *value = nullptr, *cqword = nullptr, cword;
-  void _init(const unsigned char *buf, size_t size) {
-    NV_base_decoder::_init(buf, size);
+  void _init(const unsigned char *buf, size_t size, ptrdiff_t _d) {
+    NV_base_decoder::_init(buf, size, _d);
     cqword = (uint64_t *)curr;
   }
   inline uint64_t get_cword() const {
@@ -1100,7 +1106,7 @@ typedef std::vector<std::pair<const std::string_view, const std::vector<const nv
 
 // disasm interface
 struct INV_disasm {
-  virtual int init(const unsigned char *buf, size_t size, int idx = 0) = 0;
+  virtual int init(const unsigned char *buf, size_t size, ptrdiff_t, int idx = 0) = 0;
   virtual int get(std::vector< std::pair<const struct nv_instr *, NV_extracted> > &, int do_next = 1) = 0;
   // reverse method of check_mask - generate mask from currently instruction, for -N option
   virtual int gen_mask(std::string &) = 0;
@@ -1149,8 +1155,8 @@ struct NV_disasm: public INV_disasm, T
   virtual int width() const { return T::_width; }
   virtual size_t offset() const { return T::curr_off(); }
   virtual size_t off_next() const { return T::offset_next(); }
-  virtual int init(const unsigned char *buf, size_t size, int idx = 0) {
-    T::_init(buf, size);
+  virtual int init(const unsigned char *buf, size_t size, ptrdiff_t _d, int idx = 0) override {
+    T::_init(buf, size, _d);
     if ( idx )
      return T::_set_idx(idx);
     return 1;
