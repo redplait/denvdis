@@ -98,6 +98,9 @@ class CEd: public CElf<ParseSASS> {
    const SRels *m_cur_srels = nullptr;
    const asymbol *m_cur_rsym = nullptr;
    const NV_rel *m_cur_rel = nullptr;
+   // instruction filter
+   std::string m_ifname;
+   bool fresh_if = false;
    // labels from EATTRs
    NV_labels m_labels;
    int setup_labels(int idx);
@@ -245,7 +248,7 @@ int CEd::setup_labels(int idx)
   m_labels.clear();
   auto si = m_code_sects.find(idx);
   if ( si == m_code_sects.end() || !si->second ) return 0;
-  section *sec = reader.sections[si->second];
+  section *sec = m_reader->sections[si->second];
   // similar to nv_dis::_parse_attrs
   const char *data = sec->get_data();
   const char *start = data, *end = data + sec->get_size();
@@ -306,18 +309,18 @@ int CEd::setup_labels(int idx)
 int CEd::prepare(const char *fn)
 {
   if ( !init_guts() ) return 0;
-  n_sec = reader.sections.size();
+  n_sec = m_reader->sections.size();
   // iterate on sections to collect section with attributes
   std::unordered_map<int, int> attrs; // key - link section, value - index of section with attributes
   for ( Elf_Half i = 0; i < n_sec; ++i ) {
-    section *sec = reader.sections[i];
+    section *sec = m_reader->sections[i];
     auto st = sec->get_type();
     if ( st == SHT_NOBITS || !sec->get_size() ) continue;
     if ( st == 0x70000000 ) attrs[sec->get_info()] = i;
   }
   // iterate on sections to collect code sections
   for ( Elf_Half i = 0; i < n_sec; ++i ) {
-   section *sec = reader.sections[i];
+   section *sec = m_reader->sections[i];
    if ( sec->get_type() == SHT_NOBITS || !sec->get_size() ) continue;
    auto sname = sec->get_name();
    if ( !strncmp(sname.c_str(), ".text.", 6) ) {
@@ -419,7 +422,7 @@ int CEd::parse_f(int idx, std::string &s)
     return 0;
   }
   setup_labels(s_idx);
-  section *sec = reader.sections[s_idx];
+  section *sec = m_reader->sections[s_idx];
   m_idx = s_idx;
   m_obj_off = fiter->second->addr;
   m_obj_size = fiter->second->size;
@@ -474,7 +477,7 @@ int CEd::parse_s(int idx, std::string &s)
   }
   // index of found section in s_idx
   setup_labels(s_idx);
-  section *sec = reader.sections[s_idx];
+  section *sec = m_reader->sections[s_idx];
   m_idx = s_idx;
   m_obj_off = 0;
   m_obj_size = sec->get_size();
@@ -1140,8 +1143,9 @@ int main(int argc, char **argv)
   }
   if ( argc == optind ) usage(argv[0]);
   CEd ced;
+  elfio rdr;
   // try to open
-  if ( !ced.open(argv[optind]) ) return 5;
+  if ( !ced.open(&rdr, argv[optind]) ) return 5;
   if ( !ced.prepare(argv[optind]) ) return 5;
   if ( opt_v ) printf("%ld symbols\n", ced.syms_size());
   // edit script

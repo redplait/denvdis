@@ -21,18 +21,19 @@ struct asymbol
 template <typename T>
 class CElf: public T {
  public:
-     int open(const char *fname, int opc = 0) {
-     if ( !reader.load(fname) ) {
+     int open(elfio *r, const char *fname, int opc = 0) {
+     m_reader = r;
+     if ( !m_reader->load(fname) ) {
        fprintf(stderr, "cannot load\n");
        return 0;
      }
-     if ( reader.get_machine() != 190 ) {
+     if ( m_reader->get_machine() != 190 ) {
        fprintf(stderr, "not CUBIN\n");
        return 0;
      }
      // try load smXX
-     int sm = (reader.get_flags() >> 0x10) & 0xff;
-     if ( !sm ) sm = (reader.get_flags() >> 8) & 0xff;
+     int sm = (m_reader->get_flags() >> 0x10) & 0xff;
+     if ( !sm ) sm = (m_reader->get_flags() >> 8) & 0xff;
      auto smi = NV_renderer::s_sms.find(sm);
      if ( smi == NV_renderer::s_sms.end() ) {
        fprintf(stderr, "unknown SM %X\n", sm);
@@ -69,12 +70,12 @@ class CElf: public T {
      section *sym_sec = nullptr;
      for ( Elf_Half i = 0; i < n_sec; ++i )
      {
-       section* sec = reader.sections[i];
+       section* sec = m_reader->sections[i];
        if ( sec->get_type() == SHT_SYMTAB ) { sym_sec = sec; break; }
      }
      if ( !sym_sec ) return 0;
      // read symtab
-     symbol_section_accessor symbols( reader, sym_sec );
+     symbol_section_accessor symbols( *m_reader, sym_sec );
      Elf_Xword sym_no = symbols.get_symbols_num();
      if ( !sym_no )
      {
@@ -100,11 +101,11 @@ class CElf: public T {
    }
    int fill_rels() {
      for ( Elf_Half i = 0; i < n_sec; ++i ) {
-       section *sec = reader.sections[i];
+       section *sec = m_reader->sections[i];
        auto st = sec->get_type();
        if ( st == SHT_REL || st == SHT_RELA ) {
          auto slink = sec->get_info();
-         section *ls = reader.sections[slink];
+         section *ls = m_reader->sections[slink];
 #ifdef DEBUG
  fprintf(this->m_out, "link %d %s\n", slink, ls->get_name().c_str());
 #endif
@@ -112,7 +113,7 @@ class CElf: public T {
          if ( st2 == SHT_NOBITS || !ls->get_size() ) continue;
          if ( strncmp(ls->get_name().c_str(), ".text.", 6) ) continue;
          // yup, this is our client
-         const_relocation_section_accessor rsa(reader, sec);
+         const_relocation_section_accessor rsa( *m_reader, sec);
          auto n = rsa.get_entries_num();
          SRels srels;
          for ( Elf_Xword ri = 0; ri < n; ri++ ) {
@@ -181,7 +182,7 @@ class CElf: public T {
    std::unordered_map<int, SRels> m_srels;
 
    Elf_Half n_sec = 0;
-   elfio reader;
+   elfio *m_reader = nullptr;
    // symbols
    std::vector<asymbol> m_syms;
 };

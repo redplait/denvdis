@@ -658,9 +658,9 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
 
 int nv_dis::single_section(int idx)
 {
-  n_sec = reader.sections.size();
+  n_sec = m_reader->sections.size();
   if ( idx < 0 || idx >= n_sec ) return -1;
-  section *sec = reader.sections[idx];
+  section *sec = m_reader->sections[idx];
   if ( sec->get_type() == SHT_NOBITS ) return 0;
   if ( !sec->get_size() ) return 0;
   m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size(), 0 );
@@ -670,7 +670,7 @@ int nv_dis::single_section(int idx)
 
 void nv_dis::dump_mrelocs(section *sec)
 {
-  const_relocation_section_accessor rsa(reader, sec);
+  const_relocation_section_accessor rsa(*m_reader, sec);
   auto n = rsa.get_entries_num();
   fprintf(m_out, "%ld relocs:\n", n);
   if ( !n ) return;
@@ -700,7 +700,7 @@ void nv_dis::dump_mrelocs(section *sec)
 void nv_dis::dump_crelocs(section *sec)
 {
   if ( !sec->get_size() ) return;
-  const_relocation_section_accessor rsa(reader, sec);
+  const_relocation_section_accessor rsa(*m_reader, sec);
   auto n = rsa.get_entries_num();
   fprintf(m_out, "%ld relocs:\n", n);
   if ( !n ) return;
@@ -726,18 +726,18 @@ void nv_dis::dump_crelocs(section *sec)
 
 void nv_dis::process()
 {
-  n_sec = reader.sections.size();
+  n_sec = m_reader->sections.size();
   if ( !n_sec ) {
     fprintf(stderr, "no sections\n");
   }
-  auto et = reader.get_type();
+  auto et = m_reader->get_type();
   fprintf(m_out, "type %X, %d sections\n", et, n_sec);
   if ( opt_t || opt_r )
     read_symbols();
   // enum sections
   for ( Elf_Half i = 0; i < n_sec; ++i )
   {
-    section *sec = reader.sections[i];
+    section *sec = m_reader->sections[i];
     auto st = sec->get_type();
     auto sf = sec->get_flags();
     auto st_i = s_sht.find(st);
@@ -836,8 +836,9 @@ int main(int argc, char **argv)
   {
     printf("%s:\n", argv[i]);
     nv_dis dis;
+    elfio er;
     if ( o_fname ) dis.open_log(o_fname);
-    if ( dis.open(argv[i], opt_c) )
+    if ( dis.open(&er, argv[i], opt_c) )
     {
       if ( s != -1 )
         dis.single_section(s);
