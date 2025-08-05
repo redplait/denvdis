@@ -439,7 +439,7 @@ printf("flush res %d\n", res);
     }
     // renew buffer
     memset(buf, 0, block_size);
-    m_dis->init(buf, block_size);
+    m_dis->init(buf, block_size, 0);
     dirty = false;
     return 1;
   }
@@ -1163,7 +1163,7 @@ int INA::init(int dump)
      fprintf(stderr, "Unknown width %d\n", m_width);
      return -2;
   }
-  m_dis->init(buf, block_size);
+  m_dis->init(buf, block_size, 0);
   if ( dump )
     printf("width %d, %ld instructions\n", m_width, g_sorted->size());
   return 0;
@@ -1216,7 +1216,7 @@ int INA::process_binary(const char *fname)
     return 1;
   }
   fclose(ifp); ifp = nullptr;
-  m_dis->init(ibuf, fs.st_size);
+  m_dis->init(ibuf, fs.st_size, 0);
   // process buffer
   process_buf();
   if ( opt_v )

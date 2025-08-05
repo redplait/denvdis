@@ -663,7 +663,7 @@ int nv_dis::single_section(int idx)
   section *sec = reader.sections[idx];
   if ( sec->get_type() == SHT_NOBITS ) return 0;
   if ( !sec->get_size() ) return 0;
-  m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size() );
+  m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size(), 0 );
   try_dis(idx);
   return 1;
 }
@@ -774,7 +774,7 @@ void nv_dis::process()
     fprintf(m_out, "  addr %lX size %lX info %d link %d\n", sec->get_address(), sec->get_size(), sec->get_info(), sec->get_link());
     if ( !strncmp(sname.c_str(), ".text.", 6) )
     {
-      m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size() );
+      m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size(), 0 );
       if ( opt_c )
        fprintf(m_out, "\t.section %s\n", sname.c_str());
       try_dis(i);

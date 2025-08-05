@@ -5,6 +5,7 @@
 using namespace std::string_literals;
 
 int opt_d = 0,
+  opt_h = 0,
   opt_m = 0,
   skip_final_cut = 0,
   skip_op_parsing = 0,
@@ -191,6 +192,9 @@ class CEd: public CElf<ParseSASS> {
    // 88bit - 8 + 3 * 8 = 32 bytes
    // 128bit - just 16 bytes
    static constexpr int buf_size = 64;
+   // buf better to be aligned on 8 bytes - can use dirty hack from
+   // https://stackoverflow.com/questions/11558371/is-it-possible-to-align-a-particular-structure-member-in-single-byte-aligned-str
+   struct {} __attribute__ ((aligned (8)));
    unsigned char buf[buf_size];
    size_t block_size = 0;
    int mask_size = 0;
@@ -224,6 +228,7 @@ int CEd::flush_buf()
 {
   if ( !m_cubin_fp || !block_dirty ) return 1;
   fseek(m_cubin_fp, m_buf_off, SEEK_SET);
+  if ( opt_h ) HexDump(m_out, buf, block_size);
   if ( 1 != fwrite(buf, block_size, 1, m_cubin_fp) ) {
     fprintf(stderr, "fwrite at %lX failed, error %d (%s)\n", m_buf_off, errno, strerror(errno));
     return 0;
@@ -856,6 +861,7 @@ int CEd::generic_ins(const nv_instr *ins, NV_extracted &kv)
     if ( f.scale ) v /= f.scale;
     m_dis->put(f.mask, f.mask_size, v);
   }
+  if ( opt_d ) printf("end enums\n");
   // tabs
   if ( ins->tab_fields.size() ) {
     std::vector<unsigned short> row;
@@ -880,6 +886,7 @@ int CEd::generic_ins(const nv_instr *ins, NV_extracted &kv)
       row_idx++;
     }
   }
+  if ( opt_d ) printf("end tabs\n");
   // const bank
   if ( ins->cb_field )
   {
@@ -896,6 +903,8 @@ int CEd::generic_ins(const nv_instr *ins, NV_extracted &kv)
      c2 = get_def_value(ins, ins->cb_field->f2);
     generic_cb(ins, c1, c2);
   }
+  if ( opt_h )
+    HexDump(m_out, buf, block_size);
   m_dis->flush();
   block_dirty = 1;
   return 1;
@@ -982,14 +991,17 @@ int CEd::verify_off(unsigned long off)
     rdr_cnt++;
   }
   m_buf_off = block_off;
-  if ( !m_dis->init(buf, block_size, block_idx) ) {
+  if ( opt_h ) HexDump(m_out, buf, block_size);
+  if ( !m_dis->init(buf, block_size, off, block_idx) ) {
     fprintf(stderr, "dis init failed\n");
     return 0;
   }
   // disasm instruction at offset
   NV_res res;
-  int get_res = m_dis->get(res);
-  if ( -1 == get_res ) {
+  int what = 1;
+  if ( m_width > 64 ) what = 2;
+  int get_res = m_dis->get(res, what);
+  if ( get_res < 0 || res.empty() ) {
     fprintf(stderr, "cannot disasm at offset %lX\n", off);
     return 0;
   }
@@ -1000,6 +1012,7 @@ int CEd::verify_off(unsigned long off)
     // lets choose 1st
     res_idx = 0;
   }
+  if ( opt_d ) printf("res_idx %d\n", res_idx);
   // store disasm result
   curr_dis = std::move(res[res_idx]);
   m_rend = m_dis->get_rend(curr_dis.first->n);
@@ -1113,10 +1126,11 @@ int main(int argc, char **argv)
 {
   int c;
   while(1) {
-    c = getopt(argc, argv, "dktv");
+    c = getopt(argc, argv, "dhktv");
     if ( c == -1 ) break;
     switch(c) {
       case 'd': opt_d = 1; break;
+      case 'h': opt_h = 1; break;
       case 'k': opt_k = 1; break;
       case 't': opt_t = 1; break;
       case 'v': opt_v = 1; break;
