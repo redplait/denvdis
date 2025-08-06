@@ -271,7 +271,8 @@ class nv_dis: public CElf<NV_renderer>
      if ( !strcmp(i->name, "NOP") ||
           !strcmp(i->name, "EXIT") ||
           !strcmp(i->name, "DEPBAR") ||
-          !strcmp(i->name, "MEMPBAR")
+          !strcmp(i->name, "MEMBAR") ||
+          !strcmp(i->name, "LDGDEPBAR")
         ) return;
      auto iter = m_nopi.find(i);
      if ( iter == m_nopi.end() )
