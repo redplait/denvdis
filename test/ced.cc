@@ -101,6 +101,22 @@ class CEd: public CElf<ParseSASS> {
    // instruction filter
    std::string m_ifname;
    bool fresh_if = false;
+   bool ifiltered = false; // if true - we should ignore patching
+   inline void reset_filter() {
+     if ( opt_d ) printf("reset_filter: fresh_if %d ifiltered %d\n", fresh_if, ifiltered);
+     fresh_if = ifiltered = false;
+   }
+   bool check_filter() {
+     if ( opt_d ) printf("check_filter: fresh_if %d ifiltered %d\n", fresh_if, ifiltered);
+     ifiltered = false;
+     if ( !fresh_if ) return false;
+     // ok, check instruction name in curr_dis.first
+     fresh_if = false;
+     if ( m_ifname.empty() ) return false;
+     ifiltered = (m_ifname != curr_dis.first->name);
+     if ( opt_d ) printf("check_filter: %s vs %s ifiltered %d\n", m_ifname.c_str(), curr_dis.first->name, ifiltered);
+     return ifiltered;
+   }
    // labels from EATTRs
    NV_labels m_labels;
    int setup_labels(int idx);
@@ -147,6 +163,7 @@ class CEd: public CElf<ParseSASS> {
    // parsers
    int parse_s(int idx, std::string &);
    int parse_f(int idx, std::string &);
+   int parse_if(int idx, std::string &);
    int parse_tail(int idx, std::string &);
    int verify_off(unsigned long);
    int process_p(std::string &p, int idx, std::string &tail);
@@ -388,6 +405,29 @@ int CEd::prepare(const char *fn)
    });
 }
 
+int CEd::parse_if(int idx, std::string &s)
+{
+  ifiltered = false;
+  rstrip(s);
+  int i, s_size = (int)s.size();
+  for ( i = idx; i < s_size; ++i ) {
+    if ( !isspace(s.at(i)) ) {
+      if ( i == idx ) {
+        fprintf(stderr, "if what? %s line %d\n", s.c_str() + idx, m_ln);
+        return 0;
+      }
+      break;
+    }
+  }
+  if ( i == s_size ) {
+    fprintf(stderr, "not arg for if: %s line %d\n", s.c_str() + idx, m_ln);
+    return 0;
+  }
+  m_ifname = s.c_str() + i;
+  fresh_if = true;
+  return 1;
+}
+
 // fn function name
 int CEd::parse_f(int idx, std::string &s)
 {
@@ -489,6 +529,10 @@ int CEd::parse_s(int idx, std::string &s)
 
 int CEd::parse_tail(int idx, std::string &s)
 {
+  if ( ifiltered ) {
+    if ( opt_v ) printf("ignore %s, line %d bcs it is filtered\n", s.c_str() + idx, m_ln);
+    return 1;
+  }
   rstrip(s);
   int s_size = int(s.size());
   if ( s.empty() ) {
@@ -996,6 +1040,7 @@ int CEd::verify_off(unsigned long off)
   m_buf_off = block_off;
   if ( opt_h ) HexDump(m_out, buf, block_size);
   if ( !m_dis->init(buf, block_size, off, block_idx) ) {
+    reset_filter();
     fprintf(stderr, "dis init failed\n");
     return 0;
   }
@@ -1005,12 +1050,14 @@ int CEd::verify_off(unsigned long off)
   if ( m_width > 64 ) what = 2;
   int get_res = m_dis->get(res, what);
   if ( get_res < 0 || res.empty() ) {
+    reset_filter();
     fprintf(stderr, "cannot disasm at offset %lX\n", off);
     return 0;
   }
   int res_idx = 0;
   if ( res.size() > 1 ) res_idx = calc_index(res, m_dis->rz);
   if ( -1 == res_idx ) {
+    reset_filter();
     fprintf(stderr, "warning: ambigious instruction at %lX, has %ld formst\n", off, res.size());
     // lets choose 1st
     res_idx = 0;
@@ -1020,9 +1067,11 @@ int CEd::verify_off(unsigned long off)
   curr_dis = std::move(res[res_idx]);
   m_rend = m_dis->get_rend(curr_dis.first->n);
   if ( !m_rend ) {
+    reset_filter();
     fprintf(stderr, "cannot get render at %lX, n %d\n", off, curr_dis.first->n);
     return 0;
   }
+  check_filter();
   // dump if need
   if ( opt_d ) dump_ins(off);
   if ( opt_k ) dump_ops(curr_dis.first, cex());
@@ -1041,14 +1090,23 @@ int CEd::process(ParseSASS::Istr *is)
     char c = s.at(0);
     if ( c == '#' ) continue;
     if ( c == 'q' ) break; // q to quit - for debugging
+    // s or sn
     if ( c == 's' ) {
+      reset_filter();
       if ( !parse_s(1, s) ) break;
       if ( opt_d ) printf("state %d off %lX\n", m_state, m_obj_off);
       continue;
     }
     if ( c == 'f' ) {
+      reset_filter();
       if ( !parse_f(1, s) ) break;
       if ( opt_d ) printf("state %d off %lX\n", m_state, m_obj_off);
+      continue;
+    }
+    // if
+    if ( c == 'i' && s.size() > 3 && s.at(1) == 'f' ) {
+      if ( !parse_if(2, s) ) break;
+      if ( opt_d ) printf("if %s\n", m_ifname.c_str());
       continue;
     }
     std::smatch matches;
