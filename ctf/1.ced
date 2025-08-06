@@ -1,3 +1,4 @@
 # replace shift right of r0 to mov r0, rz
 s 10
+if SHF
 40 r MOV R0, RZ
