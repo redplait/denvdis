@@ -1,0 +1,3 @@
+# patch to return address of output buffer in R2
+s 9
+60 r STG.E._64.SYS [R2], R2
