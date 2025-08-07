@@ -62,7 +62,7 @@ __host__ int main()
   unsigned long host_d[2];
   memset(host_d, 0xcc, sizeof(host_d));
   cudaMalloc(&d_i, sizeof(host_d));
-  printf("d_u %p\n", d_i);
+  printf("d_i %p\n", d_i);
   fetch<<<1,1>>>(d_i);
   cudaMemcpy(host_d, d_i, sizeof(host_d), cudaMemcpyDeviceToHost);
   cudaFree(d_i);
