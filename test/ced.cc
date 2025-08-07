@@ -662,7 +662,7 @@ int CEd::parse_tail(int idx, std::string &s)
     }
     NV_extracted out_res;
     copy_tail_values(ins(), m_nop_rend, cex(), out_res);
-    if ( !generic_ins(ins(), out_res) ) return 0;
+    if ( !generic_ins(m_nop, out_res) ) return 0;
     if ( !flush_buf() ) {
       fprintf(stderr, "nop flush failed\n");
       return 0;
