@@ -36,7 +36,10 @@ int ParseSASS::_extract_ve(NV_extracted &res, const one_form *of, const ve_base 
   auto ea = find_ea(of->instr, vb.arg);
   if ( !ea ) return 0;
   if ( !ea->has_def_value || !ea->def_value ) return 1;
-  res[vb.arg] = ea->def_value;
+  // add this field if it missed
+  auto ri = res.find(vb.arg);
+  if ( ri == res.end() )
+    res[vb.arg] = ea->def_value;
   return 1;
 }
 
@@ -66,8 +69,10 @@ int ParseSASS::_extract_full(NV_extracted &res, const one_form *of)
      auto ea = find_ea(of->instr, rn->name);
      if ( !ea ) return 0;
      if ( !ea->has_def_value || !ea->def_value ) continue;
-     // add this field
-     res[rn->name] = ea->def_value;
+     // add this field if it missed
+     auto ri = res.find(rn->name);
+     if ( ri == res.end() )
+       res[rn->name] = ea->def_value;
     } else if ( r->type == R_mem ) {
       const render_mem *rm = (const render_mem *)r;
       if ( !_extract_vel(res, of, rm->right) ) return 0;
@@ -1228,6 +1233,9 @@ int ParseSASS::process_attr(int idx, const std::string &s, NV_Forms &f)
       auto aiter = a.en->find(ename);
       if ( aiter != a.en->end() ) {
        // insert name of this enum into m_kv
+#ifdef DEBUG
+  printf("process_attr: add %X to %s\n", aiter->second, rn->name);
+#endif
        of.l_kv[rn->name] = aiter->second;
        return 0;
       }
