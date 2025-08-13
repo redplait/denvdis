@@ -1,4 +1,5 @@
 #include <dlfcn.h>
+#include <stdarg.h>
 #include <fp16.h>
 #include "nv_rend.h"
 
@@ -436,6 +437,16 @@ const char *get_lut(int i) {
   return lut_ops[i];
 }
 
+void NV_renderer::Err(const char *fmt, ...) const
+{
+ va_list args;
+ va_start(args, fmt);
+ if ( m_elog )
+   m_elog->verr(fmt, args);
+ else
+  vfprintf(stderr, fmt, args);
+}
+
 void NV_renderer::dis_stat() const
 {
   if ( dis_total )
@@ -447,16 +458,16 @@ int NV_renderer::load(const char *sm_name)
 {
      void *dh = dlopen(sm_name, RTLD_NOW);
      if ( !dh ) {
-      fprintf(stderr, "cannot load %s, errno %d (%s)\n", sm_name, errno, strerror(errno));
+       Err("cannot load %s, errno %d (%s)\n", sm_name, errno, strerror(errno));
        return 0;
      }
      m_vq = (Dvq_name)dlsym(dh, "get_vq_name");
      if ( !m_vq )
-       fprintf(stderr, "cannot find get_vq_nam(%s), errno %d (%s)\n", sm_name, errno, strerror(errno));
+       Err("cannot find get_vq_nam(%s), errno %d (%s)\n", sm_name, errno, strerror(errno));
      Dproto fn = (Dproto)dlsym(dh, "get_sm");
      if ( !fn ) {
-      fprintf(stderr, "cannot find get_sm(%s), errno %d (%s)\n", sm_name, errno, strerror(errno));
-      dlclose(dh);
+       Err("cannot find get_sm(%s), errno %d (%s)\n", sm_name, errno, strerror(errno));
+       dlclose(dh);
        return 0;
      }
      m_dis = fn();
@@ -1527,7 +1538,7 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
        } break;
 
       default:
-        if ( opcode ) fprintf(stderr, "unknown rend type %d for inst %s\n", r->type, opcode);
+        if ( opcode ) Err("unknown rend type %d for inst %s\n", r->type, opcode);
         return 0;
     }
  return !res.empty();
@@ -2006,7 +2017,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
          res += ']';
        } break;
 
-      default: fprintf(stderr, "unknown rend type %d at index %d for inst %s\n", ri->type, idx, i->name);
+      default: Err("unknown rend type %d at index %d for inst %s\n", ri->type, idx, i->name);
     }
     if ( !empty )
       prev = ri->type;

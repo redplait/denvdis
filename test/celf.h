@@ -24,11 +24,11 @@ class CElf: public T {
      int open(elfio *r, const char *fname, int opc = 0) {
      m_reader = r;
      if ( !m_reader->load(fname) ) {
-       fprintf(stderr, "cannot load\n");
+       T::Err("cannot load\n");
        return 0;
      }
      if ( m_reader->get_machine() != 190 ) {
-       fprintf(stderr, "not CUBIN\n");
+       T::Err("not CUBIN\n");
        return 0;
      }
      // try load smXX
@@ -36,7 +36,7 @@ class CElf: public T {
      if ( !sm ) sm = (m_reader->get_flags() >> 8) & 0xff;
      auto smi = NV_renderer::s_sms.find(sm);
      if ( smi == NV_renderer::s_sms.end() ) {
-       fprintf(stderr, "unknown SM %X\n", sm);
+       T::Err("unknown SM %X\n", sm);
        return 0;
      }
      // check SM_DIR env

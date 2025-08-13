@@ -80,7 +80,7 @@ class CEd: public CElf<ParseSASS> {
      if ( m_state == HasP ) {
        auto inc_size = m_inc_tabs.size();
        if ( inc_size )
-         fprintf(stderr, "Warning: %ld non-completed tables\n", inc_size);
+         Err("Warning: %ld non-completed tables\n", inc_size);
        m_inc_tabs.clear();
        m_dis->flush();
        block_dirty = true;
@@ -171,8 +171,8 @@ class CEd: public CElf<ParseSASS> {
    int patch(const NV_field *nf, unsigned long v, const std::string_view &what) {
      if ( !m_dis->put(nf->mask, nf->mask_size, v) )
      {
-       fputs("cannot patch ", stderr); dump_out(what);
-       fprintf(stderr, ", line %d\n", m_ln);
+       int w_len = int(what.length());
+       Err("cannot patch %.*s, line %d\n", w_len, what.data(), m_ln);
        return 0;
      }
      block_dirty = true;
@@ -181,7 +181,7 @@ class CEd: public CElf<ParseSASS> {
    int patch(const NV_field *nf, unsigned long v, const char *what) {
      if ( !m_dis->put(nf->mask, nf->mask_size, v) )
      {
-       fprintf(stderr, "cannot patch %s, line %d\n", what, m_ln);
+       Err("cannot patch %s, line %d\n", what, m_ln);
        return 0;
      }
      block_dirty = true;
@@ -190,7 +190,7 @@ class CEd: public CElf<ParseSASS> {
    int patch(const NV_tab_fields *tf, unsigned long v, const char *what) {
      if ( !m_dis->put(tf->mask, tf->mask_size, v) )
      {
-       fprintf(stderr, "cannot patch tab value %s, line %d\n", what, m_ln);
+       Err("cannot patch tab value %s, line %d\n", what, m_ln);
        return 0;
      }
      m_inc_tabs.erase(tf);
@@ -250,7 +250,7 @@ int CEd::flush_buf()
   fseek(m_cubin_fp, m_buf_off, SEEK_SET);
   if ( opt_h ) HexDump(m_out, buf, block_size);
   if ( 1 != fwrite(buf, block_size, 1, m_cubin_fp) ) {
-    fprintf(stderr, "fwrite at %lX failed, error %d (%s)\n", m_buf_off, errno, strerror(errno));
+    Err("fwrite at %lX failed, error %d (%s)\n", m_buf_off, errno, strerror(errno));
     return 0;
   }
   flush_cnt++;
@@ -272,7 +272,7 @@ int CEd::setup_labels(int idx)
   while( data < end )
   {
     if ( end - data < 2 ) {
-      fprintf(stderr, "bad attrs data. section %d\n", si->second);
+      Err("bad attrs data. section %d\n", si->second);
       return 0;
     }
     char format = data[0];
@@ -315,7 +315,7 @@ int CEd::setup_labels(int idx)
         }
         data += 4 + a_len;
         break;
-      default: fprintf(stderr, "unknown format %d, section %d off %lX (%s)\n",
+      default: Err("unknown format %d, section %d off %lX (%s)\n",
         format, idx, data - start, sec->get_name().c_str());
          return 0;
     }
@@ -356,7 +356,7 @@ int CEd::prepare(const char *fn)
    }
   }
   if ( m_code_sects.empty() ) {
-   fprintf(stderr, "cannot find code sections in %s\n", fn);
+   Err("cannot find code sections in %s\n", fn);
    return 0;
   }
   // init block
@@ -365,7 +365,7 @@ int CEd::prepare(const char *fn)
     case 88: mask_size = 6; block_size = 32; break;
     case 128: mask_size = 7; block_size = 16; break;
     default:
-     fprintf(stderr, "Unknown width %d\n", m_width);
+     Err("Unknown width %d\n", m_width);
      return 0;
   }
   mask_size -= 3; // align to byte
@@ -375,7 +375,7 @@ int CEd::prepare(const char *fn)
   m_cubin = fn; // store filename for logging/debugging
   m_cubin_fp = fopen(fn, "r+b");
   if ( !m_cubin_fp ) {
-    fprintf(stderr, "Cannot open %s, error %d (%s)\n", fn, errno, strerror(errno));
+    Err("Cannot open %s, error %d (%s)\n", fn, errno, strerror(errno));
     return 0;
   }
   // lets try to find NOP
@@ -384,12 +384,12 @@ int CEd::prepare(const char *fn)
    return pair.first < w;
    });
   if ( nop == il->end() ) {
-   fprintf(stderr, "Warning: cannot find NOP\n");
+   Err("Warning: cannot find NOP\n");
   } else {
     m_nop = nop->second.at(0);
     m_nop_rend = m_dis->get_rend(m_nop->n);
     if ( !m_nop_rend ) {
-      fprintf(stderr, "Warning: cannot find NOP render\n");
+      Err("Warning: cannot find NOP render\n");
       m_nop = nullptr;
     }
   }
@@ -413,14 +413,14 @@ int CEd::parse_if(int idx, std::string &s)
   for ( i = idx; i < s_size; ++i ) {
     if ( !isspace(s.at(i)) ) {
       if ( i == idx ) {
-        fprintf(stderr, "if what? %s line %d\n", s.c_str() + idx, m_ln);
+        Err("if what? %s line %d\n", s.c_str() + idx, m_ln);
         return 0;
       }
       break;
     }
   }
   if ( i == s_size ) {
-    fprintf(stderr, "not arg for if: %s line %d\n", s.c_str() + idx, m_ln);
+    Err("not arg for if: %s line %d\n", s.c_str() + idx, m_ln);
     return 0;
   }
   m_ifname = s.c_str() + i;
@@ -436,29 +436,29 @@ int CEd::parse_f(int idx, std::string &s)
   char c = s.at(idx++);
   int s_size = (int)s.size();
   if ( c != 'n' || idx >= s_size ) {
-    fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
+    Err("invalid syntax: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   }
   c = s.at(idx);
   if ( !isspace(c) ) {
-    fprintf(stderr, "invalid fn syntax: %s, line %d\n", s.c_str(), m_ln);
+    Err("invalid fn syntax: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   }
   for ( ++idx; idx < s_size; idx++ )
     if ( !isspace(s.at(idx)) ) break;
   if ( idx >= s_size ) {
-    fprintf(stderr, "no function name: %s, line %d\n", s.c_str(), m_ln);
+    Err("no function name: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   }
   auto fiter = m_named.find({ s.c_str() + idx, s.size() - idx});
   if ( fiter == m_named.end() ) {
-    fprintf(stderr, "unknown fn: %s, line %d\n", s.c_str() + idx, m_ln);
+    Err("unknown fn: %s, line %d\n", s.c_str() + idx, m_ln);
     return 0;
   }
   auto s_idx = fiter->second->section;
   auto siter = m_code_sects.find(s_idx);
   if ( siter == m_code_sects.end() ) {
-    fprintf(stderr, "section %d don't have code, %s: line %d\n", s_idx, s.c_str(), m_ln);
+    Err("section %d don't have code, %s: line %d\n", s_idx, s.c_str(), m_ln);
     return 0;
   }
   setup_labels(s_idx);
@@ -477,7 +477,7 @@ int CEd::parse_s(int idx, std::string &s)
 {
   rstrip(s);
   if ( s.empty() ) {
-    fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
+    Err("invalid syntax: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   }
   int s_idx = 0;
@@ -487,30 +487,30 @@ int CEd::parse_s(int idx, std::string &s)
     for ( ++idx; idx < int(s.size()); idx++ )
       if ( !isspace(s.at(idx)) ) break;
     if ( idx == int(s.size()) ) {
-      fprintf(stderr, "invalid s syntax: %s, line %d\n", s.c_str(), m_ln);
+      Err("invalid s syntax: %s, line %d\n", s.c_str(), m_ln);
       return 0;
     }
     s_idx = atoi(s.c_str() + idx);
     auto siter = m_code_sects.find(s_idx);
     if ( siter == m_code_sects.end() ) {
-      fprintf(stderr, "section %d don't have code, %s: line %d\n", s_idx, s.c_str(), m_ln);
+      Err("section %d don't have code, %s: line %d\n", s_idx, s.c_str(), m_ln);
       return 0;
     }
   }
   else if ( c != 'n' ) { // not sn - don't know what is it
-    fprintf(stderr, "unknown keyword: %s, line %d\n", s.c_str(), m_ln);
+    Err("unknown keyword: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   } else { // section name
     ++idx;
     for ( ++idx; idx < int(s.size()); idx++ )
       if ( !isspace(s.at(idx)) ) break;
     if ( idx == int(s.size()) ) {
-      fprintf(stderr, "invalid sn syntax: %s, line %d\n", s.c_str(), m_ln);
+      Err("invalid sn syntax: %s, line %d\n", s.c_str(), m_ln);
       return 0;
     }
     auto siter = m_named_cs.find({ s.c_str() + idx, s.size() - idx});
     if ( siter == m_named_cs.end() ) {
-      fprintf(stderr, "section don't have code, %s: line %d\n", s.c_str(), m_ln);
+      Err("section don't have code, %s: line %d\n", s.c_str(), m_ln);
       return 0;
     }
     s_idx = siter->second;
@@ -536,7 +536,7 @@ int CEd::parse_tail(int idx, std::string &s)
   rstrip(s);
   int s_size = int(s.size());
   if ( s.empty() ) {
-    fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
+    Err("invalid syntax: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   }
   char c = s.at(idx);
@@ -547,29 +547,29 @@ int CEd::parse_tail(int idx, std::string &s)
       if ( !isspace(c) ) break;
     }
     if ( idx >= s_size ) {
-      fprintf(stderr, "invalid r syntax: %s, line %d\n", s.c_str(), m_ln);
+      Err("invalid r syntax: %s, line %d\n", s.c_str(), m_ln);
       return 0;
     }
     int add_res = add(s, idx);
     if ( !add_res || m_forms.empty() ) {
-      fprintf(stderr, "cannot parse %s, line %d\n", s.c_str(), m_ln);
+      Err("cannot parse %s, line %d\n", s.c_str(), m_ln);
       return 0;
     }
     const one_form *of = &m_forms.at(0);
     if ( of->label_op ) {
-      fprintf(stderr, "instructions with labels not supported, line %d\n", m_ln);
+      Err("instructions with labels not supported, line %d\n", m_ln);
       return 1;
     }
     NV_extracted kv;
     if ( !_extract_full(kv, of) ) {
-      fprintf(stderr, "cannot extract values for %s, line %d\n", s.c_str(), m_ln);
+      Err("cannot extract values for %s, line %d\n", s.c_str(), m_ln);
       return 0;
     }
     if ( opt_k ) dump_ops(of->instr, kv);
     copy_tail_values(of->instr, of->rend, cex(), kv);
     if ( !generic_ins(of->instr, kv) ) return 0;
     if ( !flush_buf() ) {
-      fprintf(stderr, "instr %s flush failed\n", s.c_str());
+      Err("instr %s flush failed\n", s.c_str());
       return 0;
     }
     m_state = WantOff;
@@ -580,24 +580,24 @@ int CEd::parse_tail(int idx, std::string &s)
       has_not = true;
       c = s.at(++idx);
       if ( c != '@' ) {
-        fprintf(stderr, "invalid r syntax: %s, line %d\n", s.c_str(), m_ln);
+        Err("invalid r syntax: %s, line %d\n", s.c_str(), m_ln);
         return 0;
       }
     }
     // parse value
     if ( idx + 1 >= s_size ) {
-        fprintf(stderr, "invalid predicate syntax: %s, line %d\n", s.c_str(), m_ln);
+        Err("invalid predicate syntax: %s, line %d\n", s.c_str(), m_ln);
         return 0;
     }
     int v = atoi(s.c_str() + idx + 1);
     auto p_name = has_predicate(m_rend);
     if ( !p_name ) {
-      fprintf(stderr, "instr %d don't have predicates. ignoring\n", ins()->n);
+      Err("instr %d don't have predicates. ignoring\n", ins()->n);
       return 1;
     }
     auto p_field = find_field(ins(), std::string_view(p_name));
     if ( !p_field ) {
-      fprintf(stderr, "instr %d don't have predicate %s. ignoring\n", ins()->n, p_name);
+      Err("instr %d don't have predicate %s. ignoring\n", ins()->n, p_name);
       return 1;
     }
     // patch predicate
@@ -607,13 +607,13 @@ int CEd::parse_tail(int idx, std::string &s)
     pnot += "@not";
     auto pnot_field = find_field(ins(), pnot);
     if ( !pnot_field ) {
-      fprintf(stderr, "instr %d don't have !predicate %s. ignoring\n", ins()->n, pnot.c_str());
+      Err("instr %d don't have !predicate %s. ignoring\n", ins()->n, pnot.c_str());
     } else {
       patch(pnot_field, has_not ? 1 : 0, pnot.c_str());
     }
     m_dis->flush();
     if ( !flush_buf() ) {
-      fprintf(stderr, "predicate flush failed\n");
+      Err("predicate flush failed\n");
       return 0;
     }
     m_state = WantOff;
@@ -628,7 +628,7 @@ int CEd::parse_tail(int idx, std::string &s)
       if ( !isspace(c) ) break;
     }
     if ( idx >= s_size ) {
-      fprintf(stderr, "invalid p syntax: %s, line %d\n", s.c_str(), m_ln);
+      Err("invalid p syntax: %s, line %d\n", s.c_str(), m_ln);
       return 0;
     }
     // extract field name - stupid stl missed copy_while algo and take_while presents in ranges only
@@ -639,7 +639,7 @@ int CEd::parse_tail(int idx, std::string &s)
       what.push_back(c);
     }
     if ( idx >= s_size ) {
-      fprintf(stderr, "invalid p syntax: %s, line %d\n", s.c_str(), m_ln);
+      Err("invalid p syntax: %s, line %d\n", s.c_str(), m_ln);
       return 0;
     }
     // and skip spaces after field name in what
@@ -649,7 +649,7 @@ int CEd::parse_tail(int idx, std::string &s)
       if ( !isspace(c) ) break;
     }
     if ( idx >= s_size ) {
-      fprintf(stderr, "invalid p syntax - where is value?: %s, line %d\n", s.c_str(), m_ln);
+      Err("invalid p syntax - where is value?: %s, line %d\n", s.c_str(), m_ln);
       return 0;
     }
     m_state = HasP;
@@ -657,20 +657,20 @@ int CEd::parse_tail(int idx, std::string &s)
   }
   if ( !strcmp(s.c_str() + idx, "nop") ) { // wipe-out some instruction with NOP
     if ( !m_nop ) {
-      fprintf(stderr, "warning: cannot patch nop\n");
+      Err("warning: cannot patch nop\n");
       return 1;
     }
     NV_extracted out_res;
     copy_tail_values(ins(), m_nop_rend, cex(), out_res);
     if ( !generic_ins(m_nop, out_res) ) return 0;
     if ( !flush_buf() ) {
-      fprintf(stderr, "nop flush failed\n");
+      Err("nop flush failed\n");
       return 0;
     }
     m_state = WantOff;
     return 1;
   }
-  fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
+  Err("invalid syntax: %s, line %d\n", s.c_str(), m_ln);
   return 0;
 }
 
@@ -685,7 +685,7 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
   int cb_idx = 0, tab_idx = 0;
   bool ctr = p == "Ctrl";
   if ( ctr && m_width == 128 ) {
-    fprintf(stderr, "Ctrl not supported for 128bit\n");
+    Err("Ctrl not supported for 128bit\n");
     return 1;
   }
   const NV_cbank *cb = is_cb_field(in_s, p, cb_idx);
@@ -697,7 +697,7 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
          return f.name < w;
       });
       if ( field == in_s->fields.end() ) {
-        fprintf(stderr, "unknown field %s, line %d\n", p.c_str(), m_ln);
+        Err("unknown field %s, line %d\n", p.c_str(), m_ln);
         return 0;
       }
       // cool, some real field
@@ -726,12 +726,12 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
   // try to parse
   if ( va ) {
     if ( !parse_num(va->kind, sv) ) {
-     fprintf(stderr, "cannot parse num %.*s, line %d\n", sv_len, sv.data(), m_ln);
+     Err("cannot parse num %.*s, line %d\n", sv_len, sv.data(), m_ln);
      return 0;
     }
   } else if ( ctr ) {
      if ( !parse_num(NV_UImm, sv) ) {
-      fprintf(stderr, "cannot parse Ctrl %.*s, line %d\n", sv_len, sv.data(), m_ln);
+      Err("cannot parse Ctrl %.*s, line %d\n", sv_len, sv.data(), m_ln);
       return 0;
     }
   } else if ( ea ) {
@@ -742,22 +742,22 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
       // check if this e present in ea->em
       auto ei = ea->em->find(m_v);
       if ( ei == ea->em->end() ) {
-        fprintf(stderr, "value %.*s for field %s not in enum %s, line %d\n", sv_len, sv.data(), p.c_str(), ea->ename, m_ln);
+        Err("value %.*s for field %s not in enum %s, line %d\n", sv_len, sv.data(), p.c_str(), ea->ename, m_ln);
         return 1;
       }
     } else {
       if ( !m_renums ) {
-        fprintf(stderr, "no renums for field %s, enum %s, line %d\n", p.c_str(), ea->ename, m_ln);
+        Err("no renums for field %s, enum %s, line %d\n", p.c_str(), ea->ename, m_ln);
         return 1;
       }
       auto ed = m_renums->find(ea->ename);
       if ( ed == m_renums->end() ) {
-        fprintf(stderr, "cannot find enum %s for field %s, line %d\n", ea->ename, p.c_str(), m_ln);
+        Err("cannot find enum %s for field %s, line %d\n", ea->ename, p.c_str(), m_ln);
         return 1;
       }
       auto edi = ed->second->find(sv);
       if ( edi == ed->second->end() ) {
-        fprintf(stderr, "cannot find %.*s in enum %s for field %s, line %d\n", sv_len, sv.data(), ea->ename, p.c_str(), m_ln);
+        Err("cannot find %.*s in enum %s for field %s, line %d\n", sv_len, sv.data(), ea->ename, p.c_str(), m_ln);
         return 1;
       }
       m_v = edi->second;
@@ -765,7 +765,7 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
         fprintf(m_out, "%.*s in %s has value %ld\n", sv_len, sv.data(), ea->ename, m_v);
     }
   } else {
-    fprintf(stderr, "unknown field %s, line %d - ignoring\n", p.c_str(), m_ln);
+    Err("unknown field %s, line %d - ignoring\n", p.c_str(), m_ln);
     return 1;
   }
   // check how this field should be patched
@@ -806,14 +806,14 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
       kv[p] = m_v;
       m_inc_tabs.insert(tab);
       if ( opt_v ) {
-        fprintf(stderr, "Warning: value %ld for %s invalid in table, line %d\n", m_v, p.c_str(), m_ln);
+        Err("Warning: value %ld for %s invalid in table, line %d\n", m_v, p.c_str(), m_ln);
         dump_tab_fields(tab);
       }
       return 1;
     } else
      return patch(tab, tab_value, p.c_str());
   } else {
-    fprintf(stderr, "dont know how to patch %s, line %d\n", p.c_str(), m_ln);
+    Err("dont know how to patch %s, line %d\n", p.c_str(), m_ln);
     return 0;
   }
   return 0;
@@ -894,7 +894,7 @@ int CEd::generic_ins(const nv_instr *ins, NV_extracted &kv)
 {
   m_inc_tabs.clear();
   if ( !m_dis->set_mask(ins->mask) ) {
-    fprintf(stderr, "set_mask for %s %d failed\n", ins->name, ins->line);
+    Err("set_mask for %s %d failed\n", ins->name, ins->line);
     return 0;
   }
   // enum fields
@@ -925,7 +925,7 @@ int CEd::generic_ins(const nv_instr *ins, NV_extracted &kv)
       }
       int res_val = 0;
       if ( !ins->check_tab(tf->tab, row, res_val) ) {
-        fprintf(stderr, "check_tab index %d for %s %d failed\n", row_idx, ins->name, ins->line);
+        Err("check_tab index %d for %s %d failed\n", row_idx, ins->name, ins->line);
         return 0;
       }
       m_dis->put(tf->mask, tf->mask_size, res_val);
@@ -999,14 +999,14 @@ int CEd::verify_off(unsigned long off)
   m_inc_tabs.clear();
   // check that offset is valid
   if ( off < m_obj_off || off >= (m_obj_off + m_obj_size) ) {
-    fprintf(stderr, "invalid offset %lX, should be within %lX - %lX, line %d\n",
+    Err("invalid offset %lX, should be within %lX - %lX, line %d\n",
        off, m_obj_off, m_obj_off + m_obj_size, m_ln);
     return 0;
   }
   // check if offset is properly aligned
   unsigned long off_mask = (1 << mask_size) - 1;
   if ( off & off_mask ) {
-    fprintf(stderr, "warning: offset %lX is not aligned on 2 ^ %d (off_mask %lX)\n", off, mask_size, off_mask);
+    Err("warning: offset %lX is not aligned on 2 ^ %d (off_mask %lX)\n", off, mask_size, off_mask);
     off &= ~off_mask;
   }
   // extract index inside block
@@ -1015,7 +1015,7 @@ int CEd::verify_off(unsigned long off)
   if ( m_width != 128 ) {
     auto b_off = off & ~(block_size - 1);
     if ( b_off == off ) {
-      fprintf(stderr, "warning: offset %lX points to Ctrl Word, change to %lX\n", off, off + 8);
+      Err("warning: offset %lX points to Ctrl Word, change to %lX\n", off, off + 8);
       off += 8;
       block_idx = 0;
     } else {
@@ -1032,7 +1032,7 @@ int CEd::verify_off(unsigned long off)
     // need to read new buffer
     fseek(m_cubin_fp, block_off, SEEK_SET);
     if ( 1 != fread(buf, block_size, 1, m_cubin_fp) ) {
-      fprintf(stderr, "fread at %lX failed, error %d (%s)\n", m_buf_off, errno, strerror(errno));
+      Err("fread at %lX failed, error %d (%s)\n", m_buf_off, errno, strerror(errno));
       return 0;
     }
     rdr_cnt++;
@@ -1041,7 +1041,7 @@ int CEd::verify_off(unsigned long off)
   if ( opt_h ) HexDump(m_out, buf, block_size);
   if ( !m_dis->init(buf, block_size, off, block_idx) ) {
     reset_filter();
-    fprintf(stderr, "dis init failed\n");
+    Err("dis init failed\n");
     return 0;
   }
   // disasm instruction at offset
@@ -1051,14 +1051,14 @@ int CEd::verify_off(unsigned long off)
   int get_res = m_dis->get(res, what);
   if ( get_res < 0 || res.empty() ) {
     reset_filter();
-    fprintf(stderr, "cannot disasm at offset %lX\n", off);
+    Err("cannot disasm at offset %lX\n", off);
     return 0;
   }
   int res_idx = 0;
   if ( res.size() > 1 ) res_idx = calc_index(res, m_dis->rz);
   if ( -1 == res_idx ) {
     reset_filter();
-    fprintf(stderr, "warning: ambigious instruction at %lX, has %ld formst\n", off, res.size());
+    Err("warning: ambigious instruction at %lX, has %ld formst\n", off, res.size());
     // lets choose 1st
     res_idx = 0;
   }
@@ -1068,7 +1068,7 @@ int CEd::verify_off(unsigned long off)
   m_rend = m_dis->get_rend(curr_dis.first->n);
   if ( !m_rend ) {
     reset_filter();
-    fprintf(stderr, "cannot get render at %lX, n %d\n", off, curr_dis.first->n);
+    Err("cannot get render at %lX, n %d\n", off, curr_dis.first->n);
     return 0;
   }
   check_filter();
@@ -1112,14 +1112,14 @@ int CEd::process(ParseSASS::Istr *is)
     std::smatch matches;
     if ( std::regex_search(s, matches, off) ) {
       if ( m_state < WantOff ) {
-        fprintf(stderr, "no section/function selected: %s, line %d\n", s.c_str(), m_ln);
+        Err("no section/function selected: %s, line %d\n", s.c_str(), m_ln);
         break;
       }
       // extract offset
       char *end = nullptr;
       unsigned long off = strtol(s.c_str(), &end, 16);
       if ( !isspace(*end) ) {
-        fprintf(stderr, "invalid syntax: %s, line %d\n", s.c_str(), m_ln);
+        Err("invalid syntax: %s, line %d\n", s.c_str(), m_ln);
         break;
       }
       if ( !verify_off(off) ) break;
@@ -1137,7 +1137,7 @@ int CEd::process(ParseSASS::Istr *is)
       if ( !parse_tail(1, s) ) break;
       continue;
     }
-    fprintf(stderr, "unknown command %s, state %d, line %d\n", s.c_str(), m_state, m_ln);
+    Err("unknown command %s, state %d, line %d\n", s.c_str(), m_state, m_ln);
     break;
   }
   return new_state();

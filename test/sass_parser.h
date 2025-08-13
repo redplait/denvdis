@@ -69,7 +69,7 @@ class ParseSASS: public NV_renderer
     if ( !fn ) return new cin_str();
     Fstr *f = new Fstr(fn);
     if ( !f->is_open() ) {
-      fprintf(stderr, "cannot open %ss\n", fn);
+      fprintf(stderr, "cannot open %s\n", fn);
       delete f;
       return nullptr;
     }

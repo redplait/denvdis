@@ -73,7 +73,7 @@ int MyParseSASS::init(const std::string &s)
     if ( si.second.first == sm ) { found = si.second.second ? si.second.second : sm; break; }
   }
   if ( found.empty() ) {
-    fprintf(stderr, "unknown %s\n", sm.c_str());
+    Err("unknown %s\n", sm.c_str());
     return 0;
   }
   // check SM_DIR env

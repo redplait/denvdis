@@ -187,6 +187,11 @@ const char *get_prop_type_name(int i);
 const char *get_prop_op_name(int i);
 const char *get_lut(int i);
 
+// error log interface
+struct NV_ELog {
+  virtual void verr(const char *format, va_list ap);
+};
+
 class NV_renderer {
  public:
    NV_renderer() {
@@ -207,7 +212,7 @@ class NV_renderer {
      }
      m_out = fopen(of, "a");
      if ( !m_out ) {
-       fprintf(stderr, "cannot open output file %s, errno %d (%s)\n", of, errno, strerror(errno));
+       Err("cannot open output file %s, errno %d (%s)\n", of, errno, strerror(errno));
        m_out = stdout;
      }
    }
@@ -219,6 +224,12 @@ class NV_renderer {
    typedef std::unordered_map<std::string_view, int> NV_Tabset;
    // relocs
    typedef std::pair<int, unsigned long> NV_rel;
+   // error log interface
+   NV_ELog *m_elog = nullptr;
+#ifdef __GNUC__
+          __attribute__ (( format( printf, 2, 3 ) ))
+#endif
+    void Err(const char *, ...) const;
   protected:
    template <typename T, typename I>
    const T& get_it(const std::initializer_list<T>& list, I index) const {

@@ -118,7 +118,7 @@ int ParseSASS::_extract(NV_extracted &res, const one_form *of)
     if ( en == m_renums->end() ) return 0;
     auto aiter = en->second->find(m_pred);
     if ( aiter == en->second->end() ) {
-      fprintf(stderr, "cannot map predicate %s (%s)\n", m_pred.c_str(), ea->ename);
+      Err("cannot map predicate %s (%s)\n", m_pred.c_str(), ea->ename);
       return 0;
     }
     res[rn->name] = aiter->second;
@@ -222,9 +222,9 @@ int ParseSASS::parse_req(const char *s)
   // ripped from https://stackoverflow.com/questions/10058606/splitting-a-string-by-a-character
   int req = 0;
   std::cregex_token_iterator begin(s, s + i, s_digits), end;
-  std::for_each(begin, end, [s,&req]( const std::string &ss ) {
+  std::for_each(begin, end, [&,s]( const std::string &ss ) {
     int v = atoi(ss.c_str());
-    if ( v > 5 ) fprintf(stderr, "bad req index %d in %s\n", v, s);
+    if ( v > 5 ) Err("bad req index %d in %s\n", v, s);
     else req |= 1 << v;
   });
   // push into kv
@@ -849,7 +849,7 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
   }
   switch(c) {
     case '`': if ( s.at(idx+1) != '(' ) {
-       fprintf(stderr, "unknown op %d: %s\n", op_idx, s.c_str());
+       Err("unknown op %d: %s\n", op_idx, s.c_str());
        return 0;
      } else {
        auto lname = extract_label(idx + 2, s);
@@ -870,7 +870,7 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
        int ip = idx + 1;
        for ( ; ip < (int)tmp.size(); ip++ ) if ( tmp.at(ip) == '|' ) break;
        if ( ip == (int)tmp.size() ) {
-         fprintf(stderr, "bad operand %d: %s\n", op_idx, s.c_str());
+         Err("bad operand %d: %s\n", op_idx, s.c_str());
          return 0;
        }
        // remained attributes start at s + ip + 1
@@ -952,7 +952,8 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
   // check for some unknown prefix for memory
   for ( int pi = idx + 1; pi < (int)tmp.size(); ++pi ) {
     if ( '[' == tmp.at(pi) ) {
-      fprintf(stderr, "[!] unknown memory prefix: "); dump_outln(tmp, stderr);
+      int t_len = int(tmp.length());
+      Err("[!] unknown memory prefix: %.*s\n", t_len, tmp.data());
       return 0;
     }
   }
@@ -1489,21 +1490,21 @@ int ParseSASS::init_guts()
   m_sorted = m_dis->get_instrs();
   m_renums = m_dis->get_renums();
   if ( !m_renums ) {
-    fprintf(stderr, "get_renums failed\n");
+    Err("get_renums failed\n");
     return 0;
   }
   auto ri = m_renums->find("USCHED_INFO");
   if ( ri != m_renums->end() ) usched = ri->second;
   else {
-    fprintf(stderr, "cannot find usched_info enum\n");
+    Err("cannot find usched_info enum\n");
   }
   ri = m_renums->find("PSEUDO_OPCODE");
   if ( ri != m_renums->end() ) pseudo = ri->second;
   else {
-    fprintf(stderr, "cannot find pseudo_opcode enum\n");
+    Err("cannot find pseudo_opcode enum\n");
   }
   m_dotted = m_dis->get_dotted();
   if ( !m_dotted )
-    fprintf(stderr, "cannot find dotted enums\n");
+    Err("cannot find dotted enums\n");
   return 1;
 }
