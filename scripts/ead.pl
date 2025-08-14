@@ -4580,6 +4580,12 @@ sub hack_props
     $alias =~ s/_64//;
   } elsif ( $i->[0] =~ /_reliability/ ) {
     $alias =~ s/_reliability//;
+  } elsif ( $i->[0] =~ /_nopred/ ) {
+    $alias =~ s/_nopred//;
+  } elsif ( $i->[0] =~ /hmul2_fixed/ ) {
+    $alias =~ s/_fixed//;
+  }  elsif ( $i->[0] =~ /hadd2_fixed/ ) {
+    $alias =~ s/_fixed//;
   }
   if ( exists $s_caliases{$i->[0]} ) {
     $alias = $s_caliases{$i->[0]};
@@ -4588,6 +4594,18 @@ sub hack_props
     $i->[22] = $hr->{$alias}->[0]->[1];
     return 1;
   }
+  # imul_wide_xor -> imul_wide_ + Rc/URc
+  if ( $alias =~ /^imul_wide_xor/ ) {
+    $alias =~ s/^imul_wide_xor/imul_wide/;
+    if ( exists($hr->{$alias}) ) {
+       my %tmp = %{ $hr->{$alias}->[0]->[1] };
+       if ( $alias =~ /U$/ ) { $tmp{'ISRC_C'} = [ 'INTEGER',[ 'URc' ] ];
+       } else { $tmp{'ISRC_C'} = [ 'INTEGER',[ 'Rc' ] ]; }
+       $i->[22] = \%tmp;
+       return 1;
+    }
+  }
+  # this horror should be loaded from text file
   if ( 'uimnmx_64__UUU_URURUR' eq $i->[0] or 'mnmx__UUU_URURUR' eq $i->[0] ) {
     my %u = (
      'IDEST' => [ 'INTEGER', [ 'URd' ] ],
