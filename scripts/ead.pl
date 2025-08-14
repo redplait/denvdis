@@ -4570,6 +4570,14 @@ my %s_caliases = (
  'usel_64__URIR' => 'usel__URuIUR_URIR',
 );
 
+sub add_rc
+{
+  my($alias, $hr) = @_;
+  if ( $alias =~ /U$/ ) { $hr->{'ISRC_C'} = [ 'INTEGER',[ 'URc' ] ];
+  } else { $hr->{'ISRC_C'} = [ 'INTEGER',[ 'Rc' ] ]; }
+  $hr;
+}
+
 # try to load early stored props from opt_U
 sub hack_props
 {
@@ -4582,9 +4590,7 @@ sub hack_props
     $alias =~ s/_reliability//;
   } elsif ( $i->[0] =~ /_nopred/ ) {
     $alias =~ s/_nopred//;
-  } elsif ( $i->[0] =~ /hmul2_fixed/ ) {
-    $alias =~ s/_fixed//;
-  }  elsif ( $i->[0] =~ /hadd2_fixed/ ) {
+  } elsif ( $i->[0] =~ /_fixed/ ) {
     $alias =~ s/_fixed//;
   }
   if ( exists $s_caliases{$i->[0]} ) {
@@ -4599,9 +4605,25 @@ sub hack_props
     $alias =~ s/^imul_wide_xor/imul_wide/;
     if ( exists($hr->{$alias}) ) {
        my %tmp = %{ $hr->{$alias}->[0]->[1] };
-       if ( $alias =~ /U$/ ) { $tmp{'ISRC_C'} = [ 'INTEGER',[ 'URc' ] ];
-       } else { $tmp{'ISRC_C'} = [ 'INTEGER',[ 'Rc' ] ]; }
-       $i->[22] = \%tmp;
+       $i->[22] = add_rc($alias, \%tmp);
+       return 1;
+    }
+  }
+  # imul_lo_xor -> imul_ + Rc/URc
+  if ( $alias =~ /^imul_lo_xor/ ) {
+    $alias =~ s/^imul_lo_xor/imul/;
+    if ( exists($hr->{$alias}) ) {
+       my %tmp = %{ $hr->{$alias}->[0]->[1] };
+       $i->[22] = add_rc($alias, \%tmp);
+       return 1;
+    }
+  }
+  # iadd_xor -> iadd
+  if ( $alias =~ /^iadd_xor/ ) {
+    $alias =~ s/^iadd_xor/iadd/;
+    if ( exists($hr->{$alias}) ) {
+       my %tmp = %{ $hr->{$alias}->[0]->[1] };
+       $i->[22] = add_rc($alias, \%tmp);
        return 1;
     }
   }
