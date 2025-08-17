@@ -814,6 +814,12 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
     if ( !kres ) return 0;
     return parse_mem_right<render_mem>(idx + 2, s, da);
   }
+  if ( tmp.starts_with("gdesc["sv) ) {
+    auto dttu = [](const render_base *rb) { return rb->type == R_M1; };
+    int kres = apply_kind(m_forms, dttu);
+    if ( !kres ) return 0;
+    return parse_c_left<render_M1>(idx + 6, s, dttu);
+  }
   if ( tmp.starts_with("ttu["sv) ) {
     auto dttu = [](const render_base *rb) { return rb->type == R_TTU; };
     int kres = apply_kind(m_forms, dttu);
