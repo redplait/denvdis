@@ -839,6 +839,7 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
   if ( tmp.starts_with("0x"sv) ) {
    // hex value + possible tail for label
    idx = parse_hex_tail(2, tmp, 16);
+   if ( opt_d ) printf("m_v %lX\n", m_v);
    if ( !reduce_value() ) return 0;
    if ( idx < (int)tmp.size() ) {
      std::string_view next{ tmp.data() + idx, size_t(tmp.size() - idx) };
@@ -1140,6 +1141,7 @@ int ParseSASS::apply_enum(const std::string_view &s)
     }
     return 1;
   });
+  if ( opt_d ) printf("apply_enum res: %d\n", res);
   if ( !res ) return res;
   // reset modifiers
   m_tilda = m_abs = m_minus = 0;
@@ -1369,6 +1371,9 @@ int ParseSASS::add(const std::string &s, int idx)
   std::for_each(m_forms.begin(), m_forms.end(), try_upto);
   // if no matches - set relax
   if ( !matched ) relax = true;
+#ifdef DEBUG
+  printf("matched %d relax %d\n", matched, relax);
+#endif
   // now perform real erasing
   std::erase_if(m_forms, [&](one_form &of) {
      if ( try_upto(of) ) return 1;
@@ -1382,6 +1387,10 @@ int ParseSASS::add(const std::string &s, int idx)
          const render_named *rn = (const render_named *)(*ci)->rb;
          auto ea = find_ea(of.instr, rn->name);
          if ( ea && ea->has_def_value ) continue;
+         if ( ea && !strcmp(ea->ename, "USCHED_INFO") ) continue;
+#ifdef DEBUG
+ printf("ea %s def_value %X\n", ea->ename, ea->def_value);
+#endif
        }
        return 1;
      }
