@@ -4589,12 +4589,16 @@ sub hack_props
   # try to find some similar instr i in retrieved db %$hr
   if ( $i->[0] =~ /_64/ ) {
     $alias =~ s/_64//;
+  } elsif ( $i->[0] =~ /_nonconformity/ ) {
+    $alias =~ s/_nonconformity//;
   } elsif ( $i->[0] =~ /_reliability/ ) {
     $alias =~ s/_reliability//;
   } elsif ( $i->[0] =~ /_nopred/ ) {
     $alias =~ s/_nopred//;
   } elsif ( $i->[0] =~ /_fixed/ ) {
     $alias =~ s/_fixed//;
+  } elsif ( $i->[0] =~ /mad_hi/ ) {
+    $alias =~ s/_hi//;
   }
   if ( exists $s_caliases{$i->[0]} ) {
     $alias = $s_caliases{$i->[0]};
