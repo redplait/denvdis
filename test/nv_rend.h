@@ -343,6 +343,14 @@ class NV_renderer {
      return vi && vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4);
    }
    inline bool is_tail(const struct nv_instr *i, const render_base *r) const {
+     // some instructions missed req_bit_set and so tail starts at USCHED_INFO
+     if ( r->type == R_enum ) {
+       const render_named *rn = (const render_named *)r;
+       const nv_eattr *ea = find_ea(i, rn->name);
+       if ( !ea )
+         return false;
+       return !strcmp(ea->ename, "USCHED_INFO");
+     }
      if ( r->type != R_value ) return false;
      const render_named *rn = (const render_named *)r;
      return is_tail(find(i->vas, rn->name), rn);
