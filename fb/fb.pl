@@ -11,7 +11,7 @@ use Elf::Reader;
 use Elf::FatBinary;
 
 # options
-use vars qw/$opt_a $opt_i $opt_r $opt_v/;
+use vars qw/$opt_a $opt_i $opt_p $opt_r $opt_v/;
 
 sub calc_md5
 {
@@ -44,6 +44,10 @@ sub enum_files
   my @res;
   for ( my $i = 0; $i < $fb->count(); $i++ ) {
     my $hr = $fb->[$i];
+    my $kind = $hr->{'kind'};
+    # filter ptx with -p
+    next if ( $kind == 1 && !defined($opt_p) );
+    next if ( $kind != 1 && defined($opt_p) );
     next if ( defined $opt_a && $hr->{'arch'} != $opt_a );
     push @res, [ $i, $hr ] if ( defined $opt_a );
     if ( defined $opt_v ) {
@@ -92,7 +96,7 @@ sub extract
 }
 
 # main
-my $status = getopts("va:i:r:");
+my $status = getopts("pva:i:r:");
 usage() if ( !$status );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
