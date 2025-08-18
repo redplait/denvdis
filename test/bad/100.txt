@@ -1,0 +1,4 @@
+.target sm_120
+ .section .text.some-section
+/*10*/ REDG.E.ADD.F32.RN.STRONG.GPU desc[UR8][R2.64+0x8], R48 ;
+/*11*/ REDG.E.ADD.F32.FTZ.RN.STRONG.GPU desc[UR8][R2.64+0x4], R47 ;
