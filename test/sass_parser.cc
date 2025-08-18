@@ -1052,22 +1052,39 @@ int ParseSASS::try_dotted(int idx, T &s, std::string_view &dotted, int &dotted_l
 #ifdef DEBUG
 dump_out(tmp); printf(" -> "); dump_outln(*di);
 #endif
+      // enum can contain > 1 dot like F32.FTZ.RN
+      // so lets try several times
       int i2 = 1 + last;
       for ( ; i2 < (int)s.size(); ++i2, ++len ) {
         auto c = s.at(i2);
-        if ( isspace(c) || c == '.' ) break;
+        if ( c == '.' ) {
+          std::string_view curr = { s.data() + idx, (size_t)(i2 - idx) };
+#ifdef DEBUG
+    printf("curr: "); dump_outln(curr);
+#endif
+          di = m_dotted->find(curr);
+          if ( di != m_dotted->end() ) { len = i2 - idx; break; }
+        }
+        if ( isspace(c) ) break;
       }
       // check in dotted
       dotted = { s.data() + idx, (size_t)len };
-// fputc('>', stdout); dump_outln(dotted);
+#ifdef DEBUG
+ printf("dotted> "); dump_outln(dotted);
+#endif
       di = m_dotted->find(dotted);
       if ( di != m_dotted->end() ) {
         dotted_last = i2;
-// dump_out(dotted); printf(" %d-> ", last); dump_outln(*di);
+#ifdef DEBUG
+ dump_out(dotted); printf(" %d-> ", last); dump_outln(*di);
+#endif
       }
       break;
     }
   }
+#ifdef DEBUG
+ printf("ret last %d\n", last);
+#endif
   return last;
 }
 
