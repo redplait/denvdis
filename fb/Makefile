@@ -1,7 +1,7 @@
 ELFIO=-I ../../../../../ELFIO/
 
 fb: fb.cc
-	gcc $(ELFIO) -Wall -std=c++20 -o $@ $^ -lstdc++
+	gcc $(ELFIO) -Wall -std=c++20 -o $@ $^ -lzstd -lstdc++
 
 test: fb
 	./fb ../../../src/cuda_latency_benchmark/cuda_task_queue.cpython-38-x86_64-linux-gnu.so

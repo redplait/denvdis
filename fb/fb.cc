@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include "elfio/elfio.hpp"
 #include <unordered_map>
+#include <zstd.h>
 
 static const char hexes[] = "0123456789ABCDEF";
 
@@ -95,6 +96,8 @@ typedef enum {
 #define FATBIN_FLAG_OPT_MASK  0x0000000000000f00LL /* optimization level */
 #define FATBIN_FLAG_COMPRESS  0x0000000000001000LL
 #define FATBIN_FLAG_COMPRESS2 0x0000000000002000LL
+#define FATBIN_FLAG_ZCOMPRESS 0x0000000000008000LL
+
 
 struct  __attribute__((__packed__)) fat_text_header
 {
@@ -127,8 +130,11 @@ class CFatBin {
    FBItems m_map;
    int _extract(const FBItems::iterator &, const char *, FILE *);
    int _replace(ptrdiff_t, const fat_text_header&, FILE *);
+   inline bool z_compressed(const fat_text_header &ft) const {
+     return ft.flags & FATBIN_FLAG_ZCOMPRESS;
+   }
    inline bool compressed(const fat_text_header &ft) const {
-     return ft.flags & FATBIN_FLAG_COMPRESS || ft.flags & FATBIN_FLAG_COMPRESS2;
+     return ft.flags & FATBIN_FLAG_COMPRESS || ft.flags & FATBIN_FLAG_COMPRESS2 || z_compressed(ft);
    }
    // from https://zhuanlan.zhihu.com/p/29424681490
    size_t decompress(const uint8_t *input, size_t input_size, uint8_t *output, size_t output_size);
@@ -420,7 +426,12 @@ int CFatBin::_extract(const FBItems::iterator &ii, const char *of, FILE *ofp)
       fprintf(stderr, "cannot alloc %lX bytes for decompressed buffer\n", ii->second.second.decompressed_size);
       return 0;
     }
-    int res = decompress((const uint8_t*)data, ii->second.second.compressed_size, out_buf, ii->second.second.decompressed_size);
+    int res = 0;
+    if ( z_compressed(ii->second.second) ) {
+      auto zres = ZSTD_decompress(out_buf, ii->second.second.decompressed_size, (const uint8_t*)data, ii->second.second.compressed_size);
+      res = zres == ii->second.second.decompressed_size;
+    } else
+      res = decompress((const uint8_t*)data, ii->second.second.compressed_size, out_buf, ii->second.second.decompressed_size);
     if ( !res ) {
       fprintf(stderr, "cannot decompress\n");
       free(out_buf);
