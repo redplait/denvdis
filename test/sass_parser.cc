@@ -989,7 +989,12 @@ std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
       if ( !usched ) break;
       // check if this enum exists
       std::string ename;
-      std::copy_if( s.begin() + i, s.end(), std::back_inserter(ename), [](char c) { return !isspace(c) && c != '}';  });
+      auto si = s.begin() + i;
+      for ( ; si != s.end(); ++si ) {
+        char c = *si;
+        if ( isspace(c) || c == '?' || c == '}' ) break;
+        ename.push_back(c);
+      }
       auto ei = usched->find(ename);
       if ( ei == usched->end() ) {
         printf("[!] unknown sched %s\n", ename.c_str());
@@ -997,7 +1002,24 @@ std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
       }
       // update kv
       m_kv[c_usched_name] = ei->second;
-      break; // bcs ?usched is always last
+      // there can be second ?batch
+      if ( si != s.end() && *si != '}' && batch ) {
+        for ( ++si; si != s.end(); ++si ) {
+          char c = *si;
+          if ( isspace(c) ) continue;
+          if ( c == '?' ) { ++si; break; }
+        }
+        ename.clear();
+        std::copy_if( si, s.end(), std::back_inserter(ename), [](char c) { return !isspace(c) && c != '}';  });
+        auto ei = batch->find(ename);
+        if ( ei == batch->end() ) {
+          printf("[!] unknown batch %s\n", ename.c_str());
+        } else {
+         // update kv
+         m_kv[c_batch_name] = ei->second;
+        }
+      }
+      break; // bcs ?usched (optional ?batch) is always last
     }
     // check &something=
     if ( 1 == state ) {
@@ -1418,6 +1440,7 @@ int ParseSASS::add(const std::string &s, int idx)
 
 int ParseSASS::add_internal(const std::string &s, int idx)
 {
+  m_kv.clear();
   reset_pred();
   // skip initial spaces
   for ( ; idx < (int)s.size(); idx++ ) if ( !isspace(s.at(idx)) ) break;
@@ -1530,6 +1553,8 @@ int ParseSASS::init_guts()
   else {
     Err("cannot find usched_info enum\n");
   }
+  ri = m_renums->find("BATCH_T");
+  if ( ri != m_renums->end() ) batch = ri->second;
   ri = m_renums->find("PSEUDO_OPCODE");
   if ( ri != m_renums->end() ) pseudo = ri->second;
   else {

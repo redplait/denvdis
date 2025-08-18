@@ -98,6 +98,26 @@ int MyParseSASS::print_fsummary(FILE *fp) const
     fprintf(fp, "[!] no forms\n");
     return 0;
   }
+  auto dump_kv_item = [&](const nv_instr *instr, auto &&ki) {
+    if ( instr->vas ) {
+      auto vas = find(instr->vas, ki.first);
+      if ( vas ) {
+        fprintf(fp, " %s", s_fmts[vas->kind]);
+        std::string res;
+        dump_value(*vas, ki.second, vas->kind, res);
+        fprintf(fp, ": %s\n", res.c_str());
+        return;
+      }
+    }
+    fprintf(fp, ": %ld\n", ki.second);
+  };
+  if ( opt_k && !m_kv.empty() ) {
+    auto ins = m_forms[0].instr;
+    for ( auto &ki: m_kv ) {
+      fputc(' ', fp); dump_out(ki.first, fp);
+      dump_kv_item(ins, ki);
+    }
+  }
   if ( 1 == fsize )
     fprintf(fp, "%ld form:\n", fsize);
   else
@@ -106,17 +126,7 @@ int MyParseSASS::print_fsummary(FILE *fp) const
     if ( opt_k ) {
      for ( auto &ki: f.l_kv ) {
        fprintf(fp, " %s", ki.first.c_str());
-       if ( f.instr->vas ) {
-         auto vas = find(f.instr->vas, ki.first);
-         if ( vas ) {
-           fprintf(fp, " %s", s_fmts[vas->kind]);
-           std::string res;
-           dump_value(*vas, ki.second, vas->kind, res);
-           fprintf(fp, ": %s\n", res.c_str());
-           continue;
-         }
-       }
-       fprintf(fp, ": %ld\n", ki.second);
+       dump_kv_item(f.instr, ki);
      }
     }
     fprintf(fp, " %d", f.instr->line);

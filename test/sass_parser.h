@@ -325,9 +325,11 @@ class ParseSASS: public NV_renderer
    static std::regex s_digits;
    static std::regex s_commas;
    static constexpr auto c_usched_name = "usched_info";
+   static constexpr auto c_batch_name = "batch_t";
    const NV_sorted *m_sorted = nullptr;
    const NV_Renums *m_renums = nullptr;
    const NV_Renum *usched = nullptr;
+   const NV_Renum *batch = nullptr;
    const NV_Renum *pseudo = nullptr;
    const NV_dotted *m_dotted = nullptr;
 };
