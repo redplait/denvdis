@@ -271,7 +271,7 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
       fprintf(stderr, "unknown magic %X\n", fb_hdr->magic);
       return 0;
     }
-    printf("version %d hdr_size %X fat_size %lX\n", fb_hdr->version, fb_hdr->headerSize, fb_hdr->fatSize);
+    printf("version %d hdr_size %X fat_size %llX\n", fb_hdr->version, fb_hdr->headerSize, fb_hdr->fatSize);
     if ( fb_hdr->version != 1 || fb_hdr->headerSize != sizeof(fatBinaryHeader) ) {
       fprintf(stderr, "don't know sich fatbin header\n");
       return 0;
@@ -283,12 +283,17 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
     }
     const char *next_fb = (const char *)(fb_hdr + 1) + fb_hdr->fatSize;
     const fat_text_header *fth = (const fat_text_header *)((const char *)fb_hdr + fb_hdr->headerSize);
-    while ( (const char *)(fth + 1) < next_fb )
+    while ( (const char *)fth + fth->header_size < next_fb )
     {
-      if ( fth->header_size != sizeof(fat_text_header) ) break;
+      if ( fth->header_size < sizeof(fat_text_header) ) {
+        if ( opt_v ) printf("header_size in %d is %X (should be %lX)\n", idx, fth->header_size, sizeof(fat_text_header));
+        if ( opt_h )
+          HexDump(stdout, (const unsigned char *)fth, fth->header_size);
+        break;
+      }
       if ( opt_v ) printf("off %p\n", sec->get_address() + (const char *)fth - data);
       if ( opt_h )
-        HexDump(stdout, (const unsigned char *)fth, sizeof(*fth));
+        HexDump(stdout, (const unsigned char *)fth, fth->header_size);
       // keep all fth data in single line for easy grepping
       printf("[%d] kind %X flag %lX header_size %X size %lX arch %X major %d minor %d",
         idx, fth->kind, fth->flags, fth->header_size,
@@ -304,7 +309,7 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
       putc('\n', stdout);
       m_map[idx] = { (const char *)fth - data, *fth };
       idx++;
-      fth = (const fat_text_header *)((const char *)(fth + 1) + fth->size);
+      fth = (const fat_text_header *)((const char *)fth + fth->header_size + fth->size);
     }
     fb_hdr = (const fatBinaryHeader *)next_fb;
     if ( opt_v )
