@@ -1057,6 +1057,11 @@ std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
   return res;
 }
 
+// try to find dotted.enum in s
+// s can be std::string or string_view so it templated
+// returns position of next '.' in s
+// if we found something - copy it into dotted and last position in dotted_last
+// else dotted_line will contain 0
 template <typename T>
 int ParseSASS::try_dotted(int idx, T &s, std::string_view &dotted, int &dotted_last)
 {
@@ -1079,21 +1084,24 @@ dump_out(tmp); printf(" -> "); dump_outln(*di);
 #endif
       // enum can contain > 1 dot like F32.FTZ.RN
       // so lets try several times
+      // this is eager version - it tries to find first matched dotted.enum
+      // if you need to find longest - just store previously found somewhere and brute-force till end of s
+      // in those case complexity will be O( n * n )
       int i2 = 1 + last;
-      for ( ; i2 < (int)s.size(); ++i2, ++len ) {
+      for ( ; i2 < (int)s.size(); ++i2 ) {
         auto c = s.at(i2);
         if ( c == '.' ) {
-          std::string_view curr = { s.data() + idx, (size_t)(i2 - idx) };
+          dotted = { s.data() + idx, (size_t)(i2 - idx) };
 #ifdef DEBUG
-    printf("curr: "); dump_outln(curr);
+    printf("curr: "); dump_outln(dotted);
 #endif
-          di = m_dotted->find(curr);
-          if ( di != m_dotted->end() ) { len = i2 - idx; break; }
+          di = m_dotted->find(dotted);
+          if ( di != m_dotted->end() ) { dotted_last = i2; return last; }
         }
         if ( isspace(c) ) break;
       }
-      // check in dotted
-      dotted = { s.data() + idx, (size_t)len };
+      // check yet more time in case if we reached space or end of string
+      dotted = { s.data() + idx, (size_t)(i2 - idx) };
 #ifdef DEBUG
  printf("dotted> "); dump_outln(dotted);
 #endif
@@ -1103,6 +1111,7 @@ dump_out(tmp); printf(" -> "); dump_outln(*di);
 #ifdef DEBUG
  dump_out(dotted); printf(" %d-> ", last); dump_outln(*di);
 #endif
+        return last;
       }
       break;
     }
