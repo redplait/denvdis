@@ -1004,6 +1004,7 @@ std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
       m_kv[c_usched_name] = ei->second;
       // there can be second ?batch
       if ( si != s.end() && *si != '}' && batch ) {
+        // skip spaces till '?'
         for ( ++si; si != s.end(); ++si ) {
           char c = *si;
           if ( isspace(c) ) continue;
@@ -1011,12 +1012,14 @@ std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
         }
         ename.clear();
         std::copy_if( si, s.end(), std::back_inserter(ename), [](char c) { return !isspace(c) && c != '}';  });
-        auto ei = batch->find(ename);
-        if ( ei == batch->end() ) {
-          printf("[!] unknown batch %s\n", ename.c_str());
-        } else {
-         // update kv
-         m_kv[c_batch_name] = ei->second;
+        if ( !ename.empty() ) {
+          auto ei = batch->find(ename);
+          if ( ei == batch->end() )
+            printf("[!] unknown batch %s\n", ename.c_str());
+          else {
+           // update kv
+           m_kv[c_batch_name] = ei->second;
+          }
         }
       }
       break; // bcs ?usched (optional ?batch) is always last
