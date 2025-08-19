@@ -828,9 +828,12 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
   auto cl = [](const render_base *rb) { return rb->type == R_C || rb->type == R_CX; };
   if ( tmp.starts_with("desc["sv) ) {
     auto dcl = [](const render_base *rb) { return rb->type == R_desc; };
-    int kres = apply_kind(m_forms, dcl);
-    if ( !kres ) return 0;
-    return parse_c_left<render_desc>(idx + 5, s, dcl);
+    int kres = check_kind(m_forms, dcl);
+    if ( kres ) return parse_c_left<render_desc>(idx + 5, s, dcl);
+    auto tma = [](const render_base *rb) { return rb->type == R_M1; };
+    kres = check_kind(m_forms, tma);
+    if ( kres ) return parse_c_left<render_M1>(idx + 5, s, tma);
+    return 0;
   }
   if ( tmp.starts_with("a["sv) ) {
     auto da = [](const render_base *rb) { return rb->type == R_mem; };
