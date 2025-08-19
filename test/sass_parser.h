@@ -118,6 +118,7 @@ class ParseSASS: public NV_renderer
      one_form& operator=(one_form&& other) = default;
      one_form(one_form&& other) = default;
    };
+   int is_consumed(const one_form &, const char *, std::list<form_list *>::const_iterator &) const;
    void dump(const one_form &) const;
    void dump(const form_list *fl, const nv_instr *instr) const;
    void dump_forms() const {

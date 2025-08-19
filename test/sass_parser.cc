@@ -333,6 +333,21 @@ int ParseSASS::reduce_value()
   } else return reduce(R_value);
 }
 
+int ParseSASS::is_consumed(const one_form &f, const char *lname, std::list<form_list *>::const_iterator &res) const
+{
+  if ( !lname ) return 0;
+  for ( auto fi = f.ops.begin(); fi != f.current; ++fi ) {
+    if ( (*fi)->rb->type == R_enum ) {
+      const render_named *rn = (const render_named *)(*fi)->rb;
+#ifdef DEBUG
+   printf("is_cons: %s\n", rn->name);
+#endif
+      if ( !strcmp(rn->name, lname) ) { res = fi; return 1; }
+    }
+  }
+  return 0;
+}
+
 // type - type of value in form_list
 // ltype - type of label
 // s - name of label, don't move it bcs it can be assigned to multiply of one_forms
@@ -345,8 +360,17 @@ int ParseSASS::reduce_label(int type, int ltype, std::string &s)
   };
   return apply_op2(m_forms, [&](form_list *fl, one_form &f, auto &ci) -> bool {
 #ifdef DEBUG
+ printf("reduce_label: %s\n", s.c_str());
  dump(fl, f.instr);
 #endif
+    std::list<form_list *>::const_iterator consumed;
+    if ( is_consumed(f, f.instr->target_index, consumed) ) {
+#ifdef DEBUG
+      printf("consumed\n");
+#endif
+      apply_label(f, consumed);
+      return 1;
+    }
     // we can have R_value - and then must check name of value - it must be the same as instr->target_index
     // or we can have R_Cxx - then I don't know how to confirm if this is what I want
     if ( type == R_value && fl->rb->type == R_value )
@@ -874,21 +898,22 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
      if ( !tmp.ends_with("|") ) {
        // surprise - there can be ops like |R13|.reuse
        // so try to find second |
-       int ip = idx + 1;
+       int ip = 1;
        for ( ; ip < (int)tmp.size(); ip++ ) if ( tmp.at(ip) == '|' ) break;
        if ( ip == (int)tmp.size() ) {
          Err("bad operand %d: %s\n", op_idx, s.c_str());
          return 0;
        }
-       // remained attributes start at s + ip + 1
-       std::string_view abs{ s.c_str() + idx + 1, size_t(ip - idx - 1)};
+       // attributes inside |block| start at s + idx + 1
+       std::string_view abs{ s.c_str() + idx + 1, size_t(ip - 1)};
 #ifdef DEBUG
- printf("piped: len %d ", ip - idx - 1); dump_outln(abs);
+ printf("piped: len %d ", ip - 1); dump_outln(abs);
 #endif
        int eres = apply_enum(abs);
        if ( !eres ) return eres;
-       if ( ip + 1 < (int)s.size() ) {
-         std::string tmp{ s.begin() + ip + 1, s.end() };
+       if ( idx + ip + 1 < (int)s.size() ) {
+         // remained attributes start at s + idx + ip + 1
+         std::string tmp{ s.begin() + idx + ip + 1, s.end() };
 #ifdef DEBUG
  printf("after | %s\n", tmp.c_str());
 #endif
@@ -1061,7 +1086,7 @@ std::string ParseSASS::process_tail(int idx, const std::string &s, NV_Forms &f)
 // s can be std::string or string_view so it templated
 // returns position of next '.' in s
 // if we found something - copy it into dotted and last position in dotted_last
-// else dotted_line will contain 0
+// else dotted_last will contain 0
 template <typename T>
 int ParseSASS::try_dotted(int idx, T &s, std::string_view &dotted, int &dotted_last)
 {
@@ -1086,7 +1111,7 @@ dump_out(tmp); printf(" -> "); dump_outln(*di);
       // so lets try several times
       // this is eager version - it tries to find first matched dotted.enum
       // if you need to find longest - just store previously found somewhere and brute-force till end of s
-      // in those case complexity will be O( n * n )
+      // in those case complexity will be O( n * n ) where n is count of '.' in s
       int i2 = 1 + last;
       for ( ; i2 < (int)s.size(); ++i2 ) {
         auto c = s.at(i2);
