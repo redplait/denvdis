@@ -4581,6 +4581,13 @@ sub add_rc
   $hr;
 }
 
+sub add_ure
+{
+  my($alias, $hr) = @_;
+  $hr->{'ISRC_E'} = [ 'TEX',[ 'URe' ] ];
+  $hr;
+}
+
 # try to load early stored props from opt_U
 sub hack_props
 {
@@ -4631,6 +4638,25 @@ sub hack_props
     if ( exists($hr->{$alias}) ) {
        my %tmp = %{ $hr->{$alias}->[0]->[1] };
        $i->[22] = add_rc($alias, \%tmp);
+       return 1;
+    }
+  }
+  # fmnmx3
+  if ( $alias =~ /^fmnmx3/ ) {
+     $alias =~ s/^fmnmx3/fmnmx/;
+     if ( exists($hr->{$alias}) ) {
+       my %tmp = %{ $hr->{$alias}->[0]->[1] };
+       $tmp{'ISRC_C'} = [ 'FLOAT',[ 'Rc' ] ];
+       $i->[22] = add_ure($alias, \%tmp);
+       return 1;
+     }
+  }
+  # tex_src_b_urc
+  if ( $alias =~ /^t.*_scr_b_urc/ ) {
+     $alias =~ s/_b_/_/;
+    if ( exists($hr->{$alias}) ) {
+       my %tmp = %{ $hr->{$alias}->[0]->[1] };
+       $i->[22] = add_ure($alias, \%tmp);
        return 1;
     }
   }
