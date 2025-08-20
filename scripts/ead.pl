@@ -4607,6 +4607,14 @@ sub hack_props
   } elsif ( $i->[0] =~ /mad_hi/ ) {
     $alias =~ s/_hi//;
   }
+  # f2fp conversions
+  if ( $i->[0] =~ /_to_4b_/ ) {
+    $alias =~ s/_to_4b_/_to_8b_/;
+  } elsif ( $i->[0] =~ /_to_mx8_/ ) {
+    $alias =~ s/_to_mx8_/_to_8b_/;
+  } elsif ( $i->[0] =~ /^f2fp_4b/ ) {
+    $alias =~ s/^f2fp_4b/f2fp_8b/;
+  }
   if ( exists $s_caliases{$i->[0]} ) {
     $alias = $s_caliases{$i->[0]};
   }
