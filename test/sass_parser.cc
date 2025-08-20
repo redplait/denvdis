@@ -1554,7 +1554,19 @@ int ParseSASS::add_internal(const std::string &s, int idx)
   }
   // we have set of opcodes in head
   if ( !skip_op_parsing ) {
-    std::cregex_token_iterator begin(head.c_str() + idx, head.c_str() + head.size(), s_commas, -1), end;
+    // some parts in tail can contain several ',' like depbar {n1,n2} or list of labels inside (*l1,l2*)
+    // so first lets try to find them and put start of tail into head_end
+    size_t head_end = idx;
+    auto head_size = head.size();
+    int state = 0;
+    for ( ; head_end < head_size; ++head_end ) {
+      auto c = head.at(head_end);
+      if ( c == '{' ) break;
+      if ( c == '(' ) { state = 1; continue; }
+      if ( state && c == '*' ) { head_end--; break; }
+      state = 0;
+    }
+    std::cregex_token_iterator begin(head.c_str() + idx, head.c_str() + head_end, s_commas, -1), end;
     int op_idx = 0;
     for ( auto op = begin; op != end; ++op, ++op_idx ) {
       auto s = *op;
@@ -1567,6 +1579,16 @@ int ParseSASS::add_internal(const std::string &s, int idx)
       if ( m_forms.empty() ) {
         printf("[!] empty after %d op: %s\n", op_idx, head.c_str() + idx);
         break;
+      }
+    }
+    if ( head_end != head_size ) {
+      op_idx++;
+      if ( !state && !next(m_forms) ) return 0;
+      std::string_view tmp{ head.data() + head_end, head.size() - head_end };
+      if ( opt_d ) { printf("last item: "); dump_outln(tmp); }
+      classify_op(op_idx, tmp);
+      if ( m_forms.empty() ) {
+        printf("[!] empty head after %d op: %s\n", op_idx, head.c_str() + head_end);
       }
     }
   }
