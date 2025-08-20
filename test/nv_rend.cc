@@ -1753,7 +1753,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
 {
   int idx = 0;
   int missed = 0;
-  int was_bs = 0; // seems that scheduling args always starts with BITSET req_xx
+  int in_tail = 0; // seems that scheduling args often starts with BITSET req_xx
   int prev = -1;  // workaround to fix op, bcs testcc is missed
   const NV_rel *rel_info = nullptr;
   std::string_view rel_name;
@@ -1763,6 +1763,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
   for ( auto ri: *rl ) {
     std::string tmp;
     int is_abs = 0, empty = 0;
+    if ( !in_tail && is_tail(i, ri) ) in_tail = 1;
     switch(ri->type)
     {
       case R_opcode:
@@ -1782,14 +1783,13 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
         }
         auto vi = find(i->vas, rn->name);
         if ( !vi ) { missed++; empty = 1; break; }
-        if ( is_tail(vi, rn) ) was_bs = 1;
-        if ( was_bs && opt_c ) {
+        if ( in_tail && opt_c ) {
           // unfortunatelly nvdisasm can dump only 4 fields at tail
           // req_bit_set: &req={bit mask}
           // src_rel_sb: &rd=0xnum
           // dst_wr_sb:  &wr=0xnum
-          // usched_info: &enum_name
-          // two last - batch_t & pm_pred - should be ignored
+          // usched_info: ?enum_name
+          // two last - batch_t & pm_pred - should be dumped with '?' prefix only they are non-defailted values
           // so lets check what we have
           if ( !strcmp(rn->name, "req_bit_set") ) {
             if ( kvi->second != vi->dval ) {
@@ -1817,10 +1817,6 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
              buf[buf_size] = 0;
              tmp += buf;
             }
-          } else if ( !strcmp(rn->name, "usched_info") ) {
-            dump_value(i, kv, rn->name, tmp, *vi, kvi->second);
-            tmp += ' ';
-            res += " ?";
           }
         } else {
           long branch_off = 0;
@@ -1878,7 +1874,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
           }
           if ( rn->pfx ) { if ( prev != R_opcode ) res += rn->pfx; }
           res += ' ';
-          if ( !rn->pfx && was_bs ) res += '&';
+          if ( !rn->pfx && in_tail ) res += '&';
         }
         res += tmp;
        } break;
@@ -1891,7 +1887,6 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
            idx++;
            continue;
          }
-         if ( was_bs && opt_c ) continue;
          auto kvi = kv.find(rn->name);
          if ( kvi == kv.end() ) {
            kvi = kv.find(ea->ename);
@@ -1907,6 +1902,18 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
              idx++;
              continue;
            }
+         }
+         if ( in_tail && opt_c ) {
+           if ( ea->has_def_value && ea->def_value == (int)kvi->second ) continue;
+           auto eid = ea->em->find(kvi->second);
+           if ( eid != ea->em->end() ) {
+             res += " ?";
+             res += eid->second;
+           } else {
+             missed_enums++;
+             break;
+           }
+           continue;
          }
          // now we have enum attr in ea and value in kvi
          // we have 2 cases - if this attr has ignore and !print and value == def_value - we should skip it
