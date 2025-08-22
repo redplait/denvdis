@@ -1180,6 +1180,13 @@ int ParseSASS::apply_enum(const std::string_view &s)
    }
   }
   if ( opt_d ) dump_forms();
+  auto keep_sc = [&](const form_list *fl, one_form &of) -> bool {
+    if ( fl->rb->type != R_value ) return false;
+    const render_named *rn = (const render_named *)fl->rb;
+    return of.instr->name[0] == 'B' &&
+      of.instr->name[1] == 'A' && of.instr->name[2] == 'R' &&
+     !strcmp(rn->name, "Sc");
+  };
   int res = apply_op(m_forms, [&](const form_list *fl, one_form &of) -> bool {
     if ( opt_d ) {
       std::string res;
@@ -1219,7 +1226,7 @@ int ParseSASS::apply_enum(const std::string_view &s)
       of.l_kv[tname] = 1;
     }
     return 1;
-  });
+  }, keep_sc);
   if ( opt_d ) printf("apply_enum res: %d\n", res);
   if ( !res ) return res;
   // reset modifiers

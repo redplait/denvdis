@@ -237,6 +237,28 @@ class ParseSASS: public NV_renderer
       });
       return !f.empty();
      }
+   // like previous but second closure called if some operand should be skipped
+   template <typename F, typename F2>
+   int apply_op(NV_Forms &f, F &&pred, F2 &&skip) {
+     std::erase_if(f, [&](one_form &f) {
+       for ( auto ci = f.current; ci != f.ops.end(); ci++ )
+       {
+         if ( pred((*ci), f) ) { f.current = ci; return 0; }
+         if ( skip((*ci), f) ) continue;
+         if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
+           // check if those predicate has default
+           const render_named *rn = (const render_named *)(*ci)->rb;
+           auto ea = find_ea(f.instr, rn->name);
+           if ( !ea ) break;
+           if ( !ea->has_def_value ) break;
+           continue;
+         }
+         return 1;
+       }
+       return 1;
+      });
+      return !f.empty();
+     }
      // like apply_op but 3rd arg is form_list iterator
      template <typename F>
      int apply_op2(NV_Forms &f, F &&pred) {
