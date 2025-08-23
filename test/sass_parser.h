@@ -156,14 +156,16 @@ class ParseSASS: public NV_renderer
          else
            pres = pred((*ci)->rb);
          if ( pres ) { res++; break; }
-         if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
-           // check if those predicate has default
-           const render_named *rn = (const render_named *)(*ci)->rb;
-           auto ea = find_ea(f.instr, rn->name);
-           if ( !ea ) break;
-           if ( !ea->has_def_value ) break;
-           continue;
+#define NV_PE_RPT \
+         if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) { \
+           /* check if those predicate/enum has default */                    \
+           const render_named *rn = (const render_named *)(*ci)->rb;          \
+           auto ea = find_ea(f.instr, rn->name);                              \
+           if ( !ea ) break;                                                  \
+           if ( !ea->has_def_value ) break;                                   \
+           continue;                                                          \
          }
+         NV_PE_RPT
          break;
        }
      }
@@ -177,14 +179,7 @@ class ParseSASS: public NV_renderer
        for ( auto ci = f.current; ci != f.ops.end(); ++ci )
        {
          if ( pred((*ci), f.instr) ) { res++; break; }
-         if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
-           // check if those predicate has default
-           const render_named *rn = (const render_named *)(*ci)->rb;
-           auto ea = find_ea(f.instr, rn->name);
-           if ( !ea ) break;
-           if ( !ea->has_def_value ) break;
-           continue;
-         }
+         NV_PE_RPT
          break;
        }
      }
@@ -202,14 +197,7 @@ class ParseSASS: public NV_renderer
          else
            pres = pred((*ci)->rb);
          if ( pres ) { f.current = ci; return 0; }
-         if ( (*ci)->rb->type == R_predicate ) {
-           // check if those predicate has default
-           const render_named *rn = (const render_named *)(*ci)->rb;
-           auto ea = find_ea(f.instr, rn->name);
-           if ( !ea ) break;
-           if ( !ea->has_def_value ) break;
-           continue;
-         }
+         NV_PE_RPT
          return 1;
        }
        return 1;
@@ -223,14 +211,7 @@ class ParseSASS: public NV_renderer
        for ( auto ci = f.current; ci != f.ops.end(); ci++ )
        {
          if ( pred((*ci), f) ) { f.current = ci; return 0; }
-         if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
-           // check if those predicate has default
-           const render_named *rn = (const render_named *)(*ci)->rb;
-           auto ea = find_ea(f.instr, rn->name);
-           if ( !ea ) break;
-           if ( !ea->has_def_value ) break;
-           continue;
-         }
+         NV_PE_RPT
          return 1;
        }
        return 1;
@@ -245,14 +226,7 @@ class ParseSASS: public NV_renderer
        {
          if ( pred((*ci), f) ) { f.current = ci; return 0; }
          if ( skip((*ci), f) ) continue;
-         if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
-           // check if those predicate has default
-           const render_named *rn = (const render_named *)(*ci)->rb;
-           auto ea = find_ea(f.instr, rn->name);
-           if ( !ea ) break;
-           if ( !ea->has_def_value ) break;
-           continue;
-         }
+         NV_PE_RPT
          return 1;
        }
        return 1;
@@ -266,20 +240,14 @@ class ParseSASS: public NV_renderer
        for ( auto ci = f.current; ci != f.ops.end(); ci++ )
        {
          if ( pred((*ci), f, ci) ) { f.current = ci; return 0; }
-         if ( (*ci)->rb->type == R_predicate || (*ci)->rb->type == R_enum ) {
-           // check if those predicate has default
-           const render_named *rn = (const render_named *)(*ci)->rb;
-           auto ea = find_ea(f.instr, rn->name);
-           if ( !ea ) break;
-           if ( !ea->has_def_value ) break;
-           continue;
-         }
+         NV_PE_RPT
          return 1;
        }
        return 1;
      });
      return !f.empty();
    }
+#undef NV_PE_RPT
 
    int _extract(NV_extracted &, const one_form *of);
    int _extract_full(NV_extracted &, const one_form *of);
