@@ -914,11 +914,12 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
 #endif
        int eres = apply_enum(abs);
        if ( !eres ) return eres;
-       if ( idx + ip + 1 < (int)s.size() ) {
+       auto st = idx + ip + 1;
+       if ( st < (int)s.size() ) {
          // remained attributes start at s + idx + ip + 1
-         std::string tmp{ s.begin() + idx + ip + 1, s.end() };
+         std::string_view tmp{ s.begin() + st, s.begin() + s.size() };
 #ifdef DEBUG
- printf("after | %s\n", tmp.c_str());
+ printf("after | "); dump_outln(tmp);
 #endif
          eres = enum_tail(0, tmp);
        }

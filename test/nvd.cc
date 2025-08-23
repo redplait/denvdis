@@ -638,15 +638,12 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
         } else if ( attr == 0x34 ) {
           // collect indirect branches
           auto ib = get_branch(sidx);
-          for ( const char *bcurr = data + 4; data + 4 + a_len - bcurr >= 0x10; bcurr += 0x10 ) {
-            // offset 0 - address of instruction
-            // offset c - address of label
-            uint32_t addr = *(uint32_t *)(bcurr),
-              lab = *(uint32_t *)(bcurr + 0xc);
- // fprintf(m_out, "addr %lX label %X\n", addr, lab);
-            ib->labels[lab] = 0;
-            ib->branches[addr] = lab;
-          }
+          parse_branch_targets(data + 4, a_len, [&](const one_indirect_branch &ibt) {
+            for ( auto l: ibt.labels ) ib->labels[l] = 0;
+            // store in branches first if presents
+            if ( ibt.labels.empty() ) ib->branches[ibt.addr] = 0;
+            else ib->branches[ibt.addr] = ibt.labels.front();
+          });
         }
         data += 4 + a_len;
         break;

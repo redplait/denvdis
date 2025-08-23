@@ -18,6 +18,11 @@ struct asymbol
                 other = 0;
 };
 
+struct one_indirect_branch {
+ uint32_t addr;
+ std::list<uint32_t> labels;
+};
+
 template <typename T>
 class CElf: public T {
  public:
@@ -64,6 +69,31 @@ class CElf: public T {
       if ( ri == l->end() )
         (*l)[addr] = ltype;
     }
+   }
+   // read EIATTR_INDIRECT_BRANCH_TARGETS and run callback C for each record
+   template <typename C>
+   int parse_branch_targets(const char *start, uint32_t len, C &&cb) {
+     int res = 0;
+     auto end = start + len;
+     for ( auto curr = start; curr < end; ) {
+       one_indirect_branch ib;
+       // record like
+       // 0 - 32bit address
+       // 4 & 6 - unknown 16bit words
+       // 8 - 32bit count
+       // 0xc - ... - list of 32bit labels, count items
+       // so minimal size should be 0xc
+       if ( end - start < 0xc ) return 0;
+       ib.addr = *(uint32_t *)(curr);
+       uint32_t cnt = *(uint32_t *)(curr + 0x8);
+       curr += 0xc;
+       // read labels
+       for ( uint32_t i = 0; i < cnt && curr < end; i++, curr += 4 ) ib.labels.push_back( *(uint32_t *)(curr) );
+       // call cb
+       cb(ib);
+       res++;
+     }
+     return res;
    }
    template <typename F>
    int _read_symbols(int opt, F &&f) {
