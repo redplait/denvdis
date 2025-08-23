@@ -639,7 +639,12 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
           // collect indirect branches
           auto ib = get_branch(sidx);
           parse_branch_targets(data + 4, a_len, [&](const one_indirect_branch &ibt) {
-            for ( auto l: ibt.labels ) ib->labels[l] = 0;
+            fprintf(m_out, " addr %X:", ibt.addr);
+            for ( auto l: ibt.labels ) {
+              fprintf(m_out, " %X", l);
+              ib->labels[l] = 0;
+            }
+            fputc('\n', m_out);
             // store in branches first if presents
             if ( ibt.labels.empty() ) ib->branches[ibt.addr] = 0;
             else ib->branches[ibt.addr] = ibt.labels.front();
