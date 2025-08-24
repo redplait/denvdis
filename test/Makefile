@@ -8,26 +8,34 @@ SM_LIBS=-lstdc++ -lpthread
 # ead.pl options
 PERL_OPTS=-d:Confess
 EAD=../scripts/ead.pl
-EAD_OPTS=-BFEmgrizp
+EAD_OPTS=-BFEmgarizp
 
-all: ina nvd pa ced
+all: ina nvd pa ced libced.a
+
+AR_OBJS = ced_base.o nv_rend.o sass_parser.o
+
+libced.a: $(AR_OBJS)
+	ar rcs $@ $(AR_OBJS)
+
+ced_base.o: ced_base.cc
+	gcc -Wall -fpic -std=c++20 -gdwarf-4 $(ELFIO) $(IFLAGS) $(FP16) -c $^
 
 nv_rend.o: nv_rend.cc
-	gcc -Wall -std=c++20 -gdwarf-4 $(IFLAGS) $(FP16) -c $^
+	gcc -Wall -fpic -std=c++20 -gdwarf-4 $(IFLAGS) $(FP16) -c $^
 
 sass_parser.o: sass_parser.cc
-	gcc -Wall -std=c++20 -gdwarf-4 $(IFLAGS) $(FP16) -c $^
+	gcc -Wall -fpic -std=c++20 -gdwarf-4 $(IFLAGS) $(FP16) -c $^
 
-ina: nv_rend.o ina.cc
+ina: ina.cc libced.a
 	gcc -Wall -std=c++20 -gdwarf-4 $(IFLAGS) $(FP16) -o $@ $^ -lreadline -lstdc++ -ldl
 
-nvd: nv_rend.o nvd.cc
+nvd: nvd.cc libced.a
 	gcc -Wall -std=c++20 -g $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
 
-pa: nv_rend.o pa.cc sass_parser.o
+pa: pa.cc libced.a
 	gcc -Wall -std=c++20 -O -msse4 -mavx2 -gdwarf-4 $(IFLAGS) $(FP16) -o $@ $^ -lstdc++ -ldl
 
-ced: nv_rend.o ced.cc sass_parser.o
+ced: ced.cc libced.a
 	gcc -Wall -std=c++20 -gdwarf-4 $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
 
 sm120.so: sm120.cc
@@ -77,6 +85,12 @@ sm4.so: sm4.cc
 
 sm3.so: sm3.cc
 	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+
+sm2.so: sm2.cc
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+
+sm2.cc: $(EAD)
+	perl $(PERL_OPTS) $(EAD) -BFEmrizp -C sm2 ../data/sm2_1.txt
 
 sm3.cc: $(EAD)
 	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm3 ../data/sm3_1.txt
