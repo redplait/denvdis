@@ -170,13 +170,24 @@ class CEd: public CElf<ParseSASS> {
    int parse_if(int idx, std::string &);
    int parse_tail(int idx, std::string &);
    int verify_off(unsigned long);
+   int _verify_off(unsigned long);
    int process_p(std::string &p, int idx, std::string &tail);
    int parse_num(NV_Format, std::string_view &);
+   // patcher
+   virtual void patch_error(const char *what) {
+     Err("cannot patch %s, line %d\n", what, m_ln);
+   };
+   virtual void patch_error(const std::string_view &what) {
+     int w_len = int(what.length());
+     Err("cannot patch %.*s, line %d\n", w_len, what.data(), m_ln);
+   }
+   virtual void patch_tab_error(const char *what) {
+     Err("cannot patch tab value %s, line %d\n", what, m_ln);
+   }
    int patch(const NV_field *nf, unsigned long v, const std::string_view &what) {
      if ( !m_dis->put(nf->mask, nf->mask_size, v) )
      {
-       int w_len = int(what.length());
-       Err("cannot patch %.*s, line %d\n", w_len, what.data(), m_ln);
+       patch_error(what);
        return 0;
      }
      block_dirty = true;
@@ -185,7 +196,7 @@ class CEd: public CElf<ParseSASS> {
    int patch(const NV_field *nf, unsigned long v, const char *what) {
      if ( !m_dis->put(nf->mask, nf->mask_size, v) )
      {
-       Err("cannot patch %s, line %d\n", what, m_ln);
+       patch_error(what);
        return 0;
      }
      block_dirty = true;
@@ -194,7 +205,7 @@ class CEd: public CElf<ParseSASS> {
    int patch(const NV_tab_fields *tf, unsigned long v, const char *what) {
      if ( !m_dis->put(tf->mask, tf->mask_size, v) )
      {
-       Err("cannot patch tab value %s, line %d\n", what, m_ln);
+       patch_tab_error(what);
        return 0;
      }
      m_inc_tabs.erase(tf);
@@ -238,7 +249,10 @@ class CEd: public CElf<ParseSASS> {
    void dump_ins(unsigned long off) const;
    void dump_render() const;
    // named symbols
-   std::unordered_map<std::string_view, const asymbol *> m_named;
+   typedef std::unordered_map<std::string_view, const asymbol *> Ced_named;
+   Ced_named m_named;
+   int setup_f(Ced_named::const_iterator &, const char *fname);
+   int setup_s(int s_idx);
    // allowed sections with code, key is .text section index and value is index of section with attributes
    std::unordered_map<int, int> m_code_sects;
    // key - section name, value - index
@@ -462,15 +476,20 @@ int CEd::parse_f(int idx, std::string &s)
     Err("no function name: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   }
-  auto fiter = m_named.find({ s.c_str() + idx, s.size() - idx});
+  Ced_named::const_iterator fiter = m_named.find({ s.c_str() + idx, s.size() - idx});
   if ( fiter == m_named.end() ) {
     Err("unknown fn: %s, line %d\n", s.c_str() + idx, m_ln);
     return 0;
   }
+  return setup_f(fiter, s.c_str());
+}
+
+int CEd::setup_f(Ced_named::const_iterator &fiter, const char *fname)
+{
   auto s_idx = fiter->second->section;
   auto siter = m_code_sects.find(s_idx);
   if ( siter == m_code_sects.end() ) {
-    Err("section %d don't have code, %s: line %d\n", s_idx, s.c_str(), m_ln);
+    Err("section %d don't have code, %s: line %d\n", s_idx, fname, m_ln);
     return 0;
   }
   setup_labels(s_idx);
@@ -528,6 +547,11 @@ int CEd::parse_s(int idx, std::string &s)
     s_idx = siter->second;
   }
   // index of found section in s_idx
+  return setup_s(s_idx);
+}
+
+int CEd::setup_s(int s_idx)
+{
   setup_labels(s_idx);
   section *sec = m_reader->sections[s_idx];
   m_idx = s_idx;
@@ -1006,7 +1030,7 @@ unsigned long CEd::get_def_value(const nv_instr *ins, const std::string_view &s)
   return 0;
 }
 
-int CEd::verify_off(unsigned long off)
+int CEd::_verify_off(unsigned long off)
 {
   m_inc_tabs.clear();
   // check that offset is valid
@@ -1052,7 +1076,6 @@ int CEd::verify_off(unsigned long off)
   m_buf_off = block_off;
   if ( opt_h ) HexDump(m_out, buf, block_size);
   if ( !m_dis->init(buf, block_size, off, block_idx) ) {
-    reset_filter();
     Err("dis init failed\n");
     return 0;
   }
@@ -1062,7 +1085,6 @@ int CEd::verify_off(unsigned long off)
   if ( m_width > 64 ) what = 2;
   int get_res = m_dis->get(res, what);
   if ( get_res < 0 || res.empty() ) {
-    reset_filter();
     Err("cannot disasm at offset %lX\n", off);
     return 0;
   }
@@ -1079,9 +1101,18 @@ int CEd::verify_off(unsigned long off)
   curr_dis = std::move(res[res_idx]);
   m_rend = m_dis->get_rend(curr_dis.first->n);
   if ( !m_rend ) {
-    reset_filter();
     Err("cannot get render at %lX, n %d\n", off, curr_dis.first->n);
     return 0;
+  }
+  return 1;
+}
+
+int CEd::verify_off(unsigned long off)
+{
+  int res = _verify_off(off);
+  if ( !res ) {
+    reset_filter();
+    return res;
   }
   check_filter();
   // dump if need
