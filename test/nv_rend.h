@@ -35,6 +35,7 @@ enum NVLType {
   Ld_cachemode, // EIATTR_LD_CACHEMOD_INSTR_OFFSETS
   MBarier,  // EIATTR_MBARRIER_INSTR_OFFSETS
   War_membar,  // EIATTR_SW_WAR_MEMBAR_SYS_INSTR_OFFSETS
+  Ind_BT,   // reffered from EIATTR_INDIRECT_BRANCH_TARGETS
 };
 
 typedef std::unordered_map<uint32_t, int> NV_labels;

@@ -134,7 +134,11 @@ class CEd: public CElf<ParseSASS> {
      if ( m_labels.empty() ) return 0;
      auto li = m_labels.find(off);
      if ( li == m_labels.end() ) return 0;
-     fprintf(m_out, "Warning: offset %lX has label from %s\n", off, s_ltypes[li->second]);
+     fprintf(m_out, "Warning: offset %lX ", off);
+     if ( li->second )
+       fprintf(m_out, "has label from %s\n", s_ltypes[li->second]);
+     else
+       fprintf(m_out, "is branch\n");
      return 1;
    }
    int check_rel(unsigned long off) {
@@ -312,6 +316,14 @@ int CEd::setup_labels(int idx)
         // read offsets
         if ( ltype ) {
           fill_eaddrs(&m_labels, ltype, data, a_len);
+        } else if ( attr == 0x34 ) { // EIATTR_INDIRECT_BRANCH_TARGETS
+          parse_branch_targets(data + 4, a_len, [&](const one_indirect_branch &ibt) {
+            for ( auto l: ibt.labels ) {
+              m_labels[l] = NVLType::Ind_BT;
+            }
+            // store addr with type 0
+            m_labels[ibt.addr] = 0;
+          });
         }
         data += 4 + a_len;
         break;
