@@ -4552,6 +4552,8 @@ sub store_props
 # remapping classes from sm1xx to sm90
 # keep it in sorted order
 my %s_caliases = (
+ 'atoms_cast_destRd__RaNonRZ' => 'atoms_cas__RaNonRZ_CAST',
+ 'atoms_cast_destRd__RaRZ' => 'atoms_cas__RaRZ_CAST',
  'atoms_cas__RaRZ' => 'atoms_cas__RaRZ_CAS',
  'atoms_cas__RaNonRZ' => 'atoms_cas__RaNonRZ_CAS',
  'fadd2_imm__RRI' => 'fadd__RRI_RI',
@@ -4665,6 +4667,16 @@ sub hack_props
     if ( exists($hr->{$alias}) ) {
        my %tmp = %{ $hr->{$alias}->[0]->[1] };
        $i->[22] = add_ure($alias, \%tmp);
+       return 1;
+    }
+  }
+  # ufrnd -> frnd
+  if ( $alias =~ /^ufrnd_/ ) {
+     $alias =~ s/^u//;
+    if ( exists($hr->{$alias}) ) {
+       my %tmp = %{ $hr->{$alias}->[0]->[1] };
+       $tmp{'IDEST'}->[1]->[0] = 'URd';
+       $i->[22] = \%tmp;
        return 1;
     }
   }
