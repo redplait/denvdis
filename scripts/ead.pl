@@ -4680,6 +4680,14 @@ sub hack_props
        return 1;
     }
   }
+  # utmapf one
+  if ( $alias =~ /^utmapf_/ || $alias =~ /^utmastg_/ ) {
+     $alias =~ s/one_//;
+    if ( exists($hr->{$alias}) ) {
+      $i->[22] = $hr->{$alias}->[0]->[1];
+       return 1;
+    }
+  }
   # this horror should be loaded from text file
   if ( 'uimnmx_64__UUU_URURUR' eq $i->[0] or 'mnmx__UUU_URURUR' eq $i->[0] ) {
     my %u = (
