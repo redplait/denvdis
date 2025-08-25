@@ -6,7 +6,7 @@ use LWP::Simple;
 # download couple of files
 my $e_inc = 'elf.inc';
 if ( !-f $e_inc ) {
-  my $url = 'https://github.com/redplait/dwarfdump/blob/main/perl/elf.inc';
+  my $url = 'https://raw.githubusercontent.com/redplait/dwarfdump/refs/heads/main/perl/elf.inc';
   my $status = getstore($url, $e_inc);
   die("cannot loaf $e_inc") if ( !is_success($status) );
 }

@@ -11,7 +11,7 @@ use warnings;
 use Elf::Reader;
 use Test::More tests => 3;
 BEGIN { use_ok('Cubin::Ced') };
-my $e = Elf::Reader->new("../../../CuAssembler/TestData/CuTest/cudatest.6.sm_61.cubin");
+my $e = Elf::Reader->new("cudatest.6.sm_61.cubin");
 ok( defined($e), 'elf load');
 
 my $cub = Cubin::Ced->new($e);
