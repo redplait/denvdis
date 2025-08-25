@@ -1,6 +1,21 @@
 use 5.030000;
 use ExtUtils::MakeMaker;
 use Config;
+use LWP::Simple;
+
+# download couple of files
+my $e_inc = 'elf.inc';
+if ( !-f $e_inc ) {
+  my $url = 'https://github.com/redplait/dwarfdump/blob/main/perl/elf.inc';
+  my $status = getstore($url, $e_inc);
+  die("cannot loaf $e_inc") if ( !is_success($status) );
+}
+my $t_cubin = 'cudatest.6.sm_61.cubin';
+if ( !-f $t_cubin ) {
+  my $url = 'https://github.com/cloudcores/CuAssembler/raw/refs/heads/master/TestData/CuTest/cudatest.6.sm_61.cubin';
+  my $status = getstore($url, $t_cubin);
+  die("cannot loaf $t_cubin") if ( !is_success($status) );
+}
 
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
