@@ -1,1 +1,1 @@
-/home/redp/disc/dwarfdump/perl/elf.inc
+https://github.com/redplait/dwarfdump/blob/main/perl/elf.inc
