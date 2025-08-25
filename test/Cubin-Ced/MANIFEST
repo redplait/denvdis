@@ -1,0 +1,8 @@
+Ced.xs
+Changes
+Makefile.PL
+MANIFEST
+ppport.h
+README
+t/Cubin-Ced.t
+lib/Cubin/Ced.pm

@@ -1,0 +1,6 @@
+Revision history for Perl extension Cubin::Ced.
+
+0.01  Mon Aug 25 16:09:13 2025
+	- original version; created by h2xs 1.23 with options
+		-cfn Cubin::Ced
+
