@@ -51,6 +51,7 @@ class Ced_perl: public CEd_base {
    }
   // interface to perl
   int sef_func(const char *fname) {
+    reset_ins();
     Ced_named::const_iterator fiter = m_named.find({ fname, strlen(fname) });
     if ( fiter == m_named.end() ) {
       Err("unknown fn: %s\n", fname);
@@ -58,7 +59,30 @@ class Ced_perl: public CEd_base {
     }
     return setup_f(fiter, fname);
   }
+  int set_section(int idx) {
+    reset_ins();
+    auto siter = m_code_sects.find(idx);
+    if ( siter == m_code_sects.end() ) {
+      Err("section %d don't have code\n", idx);
+      return 0;
+    }
+    return setup_s(idx);
+  }
+  int set_section(const char *sname, STRLEN len) {
+    reset_ins();
+    // try to find section by sname
+    auto siter = m_named_cs.find({ sname, len });
+    if ( siter == m_named_cs.end() ) {
+      Err("section %.*s don't have code\n", len, sname);
+      return 0;
+    }
+    return setup_s(siter->second);
+  }
  protected:
+  void reset_ins() {
+    curr_dis.first = nullptr;
+    curr_dis.second.clear();
+  }
   IElf *m_e;
 };
 
@@ -137,6 +161,22 @@ set_f(SV *obj, const char *fname)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->sef_func(fname) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
+SV *
+set_s(SV *obj, SV *sv)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   int res = 0;
+   if ( SvPOK(sv) ) {
+     STRLEN len;
+     auto p =  SvPVbyte(sv, len);
+     res = e->set_section(p, len);
+   } else if ( SvIOK(sv) ) res = e->set_section(SvIV(sv));
+   else my_warn("set_s: unknown arg type");
+   RETVAL = res ? &PL_sv_yes : &PL_sv_no;
  OUTPUT:
   RETVAL
 
