@@ -21,14 +21,22 @@ int opt_d = 0,
   opt_k = 0,
   opt_v = 0;
 
+class Perl_ELog: public NV_ELog {
+  virtual void verr(const char *format, va_list *ap) {
+    vwarn(format, ap);
+  }
+};
+
 class Ced_perl: public CEd_base {
  public:
   Ced_perl(IElf *e) {
+    m_elog = new Perl_ELog;
     m_e = e;
     e->add_ref();
   }
   virtual ~Ced_perl() {
     if ( m_e ) m_e->release();
+    if ( m_elog ) delete m_elog;
   }
   // patch virtual methods
    virtual void patch_error(const char *what) override {

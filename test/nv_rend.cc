@@ -443,7 +443,7 @@ void NV_renderer::Err(const char *fmt, ...) const
  va_list args;
  va_start(args, fmt);
  if ( m_elog )
-   m_elog->verr(fmt, args);
+   m_elog->verr(fmt, &args);
  else
   vfprintf(stderr, fmt, args);
 }
