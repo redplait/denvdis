@@ -49,7 +49,15 @@ class Ced_perl: public CEd_base {
    virtual void patch_tab_error(const char *what) override {
      my_warn("cannot patch tab value %s\n", what);
    }
-
+  // interface to perl
+  int sef_func(const char *fname) {
+    Ced_named::const_iterator fiter = m_named.find({ fname, strlen(fname) });
+    if ( fiter == m_named.end() ) {
+      Err("unknown fn: %s\n", fname);
+      return 0;
+    }
+    return setup_f(fiter, fname);
+  }
  protected:
   IElf *m_e;
 };
@@ -122,6 +130,15 @@ new(obj_or_pkg, SV *elsv)
     }
   }
   XSRETURN(1);
+
+SV *
+set_f(SV *obj, const char *fname)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->sef_func(fname) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
 
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);
