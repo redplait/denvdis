@@ -50,6 +50,9 @@ class Ced_perl: public CEd_base {
      my_warn("cannot patch tab value %s\n", what);
    }
   // interface to perl
+  int width() const {
+    return m_width;
+  }
   int sef_func(const char *fname) {
     reset_ins();
     Ced_named::const_iterator fiter = m_named.find({ fname, strlen(fname) });
@@ -77,6 +80,10 @@ class Ced_perl: public CEd_base {
       return 0;
     }
     return setup_s(siter->second);
+  }
+  int set_off(UV off) {
+    if ( m_state < WantOff ) return 0;
+    return _verify_off(off);
   }
  protected:
   void reset_ins() {
@@ -114,6 +121,15 @@ static MGVTBL ca_magic_vt = {
   SvREADONLY_on((SV*)fake); \
   ST(0) = objref; \
   XSRETURN(1);
+
+#define EXPORT_ENUM(e,x) newCONSTSUB(stash, #x, new_enum_dualvar(aTHX_ e::x, newSVpvs_share(#x)));
+static SV * new_enum_dualvar(pTHX_ IV ival, SV *name) {
+        SvUPGRADE(name, SVt_PVNV);
+        SvIV_set(name, ival);
+        SvIOK_on(name);
+        SvREADONLY_on(name);
+        return name;
+}
 
 MODULE = Cubin::Ced		PACKAGE = Cubin::Ced
 
@@ -180,7 +196,62 @@ set_s(SV *obj, SV *sv)
  OUTPUT:
   RETVAL
 
+SV *
+off(SV *obj, UV off)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->set_off(off) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
+int
+width(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->width();
+ OUTPUT:
+  RETVAL
+
+
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);
  if ( !s_ca_pkg )
     croak("Package %s does not exists", s_ca);
+ // add enums from nv_types.h
+ HV *stash = gv_stashpvn(s_ca, 10, 1);
+ EXPORT_ENUM(NVP_ops, IDEST)
+ EXPORT_ENUM(NVP_ops, IDEST2)
+ EXPORT_ENUM(NVP_ops, ISRC_A)
+ EXPORT_ENUM(NVP_ops, ISRC_B)
+ EXPORT_ENUM(NVP_ops, ISRC_C)
+ EXPORT_ENUM(NVP_ops, ISRC_E)
+ EXPORT_ENUM(NVP_type, INTEGER)
+ EXPORT_ENUM(NVP_type, SIGNED_INTEGER)
+ EXPORT_ENUM(NVP_type, UNSIGNED_INTEGER)
+ EXPORT_ENUM(NVP_type, FLOAT)
+ EXPORT_ENUM(NVP_type, DOUBLE)
+ EXPORT_ENUM(NVP_type, GENERIC_ADDRESS)
+ EXPORT_ENUM(NVP_type, SHARED_ADDRESS)
+ EXPORT_ENUM(NVP_type, LOCAL_ADDRESS)
+ EXPORT_ENUM(NVP_type, TRAM_ADDRESS)
+ EXPORT_ENUM(NVP_type, LOGICAL_ATTR_ADDRESS)
+ EXPORT_ENUM(NVP_type, PHYSICAL_ATTR_ADDRESS)
+ EXPORT_ENUM(NVP_type, GENERIC)
+ EXPORT_ENUM(NVP_type, CONSTANT_ADDRESS)
+ EXPORT_ENUM(NVP_type, VILD_INDEX)
+ EXPORT_ENUM(NVP_type, VOTE_INDEX)
+ EXPORT_ENUM(NVP_type, STP_INDEX)
+ EXPORT_ENUM(NVP_type, PIXLD_INDEX)
+ EXPORT_ENUM(NVP_type, PATCH_OFFSET_ADDRESS)
+ EXPORT_ENUM(NVP_type, RAW_ISBE_ACCESS)
+ EXPORT_ENUM(NVP_type, GLOBAL_ADDRESS)
+ EXPORT_ENUM(NVP_type, TEX)
+ EXPORT_ENUM(NVP_type, GS_STATE)
+ EXPORT_ENUM(NVP_type, SURFACE_COORDINATES)
+ EXPORT_ENUM(NVP_type, FP16SIMD)
+ EXPORT_ENUM(NVP_type, BINDLESS_CONSTANT_ADDRESS)
+ EXPORT_ENUM(NVP_type, VERTEX_HANDLE)
+ EXPORT_ENUM(NVP_type, MEMORY_DESCRIPTOR)
+ EXPORT_ENUM(NVP_type, FP8SIMD)
