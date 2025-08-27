@@ -100,6 +100,10 @@ class Ced_perl: public CEd_base {
     if ( !curr_dis.first ) return &PL_sv_undef;
     return newSViv(curr_dis.first->setp);
   }
+  SV *ins_brt() const {
+    if ( !curr_dis.first ) return &PL_sv_undef;
+    return newSViv(curr_dis.first->brt);
+  }
   SV *ins_name() const {
     if ( !curr_dis.first ) return &PL_sv_undef;
     return newSVpv(curr_dis.first->name, strlen(curr_dis.first->name));
@@ -321,3 +325,7 @@ BOOT:
  EXPORT_ENUM(NV_Format, NV_F64Imm)
  EXPORT_ENUM(NV_Format, NV_F16Imm)
  EXPORT_ENUM(NV_Format, NV_F32Imm)
+ EXPORT_ENUM(NV_Brt, BRT_CALL)
+ EXPORT_ENUM(NV_Brt, BRT_RETURN)
+ EXPORT_ENUM(NV_Brt, BRT_BRANCH)
+ EXPORT_ENUM(NV_Brt, BRT_BRANCHOUT)
