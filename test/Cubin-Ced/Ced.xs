@@ -83,7 +83,30 @@ class Ced_perl: public CEd_base {
   }
   int set_off(UV off) {
     if ( m_state < WantOff ) return 0;
-    return _verify_off(off);
+    int res = _verify_off(off);
+    if ( !res ) reset_ins();
+    return res;
+  }
+  // instruction properties
+  SV *ins_line() const {
+    if ( !curr_dis.first ) return &PL_sv_undef;
+    return newSViv(curr_dis.first->line);
+  }
+  SV *ins_alt() const {
+    if ( !curr_dis.first ) return &PL_sv_undef;
+    return newSViv(curr_dis.first->alt);
+  }
+  SV *ins_setp() const {
+    if ( !curr_dis.first ) return &PL_sv_undef;
+    return newSViv(curr_dis.first->setp);
+  }
+  SV *ins_name() const {
+    if ( !curr_dis.first ) return &PL_sv_undef;
+    return newSVpv(curr_dis.first->name, strlen(curr_dis.first->name));
+  }
+  SV *ins_class() const {
+    if ( !curr_dis.first ) return &PL_sv_undef;
+    return newSVpv(curr_dis.first->cname, strlen(curr_dis.first->cname));
   }
  protected:
   void reset_ins() {
@@ -214,6 +237,41 @@ width(SV *obj)
  OUTPUT:
   RETVAL
 
+SV *
+ins_name(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_name();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_class(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_class();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_line(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_line();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_alt(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_alt();
+ OUTPUT:
+  RETVAL
 
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);
@@ -255,3 +313,11 @@ BOOT:
  EXPORT_ENUM(NVP_type, VERTEX_HANDLE)
  EXPORT_ENUM(NVP_type, MEMORY_DESCRIPTOR)
  EXPORT_ENUM(NVP_type, FP8SIMD)
+ EXPORT_ENUM(NV_Format, NV_BITSET)
+ EXPORT_ENUM(NV_Format, NV_UImm)
+ EXPORT_ENUM(NV_Format, NV_SImm)
+ EXPORT_ENUM(NV_Format, NV_SSImm)
+ EXPORT_ENUM(NV_Format, NV_RSImm)
+ EXPORT_ENUM(NV_Format, NV_F64Imm)
+ EXPORT_ENUM(NV_Format, NV_F16Imm)
+ EXPORT_ENUM(NV_Format, NV_F32Imm)

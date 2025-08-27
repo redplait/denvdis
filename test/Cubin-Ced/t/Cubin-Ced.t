@@ -40,6 +40,12 @@ foreach (grep { $_->[2] == SHT_PROGBITS && $_->[1] =~ /^\.text/ && $_->[9] } @$s
 $t_num++;
 ok( $cub->set_s($first), 'first set_s with ' . $first );
 
+$t_num++;
+ok( $cub->off(0), 'zero off' );
+
+$t_num++;
+ok( 'MOV' eq $cub->ins_name(), 'ins_name' );
+
 # done_testing must be last
 done_testing($t_num);
 
