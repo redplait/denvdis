@@ -190,7 +190,7 @@ const char *get_lut(int i);
 
 // error log interface
 struct NV_ELog {
-  virtual void verr(const char *format, va_list *ap);
+  virtual void verr(const char *format, va_list *ap) = 0;
 };
 
 class NV_renderer {
