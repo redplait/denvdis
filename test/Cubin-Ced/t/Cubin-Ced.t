@@ -52,6 +52,9 @@ ok( defined($ef), 'efields');
 $t_num++;
 ok( exists $ef->{'Rd'}, 'Rd in efields');
 
+$t_num++;
+ok( defined $cub->get_enum('Rd'), 'Rd in get_enum');
+
 # done_testing must be last
 done_testing($t_num);
 

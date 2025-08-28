@@ -38,6 +38,7 @@ class Ced_perl: public CEd_base {
   virtual ~Ced_perl() {
     if ( m_e ) m_e->release();
     if ( m_elog ) delete m_elog;
+    for ( auto &iter: m_cached_hvs ) SvREFCNT_dec(iter.second);
   }
   // patch virtual methods
    virtual void patch_error(const char *what) override {
@@ -157,15 +158,19 @@ class Ced_perl: public CEd_base {
     return newRV_noinc((SV*)hv);
   }
   SV *extract_efields();
+  SV *make_enum(const char *);
  protected:
   SV *make_prop(const NV_Prop *prop);
   SV *make_enum_arr(const nv_eattr *ea);
+  HV *make_enum(const std::unordered_map<int, const char *> *);
   void reset_ins() {
     m_rend = nullptr;
     curr_dis.first = nullptr;
     curr_dis.second.clear();
   }
   IElf *m_e;
+  // cached enums (HV *)
+  std::unordered_map<std::string_view, HV *> m_cached_hvs;
 };
 
 // return ref to array of property fields, item at index 0 is type
@@ -204,6 +209,31 @@ SV *Ced_perl::extract_efields()
     hv_store(hv, ea.name.data(), ea.name.size(), make_enum_arr(ea.ea), 0);
   }
   return newRV_noinc((SV*)hv);
+}
+
+HV *Ced_perl::make_enum(const std::unordered_map<int, const char *> *em)
+{
+  HV *hv = newHV();
+  for ( auto ei: *em ) {
+    hv_store_ent(hv, newSViv(ei.first), newSVpv(ei.second, strlen(ei.second)), 0);
+  }
+  return hv;
+}
+
+SV *Ced_perl::make_enum(const char *name)
+{
+  if ( !has_ins() ) return &PL_sv_undef;
+  std::string_view tmp{ name, strlen(name) };
+  auto ea = find(curr_dis.first->eas, tmp);
+  if ( !ea ) return &PL_sv_undef;
+  std::string_view key{ ea->ea->ename, strlen( ea->ea->ename ) };
+  auto cached_iter = m_cached_hvs.find(key);
+  if ( cached_iter != m_cached_hvs.end() ) return newRV_inc((SV *)cached_iter->second);
+  HV *curr = make_enum(ea->ea->em);
+  if ( !curr ) return &PL_sv_undef;
+  // store this hv in cache
+  m_cached_hvs[key] = curr;
+  return newRV_inc((SV *)curr);
 }
 
 #ifdef MGf_LOCAL
@@ -415,6 +445,15 @@ efields(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->extract_efields();
+ OUTPUT:
+  RETVAL
+
+SV *
+get_enum(SV *obj, const char *ename)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->make_enum(ename);
  OUTPUT:
   RETVAL
 
