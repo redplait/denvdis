@@ -143,7 +143,21 @@ class Ced_perl: public CEd_base {
     }
     return newRV_noinc((SV*)hv);
   }
+  // return ref to hash where key is enum NVP_ops and value is ref to array where
+  // [0] - type - enum NVP_type
+  // [1] - field name or ref to array with multiple fields
+  SV *ins_prop() {
+    if ( !has_ins() ) return &PL_sv_undef;
+    if ( !curr_dis.first->props ) return &PL_sv_undef;
+    HV *hv = newHV();
+    for ( size_t i = 0; i < curr_dis.first->props->size(); ++i ) {
+      auto prop = get_it(*curr_dis.first->props, i);
+      hv_store_ent(hv, newSViv(prop->op), make_prop(prop), 0);
+    }
+    return newRV_noinc((SV*)hv);
+  }
  protected:
+  SV *make_prop(const NV_Prop *prop);
   void reset_ins() {
     m_rend = nullptr;
     curr_dis.first = nullptr;
@@ -151,6 +165,17 @@ class Ced_perl: public CEd_base {
   }
   IElf *m_e;
 };
+
+// return ref to array
+SV *Ced_perl::make_prop(const NV_Prop *prop) {
+  AV *av = newAV();
+  av_push(av, newSViv(prop->t));
+  for ( size_t i = 0; i < prop->fields.size(); ++i ) {
+    auto &field = get_it(prop->fields, 0);
+    av_push(av, newSVpv(field.data(), field.size()));
+  }
+  return newRV_noinc((SV*)av);
+}
 
 #ifdef MGf_LOCAL
 #define TAB_TAIL ,0
@@ -343,6 +368,15 @@ ins_pred(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->ins_pred();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_prop(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_prop();
  OUTPUT:
   RETVAL
 
