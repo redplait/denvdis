@@ -145,7 +145,7 @@ class Ced_perl: public CEd_base {
   }
   // return ref to hash where key is enum NVP_ops and value is ref to array where
   // [0] - type - enum NVP_type
-  // [1] - field name or ref to array with multiple fields
+  // [1..n] - field names
   SV *ins_prop() {
     if ( !has_ins() ) return &PL_sv_undef;
     if ( !curr_dis.first->props ) return &PL_sv_undef;
@@ -156,8 +156,10 @@ class Ced_perl: public CEd_base {
     }
     return newRV_noinc((SV*)hv);
   }
+  SV *extract_efields();
  protected:
   SV *make_prop(const NV_Prop *prop);
+  SV *make_enum_arr(const nv_eattr *ea);
   void reset_ins() {
     m_rend = nullptr;
     curr_dis.first = nullptr;
@@ -166,7 +168,7 @@ class Ced_perl: public CEd_base {
   IElf *m_e;
 };
 
-// return ref to array
+// return ref to array of property fields, item at index 0 is type
 SV *Ced_perl::make_prop(const NV_Prop *prop) {
   AV *av = newAV();
   av_push(av, newSViv(prop->t));
@@ -175,6 +177,33 @@ SV *Ced_perl::make_prop(const NV_Prop *prop) {
     av_push(av, newSVpv(field.data(), field.size()));
   }
   return newRV_noinc((SV*)av);
+}
+
+// return hash with nv_eattr, key is field name, value is ref to array:
+// 0 - ignore
+// 1 - print
+// 2 - has_def_value
+// 3 - def value if presents
+SV *Ced_perl::make_enum_arr(const nv_eattr *ea)
+{
+  AV *av = newAV();
+  av_push(av, ea->ignore ? &PL_sv_yes : &PL_sv_no);
+  av_push(av, ea->print ? &PL_sv_yes : &PL_sv_no);
+  av_push(av, ea->has_def_value ? &PL_sv_yes : &PL_sv_no);
+  if ( ea->has_def_value )
+    av_push(av, newSViv(ea->def_value));
+  return newRV_noinc((SV*)av);
+}
+
+SV *Ced_perl::extract_efields()
+{
+  if ( !curr_dis.first->eas.size() ) return &PL_sv_undef;
+  HV *hv = newHV();
+  for ( size_t i = 0; i < curr_dis.first->eas.size(); ++i ) {
+    auto &ea = get_it(curr_dis.first->eas, i);
+    hv_store(hv, ea.name.data(), ea.name.size(), make_enum_arr(ea.ea), 0);
+  }
+  return newRV_noinc((SV*)hv);
 }
 
 #ifdef MGf_LOCAL
@@ -377,6 +406,15 @@ ins_prop(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->ins_prop();
+ OUTPUT:
+  RETVAL
+
+SV *
+efields(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->extract_efields();
  OUTPUT:
   RETVAL
 

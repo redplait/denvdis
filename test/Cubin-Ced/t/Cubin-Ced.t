@@ -46,6 +46,12 @@ ok( $cub->off(0), 'zero off' );
 $t_num++;
 ok( 'MOV' eq $cub->ins_name(), 'ins_name' );
 
+my $ef = $cub->efields();
+$t_num++;
+ok( defined($ef), 'efields');
+$t_num++;
+ok( exists $ef->{'Rd'}, 'Rd in efields');
+
 # done_testing must be last
 done_testing($t_num);
 
