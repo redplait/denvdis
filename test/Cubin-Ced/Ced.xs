@@ -120,6 +120,29 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return false;
     return m_dis->gen_mask(res);
   }
+  bool ins_text(std::string &res) {
+    if ( !has_ins() ) return false;
+    render(m_rend, res, curr_dis.first, cex(), nullptr, 1);
+    return !res.empty();
+  }
+  // return ref to hash where key is predicate name
+  SV *ins_pred() {
+    if ( !has_ins() ) return &PL_sv_undef;
+    if ( !curr_dis.first->predicated ) return &PL_sv_undef;
+    HV *hv = newHV();
+    for ( auto &pred: *curr_dis.first->predicated ) {
+      int res = pred.second(cex());
+      if ( res >= 0 && m_vq && cmp(pred.first, "VQ") ) {
+        auto name = m_vq(res);
+        if ( name ) {
+          hv_store(hv, "VQ", 2, newSVpv(name, strlen(name)), 0 );
+          continue;
+        }
+      }
+      hv_store(hv, pred.first.data(), pred.first.size(), newSViv(res), 0);
+    }
+    return newRV_noinc((SV*)hv);
+  }
  protected:
   void reset_ins() {
     m_rend = nullptr;
@@ -297,6 +320,29 @@ ins_mask(SV *obj)
      RETVAL = &PL_sv_undef;
    else
      RETVAL = newSVpv(mask.c_str(), mask.size());
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_text(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   std::string mask;
+ CODE:
+   bool res = e->ins_text(mask);
+   if ( !res )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = newSVpv(mask.c_str(), mask.size());
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_pred(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_pred();
  OUTPUT:
   RETVAL
 
