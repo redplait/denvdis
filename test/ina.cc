@@ -903,7 +903,7 @@ int INA::dump_i(const char *fname) const
    // skip too long enumes with registers
    bool skip = !strcmp(ea->ename, "NonZeroRegister") || !strcmp(ea->ename, "NonZeroUniformRegister") ||
     !strcmp(ea->ename, "RegisterFAU") || !strcmp(ea->ename, "NonZeroRegisterFAU") ||
-    !strcmp(ea->ename, "Register") || !strcmp(ea->ename, "SpecialRegister");
+    !strcmp(ea->ename, "Register") || !strcmp(ea->ename, "SpecialRegister") || crack_h2(ea->ename);
    if ( !skip ) {
      fputs(":\n", stdout);
      need_nl = 0;

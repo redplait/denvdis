@@ -455,6 +455,20 @@ void NV_renderer::dis_stat() const
      dis_total, dis_notfound, dis_dups, missed_enums);
 }
 
+// in sm5x there are lots of registers enums with names like hfma2__v1_Ra
+// last letters are always Rd Ra Rb Rc and v can be 0, 1 or 2
+// so it's enough to check last 5 letters of ename
+bool NV_renderer::crack_h2(const char *ename) const
+{
+  auto len = strlen(ename);
+  if ( len < 6 ) return 0;
+  return (ename[len-5] == 'v') &&
+   (ename[len-4] == '0' || ename[len-4] == '1' || ename[len-4] == '2') &&
+   (ename[len-3] == '_') &&
+   (ename[len-2] == 'R') &&
+   (ename[len-1] == 'd' || ename[len-1] == 'a' || ename[len-1] == 'b' || ename[len-1] == 'c');
+}
+
 int NV_renderer::load(const char *sm_name)
 {
      void *dh = dlopen(sm_name, RTLD_NOW);

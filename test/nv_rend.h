@@ -511,9 +511,10 @@ class NV_renderer {
    inline bool is_upred(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
      return !strcmp(ea->ename, "UniformPredicate") && 7 != kvi->second;
    }
+   bool crack_h2(const char *) const;
    inline bool is_reg(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
      return (!strcmp(ea->ename, "Register") || !strcmp(ea->ename, "NonZeroRegister") ||
-             !strcmp(ea->ename, "RegisterFAU") || !strcmp(ea->ename, "NonZeroRegisterFAU")
+             !strcmp(ea->ename, "RegisterFAU") || !strcmp(ea->ename, "NonZeroRegisterFAU") || crack_h2(ea->ename)
             )
       && m_dis->rz != (int)kvi->second;
    }
