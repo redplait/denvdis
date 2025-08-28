@@ -30,6 +30,7 @@ class Perl_ELog: public NV_ELog {
 class Ced_perl: public CEd_base {
  public:
   Ced_perl(IElf *e) {
+    curr_dis.first = nullptr;
     m_elog = new Perl_ELog;
     m_e = e;
     e->add_ref();
@@ -112,8 +113,16 @@ class Ced_perl: public CEd_base {
     if ( !curr_dis.first ) return &PL_sv_undef;
     return newSVpv(curr_dis.first->cname, strlen(curr_dis.first->cname));
   }
+  bool has_ins() const {
+    return (m_rend != nullptr) && (curr_dis.first != nullptr);
+  }
+  bool ins_mask(std::string &res) {
+    if ( !has_ins() ) return false;
+    return m_dis->gen_mask(res);
+  }
  protected:
   void reset_ins() {
+    m_rend = nullptr;
     curr_dis.first = nullptr;
     curr_dis.second.clear();
   }
@@ -274,6 +283,20 @@ ins_alt(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->ins_alt();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_mask(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   std::string mask;
+ CODE:
+   bool res = e->ins_mask(mask);
+   if ( !res )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = newSVpv(mask.c_str(), mask.size());
  OUTPUT:
   RETVAL
 
