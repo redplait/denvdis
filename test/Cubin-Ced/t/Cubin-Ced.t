@@ -55,6 +55,10 @@ ok( exists $ef->{'Rd'}, 'Rd in efields');
 $t_num++;
 ok( defined $cub->get_enum('Rd'), 'Rd in get_enum');
 
+$t_num++;
+my $tc = $cub->tab_count();
+ok( !$tc, 'tab_count');
+
 # done_testing must be last
 done_testing($t_num);
 

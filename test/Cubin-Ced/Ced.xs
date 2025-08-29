@@ -160,11 +160,19 @@ class Ced_perl: public CEd_base {
   SV *extract_efields();
   SV *extract_vfields();
   SV *make_enum(const char *);
+  // tabs
+  SV *tab_count() {
+    if ( !has_ins() ) return &PL_sv_undef;
+    return newSViv(curr_dis.first->tab_fields.size());
+  }
+  bool get_tab(IV, SV **n, SV **d);
  protected:
   SV *make_prop(const NV_Prop *prop);
   SV *make_enum_arr(const nv_eattr *ea);
   HV *make_enum(const std::unordered_map<int, const char *> *);
   SV *make_vfield(const nv_vattr &);
+  SV *fill_simple_tab(const std::unordered_map<int, const unsigned short *> *);
+  SV *fill_tab(const std::unordered_map<int, const unsigned short *> *, size_t);
   void reset_ins() {
     m_rend = nullptr;
     curr_dis.first = nullptr;
@@ -174,6 +182,50 @@ class Ced_perl: public CEd_base {
   // cached enums (HV *)
   std::unordered_map<std::string_view, HV *> m_cached_hvs;
 };
+
+// extract tab with index idx
+// put ref to array with names into n
+// put ref to hash into d
+bool Ced_perl::get_tab(IV idx, SV **n, SV **d) {
+  if ( !has_ins() ) return false;
+  if ( idx < 0 || idx >= curr_dis.first->tab_fields.size() ) return false;
+  auto t = get_it(curr_dis.first->tab_fields, idx);
+  // fill names
+  AV *av = newAV();
+  for ( size_t ni = 0; ni < t->fields.size(); ++ni ) {
+    auto &nf = get_it(t->fields, ni);
+    av_push(av, newSVpv( nf.data(), nf.size() ));
+  }
+  *n = newRV_noinc((SV*)av);
+  // dict can be just int key -> int value
+  // or int key -> ref to array when fields > 1
+  if ( 1 == t->fields.size() )
+    *d = fill_simple_tab(t->tab);
+  else
+    *d = fill_tab(t->tab, t->fields.size());
+  return true;
+}
+
+SV *Ced_perl::fill_simple_tab(const std::unordered_map<int, const unsigned short *> *t)
+{
+  HV *hv = newHV();
+  for ( auto ei: *t ) {
+    hv_store_ent(hv, newSViv(ei.first), newSVuv(ei.second[1]), 0);
+  }
+  return newRV_noinc((SV*)hv);
+}
+
+SV *Ced_perl::fill_tab(const std::unordered_map<int, const unsigned short *> *t, size_t ts)
+{
+  HV *hv = newHV();
+  for ( auto ei: *t ) {
+    auto row = ei.second;
+    AV *av = newAV();
+    for ( size_t i = 1; i < ts; ++i ) av_push(av, newSVuv(row[i]));
+    hv_store_ent(hv, newSViv(ei.first), newRV_noinc((SV*)av), 0);
+  }
+  return newRV_noinc((SV*)hv);
+}
 
 // return ref to array of property fields, item at index 0 is type
 SV *Ced_perl::make_prop(const NV_Prop *prop) {
@@ -482,6 +534,42 @@ SV *vfields(SV *obj)
    RETVAL = e->extract_vfields();
  OUTPUT:
   RETVAL
+
+SV *tab_count(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->tab_count();
+ OUTPUT:
+  RETVAL
+
+void
+tab(SV *obj, IV key)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  bool res;
+  SV *names = nullptr, *dict = nullptr;
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ PPCODE:
+  res = e->get_tab(key, &names, &dict);
+  if ( !res ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+  } else {
+    if ( gimme == G_ARRAY) {
+      EXTEND(SP, 2);
+      mXPUSHs(names);
+      mXPUSHs(dict);
+      XSRETURN(2);
+    } else {
+      AV *av = newAV();
+      av_push(av, names);
+      av_push(av, dict);
+      mXPUSHs(newRV_noinc((SV*)av));
+      XSRETURN(1);
+    }
+  }
 
 SV *
 get_enum(SV *obj, const char *ename)
