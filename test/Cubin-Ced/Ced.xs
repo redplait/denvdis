@@ -164,6 +164,7 @@ class Ced_perl: public CEd_base {
   SV *make_prop(const NV_Prop *prop);
   SV *make_enum_arr(const nv_eattr *ea);
   HV *make_enum(const std::unordered_map<int, const char *> *);
+  SV *make_vfield(const nv_vattr &);
   void reset_ins() {
     m_rend = nullptr;
     curr_dis.first = nullptr;
@@ -212,13 +213,27 @@ SV *Ced_perl::extract_efields()
   return newRV_noinc((SV*)hv);
 }
 
+// if we have width for some field - return [ type, width ]
+// else just return type in SViv
+SV *Ced_perl::make_vfield(const nv_vattr &v)
+{
+  SV *t = newSViv(v.kind);
+  if ( !curr_dis.first->vwidth ) return t;
+  auto vw = find(curr_dis.first->vwidth, v.name);
+  if ( !vw ) return t;
+  AV *av = newAV();
+  av_push(av, t);
+  av_push(av, newSViv(vw->w));
+  return newRV_noinc((SV*)av);
+}
+
 SV *Ced_perl::extract_vfields()
 {
   if ( !has_ins() || !curr_dis.first->vas ) return &PL_sv_undef;
   HV *hv = newHV();
   for ( size_t i = 0; i < curr_dis.first->eas.size(); ++i ) {
     auto &va = get_it(*curr_dis.first->vas, i);
-    hv_store(hv, va.name.data(), va.name.size(), newSViv(va.kind), 0);
+    hv_store(hv, va.name.data(), va.name.size(), make_vfield(va), 0);
   }
   return newRV_noinc((SV*)hv);
 }
