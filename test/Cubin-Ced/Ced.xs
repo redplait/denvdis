@@ -158,6 +158,7 @@ class Ced_perl: public CEd_base {
     return newRV_noinc((SV*)hv);
   }
   SV *extract_efields();
+  SV *extract_vfields();
   SV *make_enum(const char *);
  protected:
   SV *make_prop(const NV_Prop *prop);
@@ -202,11 +203,22 @@ SV *Ced_perl::make_enum_arr(const nv_eattr *ea)
 
 SV *Ced_perl::extract_efields()
 {
-  if ( !curr_dis.first->eas.size() ) return &PL_sv_undef;
+  if ( !has_ins() || !curr_dis.first->eas.size() ) return &PL_sv_undef;
   HV *hv = newHV();
   for ( size_t i = 0; i < curr_dis.first->eas.size(); ++i ) {
     auto &ea = get_it(curr_dis.first->eas, i);
     hv_store(hv, ea.name.data(), ea.name.size(), make_enum_arr(ea.ea), 0);
+  }
+  return newRV_noinc((SV*)hv);
+}
+
+SV *Ced_perl::extract_vfields()
+{
+  if ( !has_ins() || !curr_dis.first->vas ) return &PL_sv_undef;
+  HV *hv = newHV();
+  for ( size_t i = 0; i < curr_dis.first->eas.size(); ++i ) {
+    auto &va = get_it(*curr_dis.first->vas, i);
+    hv_store(hv, va.name.data(), va.name.size(), newSViv(va.kind), 0);
   }
   return newRV_noinc((SV*)hv);
 }
@@ -445,6 +457,14 @@ efields(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->extract_efields();
+ OUTPUT:
+  RETVAL
+
+SV *vfields(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->extract_vfields();
  OUTPUT:
   RETVAL
 
