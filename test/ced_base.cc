@@ -377,6 +377,37 @@ unsigned long CEd_base::get_def_value(const nv_instr *ins, const std::string_vie
   return 0;
 }
 
+int CEd_base::_next_off()
+{
+  unsigned long off = block_offset();
+  int new_block = 0;
+  switch(m_width) {
+    case 64: if ( m_bidx >= 6 ) {
+        new_block = 1;
+        off += block_size + 8;
+      } else
+        m_bidx++;
+      break;
+    case 88: if ( m_bidx >= 2 ) {
+        new_block = 1;
+        off += block_size + 8;
+      } else
+        m_bidx++;
+      break;
+    case 128: off += block_size; new_block = 1; break;
+    default: return 0; // wtf?
+  }
+  if ( new_block )
+  {
+    if ( !flush_buf() ) return 0;
+    return _verify_off(off);
+  }
+  // check if we have reloc on real offset
+  check_rel(off);
+  check_off(off);
+  return _disasm(off);
+}
+
 int CEd_base::_verify_off(unsigned long off)
 {
   m_inc_tabs.clear();
@@ -393,20 +424,20 @@ int CEd_base::_verify_off(unsigned long off)
     off &= ~off_mask;
   }
   // extract index inside block
-  int block_idx = 0;
+  m_bidx = 0;
   unsigned long block_off = m_file_off + (off - m_obj_off);
   if ( m_width != 128 ) {
     auto b_off = off & ~(block_size - 1);
     if ( b_off == off ) {
       Err("warning: offset %lX points to Ctrl Word, change to %lX\n", off, off + 8);
       off += 8;
-      block_idx = 0;
+      m_bidx = 0;
     } else {
-      block_idx = (off - 8 - b_off) / 8;
+      m_bidx = (off - 8 - b_off) / 8;
     }
     block_off = m_file_off + (b_off - m_obj_off);
     if ( opt_d )
-      fprintf(m_out, "block_off %lX off %lX block_idx %d\n", b_off, off, block_idx);
+      fprintf(m_out, "block_off %lX off %lX block_idx %d\n", b_off, off, m_bidx);
   }
   // check if we have reloc on real offset
   check_rel(off);
@@ -422,7 +453,12 @@ int CEd_base::_verify_off(unsigned long off)
   }
   m_buf_off = block_off;
   if ( opt_h ) HexDump(m_out, buf, block_size);
-  if ( !m_dis->init(buf, block_size, off, block_idx) ) {
+  return _disasm(off);
+}
+
+int CEd_base::_disasm(unsigned long off)
+{
+  if ( !m_dis->init(buf, block_size, off, m_bidx) ) {
     Err("dis init failed\n");
     return 0;
   }

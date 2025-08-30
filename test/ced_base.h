@@ -84,6 +84,7 @@ class CEd_base: public CElf<ParseSASS> {
      m_obj_size = 0, // size of selected section/function
      m_file_off = 0, // offset of m_obj_off in file
      m_buf_off = -1; // offset of buf in file
+   int m_bidx = 0;  // for 64 & 88 index of instruction inside block
    inline unsigned long block_offset() const {
      return m_obj_off + m_buf_off - m_file_off;
    }
@@ -120,6 +121,8 @@ class CEd_base: public CElf<ParseSASS> {
    inline bool has_nop() const {
      return m_nop && m_nop_rend;
    }
+   int _disasm(unsigned long);
+   int _next_off();
    int _verify_off(unsigned long);
    int parse_num(NV_Format, std::string_view &);
    // patcher
@@ -173,6 +176,7 @@ class CEd_base: public CElf<ParseSASS> {
    unsigned char buf[buf_size];
    size_t block_size = 0;
    int mask_size = 0;
+   // stat for buffer write/read
    unsigned long flush_cnt = 0,
     rdr_cnt = 0;
    int flush_buf();
