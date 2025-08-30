@@ -89,6 +89,10 @@ class Ced_perl: public CEd_base {
     if ( !res ) reset_ins();
     return res;
   }
+  SV *get_off() {
+    if ( !curr_dis.first ) return &PL_sv_undef;
+    return newSVuv(m_dis->offset());
+  }
   // instruction properties
   SV *ins_line() const {
     if ( !curr_dis.first ) return &PL_sv_undef;
@@ -113,6 +117,18 @@ class Ced_perl: public CEd_base {
   SV *ins_class() const {
     if ( !curr_dis.first ) return &PL_sv_undef;
     return newSVpv(curr_dis.first->cname, strlen(curr_dis.first->cname));
+  }
+  SV *ins_target() const {
+    if ( !curr_dis.first || !curr_dis.first->target_index ) return &PL_sv_undef;
+    return newSVpv(curr_dis.first->target_index, strlen(curr_dis.first->target_index));
+  }
+  SV *ins_cc() const {
+    if ( !curr_dis.first || !curr_dis.first->cc_index ) return &PL_sv_undef;
+    return newSVpv(curr_dis.first->cc_index, strlen(curr_dis.first->cc_index));
+  }
+  SV *ins_sidl() const {
+    if ( !curr_dis.first || !curr_dis.first->sidl_name ) return &PL_sv_undef;
+    return newSVpv(curr_dis.first->sidl_name, strlen(curr_dis.first->sidl_name));
   }
   bool has_ins() const {
     return (m_rend != nullptr) && (curr_dis.first != nullptr);
@@ -173,11 +189,6 @@ class Ced_perl: public CEd_base {
   SV *make_vfield(const nv_vattr &);
   SV *fill_simple_tab(const std::unordered_map<int, const unsigned short *> *);
   SV *fill_tab(const std::unordered_map<int, const unsigned short *> *, size_t);
-  void reset_ins() {
-    m_rend = nullptr;
-    curr_dis.first = nullptr;
-    curr_dis.second.clear();
-  }
   IElf *m_e;
   // cached enums (HV *)
   std::unordered_map<std::string_view, HV *> m_cached_hvs;
@@ -427,6 +438,15 @@ off(SV *obj, UV off)
  OUTPUT:
   RETVAL
 
+SV *
+get_off(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->get_off();
+ OUTPUT:
+  RETVAL
+
 int
 width(SV *obj)
  INIT:
@@ -451,6 +471,33 @@ ins_class(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->ins_class();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_target(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_target();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_cc(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_cc();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_sidl(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_sidl();
  OUTPUT:
   RETVAL
 

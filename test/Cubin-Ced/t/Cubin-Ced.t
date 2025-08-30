@@ -44,6 +44,9 @@ $t_num++;
 ok( $cub->off(0), 'zero off' );
 
 $t_num++;
+ok( 8 == $cub->get_off(), 'offset should be 8' );
+
+$t_num++;
 ok( 'MOV' eq $cub->ins_name(), 'ins_name' );
 
 my $ef = $cub->efields();

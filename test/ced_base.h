@@ -5,7 +5,7 @@
 
 using namespace std::string_literals;
 
-extern int opt_d, opt_h, opt_m, opt_k, opt_t, opt_v;
+extern int opt_d, opt_h, opt_t, opt_v;
 
 class CEd_base: public CElf<ParseSASS> {
    public:
@@ -84,6 +84,9 @@ class CEd_base: public CElf<ParseSASS> {
      m_obj_size = 0, // size of selected section/function
      m_file_off = 0, // offset of m_obj_off in file
      m_buf_off = -1; // offset of buf in file
+   inline unsigned long block_offset() const {
+     return m_obj_off + m_buf_off - m_file_off;
+   }
    const SRels *m_cur_srels = nullptr;
    const asymbol *m_cur_rsym = nullptr;
    const NV_rel *m_cur_rel = nullptr;
@@ -175,6 +178,11 @@ class CEd_base: public CElf<ParseSASS> {
    int flush_buf();
    // disasm results
    NV_pair curr_dis;
+   void reset_ins() {
+    m_rend = nullptr;
+    curr_dis.first = nullptr;
+    curr_dis.second.clear();
+   }
    // just wrappers to reduce repeating typing
    inline const nv_instr *ins() const { return curr_dis.first; }
    inline const NV_extracted &cex() const { return curr_dis.second; }
