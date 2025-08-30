@@ -404,8 +404,8 @@ int CEd_base::_next_off()
   }
   // check if we have reloc on real offset
   off += 8;
-  check_rel(off);
-  check_off(off);
+  check_rel(off + 8 * m_idx);
+  check_off(off + 8 * m_idx);
   return _disasm(off);
 }
 
@@ -441,8 +441,8 @@ int CEd_base::_verify_off(unsigned long off)
       fprintf(m_out, "block_off %lX off %lX block_idx %d\n", b_off, off, m_bidx);
   }
   // check if we have reloc on real offset
-  check_rel(off);
-  check_off(off);
+  check_rel(off + 8 * m_idx);
+  check_off(off + 8 * m_idx);
   if ( block_off != m_buf_off ) {
     // need to read new buffer
     fseek(m_cubin_fp, block_off, SEEK_SET);
@@ -469,13 +469,13 @@ int CEd_base::_disasm(unsigned long off)
   if ( m_width > 64 ) what = 2;
   int get_res = m_dis->get(res, what);
   if ( get_res < 0 || res.empty() ) {
-    Err("cannot disasm at offset %lX\n", off);
+    Err("cannot disasm at offset %lX\n", m_dis->offset());
     return 0;
   }
   int res_idx = 0;
   if ( res.size() > 1 ) res_idx = calc_index(res, m_dis->rz);
   if ( -1 == res_idx ) {
-    Err("warning: ambigious instruction at %lX, has %ld formst\n", off, res.size());
+    Err("warning: ambigious instruction at %lX, has %ld formst\n", m_dis->offset(), res.size());
     // lets choose 1st
     res_idx = 0;
   }
@@ -484,7 +484,7 @@ int CEd_base::_disasm(unsigned long off)
   curr_dis = std::move(res[res_idx]);
   m_rend = m_dis->get_rend(curr_dis.first->n);
   if ( !m_rend ) {
-    Err("cannot get render at %lX, n %d\n", off, curr_dis.first->n);
+    Err("cannot get render at %lX, n %d\n", m_dis->offset(), curr_dis.first->n);
     return 0;
   }
   return 1;

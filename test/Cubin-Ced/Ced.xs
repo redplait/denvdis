@@ -92,7 +92,9 @@ class Ced_perl: public CEd_base {
   }
   int next() {
     if ( m_state < WantOff ) return 0;
-    return _next_off();
+    int res = _next_off();
+    if ( !res ) reset_ins();
+    return res;
   }
   SV *get_off() {
     if ( !curr_dis.first ) return &PL_sv_undef;
