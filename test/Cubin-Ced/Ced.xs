@@ -110,6 +110,10 @@ class Ced_perl: public CEd_base {
     if ( !curr_dis.first ) return &PL_sv_undef;
     return newSViv(curr_dis.first->brt);
   }
+  SV *ins_scbd() const {
+    if ( !curr_dis.first ) return &PL_sv_undef;
+    return newSViv(curr_dis.first->scbd);
+  }
   SV *ins_name() const {
     if ( !curr_dis.first ) return &PL_sv_undef;
     return newSVpv(curr_dis.first->name, strlen(curr_dis.first->name));
@@ -173,6 +177,7 @@ class Ced_perl: public CEd_base {
     }
     return newRV_noinc((SV*)hv);
   }
+  SV *extract_cb();
   SV *extract_efields();
   SV *extract_vfields();
   SV *make_enum(const char *);
@@ -190,7 +195,7 @@ class Ced_perl: public CEd_base {
   SV *fill_simple_tab(const std::unordered_map<int, const unsigned short *> *);
   SV *fill_tab(const std::unordered_map<int, const unsigned short *> *, size_t);
   IElf *m_e;
-  // cached enums (HV *)
+  // cached enums (HV *), key is nv_eattr->ename
   std::unordered_map<std::string_view, HV *> m_cached_hvs;
 };
 
@@ -246,6 +251,18 @@ SV *Ced_perl::make_prop(const NV_Prop *prop) {
     auto &field = get_it(prop->fields, 0);
     av_push(av, newSVpv(field.data(), field.size()));
   }
+  return newRV_noinc((SV*)av);
+}
+
+// return array with couple of fields names, 3rd is scale when non-zero
+SV *Ced_perl::extract_cb()
+{
+  if ( !has_ins() || !curr_dis.first->cb_field ) return &PL_sv_undef;
+  AV *av = newAV();
+  av_push(av, newSVpv(curr_dis.first->cb_field->f1.data(), curr_dis.first->cb_field->f1.size()) );
+  av_push(av, newSVpv(curr_dis.first->cb_field->f2.data(), curr_dis.first->cb_field->f2.size()) );
+  if ( curr_dis.first->cb_field->scale )
+    av_push(av, newSViv(curr_dis.first->cb_field->scale));
   return newRV_noinc((SV*)av);
 }
 
@@ -484,6 +501,24 @@ ins_target(SV *obj)
   RETVAL
 
 SV *
+ins_brt(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_brt();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_scbd(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_scbd();
+ OUTPUT:
+  RETVAL
+
+SV *
 ins_cc(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
@@ -627,6 +662,16 @@ get_enum(SV *obj, const char *ename)
  OUTPUT:
   RETVAL
 
+SV *
+ins_cb(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->extract_cb();
+ OUTPUT:
+  RETVAL
+
+
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);
  if ( !s_ca_pkg )
@@ -679,3 +724,9 @@ BOOT:
  EXPORT_ENUM(NV_Brt, BRT_RETURN)
  EXPORT_ENUM(NV_Brt, BRT_BRANCH)
  EXPORT_ENUM(NV_Brt, BRT_BRANCHOUT)
+ EXPORT_ENUM(NV_Scbd, SOURCE_RD)
+ EXPORT_ENUM(NV_Scbd, SOURCE_WR)
+ EXPORT_ENUM(NV_Scbd, SINK)
+ EXPORT_ENUM(NV_Scbd, SOURCE_SINK_RD)
+ EXPORT_ENUM(NV_Scbd, SOURCE_SINK_WR)
+ EXPORT_ENUM(NV_Scbd, NON_BARRIER_INT_INST)
