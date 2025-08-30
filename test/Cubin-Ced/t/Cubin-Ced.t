@@ -62,6 +62,11 @@ $t_num++;
 my $tc = $cub->tab_count();
 ok( !$tc, 'tab_count');
 
+$t_num+=2;
+ok( $cub->next(), 'next');
+ok( 16 == $cub->get_off(), 'next offset should be 16' );
+
+
 # done_testing must be last
 done_testing($t_num);
 

@@ -85,9 +85,14 @@ class Ced_perl: public CEd_base {
   }
   int set_off(UV off) {
     if ( m_state < WantOff ) return 0;
+    if ( !flush_buf() ) return 0;
     int res = _verify_off(off);
     if ( !res ) reset_ins();
     return res;
+  }
+  int next() {
+    if ( m_state < WantOff ) return 0;
+    return _next_off();
   }
   SV *get_off() {
     if ( !curr_dis.first ) return &PL_sv_undef;
@@ -452,6 +457,15 @@ off(SV *obj, UV off)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->set_off(off) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
+SV *
+next(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->next() ? &PL_sv_yes : &PL_sv_no;
  OUTPUT:
   RETVAL
 

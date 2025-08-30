@@ -403,6 +403,7 @@ int CEd_base::_next_off()
     return _verify_off(off);
   }
   // check if we have reloc on real offset
+  off += 8;
   check_rel(off);
   check_off(off);
   return _disasm(off);
