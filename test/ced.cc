@@ -267,7 +267,7 @@ int CEd::parse_tail(int idx, std::string &s)
     } else {
       patch(pnot_field, has_not ? 1 : 0, pnot.c_str());
     }
-    m_dis->flush();
+    // m_dis->flush();
     if ( !flush_buf() ) {
       Err("predicate flush failed\n");
       return 0;

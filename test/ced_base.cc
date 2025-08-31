@@ -4,6 +4,7 @@ std::regex CEd_base::rs_digits("^\\d+");
 
 int CEd_base::flush_buf()
 {
+  m_dis->flush();
   if ( !m_cubin_fp || !block_dirty ) return 1;
   fseek(m_cubin_fp, m_buf_off, SEEK_SET);
   if ( opt_h ) HexDump(m_out, buf, block_size);
@@ -335,7 +336,7 @@ int CEd_base::generic_ins(const nv_instr *ins, NV_extracted &kv)
   }
   if ( opt_h )
     HexDump(m_out, buf, block_size);
-  m_dis->flush();
+  // m_dis->flush();
   block_dirty = 1;
   return 1;
 }
@@ -399,11 +400,14 @@ int CEd_base::_next_off()
   }
   if ( new_block )
   {
+    // flush only if we leave this (dirty?) block to minimize amount of write ops
     if ( !flush_buf() ) return 0;
     return _verify_off(off);
   }
+  m_dis->flush();
+  m_inc_tabs.clear();
+  off += 8; // compensate ctrl qword
   // check if we have reloc on real offset
-  off += 8;
   check_rel(off + 8 * m_idx);
   check_off(off + 8 * m_idx);
   return _disasm(off);
@@ -441,8 +445,8 @@ int CEd_base::_verify_off(unsigned long off)
       fprintf(m_out, "block_off %lX off %lX block_idx %d\n", b_off, off, m_bidx);
   }
   // check if we have reloc on real offset
-  check_rel(off + 8 * m_idx);
-  check_off(off + 8 * m_idx);
+  check_rel(off);
+  check_off(off);
   if ( block_off != m_buf_off ) {
     // need to read new buffer
     fseek(m_cubin_fp, block_off, SEEK_SET);
