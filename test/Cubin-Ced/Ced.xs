@@ -97,49 +97,49 @@ class Ced_perl: public CEd_base {
     return res;
   }
   SV *get_off() {
-    if ( !curr_dis.first ) return &PL_sv_undef;
+    if ( !ins() ) return &PL_sv_undef;
     return newSVuv(m_dis->offset());
   }
   // instruction properties
   SV *ins_line() const {
-    if ( !curr_dis.first ) return &PL_sv_undef;
-    return newSViv(curr_dis.first->line);
+    if ( !ins() ) return &PL_sv_undef;
+    return newSViv(ins()->line);
   }
   SV *ins_alt() const {
-    if ( !curr_dis.first ) return &PL_sv_undef;
-    return newSViv(curr_dis.first->alt);
+    if ( !ins() ) return &PL_sv_undef;
+    return newSViv(ins()->alt);
   }
   SV *ins_setp() const {
-    if ( !curr_dis.first ) return &PL_sv_undef;
-    return newSViv(curr_dis.first->setp);
+    if ( !ins() ) return &PL_sv_undef;
+    return newSViv(ins()->setp);
   }
   SV *ins_brt() const {
-    if ( !curr_dis.first ) return &PL_sv_undef;
-    return newSViv(curr_dis.first->brt);
+    if ( !ins() ) return &PL_sv_undef;
+    return newSViv(ins()->brt);
   }
   SV *ins_scbd() const {
-    if ( !curr_dis.first ) return &PL_sv_undef;
-    return newSViv(curr_dis.first->scbd);
+    if ( !ins() ) return &PL_sv_undef;
+    return newSViv(ins()->scbd);
   }
   SV *ins_name() const {
-    if ( !curr_dis.first ) return &PL_sv_undef;
-    return newSVpv(curr_dis.first->name, strlen(curr_dis.first->name));
+    if ( !ins() ) return &PL_sv_undef;
+    return newSVpv(ins()->name, strlen(ins()->name));
   }
   SV *ins_class() const {
-    if ( !curr_dis.first ) return &PL_sv_undef;
-    return newSVpv(curr_dis.first->cname, strlen(curr_dis.first->cname));
+    if ( !ins() ) return &PL_sv_undef;
+    return newSVpv(ins()->cname, strlen(ins()->cname));
   }
   SV *ins_target() const {
-    if ( !curr_dis.first || !curr_dis.first->target_index ) return &PL_sv_undef;
-    return newSVpv(curr_dis.first->target_index, strlen(curr_dis.first->target_index));
+    if ( !ins() || !ins()->target_index ) return &PL_sv_undef;
+    return newSVpv(ins()->target_index, strlen(ins()->target_index));
   }
   SV *ins_cc() const {
-    if ( !curr_dis.first || !curr_dis.first->cc_index ) return &PL_sv_undef;
-    return newSVpv(curr_dis.first->cc_index, strlen(curr_dis.first->cc_index));
+    if ( !ins() || !ins()->cc_index ) return &PL_sv_undef;
+    return newSVpv(ins()->cc_index, strlen(ins()->cc_index));
   }
   SV *ins_sidl() const {
-    if ( !curr_dis.first || !curr_dis.first->sidl_name ) return &PL_sv_undef;
-    return newSVpv(curr_dis.first->sidl_name, strlen(curr_dis.first->sidl_name));
+    if ( !ins() || !ins()->sidl_name ) return &PL_sv_undef;
+    return newSVpv(ins()->sidl_name, strlen(ins()->sidl_name));
   }
   bool has_ins() const {
     return (m_rend != nullptr) && (curr_dis.first != nullptr);
@@ -150,15 +150,16 @@ class Ced_perl: public CEd_base {
   }
   bool ins_text(std::string &res) {
     if ( !has_ins() ) return false;
-    render(m_rend, res, curr_dis.first, cex(), nullptr, 1);
+    render(m_rend, res, ins(), cex(), nullptr, 1);
     return !res.empty();
   }
+  HV *make_kv();
   // return ref to hash where key is predicate name
   SV *ins_pred() {
     if ( !has_ins() ) return &PL_sv_undef;
-    if ( !curr_dis.first->predicated ) return &PL_sv_undef;
+    if ( !ins()->predicated ) return &PL_sv_undef;
     HV *hv = newHV();
-    for ( auto &pred: *curr_dis.first->predicated ) {
+    for ( auto &pred: *ins()->predicated ) {
       int res = pred.second(cex());
       if ( res >= 0 && m_vq && cmp(pred.first, "VQ") ) {
         auto name = m_vq(res);
@@ -176,10 +177,10 @@ class Ced_perl: public CEd_base {
   // [1..n] - field names
   SV *ins_prop() {
     if ( !has_ins() ) return &PL_sv_undef;
-    if ( !curr_dis.first->props ) return &PL_sv_undef;
+    if ( !ins()->props ) return &PL_sv_undef;
     HV *hv = newHV();
-    for ( size_t i = 0; i < curr_dis.first->props->size(); ++i ) {
-      auto prop = get_it(*curr_dis.first->props, i);
+    for ( size_t i = 0; i < ins()->props->size(); ++i ) {
+      auto prop = get_it(*ins()->props, i);
       hv_store_ent(hv, newSViv(prop->op), make_prop(prop), 0);
     }
     return newRV_noinc((SV*)hv);
@@ -191,7 +192,7 @@ class Ced_perl: public CEd_base {
   // tabs
   SV *tab_count() {
     if ( !has_ins() ) return &PL_sv_undef;
-    return newSViv(curr_dis.first->tab_fields.size());
+    return newSViv(ins()->tab_fields.size());
   }
   bool get_tab(IV, SV **n, SV **d);
  protected:
@@ -211,8 +212,8 @@ class Ced_perl: public CEd_base {
 // put ref to hash into d
 bool Ced_perl::get_tab(IV idx, SV **n, SV **d) {
   if ( !has_ins() ) return false;
-  if ( idx < 0 || idx >= curr_dis.first->tab_fields.size() ) return false;
-  auto t = get_it(curr_dis.first->tab_fields, idx);
+  if ( idx < 0 || idx >= ins()->tab_fields.size() ) return false;
+  auto t = get_it(ins()->tab_fields, idx);
   // fill names
   AV *av = newAV();
   for ( size_t ni = 0; ni < t->fields.size(); ++ni ) {
@@ -264,12 +265,12 @@ SV *Ced_perl::make_prop(const NV_Prop *prop) {
 // return array with couple of fields names, 3rd is scale when non-zero
 SV *Ced_perl::extract_cb()
 {
-  if ( !has_ins() || !curr_dis.first->cb_field ) return &PL_sv_undef;
+  if ( !has_ins() || !ins()->cb_field ) return &PL_sv_undef;
   AV *av = newAV();
-  av_push(av, newSVpv(curr_dis.first->cb_field->f1.data(), curr_dis.first->cb_field->f1.size()) );
-  av_push(av, newSVpv(curr_dis.first->cb_field->f2.data(), curr_dis.first->cb_field->f2.size()) );
-  if ( curr_dis.first->cb_field->scale )
-    av_push(av, newSViv(curr_dis.first->cb_field->scale));
+  av_push(av, newSVpv(ins()->cb_field->f1.data(), ins()->cb_field->f1.size()) );
+  av_push(av, newSVpv(ins()->cb_field->f2.data(), ins()->cb_field->f2.size()) );
+  if ( ins()->cb_field->scale )
+    av_push(av, newSViv(ins()->cb_field->scale));
   return newRV_noinc((SV*)av);
 }
 
@@ -291,10 +292,10 @@ SV *Ced_perl::make_enum_arr(const nv_eattr *ea)
 
 SV *Ced_perl::extract_efields()
 {
-  if ( !has_ins() || !curr_dis.first->eas.size() ) return &PL_sv_undef;
+  if ( !has_ins() || !ins()->eas.size() ) return &PL_sv_undef;
   HV *hv = newHV();
-  for ( size_t i = 0; i < curr_dis.first->eas.size(); ++i ) {
-    auto &ea = get_it(curr_dis.first->eas, i);
+  for ( size_t i = 0; i < ins()->eas.size(); ++i ) {
+    auto &ea = get_it(ins()->eas, i);
     hv_store(hv, ea.name.data(), ea.name.size(), make_enum_arr(ea.ea), 0);
   }
   return newRV_noinc((SV*)hv);
@@ -305,8 +306,8 @@ SV *Ced_perl::extract_efields()
 SV *Ced_perl::make_vfield(const nv_vattr &v)
 {
   SV *t = newSViv(v.kind);
-  if ( !curr_dis.first->vwidth ) return t;
-  auto vw = find(curr_dis.first->vwidth, v.name);
+  if ( !ins()->vwidth ) return t;
+  auto vw = find(ins()->vwidth, v.name);
   if ( !vw ) return t;
   AV *av = newAV();
   av_push(av, t);
@@ -316,10 +317,10 @@ SV *Ced_perl::make_vfield(const nv_vattr &v)
 
 SV *Ced_perl::extract_vfields()
 {
-  if ( !has_ins() || !curr_dis.first->vas ) return &PL_sv_undef;
+  if ( !has_ins() || !ins()->vas ) return &PL_sv_undef;
   HV *hv = newHV();
-  for ( size_t i = 0; i < curr_dis.first->eas.size(); ++i ) {
-    auto &va = get_it(*curr_dis.first->vas, i);
+  for ( size_t i = 0; i < ins()->eas.size(); ++i ) {
+    auto &va = get_it(*ins()->vas, i);
     hv_store(hv, va.name.data(), va.name.size(), make_vfield(va), 0);
   }
   return newRV_noinc((SV*)hv);
@@ -338,7 +339,7 @@ SV *Ced_perl::make_enum(const char *name)
 {
   if ( !has_ins() ) return &PL_sv_undef;
   std::string_view tmp{ name, strlen(name) };
-  auto ea = find(curr_dis.first->eas, tmp);
+  auto ea = find(ins()->eas, tmp);
   if ( !ea ) return &PL_sv_undef;
   std::string_view key{ ea->ea->ename, strlen( ea->ea->ename ) };
   auto cached_iter = m_cached_hvs.find(key);
@@ -348,6 +349,36 @@ SV *Ced_perl::make_enum(const char *name)
   // store this hv in cache
   m_cached_hvs[key] = curr;
   return newRV_inc((SV *)curr);
+}
+
+HV *Ced_perl::make_kv()
+{
+  HV *hv = newHV();
+  for ( auto ei: cex() ) {
+    if ( ins()->vas ) {
+      auto va = find(ins()->vas, ei.first);
+      if ( va ) {
+        // fill value with according format
+        if ( va->kind == NV_F64Imm ) {
+          auto v = ei.second;
+          hv_store(hv, ei.first.data(), ei.first.size(), newSVnv(*(double *)&v), 0);
+          continue;
+        }
+        if ( va->kind == NV_F32Imm ) {
+          auto v = ei.second;
+          hv_store(hv, ei.first.data(), ei.first.size(), newSVnv(*(float *)&v), 0);
+          continue;
+        }
+        if ( va->kind == NV_F16Imm ) {
+          float f32 = fp16_ieee_to_fp32_bits((uint16_t)ei.second);
+          hv_store(hv, ei.first.data(), ei.first.size(), newSVnv(f32), 0);
+          continue;
+        }
+      }
+    }
+    hv_store(hv, ei.first.data(), ei.first.size(), newSVuv(ei.second), 0);
+  }
+  return hv;
 }
 
 #ifdef MGf_LOCAL
@@ -687,6 +718,17 @@ ins_cb(SV *obj)
  OUTPUT:
   RETVAL
 
+SV *
+kv(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = newRV_noinc((SV*)e->make_kv());
+ OUTPUT:
+  RETVAL
 
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);
