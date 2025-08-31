@@ -484,6 +484,22 @@ set_s(SV *obj, SV *sv)
  OUTPUT:
   RETVAL
 
+int
+optd(SV *obj, int v)
+ CODE:
+   RETVAL = opt_d;
+   opt_d = v;
+ OUTPUT:
+  RETVAL
+
+int
+optv(SV *obj, int v)
+ CODE:
+   RETVAL = opt_v;
+   opt_v = v;
+ OUTPUT:
+  RETVAL
+
 SV *
 off(SV *obj, UV off)
  INIT:
