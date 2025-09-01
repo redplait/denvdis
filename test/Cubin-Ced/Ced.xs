@@ -56,6 +56,7 @@ class Ced_perl: public CEd_base {
     return m_width;
   }
   int sef_func(const char *fname) {
+    if ( has_ins() && block_dirty ) flush_buf();
     reset_ins();
     Ced_named::const_iterator fiter = m_named.find({ fname, strlen(fname) });
     if ( fiter == m_named.end() ) {
@@ -65,6 +66,7 @@ class Ced_perl: public CEd_base {
     return setup_f(fiter, fname);
   }
   int set_section(int idx) {
+    if ( has_ins() && block_dirty ) flush_buf();
     reset_ins();
     auto siter = m_code_sects.find(idx);
     if ( siter == m_code_sects.end() ) {
