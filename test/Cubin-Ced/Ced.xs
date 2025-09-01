@@ -102,6 +102,8 @@ class Ced_perl: public CEd_base {
     if ( !ins() ) return &PL_sv_undef;
     return newSVuv(m_dis->offset());
   }
+  // patch methods
+  SV *nop();
   // instruction properties
   SV *ins_line() const {
     if ( !ins() ) return &PL_sv_undef;
@@ -208,6 +210,24 @@ class Ced_perl: public CEd_base {
   // cached enums (HV *), key is nv_eattr->ename
   std::unordered_map<std::string_view, HV *> m_cached_hvs;
 };
+
+SV *Ced_perl::nop()
+{
+  if ( !has_ins() ) return &PL_sv_undef;
+  if ( !m_nop ) {
+    Err("warning: cannot patch nop\n");
+    return &PL_sv_no;
+  }
+  NV_extracted out_res;
+  copy_tail_values(ins(), m_nop_rend, cex(), out_res);
+  if ( !generic_ins(m_nop, out_res) ) return &PL_sv_no;
+  reset_ins();
+  if ( !flush_buf() ) {
+    Err("nop flush failed\n");
+    return &PL_sv_no;
+  }
+  return &PL_sv_yes;
+}
 
 // extract tab with index idx
 // put ref to array with names into n
@@ -745,6 +765,15 @@ kv(SV *obj)
      RETVAL = &PL_sv_undef;
    else
      RETVAL = newRV_noinc((SV*)e->make_kv());
+ OUTPUT:
+  RETVAL
+
+SV *
+nop(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->nop();
  OUTPUT:
   RETVAL
 
