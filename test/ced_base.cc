@@ -341,6 +341,38 @@ int CEd_base::generic_ins(const nv_instr *ins, NV_extracted &kv)
   return 1;
 }
 
+int CEd_base::patch_pred(int v, bool has_not)
+{
+    auto p_name = has_predicate(m_rend);
+    if ( !p_name ) {
+      Err("instr %d don't have predicates. ignoring\n", ins()->n);
+      return 1;
+    }
+    auto p_field = find_field(ins(), std::string_view(p_name));
+    if ( !p_field ) {
+      Err("instr %d don't have predicate %s. ignoring\n", ins()->n, p_name);
+      return 1;
+    }
+    // patch predicate
+    if ( !patch(p_field, v, p_name) ) return 0;
+    // make pred@not and find field for it
+    std::string pnot = p_name;
+    pnot += "@not";
+    auto pnot_field = find_field(ins(), pnot);
+    if ( !pnot_field ) {
+      Err("instr %d don't have !predicate %s. ignoring\n", ins()->n, pnot.c_str());
+    } else {
+      patch(pnot_field, has_not ? 1 : 0, pnot.c_str());
+    }
+    // m_dis->flush();
+    if ( !flush_buf() ) {
+      Err("predicate flush failed\n");
+      return 0;
+    }
+    m_state = WantOff;
+    return 1;
+}
+
 int CEd_base::generic_cb(const nv_instr *ins, unsigned long c1, unsigned long c2) {
   if ( ins->cb_field->scale )
     c2 /= ins->cb_field->scale;

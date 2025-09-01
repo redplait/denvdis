@@ -245,35 +245,7 @@ int CEd::parse_tail(int idx, std::string &s)
         Err("invalid predicate syntax: %s, line %d\n", s.c_str(), m_ln);
         return 0;
     }
-    int v = atoi(s.c_str() + idx + 1);
-    auto p_name = has_predicate(m_rend);
-    if ( !p_name ) {
-      Err("instr %d don't have predicates. ignoring\n", ins()->n);
-      return 1;
-    }
-    auto p_field = find_field(ins(), std::string_view(p_name));
-    if ( !p_field ) {
-      Err("instr %d don't have predicate %s. ignoring\n", ins()->n, p_name);
-      return 1;
-    }
-    // patch predicate
-    if ( !patch(p_field, v, p_name) ) return 0;
-    // make pred@not and find field for it
-    std::string pnot = p_name;
-    pnot += "@not";
-    auto pnot_field = find_field(ins(), pnot);
-    if ( !pnot_field ) {
-      Err("instr %d don't have !predicate %s. ignoring\n", ins()->n, pnot.c_str());
-    } else {
-      patch(pnot_field, has_not ? 1 : 0, pnot.c_str());
-    }
-    // m_dis->flush();
-    if ( !flush_buf() ) {
-      Err("predicate flush failed\n");
-      return 0;
-    }
-    m_state = WantOff;
-    return 1;
+    return patch_pred(atoi(s.c_str() + idx + 1), has_not);
   } else if ( c == 'p' ) { // actually this is hardest part, bcs
      // fields args have different formats depending from it's type - like int/float
      // field can be part of table and current value can be bad combination - for this I postpone actual patching
