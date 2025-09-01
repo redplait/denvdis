@@ -161,7 +161,7 @@ class CEd_base: public CElf<ParseSASS> {
    // used in noping and patch from r instruction text
    int generic_ins(const nv_instr *, NV_extracted &);
    int generic_cb(const nv_instr *, unsigned long c1, unsigned long c2);
-   int patch_pred(int v, bool has_not);
+   int _patch_pred(int v, bool has_not);
    unsigned long value_or_def(const nv_instr *, const std::string_view &, const NV_extracted &);
    unsigned long get_def_value(const nv_instr *, const std::string_view &);
    FILE *m_cubin_fp = nullptr;
@@ -187,6 +187,7 @@ class CEd_base: public CElf<ParseSASS> {
     m_rend = nullptr;
     curr_dis.first = nullptr;
     curr_dis.second.clear();
+    m_inc_tabs.clear();
    }
    // just wrappers to reduce repeating typing
    inline const nv_instr *ins() const { return curr_dis.first; }

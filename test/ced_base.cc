@@ -14,6 +14,7 @@ int CEd_base::flush_buf()
   }
   flush_cnt++;
   block_dirty = 0;
+  m_inc_tabs.clear();
   return 1;
 }
 
@@ -341,7 +342,7 @@ int CEd_base::generic_ins(const nv_instr *ins, NV_extracted &kv)
   return 1;
 }
 
-int CEd_base::patch_pred(int v, bool has_not)
+int CEd_base::_patch_pred(int v, bool has_not)
 {
     auto p_name = has_predicate(m_rend);
     if ( !p_name ) {

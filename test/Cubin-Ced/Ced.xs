@@ -104,6 +104,10 @@ class Ced_perl: public CEd_base {
   }
   // patch methods
   SV *nop();
+  int patch_pred(int is_not, int v) {
+    if ( !has_ins() ) return 0;
+    return _patch_pred(v, is_not);
+  }
   // instruction properties
   SV *ins_line() const {
     if ( !ins() ) return &PL_sv_undef;
@@ -124,6 +128,10 @@ class Ced_perl: public CEd_base {
   SV *ins_scbd() const {
     if ( !ins() ) return &PL_sv_undef;
     return newSViv(ins()->scbd);
+  }
+  SV *ins_scbd_type() const {
+    if ( !ins() ) return &PL_sv_undef;
+    return newSViv(ins()->scbd_type);
   }
   SV *ins_name() const {
     if ( !ins() ) return &PL_sv_undef;
@@ -149,6 +157,11 @@ class Ced_perl: public CEd_base {
     return (m_rend != nullptr) && (curr_dis.first != nullptr);
   }
   bool ins_mask(std::string &res) {
+    if ( !has_ins() ) return false;
+    res = ins()->mask;
+    return true;
+  }
+  bool gen_mask(std::string &res) {
     if ( !has_ins() ) return false;
     return m_dis->gen_mask(res);
   }
@@ -604,6 +617,16 @@ ins_scbd(SV *obj)
   RETVAL
 
 SV *
+ins_scbd_type(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_scbd_type();
+ OUTPUT:
+  RETVAL
+
+
+SV *
 ins_cc(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
@@ -646,6 +669,20 @@ ins_mask(SV *obj)
    std::string mask;
  CODE:
    bool res = e->ins_mask(mask);
+   if ( !res )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = newSVpv(mask.c_str(), mask.size());
+ OUTPUT:
+  RETVAL
+
+SV *
+mask(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   std::string mask;
+ CODE:
+   bool res = e->gen_mask(mask);
    if ( !res )
      RETVAL = &PL_sv_undef;
    else
@@ -777,6 +814,18 @@ nop(SV *obj)
  OUTPUT:
   RETVAL
 
+SV *
+patch_pred(SV *obj, int is_not, int pred)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = e->patch_pred(is_not, pred) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);
  if ( !s_ca_pkg )
@@ -835,3 +884,6 @@ BOOT:
  EXPORT_ENUM(NV_Scbd, SOURCE_SINK_RD)
  EXPORT_ENUM(NV_Scbd, SOURCE_SINK_WR)
  EXPORT_ENUM(NV_Scbd, NON_BARRIER_INT_INST)
+ EXPORT_ENUM(NV_Scbd_Type, BARRIER_INST)
+ EXPORT_ENUM(NV_Scbd_Type, MEM_INST)
+ EXPORT_ENUM(NV_Scbd_Type, BB_ENDING_INST)
