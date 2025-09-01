@@ -342,7 +342,7 @@ int CEd_base::generic_ins(const nv_instr *ins, NV_extracted &kv)
   return 1;
 }
 
-int CEd_base::_patch_pred(int v, bool has_not)
+int CEd_base::_patch_pred(int v, bool has_not, bool flush)
 {
     auto p_name = has_predicate(m_rend);
     if ( !p_name ) {
@@ -365,6 +365,7 @@ int CEd_base::_patch_pred(int v, bool has_not)
     } else {
       patch(pnot_field, has_not ? 1 : 0, pnot.c_str());
     }
+    if ( !flush ) return 1;
     // m_dis->flush();
     if ( !flush_buf() ) {
       Err("predicate flush failed\n");

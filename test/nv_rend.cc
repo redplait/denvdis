@@ -1459,6 +1459,22 @@ bool NV_renderer::extract(const struct nv_instr *i, const NV_extracted::const_it
   return true;
 }
 
+bool NV_renderer::conv_simm(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const
+{
+  auto wi = find(i->vwidth, kvi->first);
+  if ( !wi ) return false;
+  // check if value negative
+  if ( kvi->second & (1L << (wi->w - 1)) ) {
+    res = -1; // all ff
+    for ( int i = 0; i < wi->w - 1; i++ ) {
+      auto mask = kvi->second & (1L << i); // check bit at index i
+      if ( !mask ) res &= ~(1L << i);
+    }
+  } else
+    res = (long)kvi->second;
+  return true;
+}
+
 bool NV_renderer::check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const
 {
   if ( !i->brt || !i->target_index ) {

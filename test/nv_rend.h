@@ -493,6 +493,7 @@ class NV_renderer {
    void dump_value(const struct nv_instr *, const NV_extracted &kv, const std::string_view &,
      std::string &res, const nv_vattr &, uint64_t v) const;
    bool extract(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
+   bool conv_simm(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    bool check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    bool check_ret(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    // reg_pads

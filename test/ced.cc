@@ -245,7 +245,7 @@ int CEd::parse_tail(int idx, std::string &s)
         Err("invalid predicate syntax: %s, line %d\n", s.c_str(), m_ln);
         return 0;
     }
-    return _patch_pred(atoi(s.c_str() + idx + 1), has_not);
+    return _patch_pred(atoi(s.c_str() + idx + 1), has_not, true);
   } else if ( c == 'p' ) { // actually this is hardest part, bcs
      // fields args have different formats depending from it's type - like int/float
      // field can be part of table and current value can be bad combination - for this I postpone actual patching
