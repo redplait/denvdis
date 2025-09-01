@@ -104,6 +104,7 @@ class Ced_perl: public CEd_base {
   }
   // patch methods
   SV *nop();
+  int replace(const char *s);
   int patch_pred(int is_not, int v) {
     if ( !has_ins() ) return 0;
     return _patch_pred(v, is_not);
@@ -223,6 +224,33 @@ class Ced_perl: public CEd_base {
   // cached enums (HV *), key is nv_eattr->ename
   std::unordered_map<std::string_view, HV *> m_cached_hvs;
 };
+
+int Ced_perl::replace(const char *s)
+{
+  int add_res = add(s, 0);
+  if ( !add_res || m_forms.empty() ) {
+    Err("cannot parse %s\n", s);
+    return 0;
+  }
+  const one_form *of = &m_forms.at(0);
+  if ( of->label_op ) {
+    Err("instructions with labels not supported\n");
+    return 0;
+  }
+  NV_extracted kv;
+  if ( !_extract_full(kv, of) ) {
+    Err("cannot extract values for %s\n", s);
+    return 0;
+  }
+  copy_tail_values(of->instr, of->rend, cex(), kv);
+  if ( !generic_ins(of->instr, kv) ) return 0;
+  if ( !flush_buf() ) {
+    Err("instr %s flush failed\n", s);
+    return 0;
+  }
+  reset_ins();
+  return 1;
+}
 
 SV *Ced_perl::nop()
 {
@@ -819,6 +847,18 @@ nop(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->nop();
+ OUTPUT:
+  RETVAL
+
+SV *
+replace(SV *obj, const char *s)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = e->replace(s) ? &PL_sv_yes : &PL_sv_no;
  OUTPUT:
   RETVAL
 
