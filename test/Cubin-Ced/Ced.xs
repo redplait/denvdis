@@ -389,29 +389,37 @@ SV *Ced_perl::make_enum(const char *name)
 HV *Ced_perl::make_kv()
 {
   HV *hv = newHV();
-  for ( auto ei: cex() ) {
+  for ( NV_extracted::const_iterator ei = curr_dis.second.begin(); ei != curr_dis.second.end(); ++ei ) {
     if ( ins()->vas ) {
-      auto va = find(ins()->vas, ei.first);
+      auto va = find(ins()->vas, ei->first);
       if ( va ) {
         // fill value with according format
         if ( va->kind == NV_F64Imm ) {
-          auto v = ei.second;
-          hv_store(hv, ei.first.data(), ei.first.size(), newSVnv(*(double *)&v), 0);
+          auto v = ei->second;
+          hv_store(hv, ei->first.data(), ei->first.size(), newSVnv(*(double *)&v), 0);
           continue;
         }
         if ( va->kind == NV_F32Imm ) {
-          auto v = ei.second;
-          hv_store(hv, ei.first.data(), ei.first.size(), newSVnv(*(float *)&v), 0);
+          auto v = ei->second;
+          hv_store(hv, ei->first.data(), ei->first.size(), newSVnv(*(float *)&v), 0);
           continue;
         }
         if ( va->kind == NV_F16Imm ) {
-          float f32 = fp16_ieee_to_fp32_bits((uint16_t)ei.second);
-          hv_store(hv, ei.first.data(), ei.first.size(), newSVnv(f32), 0);
+          float f32 = fp16_ieee_to_fp32_bits((uint16_t)ei->second);
+          hv_store(hv, ei->first.data(), ei->first.size(), newSVnv(f32), 0);
           continue;
+        }
+        if ( va->kind == NV_SImm || va->kind == NV_SSImm || va->kind == NV_RSImm ) {
+          // lets convert signed value to SViv
+          long conv = 0;
+          if ( check_branch(ins(), ei, conv) || conv_simm(ins(), ei, conv) ) {
+            hv_store(hv, ei->first.data(), ei->first.size(), newSViv(conv), 0);
+            continue;
+          }
         }
       }
     }
-    hv_store(hv, ei.first.data(), ei.first.size(), newSVuv(ei.second), 0);
+    hv_store(hv, ei->first.data(), ei->first.size(), newSVuv(ei->second), 0);
   }
   return hv;
 }
