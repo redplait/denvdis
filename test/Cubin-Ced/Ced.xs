@@ -109,6 +109,7 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return 0;
     return _patch_pred(v, is_not, false);
   }
+  int patch_field(const char *fname, SV *v);
   int patch_tab(int t_idx, int v);
   int patch_cb(unsigned long v1, unsigned long v2);
   // instruction properties
@@ -270,6 +271,141 @@ SV *Ced_perl::nop()
     return &PL_sv_no;
   }
   return &PL_sv_yes;
+}
+
+// patched CEd::process_p, too many changes to extract parts in CEd_base
+int Ced_perl::patch_field(const char *fname, SV *v)
+{
+  std::string p = fname;
+  const NV_tab_fields *tab = nullptr;
+  const NV_field *field = nullptr;
+  const nv_eattr *ea = nullptr;
+  const nv_vattr *va = nullptr;
+  int cb_idx = 0, tab_idx = 0;
+  bool ctr = p == "Ctrl";
+  if ( ctr && m_width == 128 ) {
+    Err("Ctrl not supported for 128bit\n");
+    return 0;
+  }
+  const NV_cbank *cb = is_cb_field(ins(), p, cb_idx);
+  if ( !ctr && !cb ) {
+    tab = is_tab_field(ins(), p, tab_idx);
+    if ( !tab ) {
+      field = std::lower_bound(ins()->fields.begin(), ins()->fields.end(), p,
+       [](const NV_field &f, const std::string &w) {
+         return f.name < w;
+      });
+      if ( field == ins()->fields.end() ) {
+        Err("unknown field %s\n", fname);
+        return 0;
+      }
+      // cool, some real field
+      ea = find_ea(ins(), p);
+      if ( !ea && ins()->vas )
+        va = find(ins()->vas, p);
+    }
+  }
+  m_v = 0;
+  // check what we have and what kind of SV
+  if ( va || ctr ) { // some imm value
+    if ( SvPOK(v) ) { // string
+      STRLEN len;
+      auto pv = SvPVbyte(v, len);
+      std::string_view sv{ pv, len };
+      if ( !parse_num(va->kind, sv) ) {
+        Err("cannot parse num %.*s\n", len, sv.data());
+        return 0;
+      }
+    } else if ( SvIOK(v) )
+     m_v = SvIV(v);
+    else {
+      // TODO: add here floating points
+      Err("Unknown SV type %d in patch", SvTYPE(v));
+      return 0;
+    }
+  } else if ( ea ) {
+    if ( SvPOK(v) ) { // string
+      STRLEN len;
+      auto pv = SvPVbyte(v, len);
+      std::string_view sv{ pv, len };
+      if ( !m_renums ) {
+        Err("no renums for field %s, enum %s\n", p.c_str(), ea->ename);
+        return 0;
+      }
+      auto ed = m_renums->find(ea->ename);
+      if ( ed == m_renums->end() ) {
+        Err("cannot find renum %s for field %s\n", ea->ename, p.c_str());
+        return 0;
+      }
+      auto edi = ed->second->find(sv);
+      if ( edi == ed->second->end() ) {
+        Err("cannot find %.*s in enum %s for field %s\n", len, sv.data(), ea->ename, p.c_str());
+        return 0;
+      }
+      m_v = edi->second;
+    } else if ( SvIOK(v) ) {
+      m_v = SvIV(v);
+      auto ei = ea->em->find(m_v);
+      if ( ei == ea->em->end() ) {
+        Err("value %lX for field %s not in enum %s\n", m_v, p.c_str(), ea->ename);
+        return 1;
+      }
+    } else {
+      Err("Unknown SV type %d for enum %s in patch", SvTYPE(v), ea->ename);
+      return 0;
+    }
+
+  } else {
+    Err("unknown field %s, ignoring\n", p.c_str());
+    return 0;
+  }
+  // check how this field should be patched
+  if ( ctr ) {
+    return m_dis->put_ctrl(m_v);
+  }
+  if ( field ) {
+    int res = patch(field, field->scale ? m_v / field->scale : m_v, p.c_str());
+    ex()[field->name] = m_v;
+    return res;
+  }
+  if ( cb ) {
+    unsigned long c1 = 0, c2 = 0;
+    auto kv = ex();
+    if ( !cb_idx ) {
+      c1 = m_v;
+      // store into current kv bcs next p can patch second cbank value
+      kv[cb->f1] = m_v;
+      c2 = value_or_def(ins(), cb->f2, kv);
+    } else {
+      c2 = m_v;
+      // store into current kv bcs next p can patch second cbank value
+      kv[cb->f2] = m_v;
+      c1 = value_or_def(ins(), cb->f1, kv);
+    }
+    return generic_cb(ins(), c1, c2, true);
+  }
+  if ( tab ) {
+    // check if provided value is valid for table
+    std::vector<unsigned short> tab_row;
+    if ( make_tab_row(opt_v, ins(), tab, cex(), tab_row, tab_idx) ) return 0;
+    tab_row[tab_idx] = (unsigned short)m_v;
+    int tab_value = 0;
+    if ( !ins()->check_tab(tab->tab, tab_row, tab_value) ) {
+      NV_extracted &kv = ex();
+      kv[p] = m_v;
+      m_inc_tabs.insert(tab);
+      if ( opt_v ) {
+        Err("Warning: value %ld for %s invalid in table\n", m_v, p.c_str());
+        dump_tab_fields(tab);
+      }
+      return 1;
+    } else
+     return patch(tab, tab_value, p.c_str());
+  } else {
+    Err("dont know how to patch %s\n", p.c_str());
+    return 0;
+  }
+  return 1;
 }
 
 int Ced_perl::patch_tab(int t_idx, int v)
@@ -582,7 +718,7 @@ set_s(SV *obj, SV *sv)
    int res = 0;
    if ( SvPOK(sv) ) {
      STRLEN len;
-     auto p =  SvPVbyte(sv, len);
+     auto p = SvPVbyte(sv, len);
      res = e->set_section(p, len);
    } else if ( SvIOK(sv) ) res = e->set_section(SvIV(sv));
    else my_warn("set_s: unknown arg type");
@@ -930,6 +1066,18 @@ patch_tab(SV *obj, int idx, int v)
      RETVAL = &PL_sv_undef;
    else
      RETVAL = e->patch_tab(idx, v) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
+SV *
+patch(SV *obj, const char *fname, SV *v)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = e->patch_field(fname, v) ? &PL_sv_yes : &PL_sv_no;
  OUTPUT:
   RETVAL
 
