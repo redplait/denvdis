@@ -375,7 +375,11 @@ int CEd_base::_patch_pred(int v, bool has_not, bool flush)
     return 1;
 }
 
-int CEd_base::generic_cb(const nv_instr *ins, unsigned long c1, unsigned long c2) {
+int CEd_base::generic_cb(const nv_instr *ins, unsigned long c1, unsigned long c2, bool sync) {
+  if ( sync ) {
+    ex()[ins->cb_field->f1] = c1;
+    ex()[ins->cb_field->f2] = c2;
+  }
   if ( ins->cb_field->scale )
     c2 /= ins->cb_field->scale;
   // mask can have size 2 or 3. see details in ina.cc kv_field::patch method

@@ -160,7 +160,7 @@ class CEd_base: public CElf<ParseSASS> {
    // generate some ins from fresh values
    // used in noping and patch from r instruction text
    int generic_ins(const nv_instr *, NV_extracted &);
-   int generic_cb(const nv_instr *, unsigned long c1, unsigned long c2);
+   int generic_cb(const nv_instr *, unsigned long c1, unsigned long c2, bool sync = false);
    int _patch_pred(int v, bool has_not, bool flush = false);
    unsigned long value_or_def(const nv_instr *, const std::string_view &, const NV_extracted &);
    unsigned long get_def_value(const nv_instr *, const std::string_view &);

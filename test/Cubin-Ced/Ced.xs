@@ -109,6 +109,7 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return 0;
     return _patch_pred(v, is_not);
   }
+  int patch_cb(unsigned long v1, unsigned long v2);
   // instruction properties
   SV *ins_line() const {
     if ( !ins() ) return &PL_sv_undef;
@@ -270,6 +271,12 @@ SV *Ced_perl::nop()
   return &PL_sv_yes;
 }
 
+int Ced_perl::patch_cb(unsigned long v1, unsigned long v2)
+{
+  if ( !ins() || !ins()->cb_field ) return 0;
+  return generic_cb(ins(), v1, v2, true);
+}
+
 // extract tab with index idx
 // put ref to array with names into n
 // put ref to hash into d
@@ -417,7 +424,7 @@ SV *Ced_perl::make_enum(const char *name)
 HV *Ced_perl::make_kv()
 {
   HV *hv = newHV();
-  for ( NV_extracted::const_iterator ei = curr_dis.second.begin(); ei != curr_dis.second.end(); ++ei ) {
+  for ( NV_extracted::const_iterator ei = cex().cbegin(); ei != cex().cend(); ++ei ) {
     if ( ins()->vas ) {
       auto va = find(ins()->vas, ei->first);
       if ( va ) {
@@ -873,6 +880,19 @@ patch_pred(SV *obj, int is_not, int pred)
      RETVAL = e->patch_pred(is_not, pred) ? &PL_sv_yes : &PL_sv_no;
  OUTPUT:
   RETVAL
+
+SV *
+patch_cb(SV *obj, unsigned long l1, unsigned long l2)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = e->patch_cb(l1, l2) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
 
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);
