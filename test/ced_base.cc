@@ -356,6 +356,8 @@ int CEd_base::_patch_pred(int v, bool has_not, bool flush)
     }
     // patch predicate
     if ( !patch(p_field, v, p_name) ) return 0;
+    // sync kv when no flush
+    if ( !flush ) ex()[p_field->name] = v;
     // make pred@not and find field for it
     std::string pnot = p_name;
     pnot += "@not";
@@ -363,7 +365,9 @@ int CEd_base::_patch_pred(int v, bool has_not, bool flush)
     if ( !pnot_field ) {
       Err("instr %d don't have !predicate %s. ignoring\n", ins()->n, pnot.c_str());
     } else {
-      patch(pnot_field, has_not ? 1 : 0, pnot.c_str());
+      int what = has_not ? 1 : 0;
+      patch(pnot_field, what, pnot.c_str());
+      if ( !flush ) ex()[pnot_field->name] = what;
     }
     if ( !flush ) return 1;
     // m_dis->flush();
