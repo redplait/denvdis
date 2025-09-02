@@ -107,8 +107,9 @@ class Ced_perl: public CEd_base {
   int replace(const char *s);
   int patch_pred(int is_not, int v) {
     if ( !has_ins() ) return 0;
-    return _patch_pred(v, is_not);
+    return _patch_pred(v, is_not, false);
   }
+  int patch_tab(int t_idx, int v);
   int patch_cb(unsigned long v1, unsigned long v2);
   // instruction properties
   SV *ins_line() const {
@@ -269,6 +270,33 @@ SV *Ced_perl::nop()
     return &PL_sv_no;
   }
   return &PL_sv_yes;
+}
+
+int Ced_perl::patch_tab(int t_idx, int v)
+{
+  // first check if we have tab with index t_idx
+  if ( !ins() ) return 0;
+  if ( t_idx < 0 || t_idx >= ins()->tab_fields.size() ) return 0;
+  auto &f = get_it(ins()->tab_fields, t_idx);
+  // check if v is valid value for this tab
+  auto ti = f->tab->find(v);
+  if ( ti == f->tab->end() ) {
+    Err("invalid value %d for tab %d", v, t_idx);
+    return 0;
+  }
+  std::string tmp = "tab ";
+  tmp += std::to_string(t_idx);
+  if ( !patch(f, v, tmp.c_str()) ) return 0;
+  // first remove pending tabs
+  m_inc_tabs.erase(f);
+  // then sync kv with array in ti
+  auto a = ti->second;
+  for ( size_t ai = 0; ai < f->fields.size(); ai++ )
+  {
+    auto &sv = get_it(f->fields, ai);
+    ex()[sv] = a[1 + ai];
+  }
+  return 1;
 }
 
 int Ced_perl::patch_cb(unsigned long v1, unsigned long v2)
@@ -893,6 +921,17 @@ patch_cb(SV *obj, unsigned long l1, unsigned long l2)
  OUTPUT:
   RETVAL
 
+SV *
+patch_tab(SV *obj, int idx, int v)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = e->patch_tab(idx, v) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
 
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);
