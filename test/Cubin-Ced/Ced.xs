@@ -102,6 +102,20 @@ class Ced_perl: public CEd_base {
     if ( !ins() ) return &PL_sv_undef;
     return newSVuv(m_dis->offset());
   }
+  SV *get_ctrl() {
+    if ( !ins() ) return &PL_sv_undef;
+    if ( m_width == 128 ) return &PL_sv_no;
+    uint8_t c = 0, o = 0;
+    m_dis->get_ctrl(c, o);
+    return newSVuv(c);
+  }
+  SV *get_opcode() {
+    if ( !ins() ) return &PL_sv_undef;
+    if ( m_width == 128 ) return &PL_sv_no;
+    uint8_t c = 0, o = 0;
+    m_dis->get_ctrl(c, o);
+    return newSVuv(o);
+  }
   // patch methods
   SV *nop();
   int replace(const char *s);
@@ -766,6 +780,30 @@ get_off(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->get_off();
+ OUTPUT:
+  RETVAL
+
+SV *
+ctrl(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = e->get_ctrl();
+ OUTPUT:
+  RETVAL
+
+SV *
+opcode(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = e->get_opcode();
  OUTPUT:
   RETVAL
 
