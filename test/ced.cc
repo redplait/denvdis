@@ -399,7 +399,9 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
   // check how this field should be patched
   if ( ctr ) {
     if ( opt_d ) fprintf(m_out, "write Ctrl %lX\n", m_v);
-    return m_dis->put_ctrl(m_v);
+    int res = m_dis->put_ctrl(m_v);
+    if ( res ) block_dirty = true;
+    return res;
   }
   if ( field ) {
     if ( field->scale ) m_v /= field->scale;
