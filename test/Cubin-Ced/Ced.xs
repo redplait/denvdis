@@ -171,6 +171,9 @@ class Ced_perl: public CEd_base {
     if ( !ins() || !ins()->sidl_name ) return &PL_sv_undef;
     return newSVpv(ins()->sidl_name, strlen(ins()->sidl_name));
   }
+  bool has_pending_tabs() {
+    return !m_inc_tabs.empty();
+  }
   bool has_ins() const {
     return (m_rend != nullptr) && (curr_dis.first != nullptr);
   }
@@ -330,12 +333,27 @@ int Ced_perl::patch_field(const char *fname, SV *v)
         Err("cannot parse num %.*s\n", len, sv.data());
         return 0;
       }
-    } else if ( SvIOK(v) )
+    } else if ( SvUOK(v) && (va->kind == NV_BITSET || va->kind == NV_UImm) )
+     m_v = SvUV(v);
+    else if ( SvIOK(v) )
      m_v = SvIV(v);
     else {
-      // TODO: add here floating points
-      Err("Unknown SV type %d in patch", SvTYPE(v));
-      return 0;
+      int skip = 1;
+      if ( !ctr && SvNOK(v) && (va->kind == NV_F64Imm || va->kind == NV_F32Imm || va->kind == NV_F16Imm) ) {
+        double d = SvNV(v);
+        if ( va->kind == NV_F64Imm ) m_v = *(uint64_t *)&d;
+        else if ( va->kind == NV_F32Imm ) {
+          float fl = (float)d;
+          *(float *)&m_v = fl;
+        } else if ( va->kind == NV_F16Imm ) {
+          m_v = fp16_ieee_from_fp32_value(float(d));
+        }
+        skip = 0;
+      }
+      if ( skip ) {
+        Err("Unknown SV type %d in patch", SvTYPE(v));
+        return 0;
+      }
     }
   } else if ( ea ) {
     if ( SvPOK(v) ) { // string
@@ -368,14 +386,15 @@ int Ced_perl::patch_field(const char *fname, SV *v)
       Err("Unknown SV type %d for enum %s in patch", SvTYPE(v), ea->ename);
       return 0;
     }
-
   } else {
     Err("unknown field %s, ignoring\n", p.c_str());
     return 0;
   }
   // check how this field should be patched
   if ( ctr ) {
-    return m_dis->put_ctrl(m_v);
+    int res = m_dis->put_ctrl(m_v);
+    if ( res ) block_dirty = true;
+    return res;
   }
   if ( field ) {
     int res = patch(field, field->scale ? m_v / field->scale : m_v, p.c_str());
@@ -1116,6 +1135,18 @@ patch(SV *obj, const char *fname, SV *v)
      RETVAL = &PL_sv_undef;
    else
      RETVAL = e->patch_field(fname, v) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
+SV *
+ptabs(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = e->has_pending_tabs() ? &PL_sv_yes : &PL_sv_no;
  OUTPUT:
   RETVAL
 
