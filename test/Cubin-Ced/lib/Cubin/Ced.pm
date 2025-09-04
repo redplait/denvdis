@@ -41,37 +41,43 @@ __END__
 
 =head1 NAME
 
-Cubin::Ced - Perl extension for blah blah blah
+Cubin::Ced - Perl extension for CUBIN inline patching
+C++ sources for SASS disassembler and asm parser located in ../ directory
 
 =head1 SYNOPSIS
 
   use Cubin::Ced;
-  blah blah blah
+  use Elf::Reader;
+  # first create Elf reader
+  my $e = Elf::Reader->new("cudatest.6.sm_61.cubin");
+  # load symbols, find section with code etc
+  my $cub = Cubin::Ced->new($e)
+  # now you can use methods from Cubin::Ced
 
 =head1 DESCRIPTION
 
-Stub documentation for Cubin::Ced, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
-unedited.
+There are 3 kind of methods
+ 1) navigation
+ 2) patching
+ 3) getting details of currently processed instruction
 
-Blah blah blah.
+=head3 Navigation
+As you could assume you first need to setup right section containing code and offset inside it before you can fetch/patch something
+Cubin
+
+=head3 Patch methods
+
+=head3 Fetching instruction details methods
+
 
 =head2 EXPORT
 
 None by default.
 
 
-
 =head1 SEE ALSO
 
-Mention other useful documentation such as the documentation of
-related modules or operating system documentation (such as man pages
-in UNIX), or any relevant external documentation such as RFCs or
-standards.
-
-If you have a mailing list set up for your module, mention it here.
-
-If you have a web site set up for your module, mention it here.
+C++ version of Ced: https://redplait.blogspot.com/2025/07/ced-sed-like-cubin-editor.html
 
 =head1 AUTHOR
 

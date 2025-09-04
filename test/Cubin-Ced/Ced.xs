@@ -346,7 +346,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
           float fl = (float)d;
           *(float *)&m_v = fl;
         } else if ( va->kind == NV_F16Imm ) {
-          m_v = fp16_ieee_from_fp32_value(float(d));
+          *(float *)&m_v = fp16_ieee_from_fp32_value(float(d));
         }
         skip = 0;
       }
@@ -380,7 +380,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
       auto ei = ea->em->find(m_v);
       if ( ei == ea->em->end() ) {
         Err("value %lX for field %s not in enum %s\n", m_v, p.c_str(), ea->ename);
-        return 1;
+        return 0;
       }
     } else {
       Err("Unknown SV type %d for enum %s in patch", SvTYPE(v), ea->ename);
