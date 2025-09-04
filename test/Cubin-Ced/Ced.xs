@@ -92,6 +92,14 @@ class Ced_perl: public CEd_base {
     if ( !res ) reset_ins();
     return res;
   }
+  SV *get_start() {
+    if ( m_state < WantOff ) return &PL_sv_undef;
+    return newSVuv(m_obj_off);
+  }
+  SV *get_end() {
+    if ( m_state < WantOff ) return &PL_sv_undef;
+    return newSVuv(m_obj_off + m_obj_size);
+  }
   int next() {
     if ( m_state < WantOff ) return 0;
     int res = _next_off();
@@ -799,6 +807,24 @@ get_off(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->get_off();
+ OUTPUT:
+  RETVAL
+
+SV *
+start(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->get_start();
+ OUTPUT:
+  RETVAL
+
+SV *
+end(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->get_end();
  OUTPUT:
   RETVAL
 

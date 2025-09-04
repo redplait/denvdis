@@ -47,6 +47,10 @@ $t_num++;
 ok( 8 == $cub->get_off(), 'offset should be 8' );
 
 $t_num++;
+ok( 0 == $cub->start(), 'start of section in set_s should be 0' );
+
+
+$t_num++;
 ok( 'MOV' eq $cub->ins_name(), 'ins_name' );
 
 my $ef = $cub->efields();
