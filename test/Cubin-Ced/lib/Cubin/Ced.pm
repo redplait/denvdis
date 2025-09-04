@@ -42,6 +42,7 @@ __END__
 =head1 NAME
 
 Cubin::Ced - Perl extension for CUBIN inline patching
+
 C++ sources for SASS disassembler and asm parser located in ../ directory
 
 =head1 SYNOPSIS
@@ -57,15 +58,60 @@ C++ sources for SASS disassembler and asm parser located in ../ directory
 =head1 DESCRIPTION
 
 There are 3 kind of methods
- 1) navigation
- 2) patching
- 3) getting details of currently processed instruction
+
+=over
+
+=item 1) navigation
+
+=item 2) patching
+
+=item 3) getting details of currently processed instruction
+
+=back
 
 =head3 Navigation
+
 As you could assume you first need to setup right section containing code and offset inside it before you can fetch/patch something
-Cubin
+Cubin can have several sections with code and each such section can contains several functions. So you have two method to select section/function
+ 
+ set_s acepts string as section name or integer - section index
+ set_f - string for function name
+both return true in case of success
+
+Then you need to peek offset inside section/function. I could seek to first available but disassembling of single instruction is
+relative expensive operation and I don't know ahead if you really need instruction at start of section/function.
+So to seek to right place you should use method
+ $cub->off(offset)
+
+you also can gather boundaries of early selected section/function with couple or methods:
+
+ start - returns lowest offset
+
+ end - returns end offset
+
+Also you can use method next to move and disassemly next instruction (if those offset >= start && < end)
 
 =head3 Patch methods
+
+You can patch whole instruction with methods
+  replace('text of SASS')
+ to fully replace body of instruction or if you want to NOP some - use $cub->nop method
+
+Note that you must set new offset after using of this couple of methods
+
+Also you can patch only some fields with methods:
+
+=over
+
+=item patch_pred to patch initial predicate
+
+=item patch_cb to patch Const Bank
+
+=item patch_tab to patch set of values in some table
+
+=back
+
+also you can check if you still have pending tabs with $cub->ptabs method
 
 =head3 Fetching instruction details methods
 
