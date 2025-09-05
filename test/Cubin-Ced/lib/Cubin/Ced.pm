@@ -57,7 +57,7 @@ C++ sources for SASS disassembler and asm parser located in ../ directory
 
 =head1 DESCRIPTION
 
-There are 3 kind of methods
+There are 4 kind of methods
 
 =over
 
@@ -66,6 +66,8 @@ There are 3 kind of methods
 =item 2) patching
 
 =item 3) getting details of currently processed instruction
+
+=item 4) gather details about currently loaded SM
 
 =back
 
@@ -117,6 +119,54 @@ Also you can patch only some fields with methods:
 You can check if you still have pending tables with $cub->ptabs method
 
 =head3 Fetching instruction details methods
+
+=over
+
+=item * ins_name
+
+=item * ins_class
+
+=item * ins_false - check if instruction has predicate !@PT (or !@UPT)
+
+=item * ins_target
+
+=item * ins_brt
+
+=item * ins_cc
+
+=item * ins_sidl
+
+=item * ins_line - line number for this particular form in MD file, useful for debugging only
+
+=item * ins_alt - if instruction is just alternate form of more general instruction
+
+=item * ins_mask - mask for this instruction form, all bits for fields replaced with X
+
+=item * mask - full mask of instruction, like what nvd -N option does
+
+=item * ins_text - disaasemled string
+
+=item * ins_pred - returns ref to hash with predicates, see details https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-6.html
+
+=item * ins_prop - returns ref to hash with properties, see details https://redplait.blogspot.com/2025/07/sass-instructions-properties.html
+
+=item * efields - returns ref to hash of enum-based fields, key is field name, value is array where
+  a[0] - is_ignore
+  a[1] - print
+  a[2] - has default value
+  a[3] - default value if a[2] is non-zero
+
+=back
+
+=head3 Gathering details about currently loaded SM
+
+=over
+
+=item * width of instruction
+
+=item * lut(index) - decoded string of LUT operation, see details https://redplait.blogspot.com/2025/07/sass-instructions-lut-operations.html
+
+=back
 
 
 =head2 EXPORT

@@ -179,6 +179,17 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return always_false(int(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
   }
+  SV *check_lut() const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    int idx = 0;
+    if ( NV_renderer::check_lut(int(), m_rend, cex(), idx) ) return newSViv(idx);
+    return &PL_sv_undef;
+  }
+  SV *lut_name(int idx) const {
+    auto s = get_lut(idx);
+    if ( !s ) return &PL_sv_undef;
+    return newSVpv(s, strlen(s));
+  }
   SV *ins_sidl() const {
     if ( !ins() || !ins()->sidl_name ) return &PL_sv_undef;
     return newSVpv(ins()->sidl_name, strlen(ins()->sidl_name));
@@ -1093,6 +1104,24 @@ ins_cb(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->extract_cb();
+ OUTPUT:
+  RETVAL
+
+SV *
+has_lut(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->check_lut();
+ OUTPUT:
+  RETVAL
+
+SV *
+lut(SV *obj, int idx)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->lut_name(idx);
  OUTPUT:
   RETVAL
 
