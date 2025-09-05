@@ -156,6 +156,14 @@ You can check if you still have pending tables with $cub->ptabs method
   a[2] - has default value
   a[3] - default value if a[2] is non-zero
 
+=item * vfields - returns ref to hash of values fields, key is field name, value is kind or ref to array where
+  a[0] - kind of value - like NV_UImm/NV_F32Imm/etc and
+  a[1] - bit-size of value
+
+=item * kv - returns hash of all fields, key is field name and value is, well, field value
+
+=item * get_enum(field_name) returns ref to dictionary with possible values of some enum
+
 =back
 
 =head3 Gathering details about currently loaded SM

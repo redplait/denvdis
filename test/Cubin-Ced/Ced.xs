@@ -177,12 +177,12 @@ class Ced_perl: public CEd_base {
   }
   SV *check_false() const {
     if ( !has_ins() ) return &PL_sv_undef;
-    return always_false(int(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
+    return always_false(ins(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
   }
   SV *check_lut() const {
     if ( !has_ins() ) return &PL_sv_undef;
     int idx = 0;
-    if ( NV_renderer::check_lut(int(), m_rend, cex(), idx) ) return newSViv(idx);
+    if ( NV_renderer::check_lut(ins(), m_rend, cex(), idx) ) return newSViv(idx);
     return &PL_sv_undef;
   }
   SV *lut_name(int idx) const {
