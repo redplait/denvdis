@@ -103,15 +103,18 @@ Also you can patch only some fields with methods:
 
 =over
 
-=item patch_pred to patch initial predicate
+=item * patch_pred(is_not, pred_reg_number) to patch initial predicate
 
-=item patch_cb to patch Const Bank
+=item * patch_cb(cb_field1, cb_field2) to patch Const Bank
 
-=item patch_tab to patch set of values in some table
+=item * patch_tab(tab_idx, value) to patch set of values in some table
+
+=item * patch(field_name, value) to patch single field. Note - some field can be part of table and there could be 
+ no record for new value, so this table can be marked as pending until you patch some other fields of the same table
 
 =back
 
-also you can check if you still have pending tabs with $cub->ptabs method
+You can check if you still have pending tables with $cub->ptabs method
 
 =head3 Fetching instruction details methods
 

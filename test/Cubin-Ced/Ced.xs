@@ -175,6 +175,10 @@ class Ced_perl: public CEd_base {
     if ( !ins() || !ins()->cc_index ) return &PL_sv_undef;
     return newSVpv(ins()->cc_index, strlen(ins()->cc_index));
   }
+  SV *check_false() const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    return always_false(int(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
+  }
   SV *ins_sidl() const {
     if ( !ins() || !ins()->sidl_name ) return &PL_sv_undef;
     return newSVpv(ins()->sidl_name, strlen(ins()->sidl_name));
@@ -876,6 +880,15 @@ ins_class(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->ins_class();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_false(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->check_false();
  OUTPUT:
   RETVAL
 
