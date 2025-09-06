@@ -253,6 +253,7 @@ class Ced_perl: public CEd_base {
     return newRV_noinc((SV*)hv);
   }
   SV *extract_cb();
+  SV *extract_efield(const char *);
   SV *extract_efields();
   SV *extract_vfields();
   SV *make_enum(const char *);
@@ -629,6 +630,14 @@ HV *Ced_perl::make_enum(const std::unordered_map<int, const char *> *em)
     hv_store_ent(hv, newSViv(ei.first), newSVpv(ei.second, strlen(ei.second)), 0);
   }
   return hv;
+}
+
+SV *Ced_perl::extract_efield(const char *name)
+{
+  std::string_view tmp{ name, strlen(name) };
+  auto ea = find(ins()->eas, tmp);
+  if ( !ea ) return &PL_sv_undef;
+  return make_enum_arr(ea->ea);
 }
 
 SV *Ced_perl::make_enum(const char *name)
@@ -1058,6 +1067,15 @@ ins_prop(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->ins_prop();
+ OUTPUT:
+  RETVAL
+
+SV *
+efield(SV *obj, const char *fname)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->extract_efield(fname);
  OUTPUT:
   RETVAL
 
