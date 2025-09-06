@@ -37,11 +37,11 @@ class CElf: public T {
        return 0;
      }
      // try load smXX
-     int sm = (m_reader->get_flags() >> 0x10) & 0xff;
-     if ( !sm ) sm = (m_reader->get_flags() >> 8) & 0xff;
-     auto smi = NV_renderer::s_sms.find(sm);
+     m_sm = (m_reader->get_flags() >> 0x10) & 0xff;
+     if ( !m_sm ) m_sm = (m_reader->get_flags() >> 8) & 0xff;
+     auto smi = NV_renderer::s_sms.find(m_sm);
      if ( smi == NV_renderer::s_sms.end() ) {
-       T::Err("unknown SM %X\n", sm);
+       T::Err("unknown SM %X\n", m_sm);
        return 0;
      }
      // check SM_DIR env
@@ -53,9 +53,10 @@ class CElf: public T {
      } else {
       sm_name = "./";
      }
-     sm_name += smi->second.second ? smi->second.second : smi->second.first;
+     m_sm_name = smi->second.second ? smi->second.second : smi->second.first;
+     sm_name += m_sm_name;
      sm_name += ".so";
-     if ( opc ) printf(".target sm_%d\n", sm);
+     if ( opc ) printf(".target sm_%d\n", m_sm);
      else printf("load %s\n", sm_name.c_str());
      return NV_renderer::load(sm_name);
    }
@@ -213,6 +214,9 @@ class CElf: public T {
 
    Elf_Half n_sec = 0;
    elfio *m_reader = nullptr;
+   // SM number & name
+   int m_sm = 0;
+   const char *m_sm_name = nullptr;
    // symbols
    std::vector<asymbol> m_syms;
 };
