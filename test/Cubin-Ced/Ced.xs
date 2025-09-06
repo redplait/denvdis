@@ -255,6 +255,7 @@ class Ced_perl: public CEd_base {
   SV *extract_cb();
   SV *extract_efield(const char *);
   SV *extract_efields();
+  SV *extract_vfield(const char *);
   SV *extract_vfields();
   SV *make_enum(const char *);
   // tabs
@@ -616,11 +617,20 @@ SV *Ced_perl::extract_vfields()
 {
   if ( !has_ins() || !ins()->vas ) return &PL_sv_undef;
   HV *hv = newHV();
-  for ( size_t i = 0; i < ins()->eas.size(); ++i ) {
+  for ( size_t i = 0; i < ins()->vas->size(); ++i ) {
     auto &va = get_it(*ins()->vas, i);
     hv_store(hv, va.name.data(), va.name.size(), make_vfield(va), 0);
   }
   return newRV_noinc((SV*)hv);
+}
+
+SV *Ced_perl::extract_vfield(const char *name)
+{
+  if ( !has_ins() || !ins()->vas ) return &PL_sv_undef;
+  std::string_view tmp{ name, strlen(name) };
+  auto va = find(ins()->vas, tmp);
+  if ( !va ) return &PL_sv_undef;
+  return make_vfield(*va);
 }
 
 HV *Ced_perl::make_enum(const std::unordered_map<int, const char *> *em)
@@ -634,6 +644,7 @@ HV *Ced_perl::make_enum(const std::unordered_map<int, const char *> *em)
 
 SV *Ced_perl::extract_efield(const char *name)
 {
+  if ( !has_ins() ) return &PL_sv_undef;
   std::string_view tmp{ name, strlen(name) };
   auto ea = find(ins()->eas, tmp);
   if ( !ea ) return &PL_sv_undef;
@@ -1085,6 +1096,15 @@ efields(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->extract_efields();
+ OUTPUT:
+  RETVAL
+
+
+SV *vfield(SV *obj, const char *fname)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->extract_vfield(fname);
  OUTPUT:
   RETVAL
 
