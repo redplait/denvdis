@@ -55,6 +55,12 @@ class Ced_perl: public CEd_base {
   int width() const {
     return m_width;
   }
+  int sm_num() const {
+    return m_sm;
+  }
+  const char *sm_name() const {
+    return m_sm_name;
+  }
   int sef_func(const char *fname) {
     if ( has_ins() && block_dirty ) flush_buf();
     reset_ins();
@@ -875,6 +881,25 @@ width(SV *obj)
    RETVAL = e->width();
  OUTPUT:
   RETVAL
+
+int
+sm_num(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->sm_num();
+ OUTPUT:
+  RETVAL
+
+const char *
+sm_name(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->sm_name();
+ OUTPUT:
+  RETVAL
+
 
 SV *
 ins_name(SV *obj)

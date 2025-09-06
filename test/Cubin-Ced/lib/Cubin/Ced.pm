@@ -150,19 +150,38 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * ins_prop - returns ref to hash with properties, see details https://redplait.blogspot.com/2025/07/sass-instructions-properties.html
 
+=item * ins_cb - if instruction has Const Bank - returns ref to array where
+  a[0] - name of first CB field
+  a[1] - name of second CB field
+  a[2] - scale (if presents)
+
 =item * efields - returns ref to hash of enum-based fields, key is field name, value is array where
   a[0] - is_ignore
   a[1] - print
   a[2] - has default value
   a[3] - default value if a[2] is non-zero
 
-=item * vfields - returns ref to hash of values fields, key is field name, value is kind or ref to array where
-  a[0] - kind of value - like NV_UImm/NV_F32Imm/etc and
-  a[1] - bit-size of value
+=item * vfields - returns ref to hash of imm value fields, key is field name, value is kind or ref to array where
+  a[0] - kind of imm value - like NV_UImm/NV_F32Imm/etc and
+  a[1] - bit-size of imm value
 
 =item * kv - returns hash of all fields, key is field name and value is, well, field value
 
 =item * get_enum(field_name) returns ref to dictionary with possible values of some enum
+
+=item * has_lut - check if instruction has LUT operation
+
+=back
+
+Methods to extract fields grouped in tables
+
+=over
+
+=item * tab_count - returns count of tables
+
+=item * tab(table_index) - returns table with table_index - ref to array [ fields_names. hash ]
+ hash is just dictionary with key of possible values and value is array with values for each field. If there is single field then
+ key is just single value
 
 =back
 
@@ -172,7 +191,12 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * width of instruction
 
+=item * sm_num
+
+=item * sm_name
+
 =item * lut(index) - decoded string of LUT operation, see details https://redplait.blogspot.com/2025/07/sass-instructions-lut-operations.html
+
 
 =back
 
