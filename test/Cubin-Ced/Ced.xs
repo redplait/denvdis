@@ -12,6 +12,9 @@
 #include "ced_base.h"
 #include "elf.inc"
 
+typedef std::pair<const render_base*, std::list<const render_named *> > RItem;
+typedef std::vector<RItem> RItems;
+
 int opt_d = 0,
   opt_h = 0,
   opt_m = 0,
@@ -711,7 +714,7 @@ HV *Ced_perl::make_kv()
 #define TAB_TAIL
 #endif
 
-// magic table for Cubin::Attrs
+// magic table for Cubin::Ced
 static const char *s_ca = "Cubin::Ced";
 static HV *s_ca_pkg = nullptr;
 static MGVTBL ca_magic_vt = {
@@ -720,6 +723,30 @@ static MGVTBL ca_magic_vt = {
         0, /* length */
         0, /* clear */
         magic_del<Ced_perl>,
+        0, /* copy */
+        0 /* dup */
+        TAB_TAIL
+};
+
+// magic table for Cubin::Ced::Render
+static const char *s_ca_render = "Cubin::Ced::Render";
+static HV *s_ca_render_pkg = nullptr;
+
+template<typename T>
+static U32 ced_magic_size(pTHX_ SV* sv, MAGIC* mg) {
+    if (mg->mg_ptr) {
+        auto *m = (T *)mg->mg_ptr;
+        return m->size()-1;
+    }
+    return 0; // ignored anyway
+}
+
+static MGVTBL ca_rend_magic_vt = {
+        0, /* get */
+        0, /* write */
+        ced_magic_size<RItems>, /* length */
+        0, /* clear */
+        magic_del<RItems>,
         0, /* copy */
         0 /* dup */
         TAB_TAIL
@@ -1342,3 +1369,14 @@ BOOT:
  EXPORT_ENUM(NV_Scbd_Type, BARRIER_INST)
  EXPORT_ENUM(NV_Scbd_Type, MEM_INST)
  EXPORT_ENUM(NV_Scbd_Type, BB_ENDING_INST)
+ // render types
+ EXPORT_ENUM(NV_rend, R_value)
+ EXPORT_ENUM(NV_rend, R_enum)
+ EXPORT_ENUM(NV_rend, R_predicate)
+ EXPORT_ENUM(NV_rend, R_opcode)
+ EXPORT_ENUM(NV_rend, R_C)
+ EXPORT_ENUM(NV_rend, R_CX)
+ EXPORT_ENUM(NV_rend, R_TTU)
+ EXPORT_ENUM(NV_rend, R_M1)
+ EXPORT_ENUM(NV_rend, R_desc)
+ EXPORT_ENUM(NV_rend, R_mem)
