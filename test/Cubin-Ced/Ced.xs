@@ -24,6 +24,27 @@ static SV *make_etail(const std::list<const render_named *> &et) {
   return newRV_noinc((SV*)av);
 }
 
+static SV *make_vbase(const ve_base *vb) {
+  AV *av = newAV();
+  // [0] - type
+  // [1] - pfx
+  // [2] - arg if presents
+  av_push(av, newSViv(vb->type));
+  if ( vb->pfx )
+    av_push(av, newSVpv(&vb->pfx, 1));
+  else
+    av_push(av, &PL_sv_undef);
+  if ( vb->arg )
+    av_push(av, newSVpv( vb->arg, strlen(vb->arg)) );
+  return newRV_noinc((SV*)av);
+}
+
+static SV *make_vblist(const std::list<ve_base> &vl) {
+  AV *av = newAV();
+  for ( auto &v: vl ) av_push(av, make_vbase(&v));
+  return newRV_noinc((SV*)av);
+}
+
 int opt_d = 0,
   opt_h = 0,
   opt_m = 0,
@@ -1367,7 +1388,7 @@ FETCH(self, key)
   AV *res;
   auto *d = magic_tied<RItems>(self, 1, &ca_rend_magic_vt);
  PPCODE:
-  if ( key >= d->size() ) {
+  if ( key >= d->size() || key < 0 ) {
     ST(0) = &PL_sv_undef;
   } else {
     res = newAV();
@@ -1394,6 +1415,66 @@ FETCH(self, key)
     av_push(res, newSViv(ri.first->abs));
     // [5] - tail of enums
     av_push(res, make_etail(ri.second));
+    ST(0) = newRV_noinc((SV*)res);
+    // rest is
+    // [6] - name
+    // [7] - left
+    // [8] - right
+    switch(ri.first->type) {
+      case R_value:
+      case R_predicate:
+      case R_enum: {
+        const render_named *rn = (const render_named *)ri.first;
+        av_push(res, newSVpv(rn->name, strlen(rn->name)));
+       }
+       break;
+      case R_C:
+      case R_CX: {
+         const render_C *rn = (const render_C *)ri.first;
+         if ( rn->name )
+           av_push(res, newSVpv(rn->name, strlen(rn->name)));
+         else
+           av_push(res, &PL_sv_undef);
+         av_push(res, make_vbase(&rn->left));
+         if ( !rn->right.empty() ) av_push(res, make_vblist(rn->right));
+       }
+       break;
+      case R_TTU: {
+         const render_TTU *rt = (const render_TTU *)ri.first;
+         // no name
+         av_push(res, &PL_sv_undef);
+         av_push(res, make_vbase(&rt->left));
+       }
+       break;
+      case R_M1: {
+         const render_M1 *m1 = (const render_M1 *)ri.first;
+         if ( m1->name )
+           av_push(res, newSVpv(m1->name, strlen(m1->name)));
+         else
+           av_push(res, &PL_sv_undef);
+         av_push(res, make_vbase(&m1->left));
+       }
+       break;
+      case R_desc: {
+         const render_desc *rd = (const render_desc *)ri.first;
+         // no name
+         av_push(res, &PL_sv_undef);
+         av_push(res, make_vbase(&rd->left));
+         if ( !rd->right.empty() ) av_push(res, make_vblist(rd->right));
+       }
+       break;
+      case R_mem: {
+         const render_mem *rm = (const render_mem *)ri.first;
+         if ( rm->name )
+           av_push(res, newSVpv(rm->name, strlen(rm->name)));
+         else
+           av_push(res, &PL_sv_undef);
+         // no left
+         av_push(res, &PL_sv_undef);
+         av_push(res, make_vblist(rm->right));
+       }
+       break;
+    }
     ST(0) = newRV_noinc((SV*)res);
   }
   XSRETURN(1);
