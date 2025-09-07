@@ -15,6 +15,15 @@
 typedef std::pair<const render_base*, std::list<const render_named *> > RItem;
 typedef std::vector<RItem> RItems;
 
+static SV *make_etail(const std::list<const render_named *> &et) {
+  if ( et.empty() ) return &PL_sv_undef;
+  AV *av = newAV();
+  for ( auto ea: et ) {
+    av_push(av, newSVpv( ea->name, strlen(ea->name) ));
+  }
+  return newRV_noinc((SV*)av);
+}
+
 int opt_d = 0,
   opt_h = 0,
   opt_m = 0,
@@ -255,6 +264,7 @@ class Ced_perl: public CEd_base {
     }
     return newRV_noinc((SV*)hv);
   }
+  bool make_render(RItems &);
   SV *extract_cb();
   SV *extract_efield(const char *);
   SV *extract_efields();
@@ -322,6 +332,22 @@ SV *Ced_perl::nop()
     return &PL_sv_no;
   }
   return &PL_sv_yes;
+}
+
+bool Ced_perl::make_render(RItems &res) {
+  if ( !has_ins() || !m_rend ) return false;
+  for ( auto r: *m_rend ) {
+    if ( r->type == R_enum ) {
+      const render_named *rn = (const render_named *)r;
+      auto ea = find(ins()->eas, rn->name);
+      if ( ea && ea->ea->ignore ) {
+        res.back().second.push_back(rn);
+        continue;
+      }
+    }
+    res.push_back( { r, {} });
+  }
+  return !res.empty();
 }
 
 // patched CEd::process_p, too many changes to extract parts in CEd_base
@@ -1308,10 +1334,77 @@ ptabs(SV *obj)
  OUTPUT:
   RETVAL
 
+SV *
+render(SV *obj)
+ INIT:
+  AV *fake;
+  SV *objref= NULL;
+  MAGIC* magic;
+  RItems *res;
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+PPCODE:
+  res = new RItems;
+  if ( e->make_render(*res) ) {
+    fake = newAV();
+    objref = newRV_noinc((SV*)fake);
+    sv_bless(objref, s_ca_render_pkg);
+    magic = sv_magicext((SV*)fake, NULL, PERL_MAGIC_tied, &ca_rend_magic_vt, (const char *)res, 0);
+    SvREADONLY_on((SV*)fake);
+    ST(0) = objref;
+  } else {
+    delete res;
+    ST(0) = &PL_sv_undef;
+  }
+  XSRETURN(1);
+
+MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::Render
+
+void
+FETCH(self, key)
+  SV *self;
+  IV key;
+ INIT:
+  AV *res;
+  auto *d = magic_tied<RItems>(self, 1, &ca_rend_magic_vt);
+ PPCODE:
+  if ( key >= d->size() ) {
+    ST(0) = &PL_sv_undef;
+  } else {
+    res = newAV();
+    // fill output array res
+    // [0] - type
+    // [1] - pfx
+    // [2] - sfx
+    // [3] - mod
+    // [4] - abs
+    auto &ri = d->at(key);
+    av_push(res, newSViv(ri.first->type));
+    if ( ri.first->pfx )
+      av_push(res, newSVpv(&ri.first->pfx, 1));
+    else
+      av_push(res, &PL_sv_undef);
+    if ( ri.first->sfx )
+      av_push(res, newSVpv(&ri.first->sfx, 1));
+    else
+      av_push(res, &PL_sv_undef);
+    if ( ri.first->mod )
+      av_push(res, newSVpv(&ri.first->mod, 1));
+    else
+      av_push(res, &PL_sv_undef);
+    av_push(res, newSViv(ri.first->abs));
+    // [5] - tail of enums
+    av_push(res, make_etail(ri.second));
+    ST(0) = newRV_noinc((SV*)res);
+  }
+  XSRETURN(1);
+
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);
  if ( !s_ca_pkg )
     croak("Package %s does not exists", s_ca);
+ s_ca_render_pkg = gv_stashpv(s_ca_render, 0);
+ if ( !s_ca_render_pkg )
+    croak("Package %s does not exists", s_ca_render);
  // add enums from nv_types.h
  HV *stash = gv_stashpvn(s_ca, 10, 1);
  EXPORT_ENUM(NVP_ops, IDEST)
