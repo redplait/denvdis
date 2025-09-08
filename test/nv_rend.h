@@ -473,6 +473,9 @@ class NV_renderer {
    // check const bank[0][imm]
    std::optional<long> check_cbank(const NV_rlist *r, const NV_extracted &kv) const;
    std::optional<long> check_cbank_right(const std::list<ve_base> &l, const NV_extracted &kv) const;
+   // try to find item in renderer for some NV_Prop where count of fields > 1
+   const render_base *try_compound_prop(const NV_rlist *r, const NV_Prop *) const;
+   bool _cmp_prop(const std::list<ve_base> &vb, const NV_Prop *pr) const;
    // renderer
    int rend_singleE(const struct nv_instr *, const render_base *r, std::string &res) const;
    template <typename Fs, typename Fl>

@@ -2064,6 +2064,45 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
   return missed;
 }
 
+bool NV_renderer::_cmp_prop(const std::list<ve_base> &vb, const NV_Prop *pr) const
+{
+  for ( auto &v: vb ) {
+    for ( size_t idx = 0; idx < pr->fields.size(); ++idx ) {
+      auto &f = get_it(pr->fields, idx);
+      if ( cmp(f, v.arg) ) return true;
+    }
+  }
+  return false;
+}
+
+const render_base *NV_renderer::try_compound_prop(const NV_rlist *r, const NV_Prop *pr) const
+{
+  auto psize = pr->fields.size();
+  if ( psize < 2 ) return nullptr;
+  for ( auto ri: *r ) {
+    switch(ri->type) {
+      case R_C:
+      case R_CX: {
+         const render_C *rn = (const render_C *)ri;
+         if ( _cmp_prop(rn->right, pr) ) return rn;
+       }
+       break;
+      case R_desc: {
+         const render_desc *rd = (const render_desc *)ri;
+         if ( _cmp_prop(rd->right, pr) ) return rd;
+       }
+       break;
+     case R_mem: {
+         const render_mem *rm = (const render_mem *)ri;
+         if ( _cmp_prop(rm->right, pr) ) return rm;
+       }
+       break;
+     default: ;
+    }
+  }
+  return nullptr;
+}
+
 int NV_renderer::dump_predicates(const struct nv_instr *i, const NV_extracted &kv, FILE *fp, const char *pfx) const
 {
   if ( !i->predicated ) return 0;
