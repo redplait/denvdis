@@ -20,10 +20,22 @@ our %EXPORT_TAGS = ( 'all' => [ qw(
 	
 ) ] );
 
+use Elf::Reader;
+
+sub exs
+{
+  my $elf = shift;
+  my $secs = $elf->secs();
+  return unless defined($secs);
+  # 2 - type must be SHT_PROGBITS, 9 - size
+  my @res = grep { $_->[2] == SHT_PROGBITS && $_->[1] =~ /^\.text/ && $_->[9] } @$secs;
+  \@res;
+}
+
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
-	
+ exs
 );
 
 our $VERSION = '0.01';
