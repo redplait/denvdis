@@ -29,7 +29,7 @@ sub exs
   return unless defined($secs);
   # 2 - type must be SHT_PROGBITS, 9 - size
   my @res = grep { $_->[2] == SHT_PROGBITS && $_->[1] =~ /^\.text/ && $_->[9] } @$secs;
-  \@res;
+  return wantarray ? @res : \@res;
 }
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );

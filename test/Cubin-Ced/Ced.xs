@@ -88,6 +88,15 @@ class Ced_perl: public CEd_base {
   int width() const {
     return m_width;
   }
+  inline unsigned long get_flush() const {
+    return flush_cnt;
+  }
+  inline unsigned long get_rdr() const {
+    return rdr_cnt;
+  }
+  inline bool is_dirty() const {
+    return block_dirty;
+  }
   int sm_num() const {
     return m_sm;
   }
@@ -1224,6 +1233,28 @@ tab(SV *obj, IV key)
       mXPUSHs(newRV_noinc((SV*)av));
       XSRETURN(1);
     }
+  }
+
+void
+stat(SV *obj)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ PPCODE:
+  if ( gimme == G_ARRAY) {
+      EXTEND(SP, 3);
+      mXPUSHi(e->get_flush());
+      mXPUSHi(e->get_rdr());
+      mXPUSHi(e->is_dirty());
+      XSRETURN(3);
+  } else {
+      AV *av = newAV();
+      av_push(av, newSViv(e->get_flush()));
+      av_push(av, newSViv(e->get_rdr()));
+      av_push(av, e->is_dirty() ? &PL_sv_yes : &PL_sv_no);
+      mXPUSHs(newRV_noinc((SV*)av));
+      XSRETURN(1);
   }
 
 SV *

@@ -43,6 +43,14 @@ ok( $cub->set_s($first), 'first set_s with ' . $first );
 $t_num++;
 ok( $cub->off(0), 'zero off' );
 
+# stat returns flush/rdr/dirty
+my $rstat = $cub->stat();
+$t_num++;
+ok( 1 == $rstat->[1], 'rdr count' );
+$t_num++;
+ok( !$rstat->[2], 'is dirty' );
+
+
 $t_num++;
 ok( 8 == $cub->get_off(), 'offset should be 8' );
 
