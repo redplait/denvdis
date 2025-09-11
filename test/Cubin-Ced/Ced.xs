@@ -103,6 +103,7 @@ class Ced_perl: public CEd_base {
   const char *sm_name() const {
     return m_sm_name;
   }
+  SV *extract_instrs() const;
   int sef_func(const char *fname) {
     if ( has_ins() && block_dirty ) flush_buf();
     reset_ins();
@@ -378,6 +379,15 @@ bool Ced_perl::make_render(RItems &res) {
     res.push_back( { r, {} });
   }
   return !res.empty();
+}
+
+// return array of insns mnemonic names
+SV *Ced_perl::extract_instrs() const {
+  if ( !m_sorted ) return &PL_sv_undef;
+  AV *av = newAV();
+  for ( auto it = m_sorted->begin(); it != m_sorted->end(); ++it )
+    av_push(av, newSVpv( it->first.data(), it->first.size() ));
+  return newRV_noinc((SV*)av);
 }
 
 // patched CEd::process_p, too many changes to extract parts in CEd_base
@@ -985,6 +995,15 @@ width(SV *obj)
  OUTPUT:
   RETVAL
 
+SV *
+instrs(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->extract_instrs();
+ OUTPUT:
+  RETVAL
+
 int
 sm_num(SV *obj)
  INIT:
@@ -1066,7 +1085,6 @@ ins_scbd_type(SV *obj)
    RETVAL = e->ins_scbd_type();
  OUTPUT:
   RETVAL
-
 
 SV *
 ins_cc(SV *obj)
@@ -1181,7 +1199,6 @@ efields(SV *obj)
    RETVAL = e->extract_efields();
  OUTPUT:
   RETVAL
-
 
 SV *vfield(SV *obj, const char *fname)
  INIT:
