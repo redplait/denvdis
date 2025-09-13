@@ -451,6 +451,7 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
 
 int CEd::verify_off(unsigned long off)
 {
+  flush_buf();
   int res = _verify_off(off);
   if ( !res ) {
     reset_filter();
