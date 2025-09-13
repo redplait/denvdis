@@ -1,0 +1,8 @@
+sn .text._Z11machine_idsPj
+# replace S2R R0, SR_TID.X to SR_MACHINE_ID_0 - 24
+10 p SRa 24
+20 r S2R R5, SR_REGALLOC
+# SR_MACHINE_ID_1 - 25 etc
+40 p SRa 25
+50 p SRa 26
+60 p SRa 27

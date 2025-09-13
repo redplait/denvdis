@@ -52,6 +52,22 @@ __device__ static const char seed[32] = {
  0x2f ^ '6',
 };
 
+#include <stdint.h>
+
+__global__ void machine_ids(uint32_t *out_buf)
+{
+  // all threadIdx will be replaced with ced to SR_MACHINE_ID_X
+  uint32_t x = threadIdx.x;
+  out_buf[0] = x;
+  x = threadIdx.y;
+  out_buf[1] = x;
+  x = threadIdx.z;
+  out_buf[2] = x;
+  asm volatile("mov.u32 %0, %%smid;" : "=r"(x));
+  out_buf[3] = x;
+  out_buf[4] = 0x15;
+}
+
 __global__ void calc_hash(const char *s, int *res)
 {
   int x = threadIdx.x;
@@ -76,12 +92,26 @@ __host__ int main()
     printf("bad len of string\n");
     return 1;
   }
+  uint32_t *card_id;
+  // read card id - 4 * 4 = 16 bytes + 4 for test
+  cudaMalloc(&card_id, 20);
+  machine_ids<<<1,1>>>(card_id);
+  cudaDeviceSynchronize();
+  uint32_t host_card_id[5];
+  cudaMemcpy(host_card_id, card_id, sizeof(host_card_id), cudaMemcpyDeviceToHost);
+  // dump card id
+  unsigned char *cid = (unsigned char *)host_card_id;
+  for ( int i = 0; i < 20; i++ ) printf("%2.2X ", cid[i]);
+  fputc('\n', stdout);
+  cudaFree(card_id);
+  // rest
   char *d_c;
   int *d_i;
   cudaMalloc(&d_c, 32);
   cudaMalloc(&d_i, sizeof(int));
   cudaMemcpy(d_c, s.c_str(), 32, cudaMemcpyHostToDevice);
   calc_hash<<<1,32>>>(d_c, d_i);
+  cudaDeviceSynchronize();
   int res = 1;
   cudaMemcpy(&res, d_i, sizeof(res), cudaMemcpyDeviceToHost);
   cudaFree(d_c);
