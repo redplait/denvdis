@@ -10,6 +10,8 @@ As an illustration sub-dir [test](https://github.com/redplait/denvdis/tree/maste
 ### ced
 sed-like tool for inline patching of sass instructions within cubin files. See details in my [blog](https://redplait.blogspot.com/2025/07/ced-sed-like-cubin-editor.html)
 
+Practical [example](https://redplait.blogspot.com/2025/09/practical-ced-usage-extracting-sm.html) - how to read SR_MACHINE_ID registers
+
 ### nvd
 sass disassembler - of course not a complete replica of nvdisasm (however you can have syntax compatible with nvdisasm with -c option), instead it can show
  * values of all encoding fields with -O option
