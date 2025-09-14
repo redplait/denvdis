@@ -32,10 +32,50 @@ sub exs
   return wantarray ? @res : \@res;
 }
 
+our %PTypes = (
+ 0 => "INTEGER",
+ 1 => "SIGNED_INTEGER",
+ 2 => "UNSIGNED_INTEGER",
+ 3 => "FLOAT",
+ 4 => "DOUBLE",
+ 5 => "GENERIC_ADDRESS",
+ 6 => "SHARED_ADDRESS",
+ 7 => "LOCAL_ADDRESS",
+ 8 => "TRAM_ADDRESS",
+ 9 => "LOGICAL_ATTR_ADDRESS",
+ 10 => "PHYSICAL_ATTR_ADDRESS",
+ 11 => "GENERIC",
+ 13 => "CONSTANT_ADDRESS",
+ 14 => "VILD_INDEX",
+ 15 => "VOTE_INDEX",
+ 16 => "STP_INDEX",
+ 17 => "PIXLD_INDEX",
+ 18 => "PATCH_OFFSET_ADDRESS",
+ 19 => "RAW_ISBE_ACCESS",
+ 20 => "GLOBAL_ADDRESS",
+ 21 => "TEX",
+ 22 => "GS_STATE",
+ 23 => "SURFACE_COORDINATES",
+ 24 => "FP16SIMD",
+ 25 => "BINDLESS_CONSTANT_ADDRESS",
+ 26 => "VERTEX_HANDLE",
+ 27 => "MEMORY_DESCRIPTOR",
+ 28 => "FP8SIMD",
+);
+
+sub PType_name
+{
+  my $p = shift;
+  return $PTypes{$p} if exists($PTypes{$p});
+  undef;
+}
+
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
  exs
+ PTypes
+ PType_name
 );
 
 our $VERSION = '0.01';
