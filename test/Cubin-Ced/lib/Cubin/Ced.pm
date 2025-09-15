@@ -70,12 +70,34 @@ sub PType_name
   undef;
 }
 
+our %RTypes = (
+ 1 => 'R_value',
+ 2 => 'R_enum',
+ 3 => 'R_predicate',
+ 4 => 'R_opcode',
+ 5 => 'R_C',
+ 6 => 'R_CX',
+ 7 => 'R_TTU',
+ 8 => 'R_M1',
+ 9 => 'R_desc',
+ 10 => 'R_mem',
+);
+
+sub RType_name
+{
+  my $p = shift;
+  return $RTypes{$p} if exists($RTypes{$p});
+  undef;
+}
+
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
  exs
  PTypes
  PType_name
+ RTypes
+ RType_name
 );
 
 our $VERSION = '0.01';
