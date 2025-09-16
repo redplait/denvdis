@@ -2319,7 +2319,7 @@ int NV_renderer::dump_sched(const struct nv_instr *i, const NV_extracted &kv)
   return res;
 }
 
-bool NV_renderer::check_dual(const NV_extracted &kv)
+bool NV_renderer::check_dual(const NV_extracted &kv) const
 {
   if ( m_width != 88 ) return false;
   auto kvi = kv.find("usched_info");
