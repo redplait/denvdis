@@ -224,6 +224,10 @@ class Ced_perl: public CEd_base {
     if ( !ins() || !ins()->cc_index ) return &PL_sv_undef;
     return newSVpv(ins()->cc_index, strlen(ins()->cc_index));
   }
+  SV *ins_dual() const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    return check_dual(cex()) ? &PL_sv_yes : &PL_sv_no;
+  }
   SV *check_false() const {
     if ( !has_ins() ) return &PL_sv_undef;
     return always_false(ins(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
@@ -1022,6 +1026,14 @@ sm_name(SV *obj)
  OUTPUT:
   RETVAL
 
+SV *
+ins_dual(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_dual();
+ OUTPUT:
+  RETVAL
 
 SV *
 ins_name(SV *obj)
