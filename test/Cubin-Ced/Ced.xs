@@ -232,6 +232,12 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return always_false(ins(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
   }
+  SV *check_pred() const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    auto pred_name = has_predicate(m_rend);
+    if ( !pred_name ) return &PL_sv_no;
+    return newSVpv(pred_name, strlen(pred_name));
+  }
   SV *check_lut() const {
     if ( !has_ins() ) return &PL_sv_undef;
     int idx = 0;
@@ -798,6 +804,20 @@ static MGVTBL ca_magic_vt = {
         TAB_TAIL
 };
 
+// magic table for Cubin::Ced::RegTrack
+static const char *s_ca_regtrack = "Cubin::Ced::RegTrack";
+static HV *s_ca_regtrack_pkg = nullptr;
+static MGVTBL ca_regtrack_magic_vt = {
+        0, /* get */
+        0, /* write */
+        0, /* length */
+        0, /* clear */
+        magic_del<reg_pad>,
+        0, /* copy */
+        0 /* dup */
+        TAB_TAIL
+};
+
 // magic table for Cubin::Ced::Render
 static const char *s_ca_render = "Cubin::Ced::Render";
 static HV *s_ca_render_pkg = nullptr;
@@ -1301,6 +1321,15 @@ ins_cb(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->extract_cb();
+ OUTPUT:
+  RETVAL
+
+SV *
+has_pred(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->check_pred();
  OUTPUT:
   RETVAL
 
