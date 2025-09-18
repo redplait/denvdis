@@ -82,6 +82,14 @@ __global__ void calc_hash(const char *s, int *res)
 
 #include <string>
 #include <iostream>
+// #include <cuda_helper.h>
+#define checkCudaErrors(err) { \
+if (err != cudaSuccess) { \
+ fprintf(stderr, "checkCudaErrors() API error = %04d \"%s\" from file <%s>, line %i.\n", \
+ err, cudaGetErrorString(err), __FILE__, __LINE__); \
+ exit(-1); \
+} \
+}
 
 // main
 __host__ int main()
@@ -94,7 +102,8 @@ __host__ int main()
   }
   uint32_t *card_id;
   // read card id - 4 * 4 = 16 bytes + 4 for test
-  cudaMalloc(&card_id, 20);
+  auto err = cudaMalloc(&card_id, 20);
+  checkCudaErrors(err);
   machine_ids<<<1,1>>>(card_id);
   cudaDeviceSynchronize();
   uint32_t host_card_id[5];
@@ -107,8 +116,8 @@ __host__ int main()
   // rest
   char *d_c;
   int *d_i;
-  cudaMalloc(&d_c, 32);
-  cudaMalloc(&d_i, sizeof(int));
+  err = cudaMalloc(&d_c, 32); checkCudaErrors(err);
+  err = cudaMalloc(&d_i, sizeof(int)); checkCudaErrors(err);
   cudaMemcpy(d_c, s.c_str(), 32, cudaMemcpyHostToDevice);
   calc_hash<<<1,32>>>(d_c, d_i);
   cudaDeviceSynchronize();
