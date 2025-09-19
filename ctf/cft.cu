@@ -105,9 +105,9 @@ __host__ int main()
   auto err = cudaMalloc(&card_id, 20);
   checkCudaErrors(err);
   machine_ids<<<1,1>>>(card_id);
-  cudaDeviceSynchronize();
+  err = cudaDeviceSynchronize(); checkCudaErrors(err);
   uint32_t host_card_id[5];
-  cudaMemcpy(host_card_id, card_id, sizeof(host_card_id), cudaMemcpyDeviceToHost);
+  err = cudaMemcpy(host_card_id, card_id, sizeof(host_card_id), cudaMemcpyDeviceToHost); checkCudaErrors(err);
   // dump card id
   unsigned char *cid = (unsigned char *)host_card_id;
   for ( int i = 0; i < 20; i++ ) printf("%2.2X ", cid[i]);
@@ -118,11 +118,11 @@ __host__ int main()
   int *d_i;
   err = cudaMalloc(&d_c, 32); checkCudaErrors(err);
   err = cudaMalloc(&d_i, sizeof(int)); checkCudaErrors(err);
-  cudaMemcpy(d_c, s.c_str(), 32, cudaMemcpyHostToDevice);
+  err = cudaMemcpy(d_c, s.c_str(), 32, cudaMemcpyHostToDevice); checkCudaErrors(err);
   calc_hash<<<1,32>>>(d_c, d_i);
-  cudaDeviceSynchronize();
+  err = cudaDeviceSynchronize(); checkCudaErrors(err);
   int res = 1;
-  cudaMemcpy(&res, d_i, sizeof(res), cudaMemcpyDeviceToHost);
+  err = cudaMemcpy(&res, d_i, sizeof(res), cudaMemcpyDeviceToHost); checkCudaErrors(err);
   cudaFree(d_c);
   cudaFree(d_i);
   if ( res )
