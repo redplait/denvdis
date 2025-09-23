@@ -61,6 +61,24 @@ class CElf: public T {
      return NV_renderer::load(sm_name);
    }
  protected:
+   // key - section index, value - cb num (like 3 for .nv.constant3)
+   bool gather_cbsections(std::map<Elf_Half, int> &out_res) {
+     constexpr const char *spfx = ".nv.constant";
+     constexpr size_t spfx_len = strlen(spfx);
+     for ( Elf_Half i = 0; i < n_sec; ++i )
+     {
+       section* sec = m_reader->sections[i];
+       if ( sec->get_type() != SHT_PROGBITS ) continue;
+       if ( sec->get_info() ) continue; // like .nv.constant0.XX has info as reference to code section
+       auto sname = sec->get_name();
+       if ( !sname.starts_with(spfx) ) continue;
+       // read cb index
+       auto d = sname.data() + spfx_len;
+       int idx = atoi(d);
+       if ( idx ) out_res[i] = idx;
+     }
+     return !out_res.empty();
+   }
    void fill_eaddrs(NV_labels *l, int ltype, const char *data, int alen) {
     for ( const char *bcurr = data + 4; data + 4 + alen - bcurr >= 0x4; bcurr += 0x4 )
     {

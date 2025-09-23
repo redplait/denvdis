@@ -17,7 +17,7 @@ __device__ __forceinline__ int warp_reduce_min(int val) {
   return val;
 }
 
-__device__ static const char seed[32] = {
+__constant__ static const char seed[32] = {
  0x2f ^ 'a',
  0x2f ^ 'b',
  0x2f ^ 'c',
