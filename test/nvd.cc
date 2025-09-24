@@ -152,6 +152,8 @@ class nv_dis: public CElf<NV_renderer>
      return res;
    }
 
+   // symbols in const banks, key is cb index
+   std::map<int, std::vector<const asymbol *> > m_cb_syms;
    std::map<unsigned long, asymbol *> m_curr_syms;
    std::map<unsigned long, asymbol *>::const_iterator m_curr_siter = m_curr_syms.cend();
    int grab_syms_for_section(int);
@@ -230,9 +232,33 @@ static const char *s_brts[4] = {
 
 int nv_dis::read_symbols()
 {
-  int res = _read_symbols(opt_t, [&](asymbol &sym) { if ( opt_r ) m_syms.push_back(std::move(sym)); });
+  std::map<Elf_Half, int> cbs;
+  gather_cbsections(cbs);
+  int res = _read_symbols(opt_t, [&](asymbol &sym) {
+    if ( sym.type == STT_FILE || sym.type == STT_SECTION ) return;
+    auto cbi = cbs.find(sym.section);
+    int has_cbi = cbi != cbs.end();
+    if ( opt_r || has_cbi ) {
+      m_syms.push_back(std::move(sym));
+      if ( has_cbi ) {
+        auto &last = m_syms.back();
+        m_cb_syms[cbi->second].push_back(&last);
+      }
+    }
+  });
   if ( !res || m_syms.empty() ) return res;
   if ( opt_r ) fill_rels();
+  if ( !m_cb_syms.empty() ) {
+    // sort symbols in each cbank by offsets
+    for ( std::map<int, std::vector<const asymbol *> >::iterator ci = m_cb_syms.begin(); ci != m_cb_syms.end(); ++ci ) {
+      auto &arr = ci->second;
+      std::sort(arr.begin(), arr.end(), [](const asymbol *a, const asymbol *b) { return a->addr < b->addr; });
+      if ( opt_t ) {
+        fprintf(m_out, "Cb %d:\n", ci->first);
+        std::for_each(arr.begin(), arr.end(), [&](const asymbol *a) { fprintf(m_out, " %lX %s\n", a->addr, a->name.c_str()); });
+      }
+    }
+  }
   next_csym(0);
   return res;
 }
