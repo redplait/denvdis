@@ -338,6 +338,7 @@ void nv_dis::try_dis(Elf_Word idx)
 {
   auto branches = get_branch(idx);
   auto cbank = get_cbank(idx);
+  bool has_cb_syms = !m_cb_syms.empty();
   auto rels = m_srels.find(idx);
   if ( rels != m_srels.end() ) {
     has_relocs = true;
@@ -415,9 +416,11 @@ void nv_dis::try_dis(Elf_Word idx)
       dump_ins(res[res_idx], curr_label, branches ? &branches->labels: nullptr);
       // check const bank
       auto rend = m_dis->get_rend(res[res_idx].first->n);
-      if ( cbank ) {
-        auto cb = check_cbank(rend, res[res_idx].second);
-        if ( cb.has_value() ) {
+      if ( cbank || has_cb_syms ) {
+        unsigned short cb_idx = 0xffff;
+        auto cb = check_cbank(rend, res[res_idx].second, &cb_idx);
+        // check param in cb_idx 0
+        if ( cbank && !cb_idx && cb.has_value() ) {
           auto off = cb.value();
           if ( cbank->in_cb(off) ) {
             fprintf(m_out, " ; cb in section %d, offset %lX - %X = %lX\n",
@@ -428,6 +431,15 @@ void nv_dis::try_dis(Elf_Word idx)
               fprintf(m_out, " ; cb param %d off %lX size %X\n", cp->ordinal, off, cp->size);
             else
               fprintf(m_out, " ; unknown cb off %lX\n", off);
+          }
+        }
+        // check non-zero const bank
+        if ( has_cb_syms && cb_idx && cb_idx != 0xffff ) {
+          auto cbs = m_cb_syms.find(cb_idx);
+          if ( cbs != m_cb_syms.end() ) {
+            fprintf(m_out, " ; cb %d\n", cb_idx);
+            auto &arr = cbs->second;
+            std::for_each(arr.cbegin(), arr.cend(), [&](const asymbol *a) { fprintf(m_out, " ; %lX %s\n", a->addr, a->name.c_str()); });
           }
         }
       }

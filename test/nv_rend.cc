@@ -1745,7 +1745,7 @@ std::optional<long> NV_renderer::check_cbank_right(const std::list<ve_base> &rl,
   return std::nullopt;
 }
 
-std::optional<long> NV_renderer::check_cbank(const NV_rlist *rl, const NV_extracted &kv) const
+std::optional<long> NV_renderer::check_cbank(const NV_rlist *rl, const NV_extracted &kv, unsigned short *cb_idx) const
 {
   for ( auto ri: *rl ) {
     if ( ri->type == R_C || ri->type == R_CX ) {
@@ -1755,7 +1755,8 @@ std::optional<long> NV_renderer::check_cbank(const NV_rlist *rl, const NV_extrac
       auto kvi = kv.find(rn->left.arg);
       if ( kvi == kv.end() )
         return std::nullopt;
-      if ( kvi->second ) return std::nullopt;
+      if ( cb_idx ) *cb_idx = (unsigned short)(kvi->second);
+      // if ( kvi->second ) return std::nullopt;
       return check_cbank_right(rn->right, kv);
     }
   }
