@@ -264,6 +264,10 @@ class Ced_perl: public CEd_base {
     res = ins()->mask;
     return true;
   }
+  std::optional<long> ins_cb(unsigned short *cb_idx) {
+    if ( !has_ins() ) return std::nullopt;
+    return check_cbank(m_rend, cex(), cb_idx);
+  }
   bool gen_mask(std::string &res) {
     if ( !has_ins() ) return false;
     return m_dis->gen_mask(res);
@@ -1255,6 +1259,42 @@ SV *tab_count(SV *obj)
    RETVAL = e->tab_count();
  OUTPUT:
   RETVAL
+
+void
+ins_cbank(SV *obj)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  int res_size = 1;
+  unsigned short cb_idx = 0xffff;
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ PPCODE:
+  if ( !e->has_ins() ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+  } else {
+    auto cb_off = e->ins_cb(&cb_idx);
+    if ( 0xffff == cb_idx ) {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    } else {
+      if ( cb_off.has_value() ) res_size++;
+      if ( gimme == G_ARRAY) {
+        EXTEND(SP, res_size);
+        mXPUSHi(cb_idx);
+        if ( res_size > 1 )
+          mXPUSHi(cb_off.value());
+        XSRETURN(res_size);
+      } else {
+        AV *av = newAV();
+        av_push(av, newSViv(cb_idx));
+        if ( res_size > 1 )
+          av_push(av, newSVuv(cb_off.value()));
+        mXPUSHs(newRV_noinc((SV*)av));
+        XSRETURN(1);
+      }
+    }
+  }
 
 void
 tab(SV *obj, IV key)
