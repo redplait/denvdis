@@ -229,6 +229,9 @@ You can check if you still have pending tables with $cub->ptabs method
   a[1] - name of second CB field
   a[2] - scale (if presents)
 
+=item * ins_cbank - if instruction has Const Bank in form c[I][X] where I is number - returns ref to array [I, X] if X is also number
+ or just [I] otherwise. Supports wantarray
+
 =item * efields - returns ref to hash of enum-based fields, key is field name, value is array where
   a[0] - is_ignore
   a[1] - print
@@ -271,6 +274,7 @@ Methods to extract fields grouped in tables
 
 =item * lut(index) - decoded string of LUT operation, see details https://redplait.blogspot.com/2025/07/sass-instructions-lut-operations.html
 
+=item * stat - return statistics of IO operations in form [flush_count, read_count, is_dirty]. Supports wantarray
 
 =back
 
