@@ -250,6 +250,42 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =back
 
+render method returns tied array of rendering items - you can fetch them with simple $r->[index], format is array where indexes
+
+=over
+
+=item 0 - type, enum R_xxx
+
+=item 1 - prefix
+
+=item 2 - suffix
+
+=item 3 - mod (like !~-)
+
+=item 4 - this item has abs attribute
+
+=item 5 - ref to array with trailing enums names
+
+=item 6 - name (or undef if no name presents)
+
+=item 7 - left part of complex render like R_desc
+
+=item 8 - right part of complex render like R_desc
+
+=back
+
+left & right are ref to array where indexes
+
+=over
+
+=item 0 - type, enum R_xxx
+
+=item 1 - prefix
+
+=item 2 - argument name if presents
+
+=back
+
 Methods to extract fields grouped in tables
 
 =over
