@@ -1603,8 +1603,7 @@ FETCH(self, key)
          av_push(res, make_vblist(rm->right));
        }
        break;
-    }
-    ST(0) = newRV_noinc((SV*)res);
+    } // end of switch
   }
   XSRETURN(1);
 
