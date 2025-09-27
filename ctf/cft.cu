@@ -17,39 +17,41 @@ __device__ __forceinline__ int warp_reduce_min(int val) {
   return val;
 }
 
+#define XSED 0x2f
+
 __constant__ static const char seed[32] = {
- 0x2f ^ 'a',
- 0x2f ^ 'b',
- 0x2f ^ 'c',
- 0x2f ^ 'd',
- 0x2f ^ 'e',
- 0x2f ^ 'f',
- 0x2f ^ 'g',
- 0x2f ^ 'h',
- 0x2f ^ 'i',
- 0x2f ^ 'j',
- 0x2f ^ 'k',
- 0x2f ^ 'l',
- 0x2f ^ 'm',
- 0x2f ^ 'n',
- 0x2f ^ 'o',
- 0x2f ^ 'p',
- 0x2f ^ 'r',
- 0x2f ^ 's',
- 0x2f ^ 't',
- 0x2f ^ 'u',
- 0x2f ^ 'v',
- 0x2f ^ 'w',
- 0x2f ^ 'x',
- 0x2f ^ 'y',
- 0x2f ^ 'z',
- 0x2f ^ '0',
- 0x2f ^ '1',
- 0x2f ^ '2',
- 0x2f ^ '3',
- 0x2f ^ '4',
- 0x2f ^ '5',
- 0x2f ^ '6',
+ XSED ^ 'a',
+ XSED ^ 'b',
+ XSED ^ 'c',
+ XSED ^ 'd',
+ XSED ^ 'e',
+ XSED ^ 'f',
+ XSED ^ 'g',
+ XSED ^ 'h',
+ XSED ^ 'i',
+ XSED ^ 'j',
+ XSED ^ 'k',
+ XSED ^ 'l',
+ XSED ^ 'm',
+ XSED ^ 'n',
+ XSED ^ 'o',
+ XSED ^ 'p',
+ XSED ^ 'r',
+ XSED ^ 's',
+ XSED ^ 't',
+ XSED ^ 'u',
+ XSED ^ 'v',
+ XSED ^ 'w',
+ XSED ^ 'x',
+ XSED ^ 'y',
+ XSED ^ 'z',
+ XSED ^ '0',
+ XSED ^ '1',
+ XSED ^ '2',
+ XSED ^ '3',
+ XSED ^ '4',
+ XSED ^ '5',
+ XSED ^ '6',
 };
 
 #include <stdint.h>
@@ -71,13 +73,18 @@ __global__ void machine_ids(uint32_t *out_buf)
 __global__ void calc_hash(const char *s, int *res)
 {
   int x = threadIdx.x;
-  int v = (s[x] ^ seed[x] ^ 0x2f) ? 0 : 1;
+  int v = (s[x] ^ seed[x] ^ XSED) ? 0 : 1;
   __syncthreads();
   int r = warp_reduce_min(v);
   if ( !x ) {
 // printf("res %X\n", r);
     *res = r;
   }
+}
+
+__global__ void dirty_hack(char **out_res)
+{
+  *out_res = (char *)&calc_hash;
 }
 
 #include <string>
@@ -113,6 +120,22 @@ __host__ int main()
   for ( int i = 0; i < 20; i++ ) printf("%2.2X ", cid[i]);
   fputc('\n', stdout);
   cudaFree(card_id);
+  // play with symbols
+  void *f_addr = nullptr;
+  const char *fname = "_Z9calc_hashPKcPi";
+  err = cudaGetSymbolAddress(&f_addr, fname);
+//  if ( err ) { checkCudaErrors(err); }
+//  else printf("f_addr: %p\n", f_addr);
+  // ok, I am stubborn
+  if ( !f_addr ) {
+    char *f2;
+    err = cudaMalloc(&f2, sizeof(void *)); checkCudaErrors(err);
+    dirty_hack<<<1,1>>>((char **)f2);
+    err = cudaDeviceSynchronize(); checkCudaErrors(err);
+    err = cudaMemcpy(&f_addr, f2, sizeof(f_addr), cudaMemcpyDeviceToHost); checkCudaErrors(err);
+    cudaFree(f2);
+    printf("f_addr: %p\n", f_addr);
+  }
   // rest
   char *d_c;
   int *d_i;
