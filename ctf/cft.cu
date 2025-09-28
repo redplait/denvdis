@@ -82,8 +82,13 @@ __global__ void calc_hash(const char *s, int *res)
   }
 }
 
-__global__ void dirty_hack(char **out_res)
+using func_t = void (*)(const char *s, int *res);
+
+__device__ func_t cf1 = calc_hash;
+
+__global__ void dirty_hack(char **what, char **out_res)
 {
+ printf("cf1 %p what %p value %p calc_hash %p\n", cf1, what, *what, calc_hash);
   *out_res = (char *)&calc_hash;
 }
 
@@ -98,6 +103,44 @@ if (err != cudaSuccess) { \
 } \
 }
 
+// I found couple of recepits:
+// https://leimao.github.io/blog/Pass-Function-Pointers-to-Kernels-CUDA/
+// https://forums.developer.nvidia.com/t/array-of-function-pointers-assignment/208952
+// both dont work - value of cf1 is nil
+template <typename T>
+char *try_get_addr(const char *name) {
+  T res = nullptr;
+  auto err = cudaMemcpyFromSymbol(&res, cf1, sizeof(T));
+  if ( !err ) {
+    printf("%s: %p\n", name, res);
+    if ( res ) return (char *)res;
+  }
+  if ( err )
+    fprintf(stderr, "cudaMemcpyFromSymbol(%s) failed, error = %d (%s)\n", name, err, cudaGetErrorString(err));
+  void *f_addr = nullptr;
+  err = cudaGetSymbolAddress(&f_addr, cf1);
+  if ( err ) {
+    fprintf(stderr, "cudaGetSymbolAddress(%s) failed, error = %d (%s)\n", name, err, cudaGetErrorString(err));
+    return nullptr;
+  }
+  // ok, I am stubborn
+  err = cudaMemcpy(&res, f_addr, sizeof(T), cudaMemcpyDeviceToHost); checkCudaErrors(err);
+  printf("f_addr: %p %p\n", f_addr, res);
+  if ( !res ) {
+    char *f2;
+    err = cudaMalloc(&f2, sizeof(T)); checkCudaErrors(err);
+    dirty_hack<<<1,1>>>((char **)f_addr, (char **)f2);
+    err = cudaDeviceSynchronize(); checkCudaErrors(err);
+    err = cudaMemcpy(&res, f2, sizeof(res), cudaMemcpyDeviceToHost); checkCudaErrors(err);
+    cudaFree(f2);
+    printf("f_addr2: %p %p\n", f_addr, res);
+    if ( res ) {
+      return (char *)res;
+    }
+  }
+  return (char *)res;
+}
+
 // main
 __host__ int main()
 {
@@ -109,8 +152,7 @@ __host__ int main()
   }
   uint32_t *card_id;
   // read card id - 4 * 4 = 16 bytes + 4 for test
-  auto err = cudaMalloc(&card_id, 20);
-  checkCudaErrors(err);
+  auto err = cudaMalloc(&card_id, 20); checkCudaErrors(err);
   machine_ids<<<1,1>>>(card_id);
   err = cudaDeviceSynchronize(); checkCudaErrors(err);
   uint32_t host_card_id[5];
@@ -121,21 +163,7 @@ __host__ int main()
   fputc('\n', stdout);
   cudaFree(card_id);
   // play with symbols
-  void *f_addr = nullptr;
-  const char *fname = "_Z9calc_hashPKcPi";
-  err = cudaGetSymbolAddress(&f_addr, fname);
-//  if ( err ) { checkCudaErrors(err); }
-//  else printf("f_addr: %p\n", f_addr);
-  // ok, I am stubborn
-  if ( !f_addr ) {
-    char *f2;
-    err = cudaMalloc(&f2, sizeof(void *)); checkCudaErrors(err);
-    dirty_hack<<<1,1>>>((char **)f2);
-    err = cudaDeviceSynchronize(); checkCudaErrors(err);
-    err = cudaMemcpy(&f_addr, f2, sizeof(f_addr), cudaMemcpyDeviceToHost); checkCudaErrors(err);
-    cudaFree(f2);
-    printf("f_addr: %p\n", f_addr);
-  }
+  try_get_addr<func_t>("cf1");
   // rest
   char *d_c;
   int *d_i;
