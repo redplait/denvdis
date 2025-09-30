@@ -119,13 +119,17 @@ Cubin::Ced - Perl extension for CUBIN inline patching
 
 C++ sources for SASS disassembler and asm parser located in ../ directory
 
+To peek directory with sm modules setup env var SM_DIR
+
 =head1 SYNOPSIS
 
   use Cubin::Ced;
   use Elf::Reader;
   # first create Elf reader
   my $e = Elf::Reader->new("cudatest.6.sm_61.cubin");
-  # load symbols, find section with code etc
+  # set SM_DIR
+  $ENV{'SM_DIR'} = '/path/to/dir/with/smxx.so';
+  # load symbols, find section with code/attributes etc
   my $cub = Cubin::Ced->new($e)
   # now you can use methods from Cubin::Ced
 
@@ -196,7 +200,7 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =over
 
-=item * ins_name
+=item * ins_name - name of instruction
 
 =item * ins_class
 
@@ -317,12 +321,17 @@ Methods to extract fields grouped in tables
 
 =head2 EXPORT
 
-None by default.
+PTypes & PType_name - names of types
 
+RTypes & RType_name - names of render types (R_xx)
 
 =head1 SEE ALSO
 
 C++ version of Ced: https://redplait.blogspot.com/2025/07/ced-sed-like-cubin-editor.html
+
+Cubin::Attrs module: https://github.com/redplait/dwarfdump/tree/main/perl/Cubin-Attrs
+
+base module Elf::Reader: https://github.com/redplait/dwarfdump/tree/main/perl/Elf-Reader
 
 =head1 AUTHOR
 

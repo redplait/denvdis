@@ -355,6 +355,7 @@ void NV_renderer::render_rel(std::string &res, const NV_rel *nr, const C &c) con
     case 0xd:  // R_CUDA_ABS32_LO_23
     case 0x2b: // R_CUDA_ABS32_LO_20
     case 0x38: // R_CUDA_ABS32_LO_32
+    case 0x3e: // R_CUDA_FUNC_DESC32_LO_32
     case 0x46: // R_CUDA_32_LO
      res += "32@lo";
      break;
@@ -362,11 +363,12 @@ void NV_renderer::render_rel(std::string &res, const NV_rel *nr, const C &c) con
     case 0xe:  // R_CUDA_ABS32_HI_23
     case 0x2c: // R_CUDA_ABS32_LO_20
     case 0x39: // R_CUDA_ABS32_HI_32
+    case 0x3f: // R_CUDA_FUNC_DESC32_HI_32
     case 0x47: // R_CUDA_32_HI
      res += "32@hi";
      break;
     default:
-     res += "UknRel";
+     res += "UnkRel";
      res += std::to_string(nr->first);
   }
   res += '(';

@@ -123,6 +123,9 @@ class nv_dis: public CElf<NV_renderer>
      if ( !has_relocs ) return nullptr;
      const NV_rel *res = &riter->second;
      auto &sym = m_syms[res->second];
+#ifdef DEBUG
+ printf("sym name %s\n", sym.name.c_str());
+#endif
      sv = { sym.name.cbegin(), sym.name.cend() };
      if ( ++riter == riter_end )
        has_relocs = false;
@@ -235,9 +238,8 @@ int nv_dis::read_symbols()
   std::map<Elf_Half, int> cbs;
   gather_cbsections(cbs);
   int res = _read_symbols(opt_t, [&](asymbol &sym) {
-    if ( sym.type == STT_FILE || sym.type == STT_SECTION ) return;
     auto cbi = cbs.find(sym.section);
-    int has_cbi = cbi != cbs.end();
+    int has_cbi = cbi != cbs.end() && ( sym.type != STT_FILE && sym.type != STT_SECTION );
     if ( opt_r || has_cbi ) {
       m_syms.push_back(std::move(sym));
       if ( has_cbi ) {
@@ -422,15 +424,14 @@ void nv_dis::try_dis(Elf_Word idx)
         // check param in cb_idx 0
         if ( cbank && !cb_idx && cb.has_value() ) {
           auto off = cb.value();
-          if ( cbank->in_cb(off) ) {
+          auto cp = cbank->find_param(off);
+          if ( cp )
+            fprintf(m_out, " ; cb param %d off %lX size %X\n", cp->ordinal, off, cp->size);
+          else if ( cbank->in_cb(off) ) {
             fprintf(m_out, " ; cb in section %d, offset %lX - %X = %lX\n",
               cbank->section, off, cbank->offset, off - cbank->offset);
           } else {
-            auto cp = cbank->find_param(off);
-            if ( cp )
-              fprintf(m_out, " ; cb param %d off %lX size %X\n", cp->ordinal, off, cp->size);
-            else
-              fprintf(m_out, " ; unknown cb off %lX\n", off);
+            fprintf(m_out, " ; unknown cb off %lX\n", off);
           }
         }
         // check non-zero const bank
