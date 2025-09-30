@@ -145,11 +145,6 @@ char *try_get_addr(const char *name) {
 __host__ int main()
 {
   std::string s; // = "abcdefghijklmnoprstuvwxyz0123456";
-  std::cin >> s;
-  if ( s.size() != 32 ) {
-    printf("bad len of string\n");
-    return 1;
-  }
   uint32_t *card_id;
   // read card id - 4 * 4 = 16 bytes + 4 for test
   auto err = cudaMalloc(&card_id, 20); checkCudaErrors(err);
@@ -165,6 +160,11 @@ __host__ int main()
   // play with symbols
   try_get_addr<func_t>("cf1");
   // rest
+  std::cin >> s;
+  if ( s.size() != 32 ) {
+    printf("bad len of string\n");
+    return 1;
+  }
   char *d_c;
   int *d_i;
   err = cudaMalloc(&d_c, 32); checkCudaErrors(err);

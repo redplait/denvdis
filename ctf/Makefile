@@ -2,7 +2,7 @@
 a.out: cft.cu
 	nvcc -no-compress -arch sm_75 $^
 	-../fb/fb -i 1 -o 12 ./a.out
-	-../test/ced -v 12 md.ced
+	-perl md.pl 12
 	-../fb/fb -i 1 -r 12 ./a.out
 
 a53: cft.cu

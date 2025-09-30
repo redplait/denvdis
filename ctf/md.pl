@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Elf::Reader;
 use Cubin::Ced;
+use Cubin::Attrs; # for relocs patching
 
 # check that instruction at $off is S2R and then patch SRa operand to $sr
 sub patch_s2r
@@ -36,3 +37,15 @@ patch_s2r($ced, 0x60, $mr++);
 # finally replace whole instruction at 0x20
 $ced->off(0x20);
 $ced->replace('S2R R5, SR_REGALLOC');
+
+# patch relocs 2 & 3 for dirty_hack section
+@s = grep { $_->[1] =~ /dirty_hack/ } exs($e);
+die("cannot find section for dirty_hack") if ( !scalar(@s) );
+my $ca = Cubin::Attrs->new($e);
+my $r_idx = $ca->try_rel($s[0]->[0]);
+if ( !defined($r_idx) ) {
+  printf("cannot find relocs for ditry_hack\n");
+} else {
+ $ca->patch_ft($r_idx, 2, 0x38); # R_CUDA_ABS32_LO_32
+ $ca->patch_ft($r_idx, 3, 0x39); # R_CUDA_ABS32_LO_64
+}
