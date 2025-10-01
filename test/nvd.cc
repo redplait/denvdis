@@ -81,8 +81,10 @@ struct cbank_per_section {
     return off >= offset && off < (offset + size);
   }
   const cb_param *find_param(unsigned short off) const {
-    auto pi = std::lower_bound(params.cbegin(), params.cend(), off, [](const cb_param &cb, unsigned short off) {
-      return cb.offset < off;
+    if ( off < offset ) return nullptr;
+    off -= offset;
+    auto pi = std::lower_bound(params.cbegin(), params.cend(), off, [](const cb_param &cb, unsigned short a_off) {
+      return cb.offset + cb.size < a_off;
     });
     if ( pi == params.cend() ) return nullptr;
     return &(*pi);
@@ -177,6 +179,8 @@ class nv_dis: public CElf<NV_renderer>
      std::sort( cb->second->params.begin(), cb->second->params.end(), [](const cb_param &a, const cb_param &b) {
        return a.offset < b.offset;
      });
+     // dump them
+     for ( auto &cp: cb->second->params ) printf("sorted cparam(%d): ord %d size %X off %d\n", idx, cp.ordinal, cp.size, cp.offset);
    }
    std::unordered_map<Elf_Word, cbank_per_section *> m_cbanks;
    // regs track db
@@ -426,7 +430,7 @@ void nv_dis::try_dis(Elf_Word idx)
           auto off = cb.value();
           auto cp = cbank->find_param(off);
           if ( cp )
-            fprintf(m_out, " ; cb param %d off %lX size %X\n", cp->ordinal, off, cp->size);
+            fprintf(m_out, " ; cb param %d off %X size %X\n", cp->ordinal, cp->offset, cp->size);
           else if ( cbank->in_cb(off) ) {
             fprintf(m_out, " ; cb in section %d, offset %lX - %X = %lX\n",
               cbank->section, off, cbank->offset, off - cbank->offset);
@@ -565,7 +569,7 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             int is_cbank = ((tmp >> 0x10) & 2) == 0;
             uint32_t csize = (((tmp >> 0x10) & 0xffff) >> 2);
             fprintf(m_out, " size %X %s\n", csize, is_cbank ? "cbank" : "");
-            if ( is_cbank ) add_cparam(sidx, ord, off, csize);
+            if ( is_cbank ) add_cparam(sidx, ord, csize, off);
           }
         } else if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
           ltype = NVLType::Coop_grp;
@@ -744,7 +748,7 @@ void usage(const char *prog)
   printf("-h - hex dump\n");
   printf("-m - dump missed fields\n");
   printf("-N - dump not found masks\n");
-  printf("-o - output file\n");
+  printf("-o output file\n");
   printf("-O - dump operands\n");
   printf("-p - dump predicates\n");
   printf("-P - dump instructions without properties\n");
