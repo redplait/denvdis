@@ -1682,3 +1682,11 @@ BOOT:
  EXPORT_ENUM(NV_rend, R_M1)
  EXPORT_ENUM(NV_rend, R_desc)
  EXPORT_ENUM(NV_rend, R_mem)
+ // export cuda relocs, 0 - R_NONE so skip it
+ for ( unsigned int rt = 1; ; rt++ ) {
+   auto name = get_cuda_reloc_name(rt);
+   if ( !name ) break;
+   auto len = strlen(name);
+   auto sv = newSVpvn_share(name, len, 0);
+   newCONSTSUB(stash, name, new_enum_dualvar(aTHX_ rt, sv));
+ }
