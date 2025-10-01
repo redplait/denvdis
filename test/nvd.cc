@@ -87,7 +87,13 @@ struct cbank_per_section {
       return cb.offset + cb.size < a_off;
     });
     if ( pi == params.cend() ) return nullptr;
-    return &(*pi);
+    // check if current cb_param contains off
+    if ( off < pi->offset + pi->size )
+     return &(*pi);
+    if ( ++pi == params.cend() ) return nullptr;
+    if ( off < pi->offset + pi->size )
+     return &(*pi);
+    return nullptr;
   }
 };
 
