@@ -1102,7 +1102,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     }
   }
   // predicates
-  int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, c_size = 0, e_size = 0;
+  int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, c_size = 0, e_size = 0, h_size = 0;
   if ( p.first->predicated ) {
     auto pi = p.first->predicated->find("IDEST_SIZE"sv);
     if ( pi != p.first->predicated->end() )
@@ -1122,6 +1122,9 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     pi = p.first->predicated->find("ISRC_E_SIZE"sv);
     if ( pi != p.first->predicated->end() )
       e_size = pi->second(p.second);
+    pi = p.first->predicated->find("ISRC_H_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      h_size = pi->second(p.second);
   }
   int idx = -1;
   rtdb->pred_mask = 0;
@@ -1281,6 +1284,8 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
           res += rgpr_multi(c_size, kvi, t_c);
          else if ( e_size > 32 && is_sv2(e_sv, rn->name, "Re") )
           res += rgpr_multi(e_size, kvi, t_e);
+         else if ( h_size > 32 && is_sv2(h_sv, rn->name, "Rh") )
+          res += rgpr_multi(h_size, kvi, t_h);
          else
          {
            if ( is_sv2(a_sv, rn->name, "Ra") )
