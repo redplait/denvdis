@@ -355,18 +355,22 @@ void NV_renderer::render_rel(std::string &res, const NV_rel *nr, const C &c) con
     case 0xd:  // R_CUDA_ABS32_LO_23
     case 0x20: // R_CUDA_FUNC_DESC32_LO_23
     case 0x2b: // R_CUDA_ABS32_LO_20
+    case 0x30: // R_CUDA_FUNC_DESC32_LO_20
     case 0x38: // R_CUDA_ABS32_LO_32
     case 0x3e: // R_CUDA_FUNC_DESC32_LO_32
     case 0x46: // R_CUDA_32_LO
+    case 0x70: // R_CUDA_UNIFIED32_LO_32
      res += "32@lo";
      break;
     case 0xb:  // R_CUDA_ABS32_HI_26
     case 0xe:  // R_CUDA_ABS32_HI_23
     case 0x21: // R_CUDA_FUNC_DESC32_HI_23
     case 0x2c: // R_CUDA_ABS32_HI_20
+    case 0x31: // R_CUDA_FUNC_DESC32_HI_20
     case 0x39: // R_CUDA_ABS32_HI_32
     case 0x3f: // R_CUDA_FUNC_DESC32_HI_32
     case 0x47: // R_CUDA_32_HI
+    case 0x71: // R_CUDA_UNIFIED32_HI_32
      res += "32@hi";
      break;
     default:
@@ -422,7 +426,8 @@ static const char *prop_op_names[] = {
  "ISRC_A", // 2
  "ISRC_B", // 3
  "ISRC_C", // 4
- "ISRC_E", //  5
+ "ISRC_E", // 5
+ "ISRC_H", // 6
 };
 
 const char *get_prop_op_name(int i) {
