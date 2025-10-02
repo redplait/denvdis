@@ -1056,9 +1056,10 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
    *a_sv = nullptr,
    *b_sv = nullptr,
    *c_sv = nullptr,
-   *e_sv = nullptr;
+   *e_sv = nullptr,
+   *h_sv = nullptr;
   NVP_type t1 = GENERIC, t2 = GENERIC,
-   t_a = GENERIC, t_b = GENERIC, t_c = GENERIC, t_e = GENERIC;
+   t_a = GENERIC, t_b = GENERIC, t_c = GENERIC, t_e = GENERIC, t_h = GENERIC;
   int ends2 = 0;
   bool setp = is_setp(p.first, ends2);
   if ( has_props ) {
@@ -1091,6 +1092,11 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       if ( pr->op == ISRC_E ) {
         t_e = pr->t;
         if ( pr->fields.size() == 1 ) e_sv = &get_it(pr->fields, 0);
+        continue;
+      }
+      if ( pr->op == ISRC_H ) {
+        t_h = pr->t;
+        if ( pr->fields.size() == 1 ) h_sv = &get_it(pr->fields, 0);
         continue;
       }
     }
@@ -1279,12 +1285,14 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
          {
            if ( is_sv2(a_sv, rn->name, "Ra") )
              rtdb->rgpr(kvi->second, off, 0, t_a);
-           else if ( is_sv2(a_sv, rn->name, "Rb") )
+           else if ( is_sv2(b_sv, rn->name, "Rb") )
              rtdb->rgpr(kvi->second, off, 0, t_b);
-           else if ( is_sv2(a_sv, rn->name, "Rc") )
+           else if ( is_sv2(c_sv, rn->name, "Rc") )
              rtdb->rgpr(kvi->second, off, 0, t_c);
-           else if ( is_sv2(a_sv, rn->name, "Re") )
+           else if ( is_sv2(e_sv, rn->name, "Re") )
              rtdb->rgpr(kvi->second, off, 0, t_e);
+           else if ( is_sv2(h_sv, rn->name, "Rh") ) // NOTE - ISRC_H_SIZE is always 32bit at time of writing this
+             rtdb->rgpr(kvi->second, off, 0, t_h);
            else rtdb->rgpr(kvi->second, off, 0);
            res++;
          }
@@ -1341,6 +1349,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       if ( ve.arg[len - 1] == 'a' ) return t_a;
       if ( ve.arg[len - 1] == 'b' ) return t_b;
       if ( ve.arg[len - 1] == 'e' ) return t_e;
+      if ( ve.arg[len - 1] == 'h' ) return t_h;
       return GENERIC;
     };
     auto check_ve = [&](const ve_base &ve, reg_history::RH what) {
