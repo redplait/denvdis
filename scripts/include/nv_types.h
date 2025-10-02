@@ -58,6 +58,7 @@ enum NVP_ops {
  ISRC_B = 3,
  ISRC_C = 4,
  ISRC_E = 5,
+ ISRC_H = 6,
 };
 
 struct NV_Prop {
