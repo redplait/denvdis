@@ -1237,6 +1237,30 @@ ins_reuse2(SV *obj)
   RETVAL
 
 SV *
+ins_keep(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+  if ( !e->has_ins() )
+   RETVAL = &PL_sv_undef;
+  else
+   RETVAL = newSVuv(e->reus.keep);
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_keep2(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+  if ( !e->has_ins() )
+   RETVAL = &PL_sv_undef;
+  else
+   RETVAL = newSVuv(e->reus.keep2);
+ OUTPUT:
+  RETVAL
+
+SV *
 ins_prop(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
