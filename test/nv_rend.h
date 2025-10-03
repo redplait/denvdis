@@ -58,6 +58,21 @@ inline std::string& rstrip(std::string &s)
   return s;
 }
 
+struct reg_reuse {
+  unsigned short mask = 0, // actual values of reuse_src_X
+    mask2 = 0; // if reuse_src_X presents
+  inline void clear() {
+    mask = mask2 = 0;
+  }
+  int apply(const struct nv_instr *, const NV_extracted &kv);
+  // 1 << (idx - ISRC_A
+  inline int ra() const { return mask & 1; }
+  inline int rb() const { return mask & 2; }
+  inline int rc() const { return mask & 4; }
+  inline int re() const { return mask & 8; }
+  inline int rh() const { return mask & 16; }
+};
+
 struct reg_history {
   unsigned long off;
   // 0x8000 - write, else read

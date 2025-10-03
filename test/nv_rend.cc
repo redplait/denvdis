@@ -1047,6 +1047,27 @@ bool NV_renderer::check_lut(const struct nv_instr *ins, const NV_rlist *rend, co
   return false;
 }
 
+int reg_reuse::apply(const struct nv_instr *ins, const NV_extracted &kv) {
+  mask = mask2 = 0;
+  if ( !ins ) return 0;
+  for ( auto &e: ins->eas ) {
+    if ( !e.name.starts_with("reuse_src_"sv) ) continue;
+    int idx = -1;
+    switch(e.name.at(10)) {
+      case 'a': idx = 1; break;
+      case 'b': idx = 1; break;
+      case 'c': idx = 2; break;
+      case 'e': idx = 3; break;
+      case 'h': idx = 4; break;
+    }
+    if ( idx == -1 ) continue;
+    mask2 |= (1 << idx);
+    auto ki = kv.find(e.name);
+    if ( ki != kv.end() && ki->second ) mask |= (1 << idx);
+  }
+  return mask2;
+};
+
 int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &p, unsigned long off)
 {
   int res = 0;
