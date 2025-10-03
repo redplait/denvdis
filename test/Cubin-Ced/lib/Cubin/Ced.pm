@@ -246,6 +246,14 @@ You can check if you still have pending tables with $cub->ptabs method
   a[0] - kind of imm value - like NV_UImm/NV_F32Imm/etc and
   a[1] - bit-size of imm value
 
+=item * ins_reuse - returns mask of reuse_src_X attributes presented in current instruction. Bit index is ISRC_X - ISRC_A
+
+=item * ins_reuse2 - returns mask of reuse_src_X attributes in this instruction form. Bit index is ISRC_X - ISRC_A
+
+=item * ins_keep - returns mask of keep_X attributes presented in current instruction. Bit index is ISRC_X - ISRC_A
+
+=item * ins_keep2 - returns mask of keep_X attributes in this instruction form. Bit index is ISRC_X - ISRC_A
+
 =item * kv - returns hash of all fields, key is field name and value is, well, field value
 
 =item * get_enum(field_name) returns ref to dictionary with possible values of some enum
