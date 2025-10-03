@@ -62,6 +62,7 @@ class Perl_ELog: public NV_ELog {
 
 class Ced_perl: public CEd_base {
  public:
+  reg_reuse reus;
   Ced_perl(IElf *e) {
     curr_dis.first = nullptr;
     m_elog = new Perl_ELog;
@@ -139,6 +140,7 @@ class Ced_perl: public CEd_base {
     if ( !flush_buf() ) return 0;
     int res = _verify_off(off);
     if ( !res ) reset_ins();
+    else reus.apply(ins(), cex());
     return res;
   }
   SV *get_start() {
@@ -153,6 +155,7 @@ class Ced_perl: public CEd_base {
     if ( m_state < WantOff ) return 0;
     int res = _next_off();
     if ( !res ) reset_ins();
+    else reus.apply(ins(), cex());
     return res;
   }
   SV *get_off() {
@@ -1206,6 +1209,30 @@ ins_pred(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->ins_pred();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_reuse(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+  if ( !e->has_ins() )
+   RETVAL = &PL_sv_undef;
+  else
+   RETVAL = newSVuv(e->reus.mask);
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_reuse2(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+  if ( !e->has_ins() )
+   RETVAL = &PL_sv_undef;
+  else
+   RETVAL = newSVuv(e->reus.mask2);
  OUTPUT:
   RETVAL
 
