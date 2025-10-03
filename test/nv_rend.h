@@ -60,7 +60,9 @@ inline std::string& rstrip(std::string &s)
 
 struct reg_reuse {
   unsigned short mask = 0, // actual values of reuse_src_X
-    mask2 = 0; // if reuse_src_X presents
+    mask2 = 0; // if reuse_src_X presents in this instruction
+  unsigned char keep = 0, // actual values of keep_X
+    keep2 = 0; // if keep_x presents in this instruction
   inline void clear() {
     mask = mask2 = 0;
   }
@@ -71,6 +73,9 @@ struct reg_reuse {
   inline int rc() const { return mask & 4; }
   inline int re() const { return mask & 8; }
   inline int rh() const { return mask & 16; }
+  // there are only keep_a & keep_b - both were introduced in sm100
+  inline int ka() const { return keep & 1; }
+  inline int kb() const { return keep & 2; }
 };
 
 struct reg_history {

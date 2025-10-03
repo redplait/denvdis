@@ -1049,10 +1049,23 @@ bool NV_renderer::check_lut(const struct nv_instr *ins, const NV_rlist *rend, co
 
 int reg_reuse::apply(const struct nv_instr *ins, const NV_extracted &kv) {
   mask = mask2 = 0;
+  keep = keep2 = 0;
   if ( !ins ) return 0;
   for ( auto &e: ins->eas ) {
-    if ( !e.name.starts_with("reuse_src_"sv) ) continue;
     int idx = -1;
+    if ( e.name.starts_with("keep_"sv) )
+    {
+      switch(e.name.at(5)) {
+        case 'a': idx = 1; break;
+        case 'b': idx = 1; break;
+      }
+      if ( idx == -1 ) continue;
+      keep2 |= (1 << idx);
+      auto ki = kv.find(e.name);
+      if ( ki != kv.end() && ki->second ) keep |= (1 << idx);
+      continue;
+    }
+    if ( !e.name.starts_with("reuse_src_"sv) ) continue;
     switch(e.name.at(10)) {
       case 'a': idx = 1; break;
       case 'b': idx = 1; break;
