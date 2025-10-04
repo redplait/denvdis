@@ -907,6 +907,7 @@ void NV_renderer::dump_trset(const reg_pad::TRSet &rs, const char *pfx) const
         else
           fprintf(m_out, " ;   %lX %X", tr.off, tr.kind & mask);
       }
+      if ( tr.is_reuse() ) fprintf(m_out, " reuse");
       if ( tname ) fprintf(m_out, " %s\n", tname);
       else fputc('\n', m_out);
     }
@@ -1163,6 +1164,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
   int idx = -1;
   rtdb->pred_mask = 0;
   if ( is_s2xx(p.first) ) rtdb->pred_mask = (1 << 10);
+  rtdb->m_reuse.apply(p.first, p.second);
   for ( auto &r: *rend ) {
     // check if we have tail - then end loop
     if ( r->type == R_value ) {
@@ -1239,12 +1241,12 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       idx = 0;
       continue;
     }
-    auto rgpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, NVP_type _t = GENERIC) {
+    auto rgpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, int op_idx, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
         if ( (int)kvi->second + i >= m_dis->rz ) break;
-        rtdb->rgpr(kvi->second + i, off, what, _t);
+        rtdb->rgpr(kvi->second + i, off, what | rtdb->check_reuse(op_idx), _t);
         res++;
       }
       return res;
@@ -1259,12 +1261,12 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       }
       return res;
     };
-    auto rugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, NVP_type _t = GENERIC) {
+    auto rugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, int op_idx, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = i;
         if ( (int)kvi->second + i >= m_dis->rz ) break;
-        rtdb->rugpr(kvi->second + i, off, what, _t);
+        rtdb->rugpr(kvi->second + i, off, what | rtdb->check_reuse(op_idx), _t);
         res++;
       }
       return res;
@@ -1311,27 +1313,27 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
          else res += gpr_multi(d2_size, kvi, t2);
         } else {
          if ( a_size > 32 && is_sv2(a_sv, rn->name, "Ra") )
-          res += rgpr_multi(a_size, kvi, t_a);
+          res += rgpr_multi(a_size, kvi, ISRC_A, t_a);
          else if ( b_size > 32 && is_sv2(b_sv, rn->name, "Rb") )
-          res += rgpr_multi(b_size, kvi, t_b);
+          res += rgpr_multi(b_size, kvi, ISRC_B, t_b);
          else if ( c_size > 32 && is_sv2(c_sv, rn->name, "Rc") )
-          res += rgpr_multi(c_size, kvi, t_c);
+          res += rgpr_multi(c_size, kvi, ISRC_C, t_c);
          else if ( e_size > 32 && is_sv2(e_sv, rn->name, "Re") )
-          res += rgpr_multi(e_size, kvi, t_e);
+          res += rgpr_multi(e_size, kvi, ISRC_E, t_e);
          else if ( h_size > 32 && is_sv2(h_sv, rn->name, "Rh") )
-          res += rgpr_multi(h_size, kvi, t_h);
+          res += rgpr_multi(h_size, kvi, ISRC_H, t_h);
          else
          {
            if ( is_sv2(a_sv, rn->name, "Ra") )
-             rtdb->rgpr(kvi->second, off, 0, t_a);
+             rtdb->rgpr(kvi->second, off, rtdb->check_reuse(ISRC_A), t_a);
            else if ( is_sv2(b_sv, rn->name, "Rb") )
-             rtdb->rgpr(kvi->second, off, 0, t_b);
+             rtdb->rgpr(kvi->second, off, rtdb->check_reuse(ISRC_B), t_b);
            else if ( is_sv2(c_sv, rn->name, "Rc") )
-             rtdb->rgpr(kvi->second, off, 0, t_c);
+             rtdb->rgpr(kvi->second, off, rtdb->check_reuse(ISRC_C), t_c);
            else if ( is_sv2(e_sv, rn->name, "Re") )
-             rtdb->rgpr(kvi->second, off, 0, t_e);
+             rtdb->rgpr(kvi->second, off, rtdb->check_reuse(ISRC_E), t_e);
            else if ( is_sv2(h_sv, rn->name, "Rh") ) // NOTE - ISRC_H_SIZE is always 32bit at time of writing this
-             rtdb->rgpr(kvi->second, off, 0, t_h);
+             rtdb->rgpr(kvi->second, off, rtdb->check_reuse(ISRC_H), t_h);
            else rtdb->rgpr(kvi->second, off, 0);
            res++;
          }
@@ -1356,23 +1358,23 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
          else res += ugpr_multi(d2_size, kvi, t2);
         } else {
          if ( a_size > 32 && is_sv2(a_sv, rn->name, "URa") )
-          res += rugpr_multi(a_size, kvi, t_a);
+          res += rugpr_multi(a_size, kvi, ISRC_A, t_a);
          else if ( b_size > 32 && is_sv2(b_sv, rn->name, "URb") )
-          res += rugpr_multi(b_size, kvi, t_b);
+          res += rugpr_multi(b_size, kvi, ISRC_B, t_b);
          else if ( c_size > 32 && is_sv2(c_sv, rn->name, "URc") )
-          res += rugpr_multi(c_size, kvi, t_c);
+          res += rugpr_multi(c_size, kvi, ISRC_C, t_c);
          else if ( e_size > 32 && is_sv2(e_sv, rn->name, "URe") )
-          res += rugpr_multi(e_size, kvi, t_e);
+          res += rugpr_multi(e_size, kvi, ISRC_E, t_e);
          else
          {
            if ( is_sv2(a_sv, rn->name, "URa") )
-             rtdb->rugpr(kvi->second, off, 0, t_a);
+             rtdb->rugpr(kvi->second, off, rtdb->check_reuse(ISRC_A), t_a);
            else if ( is_sv2(a_sv, rn->name, "URb") )
-             rtdb->rugpr(kvi->second, off, 0, t_b);
+             rtdb->rugpr(kvi->second, off, rtdb->check_reuse(ISRC_B), t_b);
            else if ( is_sv2(a_sv, rn->name, "URc") )
-             rtdb->rugpr(kvi->second, off, 0, t_c);
+             rtdb->rugpr(kvi->second, off, rtdb->check_reuse(ISRC_C), t_c);
            else if ( is_sv2(a_sv, rn->name, "URe") )
-             rtdb->rugpr(kvi->second, off, 0, t_e);
+             rtdb->rugpr(kvi->second, off, rtdb->check_reuse(ISRC_E), t_e);
            else rtdb->rugpr(kvi->second, off, 0);
            res++;
          }

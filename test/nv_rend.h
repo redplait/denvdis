@@ -84,10 +84,15 @@ struct reg_history {
   // 0x4000 - Uniform predicate, else just predicate
   // next 3 bits are predicate reg index + 1 (bcs T == 7 and 0 is perfectly valid predicate)
   // next 1 bit - if was load from Special Reg (1 << 10)
+  // next 1 bit - reise flag (1 << 9)
   typedef unsigned short RH;
+  static constexpr RH reuse = 1 << 9;
   RH kind;
   inline bool is_upred() const {
     return kind & 0x4000;
+  }
+  inline bool is_reuse() const {
+    return kind & reuse;
   }
   inline bool has_pred(int &p) const {
     p = (kind >> 11) & 0x7;
@@ -123,8 +128,13 @@ struct reg_pad {
   TRSet gpr, ugpr;
   RSet pred, upred;
   std::vector<cbank_history> cbs;
+  reg_reuse m_reuse;
   reg_history::RH pred_mask = 0;
   // boring stuff
+  reg_history::RH check_reuse(int op) const {
+    if ( m_reuse.mask & (1 << (op - ISRC_A)) ) return reg_history::reuse;
+    return 0;
+  }
   void add_cb(unsigned long off, unsigned long cb_off, unsigned short cb_num, unsigned short k) {
     cbs.push_back( { off, cb_off, cb_num, k });
   }
