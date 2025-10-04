@@ -89,6 +89,9 @@ class Ced_perl: public CEd_base {
   int width() const {
     return m_width;
   }
+  int block_mask() const {
+    return m_block_mask;
+  }
   inline unsigned long get_flush() const {
     return flush_cnt;
   }
@@ -1023,6 +1026,15 @@ width(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->width();
+ OUTPUT:
+  RETVAL
+
+int
+block_mask(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->block_mask();
  OUTPUT:
   RETVAL
 

@@ -316,6 +316,8 @@ Methods to extract fields grouped in tables
 
 =item * width of instruction
 
+=item * block_mask - for width 64 or 88 this is mask of instruction block size. You can get address of block like $off & ~$block_mask
+
 =item * sm_num
 
 =item * sm_name
