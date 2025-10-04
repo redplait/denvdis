@@ -565,6 +565,7 @@ class NV_renderer {
    INV_disasm *m_dis = nullptr;
    Dvq_name m_vq = nullptr;
    int m_width;
+   int m_block_mask = 0;
    // missed fields
    mutable std::unordered_set<std::string> m_missed;
    // relocs

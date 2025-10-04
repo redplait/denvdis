@@ -392,12 +392,18 @@ void nv_dis::try_dis(Elf_Word idx)
     // check branch label
     uint32_t curr_label = 0;
     if ( branches ) {
-      auto li = branches->labels.find(off);
+      auto loff = off;
+      auto li = branches->labels.find(loff);
+      // check if this is first instruction in block
+      if ( li == branches->labels.end() && m_block_mask && (loff & m_block_mask) == 8 ) {
+        loff &= ~m_block_mask; // then fix loff to block address
+        li = branches->labels.find(loff);
+      }
       if ( li != branches->labels.end() ) {
         if ( li->second )
-          fprintf(m_out, "LABEL_%lX: ; %s\n", off, s_ltypes[li->second]);
+          fprintf(m_out, "LABEL_%lX: ; %s\n", loff, s_ltypes[li->second]);
         else
-          fprintf(m_out, "LABEL_%lX:\n", off);
+          fprintf(m_out, "LABEL_%lX:\n", loff);
       }
       auto bi = branches->branches.find(off);
       if ( bi != branches->branches.end() )
