@@ -39,10 +39,11 @@ __global__ void gpu_sin_tla_whileloop(float *sums,int steps,int terms,float step
     int step = blockIdx.x*blockDim.x+threadIdx.x; // start with unique thread ID
     int res_idx = step >> 5;
     float res = 0.0;
+    auto stride = blockDim.x*gridDim.x;
     while(step<steps){
 	float x = step_size*step;
 	res += sinsum(x,terms);  // save sum
-	step += blockDim.x*gridDim.x; //  large stride to next step.
+	step += stride; //  large stride to next step.
     }
     __syncthreads();
     sums[res_idx] = warp_reduce_sum(res);
