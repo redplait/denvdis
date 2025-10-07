@@ -335,6 +335,29 @@ const double NVd_inf = longlong_as_double(0x7ff0000000000000ULL),
  NVd_nan = longlong_as_double(0xfff8000000000000ULL)
 ;
 
+static const char s_digits[] = "123456789";
+
+// printCtrl from maxas
+void NV_renderer::render_cword(uint64_t code, char *res, size_t res_len)
+{
+
+  int stall = (code & 0x0000f) >> 0;
+  int yield = (code & 0x00010) >> 4;
+  int wrtdb = (code & 0x000e0) >> 5;  // write dependency barier
+  int readb = (code & 0x00700) >> 8;  // read  dependency barier
+  int watdb = (code & 0x1f800) >> 11; // wait on dependency barier
+  char barier[5];
+  char wr = wrtdb == 7 ? '-' : s_digits[wrtdb];
+  char rd = readb == 7 ? '-' : s_digits[readb];
+  char yc = yield ? '-' : 'Y';
+  const char *w_pfx = "--";
+  if ( watdb ) {
+    sprintf(barier, "%02x", watdb);
+    w_pfx = barier;
+  }
+  snprintf(res, res_len, "B%s:R%c:W%c:%c:S%x", w_pfx, rd, wr, yc, stall);
+}
+
 template <typename C>
 void NV_renderer::render_rel(std::string &res, const NV_rel *nr, const C &c) const
 {
