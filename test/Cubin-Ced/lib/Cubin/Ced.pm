@@ -260,6 +260,14 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * has_lut - check if instruction has LUT operation
 
+=item * ctrl - for old 64 bit width SM returns ctrl - see "Understanding the GPU Microarchitecture to Achieve Bare-Metal Performance Tuning" paper
+
+=item * opcode - for old 64 bit width SM returns so called opcode for block of 7 instructions  - WTF is this
+
+=item * cword - for 88 bit width SM returns control word - see maxas https://github.com/NervanaSystems/maxas/wiki/Control-Codes for details
+
+=item * print_cword - render CWord in form similar to official nvdisasm
+
 =back
 
 render method returns tied array of rendering items - you can fetch them with simple $r->[index], format is array where indexes
