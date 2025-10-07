@@ -343,10 +343,16 @@ const uint64_t s_masks[64] = {
 
 struct NV_base_decoder {
  uint8_t opcode = 0; // highest 6 bits and the lowest 2 bits are the opcode
- uint8_t ctrl = 0; // the middle 56 bits are used to control the execution of the following 7 instructions, each
-   // of which is assigned to an 8-bit control code
-   // Bit 4, 5, and 7 represent shared memory, global memory, and
-   // the texture cache dependency barrier, respectively.
+ uint8_t ctrl = 0; /* ripped from "Understanding the GPU Microarchitecture to Achieve Bare-Metal Performance Tuning"
+    the middle 56 bits are used to control the execution of the following 7 instructions, each
+     of which is assigned to an 8-bit control code
+    Bit 4, 5, and 7 represent shared memory, global memory, and the texture cache dependency barrier, respectively.
+    bits 0-3 indicate the number of stall cycles before issuing the next instruction.
+    0x2n means a warp is suspended for n cycles before issuing the next instruction, where n = 0, 1, . . . , 15.
+    0x20 means the single-issue mode, while 0x04 means the dual-issue mode. When two consecutive instructions are
+     controlled by 0x04 and 0x05, the throughput could reach its maximum.
+   Cool, but 0x2x is bit 5 which marked early as global memory barrier
+  */
   inline uint64_t _extract(uint64_t v, short pos, short len) const {
     return (v >> pos) & s_masks[len - 1];
   }

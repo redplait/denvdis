@@ -167,17 +167,23 @@ class Ced_perl: public CEd_base {
   }
   SV *get_ctrl() {
     if ( !ins() ) return &PL_sv_undef;
-    if ( m_width == 128 ) return &PL_sv_no;
+    if ( m_width != 64 ) return &PL_sv_no;
     uint8_t c = 0, o = 0;
     m_dis->get_ctrl(c, o);
     return newSVuv(c);
   }
   SV *get_opcode() {
     if ( !ins() ) return &PL_sv_undef;
-    if ( m_width == 128 ) return &PL_sv_no;
+    if ( m_width != 64 ) return &PL_sv_no;
     uint8_t c = 0, o = 0;
     m_dis->get_ctrl(c, o);
     return newSVuv(o);
+  }
+  SV *get_cword() {
+    if ( !ins() ) return &PL_sv_undef;
+    if ( m_width != 88 ) return &PL_sv_no;
+    uint64_t cword = m_dis->get_cword();
+    return newSVuv(cword);
   }
   // patch methods
   SV *nop();
@@ -420,8 +426,8 @@ int Ced_perl::patch_field(const char *fname, SV *v)
   const nv_vattr *va = nullptr;
   int cb_idx = 0, tab_idx = 0;
   bool ctr = p == "Ctrl";
-  if ( ctr && m_width == 128 ) {
-    Err("Ctrl not supported for 128bit\n");
+  if ( ctr && m_width != 64 ) {
+    Err("Ctrl not supported for 88/128 bits\n");
     return 0;
   }
   const NV_cbank *cb = is_cb_field(ins(), p, cb_idx);
@@ -1017,6 +1023,30 @@ opcode(SV *obj)
      RETVAL = &PL_sv_undef;
    else
      RETVAL = e->get_opcode();
+ OUTPUT:
+  RETVAL
+
+SV *
+cword(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = e->get_cword();
+ OUTPUT:
+  RETVAL
+
+SV *
+print_cword(SV *obj, unsigned long cword)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   char buffer[128];
+ CODE:
+  e->render_cword(cword, buffer, 127);
+  buffer[127] = 0;
+  RETVAL = newSVpv(buffer, strlen(buffer));
  OUTPUT:
   RETVAL
 
