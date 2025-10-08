@@ -350,6 +350,8 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
 void nv_dis::try_dis(Elf_Word idx)
 {
   auto branches = get_branch(idx);
+  NV_labels local_labels;
+  NV_labels *labels = branches ? &branches->labels : &local_labels;
   auto cbank = get_cbank(idx);
   bool has_cb_syms = !m_cb_syms.empty();
   auto rels = m_srels.find(idx);
@@ -392,20 +394,22 @@ void nv_dis::try_dis(Elf_Word idx)
     if ( res.size() > 1 ) res_idx = calc_index(res, m_dis->rz);
     // check branch label
     uint32_t curr_label = 0;
-    if ( branches ) {
+    if ( !labels->empty() ) {
       auto loff = off;
-      auto li = branches->labels.find(loff);
+      auto li = labels->find(loff);
       // check if this is first instruction in block
-      if ( li == branches->labels.end() && m_block_mask && (loff & m_block_mask) == 8 ) {
+      if ( li == labels->end() && m_block_mask && (loff & m_block_mask) == 8 ) {
         loff &= ~m_block_mask; // then fix loff to block address
-        li = branches->labels.find(loff);
+        li = labels->find(loff);
       }
-      if ( li != branches->labels.end() ) {
+      if ( li != labels->end() ) {
         if ( li->second )
           fprintf(m_out, "LABEL_%lX: ; %s\n", loff, s_ltypes[li->second]);
         else
           fprintf(m_out, "LABEL_%lX:\n", loff);
       }
+    }
+    if ( branches ) {
       auto bi = branches->branches.find(off);
       if ( bi != branches->branches.end() )
         curr_label = bi->second;
@@ -438,7 +442,7 @@ void nv_dis::try_dis(Elf_Word idx)
       // dump single
       if ( m_width == 88 && !dual_first && !dual_last )
         dual_first = check_dual(res[res_idx].second);
-      dump_ins(res[res_idx], curr_label, branches ? &branches->labels: nullptr);
+      dump_ins(res[res_idx], curr_label, labels);
       // check const bank
       auto rend = m_dis->get_rend(res[res_idx].first->n);
       if ( cbank || has_cb_syms ) {
