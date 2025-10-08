@@ -1866,6 +1866,31 @@ bool NV_renderer::check_cbank(const struct nv_instr *i, const render_base *rb, c
   return true;
 }
 
+int NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, const NV_extracted &kv, NV_labels *labs) const
+{
+  for ( auto ri: *rl ) {
+    if ( is_tail(i, ri) ) break;
+    if ( ri->type != R_value ) continue;
+    const render_named *rn = (const render_named *)ri;
+    auto kvi = kv.find(rn->name);
+    if ( kvi == kv.end() ) continue;
+    auto vi = find(i->vas, rn->name);
+    if ( !vi ) break; // unknown field
+    long branch_off = 0;
+    if ( check_ret(i, kvi, branch_off) ) {
+      long addr = check_rel(i) ? branch_off + m_dis->off_next() : branch_off;
+      (*labs)[addr] = 0;
+      return 1;
+    }
+    if ( check_branch(i, kvi, branch_off) ) {
+      long addr = branch_off + m_dis->off_next();
+      (*labs)[addr] = 0;
+      return 2;
+    }
+  }
+  return 0;
+}
+
 int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i,
  const NV_extracted &kv, NV_labels *l, int opt_c) const
 {
