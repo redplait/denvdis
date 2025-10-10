@@ -1,0 +1,5 @@
+s 9
+40 r LEPC R4
+30 r NOP
+60 r STG.E.64.SYS [R2], R4
+# 60 p sz 5
