@@ -1866,7 +1866,8 @@ bool NV_renderer::check_cbank(const struct nv_instr *i, const render_base *rb, c
   return true;
 }
 
-int NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, const NV_extracted &kv, NV_labels *labs) const
+int NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, const NV_extracted &kv, 
+  NV_labels *labs, long *out_addr) const
 {
   for ( auto ri: *rl ) {
     if ( is_tail(i, ri) ) break;
@@ -1879,12 +1880,14 @@ int NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, co
     long branch_off = 0;
     if ( check_ret(i, kvi, branch_off) ) {
       long addr = check_rel(i) ? branch_off + m_dis->off_next() : branch_off;
-      (*labs)[addr] = 0;
+      if ( labs ) labs->try_emplace(addr,0);
+      if ( out_addr ) *out_addr = addr;
       return 1;
     }
     if ( check_branch(i, kvi, branch_off) ) {
       long addr = branch_off + m_dis->off_next();
-      (*labs)[addr] = 0;
+      if ( labs ) labs->try_emplace(addr,0);
+      if ( out_addr ) *out_addr = addr;
       return 2;
     }
   }
@@ -1984,7 +1987,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
               else
                 snprintf(buf, buf_size, " (LABEL_%lX)", addr);
             }
-            if ( l && !lname ) (*l)[addr] = 0;
+            if ( l && !lname ) l->try_emplace(addr,0);
             buf[buf_size] = 0;
             tmp += buf;
           } else if ( check_branch(i, kvi, branch_off) ) {
@@ -2005,7 +2008,7 @@ int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_in
               else
                 snprintf(buf, buf_size, " (LABEL_%lX)", addr);
             }
-            if ( l && !lname ) (*l)[addr] = 0;
+            if ( l && !lname ) l->try_emplace(addr,0);
             buf[buf_size] = 0;
             tmp += buf;
           } else {
