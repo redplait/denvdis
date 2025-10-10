@@ -61,7 +61,7 @@ static std::map<unsigned int, const char *> s_sht = {
 // extracted from EIATTR_INDIRECT_BRANCH_TARGETS
 struct bt_per_section
 {
-  std::unordered_map<uint32_t, uint32_t> branches; // key - offset, value - target
+  std::unordered_map<uint32_t, std::list<uint32_t> > branches; // key - offset, value - targets from one_indirect_branch
   NV_labels labels; // offset of label
 };
 
@@ -411,8 +411,8 @@ void nv_dis::try_dis(Elf_Word idx)
     }
     if ( branches ) {
       auto bi = branches->branches.find(off);
-      if ( bi != branches->branches.end() )
-        curr_label = bi->second;
+      if ( bi != branches->branches.end() && ! bi->second.empty() )
+        curr_label = bi->second.front();
     }
     fprintf(m_out, "/* res %ld %lX ", res.size(), off);
     if ( m_width == 64 ) {
@@ -615,16 +615,15 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
         } else if ( attr == 0x34 ) {
           // collect indirect branches
           auto ib = get_branch(sidx);
-          parse_branch_targets(data + 4, a_len, [&](const one_indirect_branch &ibt) {
+          parse_branch_targets(data + 4, a_len, [&](one_indirect_branch &ibt) {
             fprintf(m_out, " addr %X:", ibt.addr);
             for ( auto l: ibt.labels ) {
               fprintf(m_out, " %X", l);
-              ib->labels[l] = 0;
+              ib->labels[l] = NVLType::Ind_BT;
             }
             fputc('\n', m_out);
             // store in branches first if presents
-            if ( ibt.labels.empty() ) ib->branches[ibt.addr] = 0;
-            else ib->branches[ibt.addr] = ibt.labels.front();
+            ib->branches[ibt.addr] = std::move(ibt.labels);
           });
         }
         data += 4 + a_len;
