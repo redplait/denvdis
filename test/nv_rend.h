@@ -568,6 +568,13 @@ class NV_renderer {
    Dvq_name m_vq = nullptr;
    int m_width;
    int m_block_mask = 0;
+   // convert offset to start of block
+   unsigned long to_block_start(unsigned long loff) const {
+     if ( !m_block_mask ) return loff;
+     if ( (loff & m_block_mask) == 8 )
+       return loff & ~m_block_mask;
+     return loff;
+   }
    // missed fields
    mutable std::unordered_set<std::string> m_missed;
    // relocs
