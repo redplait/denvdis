@@ -1376,8 +1376,7 @@ ins_cbank(SV *obj)
         EXTEND(SP, res_size);
         mXPUSHi(cb_idx);
         if ( res_size > 1 )
-          mXPUSHi(cb_off.value());
-        XSRETURN(res_size);
+          mPUSHi(cb_off.value());
       } else {
         AV *av = newAV();
         av_push(av, newSViv(cb_idx));
@@ -1405,9 +1404,8 @@ tab(SV *obj, IV key)
   } else {
     if ( gimme == G_ARRAY) {
       EXTEND(SP, 2);
-      mXPUSHs(names);
-      mXPUSHs(dict);
-      XSRETURN(2);
+      mPUSHs(names);
+      mPUSHs(dict);
     } else {
       AV *av = newAV();
       av_push(av, names);
@@ -1426,10 +1424,9 @@ stat(SV *obj)
  PPCODE:
   if ( gimme == G_ARRAY) {
       EXTEND(SP, 3);
-      mXPUSHi(e->get_flush());
-      mXPUSHi(e->get_rdr());
-      mXPUSHi(e->is_dirty());
-      XSRETURN(3);
+      mPUSHi(e->get_flush());
+      mPUSHi(e->get_rdr());
+      mPUSHi(e->is_dirty());
   } else {
       AV *av = newAV();
       av_push(av, newSViv(e->get_flush()));
