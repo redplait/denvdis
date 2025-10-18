@@ -1069,6 +1069,19 @@ block_mask(SV *obj)
   RETVAL
 
 SV *
+reloc_name(SV *obj, IV rt)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   auto rt_name = get_cuda_reloc_name(rt);
+   if ( !rt_name )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = newSVpv(rt_name, strlen(rt_name));
+ OUTPUT:
+  RETVAL
+
+SV *
 instrs(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
