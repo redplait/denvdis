@@ -86,7 +86,10 @@ ok( defined($rt), 'new regtrack');
 ok( $rt->empty(), 'empty regtrack');
 my $apply_res = $cub->track($rt);
 ok( defined($apply_res), 'apply test');
-$t_num+=3;
+my $regs = $rt->rs();
+ok( defined($regs), 'rt->rs test');
+ok( exists($regs->{20}), 'must be track for R20');
+$t_num+=5;
 
 # done_testing must be last
 done_testing($t_num);
