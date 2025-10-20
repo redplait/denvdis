@@ -80,6 +80,11 @@ $t_num+=2;
 ok( $cub->next(), 'next');
 ok( 16 == $cub->get_off(), 'next offset should be 16' );
 
+# regtrack
+my $rt = Cubin::Ced::RegTrack->new();
+ok( defined($rt), 'new regtrack');
+ok( $rt->empty(), 'empty regtrack');
+$t_num+=2;
 
 # done_testing must be last
 done_testing($t_num);

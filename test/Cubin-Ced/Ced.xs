@@ -1710,6 +1710,49 @@ FETCH(self, key)
   }
   XSRETURN(1);
 
+MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::RegTrack
+
+void
+new(obj_or_pkg)
+  SV *obj_or_pkg
+ INIT:
+  HV *pkg = NULL;
+  SV *msv;
+  SV *objref= NULL;
+  reg_pad *res = NULL;
+  int ok = 1;
+ PPCODE:
+  if (SvPOK(obj_or_pkg) && (pkg= gv_stashsv(obj_or_pkg, 0))) {
+    if (!sv_derived_from(obj_or_pkg, s_ca_regtrack)) {
+      ok = 0;
+      croak("Package %s does not derive from %s", SvPV_nolen(obj_or_pkg), s_ca_regtrack);
+    }
+  } else {
+    ok = 0;
+    croak("new: first arg must be package name or blessed object");
+  }
+  if ( !ok ) {
+    ST(0) = &PL_sv_undef;
+  } else {
+    res = new reg_pad;
+    msv = newSViv(0);
+    objref= sv_2mortal(newRV_noinc(msv));
+    sv_bless(objref, pkg);
+    ST(0)= objref;
+    // attach magic
+    sv_magicext(msv, NULL, PERL_MAGIC_ext, &ca_regtrack_magic_vt, (const char*)res, 0);
+  }
+  XSRETURN(1);
+
+SV *
+empty(SV *obj)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+  RETVAL = r->empty() ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);
  if ( !s_ca_pkg )
@@ -1717,6 +1760,9 @@ BOOT:
  s_ca_render_pkg = gv_stashpv(s_ca_render, 0);
  if ( !s_ca_render_pkg )
     croak("Package %s does not exists", s_ca_render);
+ s_ca_regtrack_pkg = gv_stashpv(s_ca_regtrack, 0);
+ if ( !s_ca_regtrack_pkg )
+    croak("Package %s does not exists", s_ca_regtrack);
  // add enums from nv_types.h
  HV *stash = gv_stashpvn(s_ca, 10, 1);
  EXPORT_ENUM(NVP_ops, IDEST)
