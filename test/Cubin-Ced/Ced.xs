@@ -846,6 +846,38 @@ SV *fill_rhash(const std::unordered_map<int, std::vector<T> > &rs) {
   return newRV_inc((SV *)hv);
 }
 
+template <typename T>
+SV *fill_reg(const std::vector<T> &vt, unsigned long from) {
+  // return sorted array of array refs where
+  // [0] - offset
+  // [1] - mask
+  // [2] - is write
+  // [3] - has predicate (or undef)
+  // [4] - for typed_reg_history - type if presents
+  constexpr bool has_type = requires(T &t) { t.type; };
+  auto start = vt.cbegin();
+  if ( from ) start = std::lower_bound(start, vt.cend(), from, [](const T& rh, unsigned long v) -> bool { return rh.off < v; });
+  if ( start == vt.end() ) return &PL_sv_undef;
+  AV *av = newAV();
+  for ( ; start != vt.cend(); ++start ) {
+    AV *curr = newAV();
+    av_push(curr, newSVuv(start->off));
+    av_push(curr, newSViv(start->kind));
+    av_push(curr, start->kind & 0x8000 ? &PL_sv_yes : &PL_sv_no);
+    // 3) check predicate
+    int pred = 0;
+    if ( start->has_pred(pred) ) av_push(curr, newSViv(pred));
+    else av_push(curr, &PL_sv_undef);
+    // 4) type
+    if constexpr ( has_type ) {
+      if ( start->type != GENERIC ) av_push(curr, newSViv(start->type));
+    }
+    // finally add ref to av
+    av_push(av, newRV_noinc((SV*)curr));
+  }
+  return newRV_noinc((SV*)av);
+}
+
 // magic table for Cubin::Ced::Render
 static const char *s_ca_render = "Cubin::Ced::Render";
 static HV *s_ca_render_pkg = nullptr;
@@ -1628,7 +1660,7 @@ track(SV *obj, SV *rt)
   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
   reg_pad *r= get_magic_ext<reg_pad>(rt, &ca_regtrack_magic_vt);
  CODE:
-  if ( !e->has_ins() )
+  if ( !e->has_ins() || !r )
     RETVAL = &PL_sv_undef;
   else
     RETVAL = newSViv(e->apply(r));
@@ -1779,6 +1811,13 @@ empty(SV *obj)
  OUTPUT:
   RETVAL
 
+void
+clear(SV *obj)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+   r->clear();
+
 SV *
 rs(SV *obj)
  ALIAS:
@@ -1800,6 +1839,34 @@ ps(SV *obj)
    auto &rs = ix == 1 ? r->upred: r->pred;
  CODE:
   RETVAL = fill_rhash(rs);
+ OUTPUT:
+  RETVAL
+
+SV *
+r(SV *obj, IV key, unsigned long from = 0)
+ ALIAS:
+  Cubin::Ced::RegTrack::ur = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &rs = ix == 1 ? r->ugpr: r->gpr;
+   auto rs_iter = rs.find(key);
+ CODE:
+  if ( rs_iter == rs.end() ) RETVAL = &PL_sv_undef;
+  else RETVAL = fill_reg(rs_iter->second, from);
+ OUTPUT:
+  RETVAL
+
+SV *
+p(SV *obj, IV key, unsigned long from = 0)
+ ALIAS:
+  Cubin::Ced::RegTrack::up = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &rs = ix == 1 ? r->upred: r->pred;
+   auto rs_iter = rs.find(key);
+ CODE:
+  if ( rs_iter == rs.end() ) RETVAL = &PL_sv_undef;
+  else RETVAL = fill_reg(rs_iter->second, from);
  OUTPUT:
   RETVAL
 

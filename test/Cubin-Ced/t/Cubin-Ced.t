@@ -88,8 +88,12 @@ my $apply_res = $cub->track($rt);
 ok( defined($apply_res), 'apply test');
 my $regs = $rt->rs();
 ok( defined($regs), 'rt->rs test');
+ok( 1 == scalar keys %$regs, 'rs should have single key');
 ok( exists($regs->{20}), 'must be track for R20');
-$t_num+=5;
+my $r20 = $rt->r(20);
+ok( defined($r20), 'r test');
+ok( $r20->[0]->[2], 'r20 updated');
+$t_num+=8;
 
 # done_testing must be last
 done_testing($t_num);
