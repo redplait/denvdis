@@ -334,6 +334,9 @@ class Ced_perl: public CEd_base {
     return newSViv(ins()->tab_fields.size());
   }
   bool get_tab(IV, SV **n, SV **d);
+  inline int apply(reg_pad *rt) {
+    return has_ins() ? track_regs(rt, m_rend, curr_dis, m_dis->offset()) : 0;
+  }
  protected:
   SV *make_prop(const NV_Prop *prop);
   SV *make_enum_arr(const nv_eattr *ea);
@@ -833,6 +836,15 @@ static MGVTBL ca_regtrack_magic_vt = {
         0 /* dup */
         TAB_TAIL
 };
+
+template <typename T>
+SV *fill_rhash(const std::unordered_map<int, std::vector<T> > &rs) {
+  HV *hv = newHV();
+  for ( auto ei: rs ) {
+    hv_store_ent(hv, newSViv(ei.first), newSVuv(ei.second.size()), 0);
+  }
+  return newRV_inc((SV *)hv);
+}
 
 // magic table for Cubin::Ced::Render
 static const char *s_ca_render = "Cubin::Ced::Render";
@@ -1610,6 +1622,20 @@ PPCODE:
   }
   XSRETURN(1);
 
+SV *
+track(SV *obj, SV *rt)
+ INIT:
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  reg_pad *r= get_magic_ext<reg_pad>(rt, &ca_regtrack_magic_vt);
+ CODE:
+  if ( !e->has_ins() )
+    RETVAL = &PL_sv_undef;
+  else
+    RETVAL = newSViv(e->apply(r));
+ OUTPUT:
+  RETVAL
+
+
 MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::Render
 
 void
@@ -1750,6 +1776,30 @@ empty(SV *obj)
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
  CODE:
   RETVAL = r->empty() ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
+SV *
+rs(SV *obj)
+ ALIAS:
+  Cubin::Ced::RegTrack::urs = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &rs = ix == 1 ? r->ugpr: r->gpr;
+ CODE:
+  RETVAL = fill_rhash(rs);
+ OUTPUT:
+  RETVAL
+
+SV *
+ps(SV *obj)
+ ALIAS:
+  Cubin::Ced::RegTrack::ups = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &rs = ix == 1 ? r->upred: r->pred;
+ CODE:
+  RETVAL = fill_rhash(rs);
  OUTPUT:
   RETVAL
 
