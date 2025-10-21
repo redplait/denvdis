@@ -232,6 +232,7 @@ class NV_renderer {
     if ( m_dis != nullptr ) delete m_dis;
     if ( m_out && m_out != stdout) fclose(m_out);
   }
+  static void finalize_rt(reg_pad *);
   int load(const char *);
   int load(std::string &s) {
     return load(s.c_str());
@@ -538,7 +539,6 @@ class NV_renderer {
    }
    int track_regs(reg_pad *, const NV_rlist *, const NV_pair &p, unsigned long off);
    void dump_rt(reg_pad *) const;
-   void finalize_rt(reg_pad *);
    void dump_rset(const reg_pad::RSet &, const char *pfx) const;
    void dump_trset(const reg_pad::TRSet &, const char *pfx) const;
    inline bool is_pred(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
