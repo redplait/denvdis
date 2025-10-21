@@ -270,7 +270,9 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =back
 
-render method returns tied array of rendering items - you can fetch them with simple $r->[index], format is array where indexes
+=head4 render method
+
+returns tied array of rendering items - you can fetch them with simple $r->[index], format is array where indexes
 
 =over
 
@@ -306,7 +308,7 @@ left & right are ref to array where indexes
 
 =back
 
-Methods to extract fields grouped in tables
+=head4 Methods to extract fields grouped in tables
 
 =over
 
@@ -315,6 +317,58 @@ Methods to extract fields grouped in tables
 =item * tab(table_index) - returns table with table_index - ref to array [ fields_names. hash ]
  hash is just dictionary with key of possible values and value is array with values for each field. If there is single field then
  key is just single value
+
+=back
+
+=head4 Registers tracking
+
+See https://redplait.blogspot.com/2025/07/sass-instructions-registers-tracking.html
+
+Holds in separate object Cubin::Ced::RegTrack. There are 4 kind of registers in SASS:
+
+=over
+
+=item * GPR
+
+=item * Predicates
+
+=item * Universal registers: https://redplait.blogspot.com/2025/07/sass-instructions-uniform-registers.html
+
+=item * Universal predicates (UPxx)
+
+=back
+
+Main method in Ced is $ced->track($track_db)
+
+RegTrack can give you all 4 set of registers with (u)rs/(u)ps for registers/predicates - it retuns ref to hash where key is register number
+
+To get details track use following properties
+
+=over
+
+=item r($reg_idx) to get regular registers
+
+=item ur($reg_idx) to get universal registers
+
+=item p($reg_idx) to get predicates
+
+=item up($reg_idx) to get univeral predicates
+
+=back
+
+They return array of refs to array where indexes
+
+=over
+
+=item 0 - instruction offset
+
+=item 1 - mask
+
+=item 2 - modify this register
+
+=item 3 - if those instruction has condition predicate
+
+=item 4 - type of register if presents
 
 =back
 
