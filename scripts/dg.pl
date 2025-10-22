@@ -1,0 +1,120 @@
+#!perl -w
+# Sample of using perl modules from https://redplait.blogspot.com/2025/10/perl-modules-for-cubins-patching.html
+use strict;
+use warnings;
+use Elf::Reader;
+use Cubin::Ced;
+use Cubin::Attrs;
+use Getopt::Std;
+use Carp;
+
+# options
+use vars qw/$opt_g $opt_r $opt_v/;
+
+sub usage()
+{
+  print STDERR<<EOF;
+Usage: $0 [options] file.cubin
+ Options:
+  -r - dump relocs
+  -v - verbose mode
+EOF
+  exit(8);
+}
+
+# globals
+my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
+
+sub sym_name
+{
+  my $sidx = shift;
+  return unless defined($g_syms);
+  return unless defined($g_syms->[$sidx]);
+  $g_syms->[$sidx]->[0];
+}
+
+sub sym
+{
+  my $sidx = shift;
+  return unless defined($g_syms);
+  $g_syms->[$sidx];
+}
+
+sub dump_ext
+{
+  my $ext_idx = shift;
+  my $exts = $g_attrs->value($ext_idx->{'id'});
+  return unless defined($exts);
+  printf(" %d externals:\n", scalar @$exts);
+  foreach my $i ( @$exts ) {
+    printf("  %d", $i);
+    my $sn = sym_name($i);
+    if ( defined $sn ) { printf(" %s\n", $sn); }
+    else { printf("\n"); }
+  }
+}
+
+sub dump_rels
+{
+  my($pfx, $s_idx, $r_idx) = @_;
+  my %rels;
+  my $is_a = $pfx =~ /A$/;
+  my $res = $is_a ? read_rela($g_attrs, $g_elf, $s_idx, \%rels) :
+   read_rel($g_attrs, $g_elf, $s_idx, \%rels);
+  printf(" %s %d: %d\n", $pfx, $r_idx, $res);
+  return if ( !$res );
+  foreach my $r ( sort { $a <=> $b } keys %rels ) {
+    printf("  %X [%d] type %d", $r, $rels{$r}->[0], $rels{$r}->[2]);
+    my $rname = $g_ced->reloc_name($rels{$r}->[2]);
+    printf(" %s", $rname) if ( defined $rname );
+    $rname = sym_name($rels{$r}->[1]);
+    if ( defined $rname ) { printf(" %s", $rname); }
+    # addend
+    if ( $is_a && $rels{$r}->[3] ) {
+      printf(" add %X", $rels{$r}->[3]);
+    }
+    printf("\n");
+  }
+}
+
+# main
+my $state = getopts("grv");
+usage() if ( !$state );
+if ( -1 == $#ARGV ) {
+  printf("where is arg?\n");
+  exit(5);
+}
+
+# load elf, symbols, ced & attrs
+$g_elf = Elf::Reader->new($ARGV[0]);
+die("cannot open $ARGV[0]") unless defined($g_elf);
+$g_syms = read_symbols($g_elf);
+$g_ced = Cubin::Ced->new($g_elf);
+die("cannot load cubin $ARGV[0]") unless defined($g_ced);
+$g_w = $g_ced->width();
+if ( defined $opt_v ) {
+  printf("SM %s width %d\n", $g_ced->sm_name(), $g_w);
+}
+my @es = exs($g_elf);
+die("Empty cubin $ARGV[0]") unless scalar(@es);
+$g_attrs = Cubin::Attrs->new($g_elf);
+dir("Attrs failed on $ARGV[0]") unless defined($g_attrs);
+printf("%d sections with code\n", scalar(@es)) if defined($opt_v);
+
+# we have list of sections in @es
+foreach my $s ( @es ) {
+ my $a_idx = $g_attrs->try($s->[0]);
+ # dump current section
+ printf("[%d] attrs in %d size %X %s\n", $s->[0], $a_idx, $s->[9], $s->[1]);
+ # try to extract externals
+ next if ( !$g_attrs->read($a_idx) );
+ my $ext = $g_attrs->grep(0xf);
+ dump_ext($ext->[0]) if defined($ext);
+ # relocs
+ if ( defined $opt_r ) {
+   my $rel_idx = $g_attrs->try_rel($s->[0]);
+   dump_rels('REL', $s->[0], $rel_idx) if defined($rel_idx);
+   $rel_idx = $g_attrs->try_rela($s->[0]);
+   dump_rels('RELA', $s->[0], $rel_idx) if defined($rel_idx);
+ }
+}
