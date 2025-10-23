@@ -24,6 +24,9 @@ EOF
 
 # globals
 my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
+# per code section globals
+# syms inside section & curr_index
+my(@gs_syms, $gs_cidx);
 
 sub sym_name
 {
@@ -40,6 +43,21 @@ sub sym
   $g_syms->[$sidx];
 }
 
+sub setup_syms
+{
+  my $sidx = shift;
+  @gs_syms = sort { $a->[1] <=> $b->[1] }
+   # grep named with right section at [5] and type at [4]
+   grep { $_->[5] == $sidx && $_->[0] ne '' && $_->[4] != STT_SECTION } @$g_syms;
+  $gs_cidx = 0;
+  if ( defined $opt_v ) {
+    printf(" %d symbols:\n", scalar @gs_syms);
+    foreach my $s ( @gs_syms ) {
+      printf("  %X type %x size %x %s\n", $s->[1], $s->[4], $s->[2], $s->[0]);
+    }
+  }
+}
+
 sub dump_ext
 {
   my $ext_idx = shift;
@@ -54,13 +72,25 @@ sub dump_ext
   }
 }
 
+sub dump_cparams
+{
+  my $cnt = $g_attrs->params_cnt();
+  return unless $cnt;
+  printf(" %d CParams:\n", $cnt);
+  for ( my $ci = 0; $ci < $cnt; ++$ci ) {
+    my $c = $g_attrs->param($ci);
+    next unless defined($c);
+    printf("  [%d] ord %d off %X size %X\n", $ci, $c->{'ord'}, $c->{'off'}, $c->{'size'});
+  }
+}
+
 sub dump_rels
 {
   my($pfx, $s_idx, $r_idx) = @_;
   my %rels;
   my $is_a = $pfx =~ /A$/;
-  my $res = $is_a ? read_rela($g_attrs, $g_elf, $s_idx, \%rels) :
-   read_rel($g_attrs, $g_elf, $s_idx, \%rels);
+  my $rsub = $is_a ? \&read_rela : \&read_rel;
+  my $res = $rsub->($g_attrs, $g_elf, $s_idx, \%rels);
   printf(" %s %d: %d\n", $pfx, $r_idx, $res);
   return if ( !$res );
   foreach my $r ( sort { $a <=> $b } keys %rels ) {
@@ -109,7 +139,9 @@ foreach my $s ( @es ) {
  # try to extract externals
  next if ( !$g_attrs->read($a_idx) );
  my $ext = $g_attrs->grep(0xf);
+ setup_syms($s->[0]);
  dump_ext($ext->[0]) if defined($ext);
+ dump_cparams();
  # relocs
  if ( defined $opt_r ) {
    my $rel_idx = $g_attrs->try_rel($s->[0]);
