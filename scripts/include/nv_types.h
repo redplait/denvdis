@@ -723,8 +723,13 @@ struct nv128: public NV_base_decoder {
 #endif
   // shadow from base
   inline size_t curr_off() const {
-    return curr - start - 16;
+    if ( curr == start ) return m_delta;
+    return curr - start - 16 + m_delta;
   }
+  inline size_t offset_next() const {
+     if ( curr == start ) return m_delta + 16;
+     return curr - start + m_delta;
+   }
   inline int check_bit(int idx) const
   {
 #ifdef __SIZEOF_INT128__

@@ -27,6 +27,8 @@ my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
 # per code section globals
 # syms inside section & curr_index
 my(@gs_syms, $gs_cidx);
+# labels from attrs
+my($gs_loffs, $gs_ibt);
 
 sub sym_name
 {
@@ -56,6 +58,25 @@ sub setup_syms
       printf("  %X type %x size %x %s\n", $s->[1], $s->[4], $s->[2], $s->[0]);
     }
   }
+}
+
+sub check_sym
+{
+  my $off = shift;
+  my $res = 0;
+  return if ( $gs_cidx >= scalar(@gs_syms) );
+  while ( $gs_syms[$gs_cidx]->[1] <= $off ) {
+    my $sym = $gs_syms[$gs_cidx];
+    # global?
+    printf("\t.global %s\n", $sym->[0]) if ( STB_GLOBAL == $sym->[3] );
+    # size
+    printf("\t.size %X\n", $sym->[2]) if ( $sym->[2] );
+    $res++;
+    # dump name label
+    printf("%s:\n", $sym->[0]);
+    last if ( ++$gs_cidx >= scalar(@gs_syms) );
+  }
+  $res;
 }
 
 sub dump_ext
@@ -107,6 +128,23 @@ sub dump_rels
   }
 }
 
+sub dump_ins
+{
+  my $off = shift;
+  printf("/*%X*/ ", $off);
+  printf("%s ;\n", $g_ced->ins_text());
+}
+
+sub disasm
+{
+  my $s_size = shift;
+  do {
+    my $off = $g_ced->get_off();
+    check_sym($off);
+    dump_ins($off);
+  } while( $g_ced->next_off() < $s_size && $g_ced->next() );
+}
+
 # main
 my $state = getopts("grv");
 usage() if ( !$state );
@@ -139,9 +177,11 @@ foreach my $s ( @es ) {
  # try to extract externals
  next if ( !$g_attrs->read($a_idx) );
  my $ext = $g_attrs->grep(0xf);
+ # section setup
  setup_syms($s->[0]);
  dump_ext($ext->[0]) if defined($ext);
  dump_cparams();
+ ($gs_loffs, $gs_ibt) = $g_attrs->collect();
  # relocs
  if ( defined $opt_r ) {
    my $rel_idx = $g_attrs->try_rel($s->[0]);
@@ -149,4 +189,9 @@ foreach my $s ( @es ) {
    $rel_idx = $g_attrs->try_rela($s->[0]);
    dump_rels('RELA', $s->[0], $rel_idx) if defined($rel_idx);
  }
+ # setup ced
+ die("cannot setup section $s->[0]") unless $g_ced->set_s($s->[0]);
+ my $off = $g_w == 128 ? 0: 8;
+ die("initial offset") unless $g_ced->off($off);
+ disasm($s->[9]); # arg - section size
 }
