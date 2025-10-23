@@ -450,8 +450,9 @@ int CEd_base::_next_off()
   m_inc_tabs.clear();
   off += 8; // compensate ctrl qword
   // check if we have reloc on real offset
-  check_rel(off + 8 * m_idx);
-  check_off(off + 8 * m_idx);
+  auto roff = m_dis->off_next();
+  check_rel(roff);
+  check_off(roff);
   return _disasm(off);
 }
 
