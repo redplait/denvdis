@@ -521,7 +521,7 @@ int CEd_base::_disasm(unsigned long off)
   int res_idx = 0;
   if ( res.size() > 1 ) res_idx = calc_index(res, m_dis->rz);
   if ( -1 == res_idx ) {
-    Err("warning: ambigious instruction at %lX, has %ld formst\n", m_dis->offset(), res.size());
+    Err("warning: ambigious instruction at %lX, has %ld format\n", m_dis->offset(), res.size());
     // lets choose 1st
     res_idx = 0;
   }

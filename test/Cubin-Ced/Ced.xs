@@ -74,6 +74,21 @@ class Ced_perl: public CEd_base {
     if ( m_elog ) delete m_elog;
     for ( auto &iter: m_cached_hvs ) SvREFCNT_dec(iter.second);
   }
+  virtual int check_rel(unsigned long off) override {
+     m_cur_rsym = nullptr;
+     m_cur_rel = nullptr;
+     has_relocs = false;
+     if ( !m_cur_srels ) return 0;
+     auto si = m_cur_srels->find(off);
+     if ( si == m_cur_srels->end() ) return 0;
+     has_relocs = true;
+     m_next_roff = off;
+     // ups, this offset contains reloc - make warning
+     // fprintf(stderr, "Warning: offset %lX has reloc %d\n", off, si->second.first);
+     m_cur_rel = &si->second;
+     m_cur_rsym = &m_syms[si->second.second];
+     return 1;
+  }
   // patch virtual methods
    virtual void patch_error(const char *what) override {
      my_warn("cannot patch %s\n", what);
