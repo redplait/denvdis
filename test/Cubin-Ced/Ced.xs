@@ -340,6 +340,7 @@ class Ced_perl: public CEd_base {
     }
     return newRV_noinc((SV*)hv);
   }
+  bool collect_labels(long *);
   bool make_render(RItems &);
   SV *extract_cb();
   SV *extract_efield(const char *);
@@ -822,6 +823,11 @@ HV *Ced_perl::make_kv()
   return hv;
 }
 
+bool Ced_perl::collect_labels(long *res) {
+  if ( !has_ins() ) return false;
+  return NV_renderer::collect_labels(m_rend, ins(), cex(), nullptr, res);
+}
+
 #ifdef MGf_LOCAL
 #define TAB_TAIL ,0
 #else
@@ -1195,6 +1201,23 @@ ins_name(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->ins_name();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_clabs(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+  if ( !e->has_ins() )
+   RETVAL = &PL_sv_undef;
+  else {
+   long res = 0;
+   if ( e->collect_labels(&res) )
+    RETVAL = newSViv(res);
+   else
+    RETVAL = &PL_sv_undef;
+  }
  OUTPUT:
   RETVAL
 
