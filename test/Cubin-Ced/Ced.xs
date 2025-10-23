@@ -180,6 +180,10 @@ class Ced_perl: public CEd_base {
     if ( !ins() ) return &PL_sv_undef;
     return newSVuv(m_dis->offset());
   }
+  SV *next_off() {
+    if ( !ins() ) return &PL_sv_undef;
+    return newSVuv(m_dis->off_next());
+  }
   SV *get_ctrl() {
     if ( !ins() ) return &PL_sv_undef;
     if ( m_width != 64 ) return &PL_sv_no;
@@ -1040,6 +1044,15 @@ get_off(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->get_off();
+ OUTPUT:
+  RETVAL
+
+SV *
+next_off(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->next_off();
  OUTPUT:
   RETVAL
 
