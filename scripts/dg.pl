@@ -10,13 +10,14 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_g $opt_r $opt_v/;
+use vars qw/$opt_g $opt_p $opt_r $opt_v/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] file.cubin
  Options:
+  -p - dump properties
   -r - dump relocs
   -v - verbose mode
 EOF
@@ -158,7 +159,9 @@ sub dump_ins
   if ( defined $opt_v ) {
     my $cl = $g_ced->ins_class();
     my $ln = $g_ced->ins_line();
-    printf("; %s line %d\n", $cl, $ln);
+    printf("; %s line %d", $cl, $ln);
+    printf(" ALT") if ( $g_ced->ins_alt() );
+    printf("\n");
   }
   # is empty instruction - nop or with !@PT predicate
   my $skip = $g_ced->ins_false() or 'NOP' eq $g_ced->ins_name();
@@ -182,8 +185,32 @@ sub dump_ins
   }
   # dump body
   printf("/*%X*/ ", $off);
-  printf("%s ;\n", $g_ced->ins_text());
-  return if $skip;
+  printf("%s ;", $g_ced->ins_text());
+  if ( $skip ) {
+    printf("\n");
+    return;
+  }
+  # check LUT
+  my $lut = $g_ced->has_lut();
+  if ( defined($lut) ) {
+    printf(" LUT %x: %s", $lut, $g_ced->lut($lut));
+  }
+  printf("\n");
+  if ( defined($opt_p) ) {
+    my $props = $g_ced->ins_prop();
+    if ( defined $props ) {
+      printf("; Properties:\n");
+      while( my($name, $pr) = each(%$props) ) {
+        printf(" ; %s:", $name);
+        if ( 'ARRAY' eq ref $pr ) {
+          printf(" %s", $_) for ( @$pr );
+          printf("\n");
+        } else {
+          printf(" %s\n", $pr);
+        }
+      }
+    }
+  }
 }
 
 sub disasm
@@ -197,7 +224,7 @@ sub disasm
 }
 
 # main
-my $state = getopts("grv");
+my $state = getopts("gprv");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
