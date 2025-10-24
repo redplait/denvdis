@@ -7,6 +7,7 @@ use Cubin::Ced;
 use Cubin::Attrs;
 use Getopt::Std;
 use Carp;
+use Data::Dumper;
 
 # options
 use vars qw/$opt_g $opt_r $opt_v/;
@@ -27,6 +28,8 @@ my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
 # per code section globals
 # syms inside section & curr_index
 my(@gs_syms, $gs_cidx);
+# relocs
+my($gs_rel, $gs_rela);
 # labels from attrs
 my($gs_loffs, $gs_ibt);
 
@@ -113,6 +116,11 @@ sub dump_rels
   my $rsub = $is_a ? \&read_rela : \&read_rel;
   my $res = $rsub->($g_attrs, $g_elf, $s_idx, \%rels);
   printf(" %s %d: %d\n", $pfx, $r_idx, $res);
+  if ( $is_a ) {
+    $gs_rela = $res ? \%rels: undef;
+  } else {
+    $gs_rel = $res ? \%rels: undef;
+  }
   return if ( !$res );
   foreach my $r ( sort { $a <=> $b } keys %rels ) {
     printf("  %X [%d] type %d", $r, $rels{$r}->[0], $rels{$r}->[2]);
@@ -128,11 +136,54 @@ sub dump_rels
   }
 }
 
+# check if some offset has reloc
+# returns (reloc, is_rela)
+sub has_rel($)
+{
+  my $off = shift;
+  if ( defined $gs_rel ) {
+    return (undef, 0) unless exists($gs_rel->{$off});
+    return ($gs_rel->{$off}, 0);
+  }
+  if ( defined $gs_rela ) {
+    return (undef, 0) unless exists($gs_rela->{$off});
+    return ($gs_rela->{$off}, 1);
+  }
+  (undef, 0);
+}
+
 sub dump_ins
 {
   my $off = shift;
+  if ( defined $opt_v ) {
+    my $cl = $g_ced->ins_class();
+    my $ln = $g_ced->ins_line();
+    printf("; %s line %d\n", $cl, $ln);
+  }
+  # is empty instruction - nop or with !@PT predicate
+  my $skip = $g_ced->ins_false() or 'NOP' eq $g_ced->ins_name();
+  # check instr for label
+  if ( !$skip ) {
+    my($rel, $is_a) = has_rel($off);
+    # ignore instr having relocs
+    unless($rel) {
+      my $addl = $g_ced->ins_clabs();
+      if ( defined($addl) ) {
+        printf(" ; add label %X\n", $addl) if defined($opt_v);
+        $gs_loffs->{$addl} = 0;
+      }
+    }
+  }
+  # dump label for current instr
+  if ( defined($gs_loffs) && exists($gs_loffs->{$off}) ) {
+    my $l = $gs_loffs->{$off};
+    if ( !$l ) { printf("LABEL_%X:\n", $off); }
+    else { printf("LABEL_%X: ; %s\n", $off, $g_attrs->attr_name($l)); }
+  }
+  # dump body
   printf("/*%X*/ ", $off);
   printf("%s ;\n", $g_ced->ins_text());
+  return if $skip;
 }
 
 sub disasm
