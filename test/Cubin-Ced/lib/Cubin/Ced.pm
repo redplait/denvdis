@@ -63,7 +63,7 @@ our %PTypes = (
  28 => "FP8SIMD",
 );
 
-sub PType_name
+sub PType_name($)
 {
   my $p = shift;
   return $PTypes{$p} if exists($PTypes{$p});
@@ -83,10 +83,27 @@ our %RTypes = (
  10 => 'R_mem',
 );
 
-sub RType_name
+sub RType_name($)
 {
   my $p = shift;
   return $RTypes{$p} if exists($RTypes{$p});
+  undef;
+}
+
+our %PRs = (
+ 0 => 'IDEST',
+ 1 => 'IDEST2',
+ 2 => 'ISRC_A',
+ 3 => 'ISRC_B',
+ 4 => 'ISRC_C',
+ 5 => 'ISRC_E',
+ 6 => 'ISRC_H',
+);
+
+sub PR_name($)
+{
+  my $p = shift;
+  return $PRs{$p} if exists($PRs{$p});
   undef;
 }
 
@@ -94,6 +111,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
  exs
+ PR_name
  PTypes
  PType_name
  RTypes
