@@ -744,6 +744,15 @@ struct nv128: public NV_base_decoder {
     return _check_bit(q2, idx - 64);
 #endif
   }
+  inline uint64_t get_cword() const {
+    return
+#ifdef __SIZEOF_INT128__
+     (q >> 105)
+#else
+     (q2 >> (105 - 64))
+#endif
+    & 0x1fffff; // 21 bit
+  }
   int _set_idx(int idx) {
     return !idx;
   }

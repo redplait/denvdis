@@ -3,6 +3,7 @@
 
 int opt_c = 0,
     opt_e = 0,
+    opt_g = 0,
     opt_h = 0,
     opt_m = 0,
     opt_M = 0,
@@ -419,7 +420,7 @@ void nv_dis::try_dis(Elf_Word idx)
       unsigned char op = 0, ctrl = 0;
       m_dis->get_ctrl(op, ctrl);
       fprintf(m_out, "op %2.2X ctrl %2.2X ", op, ctrl);
-    } else if ( m_width == 88 ) {
+    } else if ( m_width >= 88 ) {
       auto cword = m_dis->get_cword();
       fprintf(m_out, "cword %lX ", cword);
       if ( opt_M ) {
@@ -769,7 +770,7 @@ void usage(const char *prog)
   printf("-e - dump attributes\n");
   printf("-h - hex dump\n");
   printf("-m - dump missed fields\n");
-  printf("-M - dump cword masl\n");
+  printf("-M - dump cword mask\n");
   printf("-N - dump not found masks\n");
   printf("-o output file\n");
   printf("-O - dump operands\n");
@@ -789,11 +790,12 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "cehmMrtTNOpPSs:o:");
+    c = getopt(argc, argv, "ceghmMrtTNOpPSs:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'c': opt_c = 1; break;
       case 'e': opt_e = 1; break;
+      case 'g': opt_g = 1; break;
       case 'h': opt_h = 1; break;
       case 'm': opt_m = 1; break;
       case 'M': opt_M = 1; break;
