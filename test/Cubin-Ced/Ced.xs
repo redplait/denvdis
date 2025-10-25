@@ -672,7 +672,7 @@ SV *Ced_perl::make_prop(const NV_Prop *prop) {
   AV *av = newAV();
   av_push(av, newSViv(prop->t));
   for ( size_t i = 0; i < prop->fields.size(); ++i ) {
-    auto &field = get_it(prop->fields, 0);
+    auto &field = get_it(prop->fields, i);
     av_push(av, newSVpv(field.data(), field.size()));
   }
   return newRV_noinc((SV*)av);
