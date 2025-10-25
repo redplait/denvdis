@@ -31,6 +31,8 @@ my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
 my(@gs_syms, $gs_cidx);
 # relocs
 my($gs_rel, $gs_rela);
+# cb params
+my(@gs_cbs, $gs_cb_size, $gs_cb_off);
 # labels from attrs
 my($gs_loffs, $gs_ibt);
 
@@ -99,14 +101,34 @@ sub dump_ext
 
 sub dump_cparams
 {
+  $gs_cb_off = $g_attrs->cb_off();
+  $gs_cb_size = $g_attrs->cb_size();
   my $cnt = $g_attrs->params_cnt();
+  @gs_cbs = ();
   return unless $cnt;
-  printf(" %d CParams:\n", $cnt);
+  printf(" %d CParams off %X:\n", $cnt, $gs_cb_off);
+  my @tmp;
   for ( my $ci = 0; $ci < $cnt; ++$ci ) {
     my $c = $g_attrs->param($ci);
     next unless defined($c);
     printf("  [%d] ord %d off %X size %X\n", $ci, $c->{'ord'}, $c->{'off'}, $c->{'size'});
+    $c->{'off'} += $gs_cb_off;
+    push @tmp, [ $c->{'off'}, $c ];
   }
+  @gs_cbs = sort { $a->[0] <=> $b->[0] } @tmp;
+}
+
+# return ref to cparam hash at index $off or undef
+sub find_cparam($)
+{
+  my $off = shift;
+  return unless defined($gs_cb_off);
+  return unless scalar(@gs_cbs);
+  return if ( $off < $gs_cb_off );
+  foreach my $c ( @gs_cbs ) {
+    return $c->[1] if ( $off >= $c->[0] && $off < ($c->[0] + $c->[1]->{'size'}) );
+  }
+  undef;
 }
 
 sub dump_rels
@@ -153,6 +175,15 @@ sub has_rel($)
   (undef, 0);
 }
 
+sub get_ins_cb0
+{
+  my $res = $g_ced->ins_cbank();
+  return unless defined($res);
+  return if ( $res->[0] );
+  return unless defined($res->[1]);
+  $res->[1];
+}
+
 sub dump_ins
 {
   my $off = shift;
@@ -196,6 +227,14 @@ sub dump_ins
     printf(" LUT %x: %s", $lut, $g_ced->lut($lut));
   }
   printf("\n");
+  # check const bank
+  my $cb0 = get_ins_cb0();
+  if ( defined $cb0 ) {
+    printf("; CB %X", $cb0);
+    my $cp = find_cparam($cb0);
+    printf(" param off %X ord %d size %X", $cp->{'off'}, $cp->{'ord'}, $cp->{'size'}) if defined($cp);
+    printf("\n");
+  }
   if ( defined($opt_p) ) {
     # props
     my $props = $g_ced->ins_prop();
