@@ -263,6 +263,10 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return always_false(ins(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
   }
+  SV *has_pred() const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    return has_predicate(m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
+  }
   SV *check_pred() const {
     if ( !has_ins() ) return &PL_sv_undef;
     auto pred_name = has_predicate(m_rend);
@@ -1564,6 +1568,15 @@ ins_cb(SV *obj)
 
 SV *
 has_pred(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->has_pred();
+ OUTPUT:
+  RETVAL
+
+SV *
+pred_name(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:

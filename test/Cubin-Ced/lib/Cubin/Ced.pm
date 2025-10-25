@@ -242,6 +242,10 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * ins_text - disaasemled string
 
+=item * pred_name - returns name of instruction predicate field @PXX
+
+=item * has_pred - returns 1 if instruction predicate @PXX and not PT
+
 =item * ins_pred - returns ref to hash with predicates, see details https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-6.html
 
 =item * ins_prop - returns ref to hash with properties, see details https://redplait.blogspot.com/2025/07/sass-instructions-properties.html
