@@ -197,17 +197,27 @@ sub dump_ins
   }
   printf("\n");
   if ( defined($opt_p) ) {
+    # props
     my $props = $g_ced->ins_prop();
     if ( defined $props ) {
       printf("; Properties:\n");
       while( my($name, $pr) = each(%$props) ) {
-        printf(" ; %s:", $name);
-        if ( 'ARRAY' eq ref $pr ) {
-          printf(" %s", $_) for ( @$pr );
-          printf("\n");
-        } else {
-          printf(" %s\n", $pr);
+        printf(" ; %s:", PR_name($name));
+        # first - type, rest - list of fields names
+        for ( my $fi = 0; $fi < scalar(@$pr); $fi++ ) {
+          if ( !$fi ) {
+            printf(" %s", PType_name($pr->[$fi]));
+          } else { printf(" %s", $pr->[$fi]); }
         }
+        printf("\n");
+      }
+    }
+    # preds
+    my $preds = $g_ced->ins_pred();
+    if ( defined($preds) ) {
+      printf("; Preds:\n");
+      foreach my $pname ( sort keys %$preds ) {
+        printf(" ; %s %s\n", $pname, $preds->{$pname});
       }
     }
   }
