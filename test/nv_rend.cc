@@ -1495,6 +1495,21 @@ bool NV_renderer::has_not(const render_named *rn, const NV_extracted &kv) const
   return ( kvi != kv.end() && kvi->second);
 }
 
+bool NV_renderer::has_predicate(const NV_rlist *rl, const NV_extracted &kv) const
+{
+  for ( auto r: *rl ) {
+    if ( r->type == R_opcode ) break;
+    if ( r->type == R_predicate ) {
+      const render_named *rn = (const render_named *)r;
+      // check for value 7
+      auto kvi = kv.find(rn->name);
+      if ( kvi != kv.end() && kvi->second != 7 ) return true;
+      break;
+    }
+  }
+  return false;
+}
+
 bool NV_renderer::always_false(const struct nv_instr *i, const NV_rlist *rl, const NV_extracted &kv) const
 {
   for ( auto r: *rl ) {
@@ -1866,7 +1881,7 @@ bool NV_renderer::check_cbank(const struct nv_instr *i, const render_base *rb, c
   return true;
 }
 
-int NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, const NV_extracted &kv, 
+int NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, const NV_extracted &kv,
   NV_labels *labs, long *out_addr) const
 {
   for ( auto ri: *rl ) {

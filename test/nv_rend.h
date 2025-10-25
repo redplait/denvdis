@@ -494,6 +494,8 @@ class NV_renderer {
    bool has_not(const render_named *rn, const NV_extracted &kv) const;
    // check for !@PT or !@UPT
    bool always_false(const struct nv_instr *, const NV_rlist *, const NV_extracted &kv) const;
+   // check for some @PXX != PT
+   bool has_predicate(const NV_rlist *, const NV_extracted &kv) const;
    bool check_cbank(const struct nv_instr *, const render_base *, const NV_extracted &kv, unsigned short &cb_idx,
      unsigned long &cb_off) const;
    // PRMT mask
