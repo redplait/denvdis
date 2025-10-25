@@ -312,6 +312,15 @@ class Ced_perl: public CEd_base {
     render(m_rend, res, ins(), cex(), nullptr, 1);
     return !res.empty();
   }
+  SV *special_kv(NV_extracted::const_iterator);
+  SV *get_kv(const std::string_view &fname) {
+    if ( !has_ins() ) return &PL_sv_undef;
+    NV_extracted::const_iterator ei = cex().find(fname);
+    if ( ei == cex().end() ) return &PL_sv_undef;
+    auto *sv = special_kv(ei);
+    if ( sv ) return sv;
+    return newSVuv(ei->second);
+  }
   HV *make_kv();
   // return ref to hash where key is predicate name
   SV *ins_pred() {
@@ -789,38 +798,40 @@ SV *Ced_perl::make_enum(const char *name)
   return newRV_inc((SV *)curr);
 }
 
+SV *Ced_perl::special_kv(NV_extracted::const_iterator ei)
+{
+  if ( !ins()->vas ) return nullptr;
+  auto va = find(ins()->vas, ei->first);
+  if ( va ) return nullptr;
+  // fill value with according format
+  if ( va->kind == NV_F64Imm ) {
+    auto v = ei->second;
+    return newSVnv(*(double *)&v);
+  }
+  if ( va->kind == NV_F32Imm ) {
+    auto v = ei->second;
+    return newSVnv(*(float *)&v);
+  }
+  if ( va->kind == NV_F16Imm ) {
+    float f32 = fp16_ieee_to_fp32_bits((uint16_t)ei->second);
+    return newSVnv(f32);
+  }
+  if ( va->kind == NV_SImm || va->kind == NV_SSImm || va->kind == NV_RSImm ) {
+    // lets convert signed value to SViv
+    long conv = 0;
+    if ( check_branch(ins(), ei, conv) || conv_simm(ins(), ei, conv) ) return newSViv(conv);
+  }
+  return nullptr;
+}
+
 HV *Ced_perl::make_kv()
 {
   HV *hv = newHV();
   for ( NV_extracted::const_iterator ei = cex().cbegin(); ei != cex().cend(); ++ei ) {
-    if ( ins()->vas ) {
-      auto va = find(ins()->vas, ei->first);
-      if ( va ) {
-        // fill value with according format
-        if ( va->kind == NV_F64Imm ) {
-          auto v = ei->second;
-          hv_store(hv, ei->first.data(), ei->first.size(), newSVnv(*(double *)&v), 0);
-          continue;
-        }
-        if ( va->kind == NV_F32Imm ) {
-          auto v = ei->second;
-          hv_store(hv, ei->first.data(), ei->first.size(), newSVnv(*(float *)&v), 0);
-          continue;
-        }
-        if ( va->kind == NV_F16Imm ) {
-          float f32 = fp16_ieee_to_fp32_bits((uint16_t)ei->second);
-          hv_store(hv, ei->first.data(), ei->first.size(), newSVnv(f32), 0);
-          continue;
-        }
-        if ( va->kind == NV_SImm || va->kind == NV_SSImm || va->kind == NV_RSImm ) {
-          // lets convert signed value to SViv
-          long conv = 0;
-          if ( check_branch(ins(), ei, conv) || conv_simm(ins(), ei, conv) ) {
-            hv_store(hv, ei->first.data(), ei->first.size(), newSViv(conv), 0);
-            continue;
-          }
-        }
-      }
+    auto *sv = special_kv(ei);
+    if ( sv ) {
+      hv_store(hv, ei->first.data(), ei->first.size(), sv, 0);
+      continue;
     }
     hv_store(hv, ei->first.data(), ei->first.size(), newSVuv(ei->second), 0);
   }
@@ -1599,6 +1610,18 @@ lut(SV *obj, int idx)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->lut_name(idx);
+ OUTPUT:
+  RETVAL
+
+SV *
+get(SV *obj, const char *field_name)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = e->get_kv(field_name);
  OUTPUT:
   RETVAL
 
