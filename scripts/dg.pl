@@ -10,13 +10,14 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_g $opt_p $opt_r $opt_v/;
+use vars qw/$opt_b $opt_g $opt_p $opt_r $opt_v/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] file.cubin
  Options:
+  -b - track read/write barriers
   -p - dump properties
   -r - dump relocs
   -v - verbose mode
@@ -184,9 +185,72 @@ sub get_ins_cb0
   $res->[1];
 }
 
+# scheduler context
+# for old 64/88 bit SM has 'dual' field
+# for -b option this is just map where key is barrier index and value is [ offset. R/W ]
+sub make_sctx
+{
+  my %res;
+  $res{'dual'} = 0 if ( $g_w < 128 );
+  \%res;
+}
+
+# get current dual state and update it for next instruction
+sub get_dual
+{
+  my $ctx = shift;
+  return 0 if ( $g_w == 128 );
+  return 0 if ( !$ctx->{'dual'} );
+  return 1 if ( 1 == $ctx->{'dual'}++ );
+  $ctx->{'dual'} = 0;
+  2;
+}
+
+sub get_spfx
+{
+  my $dual = shift;
+  return ' ' if ( $g_w == 128 );
+  return '   ' if ( 1 != $dual );
+  ' { ';
+}
+
+sub get_ssfx
+{
+  my $dual = shift;
+  return ' ' if ( $g_w == 128 );
+  return ' } ' if ( 2 == $dual );
+  ' ';
+}
+
+sub process_sched
+{
+  my $sctx = shift;
+  my $ctrl;
+  my $is_dual = 0;
+  if ( $g_w == 64 ) {
+    $ctrl = $g_ced->ctrl();
+    my $stall = $ctrl & 0x2f;
+    $is_dual = $stall == 0x20;
+    if ( defined $opt_b ) {
+      printf("; ctrl %X\n", $ctrl);
+    }
+  } else {
+    $ctrl = $g_ced->cword();
+    # low 5 bits
+    $is_dual = $g_ced->ins_dual() if ( $g_w == 88 );
+    # render
+    if ( defined $opt_b ) {
+      my $s = $g_ced->render_cword($ctrl);
+      printf("; cword %X %s\n", $ctrl, $s);
+    }
+  }
+# printf(" dual %d %d\n", $is_dual, $sctx->{'dual'});
+  $sctx->{'dual'} = 1 if ( $is_dual && !$sctx->{'dual'} );
+}
+
 sub dump_ins
 {
-  my $off = shift;
+  my($off, $sctx) = @_;
   my $brt = $g_ced->ins_brt();
   if ( defined $opt_v ) {
     my $cl = $g_ced->ins_class();
@@ -216,9 +280,12 @@ sub dump_ins
     if ( !$l ) { printf("LABEL_%X:\n", $off); }
     else { printf("LABEL_%X: ; %s\n", $off, $g_attrs->attr_name($l)); }
   }
+  # process scheduling/find dual instr
+  process_sched($sctx);
+  my $dual = get_dual($sctx);
   # dump body
-  printf("/*%X*/ ", $off);
-  printf("%s ;", $g_ced->ins_text());
+  printf("/*%X*/%s", $off, get_spfx($dual));
+  printf("%s%s;", $g_ced->ins_text(), get_ssfx($dual));
   if ( $skip ) {
     printf("\n");
     return;
@@ -267,15 +334,16 @@ sub dump_ins
 sub disasm
 {
   my $s_size = shift;
+  my $sctx = make_sctx();
   do {
     my $off = $g_ced->get_off();
     check_sym($off);
-    dump_ins($off);
+    dump_ins($off, $sctx);
   } while( $g_ced->next_off() < $s_size && $g_ced->next() );
 }
 
 # main
-my $state = getopts("gprv");
+my $state = getopts("bgprv");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
