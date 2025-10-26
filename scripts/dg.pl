@@ -17,7 +17,7 @@ sub usage()
   print STDERR<<EOF;
 Usage: $0 [options] file.cubin
  Options:
-  -b - track read/write barriers
+  -b - track read/write bariers
   -p - dump properties
   -r - dump relocs
   -v - verbose mode
@@ -187,7 +187,7 @@ sub get_ins_cb0
 
 # scheduler context
 # for old 64/88 bit SM has 'dual' field
-# for -b option this is just map where key is barrier index and value is [ offset. R/W ]
+# for -b option this is just map where key is barier index and value is [ offset, R/W ]
 sub make_sctx
 {
   my %res;
@@ -224,7 +224,7 @@ sub get_ssfx
 
 sub process_sched
 {
-  my $sctx = shift;
+  my($off, $sctx) = @_;
   my $ctrl;
   my $is_dual = 0;
   if ( $g_w == 64 ) {
@@ -242,6 +242,22 @@ sub process_sched
     if ( defined $opt_b ) {
       my $s = $g_ced->render_cword($ctrl);
       printf("; cword %X %s\n", $ctrl, $s);
+      # track bariers - ripped from maxas printCtrl
+      my $wrtdb = ($ctrl & 0x000e0) >> 5;  # 3bit write dependency barier
+      my $readb = ($ctrl & 0x00700) >> 8;  # 3bit read  dependency barier
+      my $watdb = ($ctrl & 0x1f800) >> 11; # 6bit wait on dependency barier
+      # check bariers - if watdb non-zero
+      if ( $watdb ) {
+        for my $i ( 0 .. 5 ) {
+          my $mask = 1 << $i;
+          if ( $watdb & $mask ) {
+            printf("; wait %d (%s) at %X\n", $i, $sctx->{$i}->[1] ? 'W' : 'R', $sctx->{$i}->[0]) if ( exists $sctx->{$i} );
+            delete $sctx->{$i};
+          }
+        }
+      }
+      $sctx->{$wrtdb} = [ $off, 1 ] if ( $wrtdb != 7 );
+      $sctx->{$readb} = [ $off, 0 ] if ( $readb != 7 );
     }
   }
 # printf(" dual %d %d\n", $is_dual, $sctx->{'dual'});
@@ -281,7 +297,7 @@ sub dump_ins
     else { printf("LABEL_%X: ; %s\n", $off, $g_attrs->attr_name($l)); }
   }
   # process scheduling/find dual instr
-  process_sched($sctx);
+  process_sched($off, $sctx);
   my $dual = get_dual($sctx);
   # dump body
   printf("/*%X*/%s", $off, get_spfx($dual));
