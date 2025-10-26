@@ -338,7 +338,7 @@ const double NVd_inf = longlong_as_double(0x7ff0000000000000ULL),
 static const char s_digits[] = "123456789";
 
 // printCtrl from maxas
-void NV_renderer::render_cword(uint64_t code, char *res, size_t res_len)
+void NV_renderer::render_cword(uint64_t code, char *res, size_t res_len) const
 {
 
   int stall = (code & 0x0000f) >> 0;

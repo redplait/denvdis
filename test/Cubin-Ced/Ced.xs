@@ -200,9 +200,15 @@ class Ced_perl: public CEd_base {
   }
   SV *get_cword() {
     if ( !ins() ) return &PL_sv_undef;
-    if ( m_width != 88 ) return &PL_sv_no;
+    if ( m_width == 64 ) return &PL_sv_no;
     uint64_t cword = m_dis->get_cword();
     return newSVuv(cword);
+  }
+  SV *rend_cword(UV v) const {
+    char buf[128];
+    render_cword(v, buf, sizeof(buf) - 1);
+    buf[127] = 0;
+    return newSVpv(buf, strlen(buf));
   }
   // patch methods
   SV *nop();
@@ -1128,6 +1134,15 @@ cword(SV *obj)
      RETVAL = &PL_sv_undef;
    else
      RETVAL = e->get_cword();
+ OUTPUT:
+  RETVAL
+
+SV *
+render_cword(SV *obj, UV v)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+  RETVAL = e->rend_cword(v);
  OUTPUT:
   RETVAL
 

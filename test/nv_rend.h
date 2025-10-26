@@ -248,7 +248,7 @@ class NV_renderer {
        m_out = stdout;
      }
    }
-   void render_cword(uint64_t, char *, size_t);
+   void render_cword(uint64_t, char *, size_t) const;
    typedef INV_disasm *(*Dproto)(void);
    typedef const char *(*Dvq_name)(int);
    typedef const NV_tabrefs * nv_instr::*Tab_field;
