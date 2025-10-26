@@ -107,9 +107,24 @@ sub PR_name($)
   undef;
 }
 
+our %Brts = (
+ 1 => 'BRT_CALL',
+ 2 => 'BRT_RETURN',
+ 3 => 'BRT_BRANCH',
+ 4 => 'BRT_BRANCHOUT',
+);
+
+sub brt_name($)
+{
+  my $b = shift;
+  return $Brts{$b} if exists($Brts{$b});
+  undef;
+}
+
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
+ brt_name
  exs
  PR_name
  PTypes

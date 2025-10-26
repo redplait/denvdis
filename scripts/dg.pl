@@ -187,17 +187,19 @@ sub get_ins_cb0
 sub dump_ins
 {
   my $off = shift;
+  my $brt = $g_ced->ins_brt();
   if ( defined $opt_v ) {
     my $cl = $g_ced->ins_class();
     my $ln = $g_ced->ins_line();
     printf("; %s line %d", $cl, $ln);
     printf(" ALT") if ( $g_ced->ins_alt() );
+    printf(" Brt %d (%s)", $brt, brt_name($brt)) if $brt;
     printf("\n");
   }
   # is empty instruction - nop or with !@PT predicate
   my $skip = $g_ced->ins_false() or 'NOP' eq $g_ced->ins_name();
   # check instr for label
-  if ( !$skip ) {
+  if ( !$skip && $brt != Cubin::Ced::BRT_RETURN ) {
     my($rel, $is_a) = has_rel($off);
     # ignore instr having relocs
     unless($rel) {
