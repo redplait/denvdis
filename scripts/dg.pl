@@ -17,7 +17,7 @@ sub usage()
   print STDERR<<EOF;
 Usage: $0 [options] file.cubin
  Options:
-  -b - track read/write bariers
+  -b - track read/write barriers
   -p - dump properties
   -r - dump relocs
   -v - verbose mode
@@ -187,11 +187,18 @@ sub get_ins_cb0
 
 # scheduler context
 # for old 64/88 bit SM has 'dual' field
-# for -b option this is just map where key is barier index and value is [ offset, R/W ]
+# for -b option this is just map where key is barrier index and value is [ offset, R/W ]
+# current stall count stored in 'roll' field
+# for new 88/128 bit stall count for barriers insts map in field 'c', key is offset
 sub make_sctx
 {
   my %res;
   $res{'dual'} = 0 if ( $g_w < 128 );
+  $res{'roll'} = 0;
+  if ( $g_w > 64 ) {
+    my %c;
+    $res{'c'} = \%c;
+  }
   \%res;
 }
 
@@ -227,12 +234,21 @@ sub process_sched
   my($off, $sctx) = @_;
   my $ctrl;
   my $is_dual = 0;
+  my $stall = 0;
   if ( $g_w == 64 ) {
     $ctrl = $g_ced->ctrl();
-    my $stall = $ctrl & 0x2f;
-    $is_dual = $stall == 0x20;
+    # from Understanding the GPU Microarchitecture to Achieve Bare-Metal Performance Tuning:
+    #  bits 0-3 indicate the number of stall cycles before issuing the next instruction.
+    #  0x2n means a warp is suspended for n cycles before issuing the next instruction, where n = 0, 1, . . . , 15.
+    #  0x20 means the single-issue mode, while 0x04 means the dual-issue mode
+    $stall = $ctrl & 0x2f;
+    $is_dual = $stall == 0x4;
+    $stall &= 0xf; # bit 0..3
     if ( defined $opt_b ) {
-      printf("; ctrl %X\n", $ctrl);
+      # update rolling stall count
+      $sctx->{'roll'} += $stall;
+      # dump current stall counts
+      printf("; stall %d total %d ctrl %X\n", $stall, $sctx->{'roll'}, $ctrl);
     }
   } else {
     $ctrl = $g_ced->cword();
@@ -240,24 +256,35 @@ sub process_sched
     $is_dual = $g_ced->ins_dual() if ( $g_w == 88 );
     # render
     if ( defined $opt_b ) {
+      my $curr_stall = $sctx->{'roll'};
       my $s = $g_ced->render_cword($ctrl);
-      printf("; cword %X %s\n", $ctrl, $s);
-      # track bariers - ripped from maxas printCtrl
-      my $wrtdb = ($ctrl & 0x000e0) >> 5;  # 3bit write dependency barier
-      my $readb = ($ctrl & 0x00700) >> 8;  # 3bit read  dependency barier
-      my $watdb = ($ctrl & 0x1f800) >> 11; # 6bit wait on dependency barier
-      # check bariers - if watdb non-zero
+      $stall = ($ctrl & 0x0000f) >> 0;
+      # dump current stall counts
+      printf("; stall %d total %d cword %X %s\n", $stall, $curr_stall, $ctrl, $s);
+      # track barriers - ripped from maxas printCtrl
+      my $wrtdb = ($ctrl & 0x000e0) >> 5;  # 3bit write dependency barrier
+      my $readb = ($ctrl & 0x00700) >> 8;  # 3bit read  dependency barrier
+      my $watdb = ($ctrl & 0x1f800) >> 11; # 6bit wait on dependency barrier
+      # check barriers - if watdb non-zero
       if ( $watdb ) {
         for my $i ( 0 .. 5 ) {
           my $mask = 1 << $i;
           if ( $watdb & $mask ) {
-            printf("; wait %d (%s) at %X\n", $i, $sctx->{$i}->[1] ? 'W' : 'R', $sctx->{$i}->[0]) if ( exists $sctx->{$i} );
+            if ( exists $sctx->{$i} ) {
+              printf("; wait %d (%s) at %X", $i, $sctx->{$i}->[1], $sctx->{$i}->[0]);
+              printf(" stall diff %d", $curr_stall - $sctx->{'c'}->{ $sctx->{$i}->[0] });
+              printf("\n");
+            }
             delete $sctx->{$i};
           }
         }
       }
-      $sctx->{$wrtdb} = [ $off, 1 ] if ( $wrtdb != 7 );
-      $sctx->{$readb} = [ $off, 0 ] if ( $readb != 7 );
+      $sctx->{$wrtdb} = [ $off, 'W' ] if ( $wrtdb != 7 );
+      $sctx->{$readb} = [ $off, 'R' ] if ( $readb != 7 );
+      # update rolling stall count
+      $sctx->{'roll'} += $stall unless $is_dual;
+      # and store in 'c' if need
+      $sctx->{'c'}->{$off} = $sctx->{'roll'} if ( $wrtdb != 7 || $readb != 7 );
     }
   }
 # printf(" dual %d %d\n", $is_dual, $sctx->{'dual'});
