@@ -27,6 +27,8 @@ EOF
 
 # globals
 my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
+# stat for barriers, key is ins name, value is [ wait, read, write ] count
+my %g_barstat;
 # per code section globals
 # syms inside section & curr_index
 my(@gs_syms, $gs_cidx);
@@ -229,6 +231,24 @@ sub get_ssfx
   ' ';
 }
 
+sub add_barstat
+{
+  my($iname, $ar) = @_;
+  if ( exists $g_barstat{$iname} ) {
+    my $old = $g_barstat{$iname};
+    $old->[$_] += $ar->[$_] for ( 0..2 );
+  } else {
+    $g_barstat{$iname} = $ar;
+  }
+}
+
+sub dump_barstat
+{
+  while( my($name, $ar) = each(%g_barstat) ) {
+    printf("%s:\t%d %d %d\n", $name, $ar->[0], $ar->[1], $ar->[2]);
+  }
+}
+
 sub process_sched
 {
   my($off, $sctx) = @_;
@@ -256,6 +276,7 @@ sub process_sched
     $is_dual = $g_ced->ins_dual() if ( $g_w == 88 );
     # render
     if ( defined $opt_b ) {
+      my @stat = (0, 0, 0);
       my $curr_stall = $sctx->{'roll'};
       my $s = $g_ced->render_cword($ctrl);
       $stall = ($ctrl & 0x0000f) >> 0;
@@ -267,6 +288,7 @@ sub process_sched
       my $watdb = ($ctrl & 0x1f800) >> 11; # 6bit wait on dependency barrier
       # check barriers - if watdb non-zero
       if ( $watdb ) {
+        $stat[0] = 1;
         for my $i ( 0 .. 5 ) {
           my $mask = 1 << $i;
           if ( $watdb & $mask ) {
@@ -279,8 +301,9 @@ sub process_sched
           }
         }
       }
-      $sctx->{$wrtdb} = [ $off, 'W' ] if ( $wrtdb != 7 );
-      $sctx->{$readb} = [ $off, 'R' ] if ( $readb != 7 );
+      if ( $wrtdb != 7 ) { $sctx->{$wrtdb} = [ $off, 'W' ]; $stat[2] = 1; }
+      if ( $readb != 7 ) { $sctx->{$readb} = [ $off, 'R' ]; $stat[1] = 1; }
+      add_barstat($g_ced->ins_name(), \@stat) if ( $stat[0] or $stat[1] or $stat[2] );
       # update rolling stall count
       $sctx->{'roll'} += $stall unless $is_dual;
       # and store in 'c' if need
@@ -435,3 +458,4 @@ foreach my $s ( @es ) {
  die("initial offset") unless $g_ced->off($off);
  disasm($s->[9]); # arg - section size
 }
+dump_barstat() if defined($opt_b);
