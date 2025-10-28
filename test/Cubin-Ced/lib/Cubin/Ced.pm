@@ -130,6 +130,12 @@ our %scbd = (
  6 => 'NON_BARRIER_INT_INST',
 );
 
+our %scbd_type = (
+ 1 => 'BARRIER_INST',
+ 2 => 'MEM_INST',
+ 3 => 'BB_ENDING_INST',
+);
+
 sub scbd_name($)
 {
   my $b = shift;
@@ -137,6 +143,12 @@ sub scbd_name($)
   undef;
 }
 
+sub scbd_type_name($)
+{
+  my $b = shift;
+  return $scbd_type{$b} if exists($scbd_type{$b});
+  undef;
+}
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
@@ -149,6 +161,7 @@ our @EXPORT = qw(
  RTypes
  RType_name
  scbd_name
+ scbd_type_name
 );
 
 our $VERSION = '0.01';
