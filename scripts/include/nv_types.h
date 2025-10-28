@@ -211,7 +211,8 @@ struct nv_instr {
  short meaning_bits;
  char brt,   // NV_Brt or 0
   scbd,      // NV_Scbd or 0
-  scbd_type; // NV_Scbd_Type or 0
+  scbd_type, // NV_Scbd_Type or 0
+  min_wait;  // MIN_WAIT_NEEDED
  const char *target_index;
  const char *cc_index;
  const char *sidl_name;

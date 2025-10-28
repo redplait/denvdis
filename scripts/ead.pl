@@ -3404,13 +3404,14 @@ sub gen_instr
         printf($fh "%s,", $brt->[0] || '0');
         printf($fh "%s,", $brt->[1] || '0'); # scbd
         printf($fh "%s,", $brt->[2] || '0'); # scbd_type
-        for ( my $bi = 3; $bi < 6; $bi++ ) {
+        printf($fh "%s,", $brt->[6] || '0'); # min_wait
+        foreach my $bi ( 3 .. 5 ) {
           if ( defined $brt->[$bi]) { printf($fh "\"%s\",", $brt->[$bi]); }
           else { printf($fh "nullptr,"); }
         }
         printf($fh "\n");
       } else {
-        printf($fh "0, 0, 0, nullptr, nullptr, nullptr,\n");
+        printf($fh "0, 0, 0, 0, nullptr, nullptr, nullptr,\n");
       }
       # predicates
       $write->($pred_name);
@@ -5607,6 +5608,11 @@ while( $str = <$fh> ) {
     }
     if ( $str =~ /CC_INDEX = INDEX\(([^\)]+)\)/ ) {
       $b_props[4] = $1;
+      next;
+    }
+    if ( $str =~ /MIN_WAIT_NEEDED\s*=\s*(\d+)/ ) {
+      my $w = int($1);
+      $b_props[6] = $w if $w;
       next;
     }
     # SIDL_NAME
