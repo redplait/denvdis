@@ -121,6 +121,23 @@ sub brt_name($)
   undef;
 }
 
+our %scbd = (
+ 1 => 'SOURCE_RD',
+ 2 => 'SOURCE_WR',
+ 3 => 'SINK',
+ 4 => 'SOURCE_SINK_RD',
+ 5 => 'SOURCE_SINK_WR',
+ 6 => 'NON_BARRIER_INT_INST',
+);
+
+sub scbd_name($)
+{
+  my $b = shift;
+  return $scbd{$b} if exists($scbd{$b});
+  undef;
+}
+
+
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
@@ -131,6 +148,7 @@ our @EXPORT = qw(
  PType_name
  RTypes
  RType_name
+ scbd_name
 );
 
 our $VERSION = '0.01';
