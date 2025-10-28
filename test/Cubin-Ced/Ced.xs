@@ -221,29 +221,38 @@ class Ced_perl: public CEd_base {
   int patch_tab(int t_idx, int v);
   int patch_cb(unsigned long v1, unsigned long v2);
   // instruction properties
-  SV *ins_line() const {
+  template <auto nv_instr::*fptr>
+  SV *ins_intxxx() const {
     if ( !ins() ) return &PL_sv_undef;
-    return newSViv(ins()->line);
+    return newSViv(ins()->*fptr);
+  }
+  template <auto nv_instr::*fptr>
+  SV *ins_pvxxx() const {
+    if ( !ins() ) return &PL_sv_undef;
+    auto v = ins()->*fptr;
+    if ( !v ) return &PL_sv_undef;
+    return newSVpv(v, strlen(v));
+  }
+  SV *ins_line() const {
+    return ins_intxxx<&nv_instr::line>();
   }
   SV *ins_alt() const {
-    if ( !ins() ) return &PL_sv_undef;
-    return newSViv(ins()->alt);
+    return ins_intxxx<&nv_instr::alt>();
   }
   SV *ins_setp() const {
-    if ( !ins() ) return &PL_sv_undef;
-    return newSViv(ins()->setp);
+    return ins_intxxx<&nv_instr::setp>();
   }
   SV *ins_brt() const {
-    if ( !ins() ) return &PL_sv_undef;
-    return newSViv(ins()->brt);
+    return ins_intxxx<&nv_instr::brt>();
   }
   SV *ins_scbd() const {
-    if ( !ins() ) return &PL_sv_undef;
-    return newSViv(ins()->scbd);
+    return ins_intxxx<&nv_instr::scbd>();
   }
   SV *ins_scbd_type() const {
-    if ( !ins() ) return &PL_sv_undef;
-    return newSViv(ins()->scbd_type);
+    return ins_intxxx<&nv_instr::scbd_type>();
+  }
+  SV *ins_min_wait() const {
+    return ins_intxxx<&nv_instr::min_wait>();
   }
   SV *ins_name() const {
     if ( !ins() ) return &PL_sv_undef;
@@ -254,12 +263,10 @@ class Ced_perl: public CEd_base {
     return newSVpv(ins()->cname, strlen(ins()->cname));
   }
   SV *ins_target() const {
-    if ( !ins() || !ins()->target_index ) return &PL_sv_undef;
-    return newSVpv(ins()->target_index, strlen(ins()->target_index));
+    return ins_pvxxx<&nv_instr::target_index>();
   }
   SV *ins_cc() const {
-    if ( !ins() || !ins()->cc_index ) return &PL_sv_undef;
-    return newSVpv(ins()->cc_index, strlen(ins()->cc_index));
+    return ins_pvxxx<&nv_instr::cc_index>();
   }
   SV *ins_dual() const {
     if ( !has_ins() ) return &PL_sv_undef;
@@ -1302,6 +1309,15 @@ ins_scbd_type(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->ins_scbd_type();
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_min_wait(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_min_wait();
  OUTPUT:
   RETVAL
 
