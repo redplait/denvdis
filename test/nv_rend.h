@@ -114,6 +114,28 @@ struct cbank_history {
   unsigned short cb_num, kind;
 };
 
+// snapshot of registers acessed/patched for current single instruction
+struct track_snap {
+  // key: GPR has prefix 0, UGPR 0x8000
+  // value: 0x80 - write
+  //        0x40 - reuse
+  //        0xxx - ISRC_XX
+  std::unordered_map<unsigned short, unsigned char> gpr;
+  // 2 set of predictes: 1 - read, 2 - write
+  char pr[7] = { 0, 0, 0, 0, 0, 0, 0 },
+      upr[7] = { 0, 0, 0, 0, 0, 0, 0 };
+  void reset() {
+    gpr.clear();
+    memset(pr, 0, 7); memset(upr, 0, 7);
+  }
+  bool empty() const {
+    if ( !gpr.empty() ) return false;
+    bool res = std::all_of(pr, pr + 7, [](char c) -> bool { return !c; });
+    if ( !res ) return false;
+    return std::all_of(upr, upr + 7, [](char c) -> bool { return !c; });
+  }
+};
+
 // register tracks
 // there can be 4 groups of register
 // - general purpose registers
@@ -128,10 +150,12 @@ struct reg_pad {
   TRSet gpr, ugpr;
   RSet pred, upred;
   std::vector<cbank_history> cbs;
+  track_snap *snap = nullptr;
   reg_reuse m_reuse;
   reg_history::RH pred_mask = 0;
   // boring stuff
   reg_history::RH check_reuse(int op) const {
+    if ( op < ISRC_A) return 0;
     if ( m_reuse.mask & (1 << (op - ISRC_A)) ) return reg_history::reuse;
     return 0;
   }
@@ -139,6 +163,19 @@ struct reg_pad {
     cbs.push_back( { off, cb_off, cb_num, k });
   }
   void _add(RSet &rs, int idx, unsigned long off, reg_history::RH k) {
+    if ( snap ) {
+      if ( &rs == &pred ) {
+        if ( k & 0x8000 )
+         snap->pr[idx] |= 2;
+        else
+         snap->pr[idx] |= 1;
+      } else {
+        if ( k & 0x8000 )
+         snap->upr[idx] |= 2;
+        else
+         snap->upr[idx] |= 1;
+      }
+    }
     k |= pred_mask;
     auto ri = rs.find(idx);
     if ( ri != rs.end() ) {
@@ -168,16 +205,26 @@ struct reg_pad {
      rs[idx] = std::move(tmp);
     }
   }
-  void rgpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
-    _add(gpr, r, off, k, t);
+  void rgpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {
+     auto reuse = check_reuse(op);
+     if ( snap ) {
+       snap->gpr[r] = op | (reuse ? 0x40 : 0) | (k & 0x8000 ? 0x80: 0);
+     }
+    _add(gpr, r, off, k | reuse, t);
   }
   void wgpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+     if ( snap ) snap->gpr[r] = 0x80;
     _add(gpr, r, off, k | 0x8000, t);
   }
-  void rugpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
-    _add(ugpr, r, off, k, t);
+  void rugpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {
+     auto reuse = check_reuse(op);
+     if ( snap ) {
+       snap->gpr[r | 0x8000] = op | (reuse ? 0x40 : 0) | (k & 0x8000 ? 0x80: 0);
+     }
+    _add(ugpr, r, off, k | reuse, t);
   }
   void wugpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+     if ( snap ) snap->gpr[r | 0x8000] = 0x80;
     _add(ugpr, r, off, k | 0x8000, t);
   }
   void rpred(int r, unsigned long off, reg_history::RH k) {
