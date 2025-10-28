@@ -318,12 +318,16 @@ sub dump_ins
 {
   my($off, $sctx) = @_;
   my $brt = $g_ced->ins_brt();
+  my $scbd = $g_ced->ins_scbd();
+  my $mw = $g_ced->ins_min_wait();
   if ( defined $opt_v ) {
     my $cl = $g_ced->ins_class();
     my $ln = $g_ced->ins_line();
     printf("; %s line %d", $cl, $ln);
     printf(" ALT") if ( $g_ced->ins_alt() );
     printf(" Brt %d (%s)", $brt, brt_name($brt)) if $brt;
+    printf(" Scbd %d (%s)", $scbd, scbd_name($scbd)) if $scbd;
+    printf(" min_wait: %d", $mw) if $mw;
     printf("\n");
   }
   # is empty instruction - nop or with !@PT predicate
