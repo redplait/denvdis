@@ -324,11 +324,12 @@ class Ced_perl: public CEd_base {
     render(m_rend, res, ins(), cex(), nullptr, 1);
     return !res.empty();
   }
-  SV *special_kv(NV_extracted::const_iterator);
+  SV *special_kv(NV_extracted::const_iterator &);
   SV *get_kv(const std::string_view &fname) {
     if ( !has_ins() ) return &PL_sv_undef;
-    NV_extracted::const_iterator ei = cex().find(fname);
-    if ( ei == cex().end() ) return &PL_sv_undef;
+    auto &kv = cex();
+    NV_extracted::const_iterator ei = kv.find(fname);
+    if ( ei == kv.cend() ) return &PL_sv_undef;
     auto *sv = special_kv(ei);
     if ( sv ) return sv;
     return newSVuv(ei->second);
@@ -810,11 +811,11 @@ SV *Ced_perl::make_enum(const char *name)
   return newRV_inc((SV *)curr);
 }
 
-SV *Ced_perl::special_kv(NV_extracted::const_iterator ei)
+SV *Ced_perl::special_kv(NV_extracted::const_iterator &ei)
 {
   if ( !ins()->vas ) return nullptr;
   auto va = find(ins()->vas, ei->first);
-  if ( va ) return nullptr;
+  if ( !va ) return nullptr;
   // fill value with according format
   if ( va->kind == NV_F64Imm ) {
     auto v = ei->second;
