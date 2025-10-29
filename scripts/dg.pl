@@ -249,6 +249,26 @@ sub dump_barstat
   }
 }
 
+# check bitset of barriers to wait
+sub check_wait
+{
+  my($watdb, $sctx, $curr_stall) = @_;
+  my $res = 0;
+  for my $i ( 0 .. 5 ) {
+    my $mask = 1 << $i;
+    if ( $watdb & $mask ) {
+      $res++;
+      if ( exists $sctx->{$i} ) {
+        printf("; wait %d (%s) at %X", $i, $sctx->{$i}->[1], $sctx->{$i}->[0]);
+        printf(" stall diff %d", $curr_stall - $sctx->{'c'}->{ $sctx->{$i}->[0] });
+        printf("\n");
+      }
+      delete $sctx->{$i};
+    }
+  }
+  $res;
+}
+
 sub process_sched
 {
   my($off, $sctx) = @_;
@@ -289,20 +309,25 @@ sub process_sched
       # check barriers - if watdb non-zero
       if ( $watdb ) {
         $stat[0] = 1;
-        for my $i ( 0 .. 5 ) {
-          my $mask = 1 << $i;
-          if ( $watdb & $mask ) {
-            if ( exists $sctx->{$i} ) {
-              printf("; wait %d (%s) at %X", $i, $sctx->{$i}->[1], $sctx->{$i}->[0]);
-              printf(" stall diff %d", $curr_stall - $sctx->{'c'}->{ $sctx->{$i}->[0] });
-              printf("\n");
-            }
-            delete $sctx->{$i};
-          }
-        }
+        check_wait($watdb, $sctx, $curr_stall);
       }
       if ( $wrtdb != 7 ) { $sctx->{$wrtdb} = [ $off, 'W' ]; $stat[2] = 1; }
       if ( $readb != 7 ) { $sctx->{$readb} = [ $off, 'R' ]; $stat[1] = 1; }
+      # debpar has barrier index in field sbidx & wait mask in in scoreboard_list (dep_scbd in SM5xx)
+      my $sbidx = $g_ced->get('sbidx');
+      if ( defined($sbidx) ) {
+        $stat[0] = 1;
+        if ( exists $sctx->{$sbidx} ) {
+          printf("; sync %d (%s) at %X", $sbidx, $sctx->{$sbidx}->[1], $sctx->{$sbidx}->[0]);
+          printf(" stall diff %d", $curr_stall - $sctx->{'c'}->{ $sctx->{$sbidx}->[0] });
+          printf("\n");
+        }
+        delete $sctx->{$sbidx};
+        # check bitset
+        my $bm = $g_ced->get('scoreboard_list');
+        $bm = $g_ced->get('dep_scbd') unless defined($bm);
+        check_wait($bm, $sctx, $curr_stall) if ( $bm );
+      }
       add_barstat($g_ced->ins_name(), \@stat) if ( $stat[0] or $stat[1] or $stat[2] );
       # update rolling stall count
       $sctx->{'roll'} += $stall unless $is_dual;
