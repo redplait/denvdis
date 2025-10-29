@@ -856,6 +856,33 @@ bool Ced_perl::collect_labels(long *res) {
   return NV_renderer::collect_labels(m_rend, ins(), cex(), nullptr, res);
 }
 
+// return merged map of (u)preds from track_snap
+static SV *merge_preds(const track_snap *snap) {
+  bool e_pr = snap->empty_pr(), e_upr = snap->empty_upr();
+  if ( e_pr && e_upr ) return &PL_sv_undef;
+  HV *hv = newHV();
+  if ( !e_pr ) {
+   for ( int i = 0; i < snap->pr_size; i++ ) {
+     if ( snap->pr[i] ) hv_store_ent(hv, newSViv(i), newSViv(snap->pr[i]), 0);
+   }
+  }
+  if ( !e_upr ) {
+   for ( int i = 0; i < snap->pr_size; i++ ) {
+     if ( snap->upr[i] ) hv_store_ent(hv, newSViv(i | 0x8000), newSViv(snap->upr[i]), 0);
+   }
+  }
+  return newRV_inc((SV *)hv);
+}
+
+static SV *gprs(const track_snap *snap) {
+  if ( snap->gpr.empty() ) return &PL_sv_undef;
+  HV *hv = newHV();
+  for ( auto r: snap->gpr ) {
+    hv_store_ent(hv, newSViv(r.first), newSViv(r.second), 0);
+  }
+  return newRV_inc((SV *)hv);
+}
+
 #ifdef MGf_LOCAL
 #define TAB_TAIL ,0
 #else
@@ -1952,6 +1979,34 @@ snap_clear(SV *obj)
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
  CODE:
    r->snap->reset();
+
+void
+snap(SV *obj)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ PPCODE:
+  if ( r->snap->empty() ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+  } else {
+    auto regs = gprs(r->snap);
+    auto prs = merge_preds(r->snap);
+    if ( gimme == G_ARRAY) {
+      int esize = 1;
+      if ( prs != &PL_sv_undef ) esize++;
+      EXTEND(SP, esize);
+      mPUSHs(regs);
+      if( esize > 1 ) mPUSHs(prs);
+    } else {
+      AV *av = newAV();
+      av_push(av, regs);
+      if ( prs != &PL_sv_undef ) av_push(av, prs);
+      mXPUSHs(newRV_noinc((SV*)av));
+      XSRETURN(1);
+    }
+  }
 
 SV *
 rs(SV *obj)
