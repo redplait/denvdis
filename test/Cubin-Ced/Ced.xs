@@ -298,8 +298,7 @@ class Ced_perl: public CEd_base {
     return newSVpv(s, strlen(s));
   }
   SV *ins_sidl() const {
-    if ( !ins() || !ins()->sidl_name ) return &PL_sv_undef;
-    return newSVpv(ins()->sidl_name, strlen(ins()->sidl_name));
+    return ins_pvxxx<&nv_instr::sidl_name>();
   }
   bool has_pending_tabs() {
     return !m_inc_tabs.empty();
@@ -1911,6 +1910,7 @@ new(obj_or_pkg)
     ST(0) = &PL_sv_undef;
   } else {
     res = new reg_pad;
+    res->snap = new track_snap();
     msv = newSViv(0);
     objref= sv_2mortal(newRV_noinc(msv));
     sv_bless(objref, pkg);
@@ -1929,12 +1929,28 @@ empty(SV *obj)
  OUTPUT:
   RETVAL
 
+SV *
+snap_empty(SV *obj)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+  RETVAL = r->snap->empty() ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
 void
 clear(SV *obj)
  INIT:
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
  CODE:
    r->clear();
+
+void
+snap_clear(SV *obj)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+   r->snap->reset();
 
 SV *
 rs(SV *obj)

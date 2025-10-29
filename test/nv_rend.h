@@ -128,11 +128,15 @@ struct track_snap {
     gpr.clear();
     memset(pr, 0, 7); memset(upr, 0, 7);
   }
+  bool empty_pr() const {
+    return std::all_of(pr, pr + 7, [](char c) -> bool { return !c; });
+  }
+  bool empty_upr() const {
+    return std::all_of(upr, upr + 7, [](char c) -> bool { return !c; });
+  }
   bool empty() const {
     if ( !gpr.empty() ) return false;
-    bool res = std::all_of(pr, pr + 7, [](char c) -> bool { return !c; });
-    if ( !res ) return false;
-    return std::all_of(upr, upr + 7, [](char c) -> bool { return !c; });
+    return empty_pr() && empty_upr();
   }
 };
 
@@ -153,6 +157,10 @@ struct reg_pad {
   track_snap *snap = nullptr;
   reg_reuse m_reuse;
   reg_history::RH pred_mask = 0;
+  // if you want some inheritance - make destructor virtual
+  ~reg_pad() {
+    if ( snap ) delete snap;
+  }
   // boring stuff
   reg_history::RH check_reuse(int op) const {
     if ( op < ISRC_A) return 0;
