@@ -227,6 +227,8 @@ relative expensive operation and I don't know ahead if you really need instructi
 So to seek to right place you should use method
  $cub->off(offset)
 
+To move to next instruction use 'next' method, if you patch current instruction it will be flushed automatically
+
 you also can gather boundaries of early selected section/function with couple or methods:
 
  start - returns lowest offset
@@ -234,6 +236,8 @@ you also can gather boundaries of early selected section/function with couple or
  end - returns end offset
 
 Also you can use method next to move and disassemly next instruction (if those offset >= start && < end)
+
+To get current/previous/next instruction offset use methods 'get_off', 'prev_off' & 'next_off'
 
 =head3 Patch methods
 
@@ -283,6 +287,8 @@ You can check if you still have pending tables with $cub->ptabs method
 =item * ins_alt - if instruction is just alternate form of more general instruction
 
 =item * ins_mask - mask for this instruction form, all bits for fields replaced with X
+
+=item * ins_min_wait - to extract MIN_WAIT_NEEDED property of current instruction
 
 =item * mask - full mask of instruction, like what nvd -N option does
 

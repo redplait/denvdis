@@ -184,6 +184,19 @@ class Ced_perl: public CEd_base {
     if ( !ins() ) return &PL_sv_undef;
     return newSVuv(m_dis->off_next());
   }
+  SV *prev_off(UV off) {
+    if ( !m_block_mask ) {
+      if ( off < 16 ) return &PL_sv_undef;
+      return newSVuv(off - 16);
+    }
+    // ok, we have SM with blocks - check if instruction at off is not first
+    auto masked = off & m_block_mask;
+    if ( masked >= 16 ) return newSVuv(off - 8);
+    // get address of this block
+    auto bstart = off & ~m_block_mask;
+    if ( bstart < m_block_mask ) return &PL_sv_undef;
+    return newSVuv(bstart - 8);
+  }
   SV *get_ctrl() {
     if ( !ins() ) return &PL_sv_undef;
     if ( m_width != 64 ) return &PL_sv_no;
@@ -1114,6 +1127,15 @@ next_off(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->next_off();
+ OUTPUT:
+  RETVAL
+
+SV *
+prev_off(SV *obj, UV off)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->prev_off(off);
  OUTPUT:
   RETVAL
 
