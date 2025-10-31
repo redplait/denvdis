@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_g $opt_p $opt_r $opt_v/;
+use vars qw/$opt_b $opt_d $opt_g $opt_p $opt_r $opt_v/;
 
 sub usage()
 {
@@ -18,6 +18,8 @@ sub usage()
 Usage: $0 [options] file.cubin
  Options:
   -b - track read/write barriers
+  -d - debug mode
+  -g - build cfg
   -p - dump properties
   -r - dump relocs
   -v - verbose mode
@@ -356,7 +358,7 @@ sub dump_ins
     printf("\n");
   }
   # is empty instruction - nop or with !@PT predicate
-  my $skip = $g_ced->ins_false() or 'NOP' eq $g_ced->ins_name();
+  my $skip = $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name();
   # check instr for label
   if ( !$skip && $brt != Cubin::Ced::BRT_RETURN ) {
     my($rel, $is_a) = has_rel($off);
@@ -437,8 +439,144 @@ sub disasm
   } while( $g_ced->next_off() < $s_size && $g_ced->next() );
 }
 
+=pod
+
+=head1 CFG functions
+
+Seems that recovering of CFG belongs to the category 'everyone has known for a long time'
+In reality google gives hard to implement algos like https://nicolo.dev/en/blog/role-control-flow-graph-static-analysis/
+So I invented my own - sure bcs of NIH syndrome
+
+=head2 Some theory
+
+Basic block typically can have 1 or 2 out edges - like in case of conditional branch you will have link from those branch and
+link to next instruction
+However in SASS Indirect Branches have corresponding IBT in attributes and can contain several targets
+
+The next problem is how to split already found blocks. Lets check couple of code fragments:
+
+  STG.E [R10], R12                Block A              BRA L_1
+label: ; can be obtained from code located below
+  ..                              Block B
+
+for left code we need to add link from A to B
+for right code - no, bcs it ends with unconditional branch
+So at least we must keep addresses of unconditional branches to avoid linking with next block
+
+And also there are strange dead-loops like
+
+.L_x_4:
+ BRA `(.L_x_4)
+ NOP
+
+I don't want to add such blocks at all
+
+=cut
+# merge IBTs from $gs_ibt with back-refs
+sub merge_ibts
+{
+  my $br = shift;
+  return unless defined($gs_ibt);
+  # format of ibt from collect - key is address of destination, value is [ list of sources ]
+  # we just copy it to br map to avoind patching of original $gs_ibt
+  $br->{$_} = $gs_ibt->{$_} for ( keys %$gs_ibt );
+}
+
+# args: back-refs map, to addr, from
+sub add_label
+{
+ my($br, $addr, $from) = @_;
+ # check if it exists
+ if ( exists $br->{$addr} ) {
+   push @{ $br->{$addr} }, $from;
+ } else {
+   $br->{$addr} = [ $from ];
+ }
+}
+
+sub dg
+{
+  my($code_off, $s_size) = @_;
+  my %br;
+  merge_ibts(\%br);
+  # extract original ibts map ibs
+  my $ib = $g_attrs->grep(0x34);
+  my $ibs;
+  $ibs = $g_attrs->value( $ib->[0]->{'id'} ) if defined($ib);
+  # dead-loops
+  my %dl;
+  # first pass - collect links and marks in br map
+  my $has_prev; # if we should add link from previous instruction
+  my $add_prev = sub {
+   my $of = shift;
+   if ( defined $has_prev ) {
+     add_label(\%br, $of, $has_prev);
+     undef $has_prev;
+   }
+  };
+  do {
+    my $off = $g_ced->get_off();
+    my $skip = $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name();
+    if ( !$skip ) {
+      my $brt = $g_ced->ins_brt();
+      # check if this is IBT
+      my $curr_ibt = 0;
+      $curr_ibt = 1 if ( defined($ibs) && exists $ibs->{$off});
+      if ( $curr_ibt ) {
+        # nothing to add - br arleady has IBT labels
+        $add_prev->($off);
+        $has_prev = $off if ( $g_ced->has_pred() );
+      } elsif ( $brt ) {
+        # we have some branch
+        my $cond = $g_ced->has_pred();
+        my $is_dl = 0;
+        if ( $brt != Cubin::Ced::BRT_RETURN ) {
+          my($rel, $is_a) = has_rel($off);
+          # ignore instr having relocs
+          unless($rel) {
+            my $addl = $g_ced->ins_clabs();
+            if ( defined($addl) ) {
+              if ( $addl == $off ) { # this is dead-loop
+                $is_dl = 1;
+                $dl{$off} = 1;
+              } else {
+                add_label(\%br, $addl, $off);
+              }
+            }
+          }
+        }
+        # link with prev instr
+        $add_prev->($off) unless($is_dl);
+        # check if we have conditional branch
+        if ( $cond ) { $has_prev = $off; }
+        else { undef $has_prev; $br{$off+1} = $is_dl ? -1 : 1; } # put stop marker
+      } else {
+        $add_prev->($off);
+      }
+    } else {
+      $add_prev->($off);
+    }
+  } while( $g_ced->next_off() < $s_size && $g_ced->next() );
+  # make sorted array
+  my @sorted = sort { $a->[0] <=> $b->[0] } map {
+   [ $_, $br{$_} ]
+   } keys %br;
+  # dump what we collected
+  if ( defined $opt_d ) {
+    foreach my $s (@sorted) {
+      printf("%X:", $s->[0]);
+      if ( 'ARRAY' eq ref $s->[1] ) {
+        printf(" %X", $_) for @{ $s->[1] };
+      } else {
+        printf(" marker %d", $s->[1]);
+      }
+      printf("\n");
+    }
+  }
+}
+
 # main
-my $state = getopts("bgprv");
+my $state = getopts("bdgprv");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -453,7 +591,7 @@ $g_ced = Cubin::Ced->new($g_elf);
 die("cannot load cubin $ARGV[0]") unless defined($g_ced);
 $g_w = $g_ced->width();
 if ( defined $opt_v ) {
-  printf("SM %s width %d\n", $g_ced->sm_name(), $g_w);
+  printf("SM %s width %d block_mask %d\n", $g_ced->sm_name(), $g_w, $g_ced->block_mask());
 }
 my @es = exs($g_elf);
 die("Empty cubin $ARGV[0]") unless scalar(@es);
@@ -485,6 +623,7 @@ foreach my $s ( @es ) {
  die("cannot setup section $s->[0]") unless $g_ced->set_s($s->[0]);
  my $off = $g_w == 128 ? 0: 8;
  die("initial offset") unless $g_ced->off($off);
- disasm($s->[9]); # arg - section size
+ if ( defined $opt_g ) { dg($off, $s->[9]); } # args - start of code offset bcs we need at least 2 passes, section size
+ else { disasm($s->[9]); }  # arg - section size
 }
 dump_barstat() if defined($opt_b);
