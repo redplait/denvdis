@@ -473,15 +473,6 @@ I don't want to add such blocks at all
 
 =cut
 # merge IBTs from $gs_ibt with back-refs
-sub merge_ibts
-{
-  my $br = shift;
-  return unless defined($gs_ibt);
-  # format of ibt from collect - key is address of destination, value is [ list of sources ]
-  # we just copy it to br map to avoind patching of original $gs_ibt
-  $br->{$_} = $gs_ibt->{$_} for ( keys %$gs_ibt );
-}
-
 # args: back-refs map, to addr, from
 sub add_label
 {
@@ -494,15 +485,22 @@ sub add_label
  }
 }
 
+sub merge_ibts
+{
+  my $br = shift;
+  return unless defined($gs_ibt);
+  # format of ibt from collect - key is address of destination, value is [ list of sources ]
+  # we just copy it to br map to avoind patching of original $gs_ibt
+  foreach my $from ( keys %$gs_ibt ) {
+    add_label($br, $_, $from) for ( @{ $gs_ibt->{$from} } );
+  }
+}
+
 sub dg
 {
   my($code_off, $s_size) = @_;
   my %br;
   merge_ibts(\%br);
-  # extract original ibts map ibs
-  my $ib = $g_attrs->grep(0x34);
-  my $ibs;
-  $ibs = $g_attrs->value( $ib->[0]->{'id'} ) if defined($ib);
   # dead-loops
   my %dl;
   # first pass - collect links and marks in br map
@@ -514,6 +512,11 @@ sub dg
      undef $has_prev;
    }
   };
+  my $cnd_sub = sub {
+   my($cond, $off) = @_;
+   if ( $cond ) { $has_prev = $off; }
+   else { undef $has_prev; }
+  };
   do {
     my $off = $g_ced->get_off();
     my $skip = $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name();
@@ -521,11 +524,14 @@ sub dg
       my $brt = $g_ced->ins_brt();
       # check if this is IBT
       my $curr_ibt = 0;
-      $curr_ibt = 1 if ( defined($ibs) && exists $ibs->{$off});
+      $curr_ibt = 1 if ( defined($gs_ibt) && exists $gs_ibt->{$off});
       if ( $curr_ibt ) {
         # nothing to add - br arleady has IBT labels
         $add_prev->($off);
         $has_prev = $off if ( $g_ced->has_pred() );
+        my $cond = $g_ced->has_pred();
+        $cnd_sub->($cond, $off);
+        $br{$off+1} = 1;
       } elsif ( $brt ) {
         # we have some branch
         my $cond = $g_ced->has_pred();
@@ -548,8 +554,8 @@ sub dg
         # link with prev instr
         $add_prev->($off) unless($is_dl);
         # check if we have conditional branch
-        if ( $cond ) { $has_prev = $off; }
-        else { undef $has_prev; $br{$off+1} = $is_dl ? -1 : 1; } # put stop marker
+        $cnd_sub->($cond, $off);
+        $br{$off+1} = $is_dl ? -1 : 1; # put stop marker
       } else {
         $add_prev->($off);
       }
