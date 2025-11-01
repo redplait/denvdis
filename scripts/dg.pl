@@ -90,6 +90,22 @@ sub check_sym
   $res;
 }
 
+# put first found symbol to br[off+2]
+sub gcheck_sym
+{
+  my($br, $off) = @_;
+  my $latch = 0;
+  return if ( $gs_cidx >= scalar(@gs_syms) );
+  while ( $gs_syms[$gs_cidx]->[1] <= $off ) {
+    unless ( $latch ) {
+      $br->{$off+2} = $gs_cidx;
+      $latch++;
+    }
+    last if ( ++$gs_cidx >= scalar(@gs_syms) );
+  }
+  return $latch;
+}
+
 # lame binary search in compound array
 # args: ref to array, index of field to compare, target
 sub bin_sa
@@ -594,6 +610,7 @@ sub dg
   };
   do {
     my $off = $g_ced->get_off();
+    gcheck_sym(\%br, $off);
     my $skip = $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name();
     if ( $skip ) { $add_prev->($off); }
     else {
@@ -606,7 +623,7 @@ sub dg
       };
       # check if this is IBT
       if ( $check_ibt->($off) ) {
-        printf("ibt at %X\n", $off) if defined($opt_v);
+        printf("ibt at %X\n", $off) if defined($opt_d);
         # nothing to add - br arleady has IBT labels
         $link_prev->();
       } else {
@@ -633,11 +650,13 @@ sub dg
           }
           # link with prev instr
           $add_prev->($off) unless($is_dl);
-          # check if we have conditional branch
-          $cnd_sub->($cond, $off) if ( $added );
-          if ( $is_dl ) {
-            $br{$off+1} = -1; # put dead-loop marker
-          } elsif ( $added && $brt != Cubin::Ced::BRT_CALL && !$cond ) { $br{$off+1} = 1; }
+          if ( $added ) {
+            # check if we have conditional branch
+            $cnd_sub->($cond, $off) if ( $brt );
+            if ( $is_dl ) {
+              $br{$off+1} = -1; # put dead-loop marker
+            } elsif ( $brt != Cubin::Ced::BRT_CALL && !$cond ) { $br{$off+1} = 1; }
+          }
         }
       }
     }
@@ -653,7 +672,8 @@ sub dg
       if ( 'ARRAY' eq ref $s->[1] ) {
         printf(" %X", $_) for @{ $s->[1] };
       } else {
-        printf(" marker %d", $s->[1]);
+        if ( 2 == ($s->[0] & 7) ) { printf(" symbol %d", $s->[1]); }
+        else { printf(" marker %d", $s->[1]); }
       }
       printf("\n");
     }
