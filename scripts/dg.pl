@@ -553,6 +553,18 @@ sub add_label
  }
 }
 
+sub dump_blocks
+{
+  my $br = shift;
+  foreach my $b ( @$br ) {
+    printf("block %X till %X", $b->[0], $b->[1]);
+    printf(" sym %d", $b->[2]) if ( defined $b->[2] );
+    printf(":\n");
+    printf(" %X", $_) for ( keys %{ $b->[3] } );
+    printf("\n");
+  }
+}
+
 sub merge_ibts
 {
   my $br = shift;
@@ -592,8 +604,6 @@ sub dg
     }
     0;
   };
-  # dead-loops
-  my %dl;
   # first pass - collect links and marks in br map
   my $has_prev; # if we should add link from previous instruction
   my $add_prev = sub {
@@ -608,8 +618,9 @@ sub dg
    if ( $cond ) { $has_prev = $off; }
    else { undef $has_prev; }
   };
+  my $off; # at end will hold last processed address
   do {
-    my $off = $g_ced->get_off();
+    $off = $g_ced->get_off();
     gcheck_sym(\%br, $off);
     my $skip = $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name();
     if ( $skip ) { $add_prev->($off); }
@@ -642,7 +653,6 @@ sub dg
               $added = 1;
               if ( $addl == $off ) { # this is dead-loop
                 $is_dl = 1;
-                $dl{$off} = 1;
               } else {
                 add_label(\%br, $addl, $off);
               }
@@ -665,6 +675,7 @@ sub dg
   my @sorted = sort { $a->[0] <=> $b->[0] } map {
    [ $_, $br{$_} ]
    } keys %br;
+  return unless scalar(@sorted);
   # dump what we collected
   if ( defined $opt_d ) {
     foreach my $s (@sorted) {
@@ -678,6 +689,75 @@ sub dg
       printf("\n");
     }
   }
+  # pass 2 - make blocks, complexity O(m) where m is number of marks/symbols/back references in @sorted array
+  # indexes in block:
+  # [0] - start address
+  # [1] - last address
+  # [2] - symbol index or undef
+  # [3] - map with back-refs
+  my @bbs;
+  my $add_block = sub {
+    my $off = shift;
+    my @res = ( $off );
+    my %bl;
+    $res[3] = \%bl;
+    push @bbs, \@res;
+    \@res;
+  };
+  my $cb;
+  my $close_block = sub {
+    $cb->[1] = shift;
+    undef $cb;
+  };
+  foreach my $cop ( @sorted ) {
+# we have 8 cases here
+# has block  currect operand  what to do
+#   N          sym            add new block
+#   Y          sym            close prev block and add new
+#   N        dead loop        skip
+#   Y        dead loop        close prev block
+#   N        back ref         add new block and add symbol
+#   Y        back ref         add symbol
+#   N         marker          wtf? add new block with single instruction - don't know if it has sence
+#   Y         marker          close prev block
+    if ( 'ARRAY' eq ref $cop->[1] ) {
+      $cb = $add_block->($cop->[0]) unless $cb;
+      $cb->[3]->{$_} = 0 for ( @{ $cop->[1] } );
+      next;
+    }
+    my $kind = $cop->[0] & 7;
+    my $curr_off = $cop->[0] - $kind;
+    if ( 2 == $kind ) { # symbol
+      unless($cb) {
+        $cb = $add_block->($curr_off);
+        $cb->[2] = $cop->[1];
+        next;
+      }
+      unless(defined $cb->[2]) {
+        $cb->[2] = $cop->[1];
+        next;
+      }
+      # we have some block with symbol and now new symbol - wtf?
+      # ok, close prev and make new block
+      $close_block->(1+$g_ced->prev_off($curr_off));
+      $cb = $add_block->($curr_off);
+      $cb->[2] = $cop->[1];
+      next;
+    }
+    # marker or dead loop
+    if ( -1 == $cop->[1] ) {
+      $close_block->(1+$g_ced->prev_off($curr_off)) if defined($cb);
+      next;
+    }
+    if ( defined $cb ) {
+      $close_block->(1+$curr_off);
+      next;
+    }
+    # Как будто, как будто... Только я зачем тут-то?
+  }
+  dump_blocks(\@bbs) if ( defined $opt_d );
+  # finally return blocks
+  \@bbs;
 }
 
 # main
