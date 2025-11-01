@@ -41,6 +41,8 @@ my(@gs_cbs, $gs_cb_size, $gs_cb_off);
 # labels from attrs
 my($gs_loffs, $gs_ibt);
 
+sub sym_reset { $gs_cidx = 0; }
+
 sub sym_name
 {
   my $sidx = shift;
@@ -126,15 +128,15 @@ sub bin_sa
   undef;
 }
 
-# args: ref to array, sub with <=> like return
+# args: ref to array, sub with <=> like return, target
 sub bin_sac
 {
-  my($ar, $cb) = @_;
+  my($ar, $cb, $what) = @_;
   my $low = 0;
   my $high = scalar @$ar; # Index of the last element
   while ($low < $high) {
      my $mid = int(($low + $high) / 2); # Calculate the middle index
-     my $res = $cb->($ar->[$mid]);
+     my $res = $cb->($ar->[$mid], $what);
      if (!$res) {
         return wantarray ? ($mid, $ar->[$mid]) : $mid; # Target found
      } elsif ($res < 0) {
@@ -540,7 +542,6 @@ Pass 3 - resolve block back-links. If we have M blocks - each can have M - 1 bac
 total O(M * M * log(M))
 
 =cut
-# merge IBTs from $gs_ibt with back-refs
 # args: back-refs map, to addr, from
 sub add_label
 {
@@ -555,16 +556,21 @@ sub add_label
 
 sub dump_blocks
 {
-  my $br = shift;
+  my($br, $resolved) = @_;
   foreach my $b ( @$br ) {
     printf("block %X till %X", $b->[0], $b->[1]);
     printf(" sym %d", $b->[2]) if ( defined $b->[2] );
     printf(":\n");
-    printf(" %X", $_) for ( keys %{ $b->[3] } );
+    if ( $resolved ) {
+      printf(" %X", $_->[0]) for ( values %{ $b->[3] } );
+    } else {
+     printf(" %X", $_) for ( keys %{ $b->[3] } );
+    }
     printf("\n");
   }
 }
 
+# merge IBTs from $gs_ibt with back-refs
 sub merge_ibts
 {
   my $br = shift;
@@ -757,7 +763,28 @@ sub dg
   }
   # check if last block has last addr
   $bbs[-1]->[1] = $off + 1 unless( defined $bbs[-1]->[1] );
-  dump_blocks(\@bbs) if ( defined $opt_d );
+  dump_blocks(\@bbs, 0) if ( defined $opt_d );
+  # pass 3 - resolve all back-references to blocks (now they are just offsets)
+  # surprisingly this is most compute-intensive part - if we have M blocks then complexity will be O(M * M * log(M))
+  # clojure for bin_sac
+  my $bs_cb = sub {
+    my($br, $addr) = @_;
+    return 0 if ( $addr >= $br->[0] && $addr < $br->[1] );
+    return -1 if ( $addr > $br->[0] );
+    1;
+  };
+  foreach $cb ( @bbs ) {
+    my $brs = $cb->[3];
+    my %blinks;
+    foreach my $addr ( keys %$brs ) {
+      my($idx, $found) = bin_sac(\@bbs, $bs_cb, $addr);
+      next unless defined($found);
+      next if ( $found == $cb ); # skip self references
+      $blinks{$addr} = $found;
+    }
+    $cb->[3] = \%blinks;
+  }
+  dump_blocks(\@bbs, 1) if ( defined $opt_d );
   # finally return blocks
   \@bbs;
 }
