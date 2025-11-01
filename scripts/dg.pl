@@ -711,7 +711,7 @@ sub dg
   };
   foreach my $cop ( @sorted ) {
 # we have 8 cases here
-# has block  currect operand  what to do
+# has block  current operand  what to do
 #   N          sym            add new block
 #   Y          sym            close prev block and add new
 #   N        dead loop        skip
@@ -755,6 +755,8 @@ sub dg
     }
     # Как будто, как будто... Только я зачем тут-то?
   }
+  # check if last block has last addr
+  $bbs[-1]->[1] = $off + 1 unless( defined $bbs[-1]->[1] );
   dump_blocks(\@bbs) if ( defined $opt_d );
   # finally return blocks
   \@bbs;
