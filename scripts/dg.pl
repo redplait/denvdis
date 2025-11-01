@@ -410,7 +410,7 @@ sub dump_ins
         $gs_loffs->{$addl} = 0;
       }
     } else {
-      printf(" ;has reloc%c\n", $is_a ? 'a' : ' ') if defined($opt_v);
+      printf("; has reloc%s\n", $is_a ? 'a' : '') if defined($opt_v);
     }
   }
   # dump label for current instr
@@ -513,7 +513,7 @@ And also there are strange dead-loops like
 
 I don't want to add such blocks at all
 
-=head1 Complexity of algorithm
+=head2 Complexity of algorithm
 
 Pass 1 - collect labels, complexity is O(N) where N is number of instructions and we need to lookup in Ibt each processed instruction -
 this can be done with sorted list of IBT sources
@@ -595,27 +595,34 @@ sub dg
   do {
     my $off = $g_ced->get_off();
     my $skip = $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name();
-    if ( !$skip ) {
+    if ( $skip ) { $add_prev->($off); }
+    else {
       my $brt = $g_ced->ins_brt();
+      my $cond = $g_ced->has_pred();
+      my $link_prev = sub {
+        $add_prev->($off);
+        $cnd_sub->($cond, $off);
+        $br{$off+1} = 1 if ( !$cond );
+      };
       # check if this is IBT
       if ( $check_ibt->($off) ) {
         printf("ibt at %X\n", $off) if defined($opt_v);
         # nothing to add - br arleady has IBT labels
-        $add_prev->($off);
-        $has_prev = $off if ( $g_ced->has_pred() );
-        my $cond = $g_ced->has_pred();
-        $cnd_sub->($cond, $off);
-        $br{$off+1} = 1 if ( !$cond );
-      } elsif ( $brt ) {
-        # we have some branch
-        my $cond = $g_ced->has_pred();
+        $link_prev->();
+      } else {
+        # check if have some branch
         my $is_dl = 0;
-        if ( $brt != Cubin::Ced::BRT_RETURN ) {
+        my $added = 0;
+        if ( $brt == Cubin::Ced::BRT_RETURN || $brt == Cubin::Ced::BRT_BRANCHOUT ) {
+          # return/exit don't have address - so logic is the same as for IBT
+          $link_prev->();
+        } else {
           my($rel, $is_a) = has_rel($off);
           # ignore instr having relocs
           unless($rel) {
             my $addl = $g_ced->ins_clabs();
             if ( defined($addl) ) {
+              $added = 1;
               if ( $addl == $off ) { # this is dead-loop
                 $is_dl = 1;
                 $dl{$off} = 1;
@@ -624,19 +631,15 @@ sub dg
               }
             }
           }
+          # link with prev instr
+          $add_prev->($off) unless($is_dl);
+          # check if we have conditional branch
+          $cnd_sub->($cond, $off) if ( $added );
+          if ( $is_dl ) {
+            $br{$off+1} = -1; # put dead-loop marker
+          } elsif ( $added && $brt != Cubin::Ced::BRT_CALL && !$cond ) { $br{$off+1} = 1; }
         }
-        # link with prev instr
-        $add_prev->($off) unless($is_dl);
-        # check if we have conditional branch
-        $cnd_sub->($cond, $off);
-        if ( $is_dl ) { 
-          $br{$off+1} =  -1; # put stop marker
-        } elsif ( $brt != Cubin::Ced::BRT_CALL && $cond ) { $br{$off+1} = 1; }
-      } else {
-        $add_prev->($off);
       }
-    } else {
-      $add_prev->($off);
     }
   } while( $g_ced->next_off() < $s_size && $g_ced->next() );
   # make sorted array
@@ -697,9 +700,13 @@ foreach my $s ( @es ) {
  # relocs
  if ( defined $opt_r ) {
    my $rel_idx = $g_attrs->try_rel($s->[0]);
-   dump_rels('REL', $s->[0], $rel_idx) if defined($rel_idx);
+   if ( defined($rel_idx) ) {
+     dump_rels('REL', $s->[0], $rel_idx);
+   } else { undef $gs_rel; }
    $rel_idx = $g_attrs->try_rela($s->[0]);
-   dump_rels('RELA', $s->[0], $rel_idx) if defined($rel_idx);
+   if ( defined($rel_idx) ) {
+     dump_rels('RELA', $s->[0], $rel_idx);
+   } else { undef $gs_rela; }
  }
  # setup ced
  die("cannot setup section $s->[0]") unless $g_ced->set_s($s->[0]);
