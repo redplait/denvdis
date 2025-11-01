@@ -90,6 +90,46 @@ sub check_sym
   $res;
 }
 
+# lame binary search in compound array
+# args: ref to array, index of field to compare, target
+sub bin_sa
+{
+  my($ar, $idx, $what) = @_;
+  my $low = 0;
+  my $high = scalar @$ar; # Index of the last element
+  while ($low < $high) {
+     my $mid = int(($low + $high) / 2); # Calculate the middle index
+     if ($ar->[$mid]->[$idx] == $what) {
+        return wantarray ? ($mid, $ar->[$mid]) : $mid; # Target found
+     } elsif ($ar->[$mid]->[$idx] < $what) {
+        $low = $mid + 1; # Target is in the upper half
+     } else {
+        $high = $mid - 1; # Target is in the lower half
+     }
+  }
+  undef;
+}
+
+# args: ref to array, sub with <=> like return
+sub bin_sac
+{
+  my($ar, $cb) = @_;
+  my $low = 0;
+  my $high = scalar @$ar; # Index of the last element
+  while ($low < $high) {
+     my $mid = int(($low + $high) / 2); # Calculate the middle index
+     my $res = $cb->($ar->[$mid]);
+     if (!$res) {
+        return wantarray ? ($mid, $ar->[$mid]) : $mid; # Target found
+     } elsif ($res < 0) {
+        $low = $mid + 1; # Target is in the upper half
+     } else {
+        $high = $mid - 1; # Target is in the lower half
+     }
+  }
+  undef;
+}
+
 sub dump_ext
 {
   my $ext_idx = shift;
@@ -360,7 +400,7 @@ sub dump_ins
   # is empty instruction - nop or with !@PT predicate
   my $skip = $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name();
   # check instr for label
-  if ( !$skip && $brt != Cubin::Ced::BRT_RETURN ) {
+  if ( !$skip ) { # && $brt != Cubin::Ced::BRT_RETURN ) {
     my($rel, $is_a) = has_rel($off);
     # ignore instr having relocs
     unless($rel) {
@@ -369,6 +409,8 @@ sub dump_ins
         printf(" ; add label %X\n", $addl) if defined($opt_v);
         $gs_loffs->{$addl} = 0;
       }
+    } else {
+      printf(" ;has reloc%c\n", $is_a ? 'a' : ' ') if defined($opt_v);
     }
   }
   # dump label for current instr
@@ -471,6 +513,16 @@ And also there are strange dead-loops like
 
 I don't want to add such blocks at all
 
+=head1 Complexity of algorithm
+
+Pass 1 - collect labels, complexity is O(N) where N is number of instructions and we need to lookup in Ibt each processed instruction -
+this can be done with sorted list of IBT sources
+
+Pass 2 - sort O(m * log(m)) + O(m) where m is amount of blocks + markers
+
+Pass 3 - resolve block back-links. If we have M blocks - each can have M - 1 back references, resolving can use binary search, so
+total O(M * M * log(M))
+
 =cut
 # merge IBTs from $gs_ibt with back-refs
 # args: back-refs map, to addr, from
@@ -489,18 +541,41 @@ sub merge_ibts
 {
   my $br = shift;
   return unless defined($gs_ibt);
+# print "Ibt " . Dumper($gs_ibt);
   # format of ibt from collect - key is address of destination, value is [ list of sources ]
   # we just copy it to br map to avoind patching of original $gs_ibt
-  foreach my $from ( keys %$gs_ibt ) {
-    add_label($br, $_, $from) for ( @{ $gs_ibt->{$from} } );
-  }
+  $br->{$_} = $gs_ibt->{$_} for ( keys %$gs_ibt );
+  # get original IBTs
+  my $id = $g_attrs->grep(0x34);
+  return unless defined($id);
+  my $ib_values = $g_attrs->value($id->[0]->{'id'});
+  return unless defined($ib_values);
+  # and make sorted array of source instructions
+  my @res;
+  push @res, $_ for ( sort { $a <=> $b } keys %$ib_values );
+  \@res;
 }
 
 sub dg
 {
   my($code_off, $s_size) = @_;
-  my %br;
-  merge_ibts(\%br);
+  my %br; # map of branches and markers
+  my $ibs = merge_ibts(\%br);
+  my($ib_curr, $ib_size);
+  if ( defined $ibs ) {
+    $ib_curr = 0;
+    $ib_size = scalar(@$ibs);
+  }
+  my $check_ibt = sub {
+    my $off = shift;
+    return 0 unless defined($ibs);
+    return 0 if ( $ib_curr >= $ib_size );
+    if ( $ibs->[$ib_curr] == $off ) {
+      $ib_curr++;
+      return 1;
+    }
+    0;
+  };
   # dead-loops
   my %dl;
   # first pass - collect links and marks in br map
@@ -523,15 +598,14 @@ sub dg
     if ( !$skip ) {
       my $brt = $g_ced->ins_brt();
       # check if this is IBT
-      my $curr_ibt = 0;
-      $curr_ibt = 1 if ( defined($gs_ibt) && exists $gs_ibt->{$off});
-      if ( $curr_ibt ) {
+      if ( $check_ibt->($off) ) {
+        printf("ibt at %X\n", $off) if defined($opt_v);
         # nothing to add - br arleady has IBT labels
         $add_prev->($off);
         $has_prev = $off if ( $g_ced->has_pred() );
         my $cond = $g_ced->has_pred();
         $cnd_sub->($cond, $off);
-        $br{$off+1} = 1;
+        $br{$off+1} = 1 if ( !$cond );
       } elsif ( $brt ) {
         # we have some branch
         my $cond = $g_ced->has_pred();
@@ -555,7 +629,9 @@ sub dg
         $add_prev->($off) unless($is_dl);
         # check if we have conditional branch
         $cnd_sub->($cond, $off);
-        $br{$off+1} = $is_dl ? -1 : 1; # put stop marker
+        if ( $is_dl ) { 
+          $br{$off+1} =  -1; # put stop marker
+        } elsif ( $brt != Cubin::Ced::BRT_CALL && $cond ) { $br{$off+1} = 1; }
       } else {
         $add_prev->($off);
       }
