@@ -499,6 +499,10 @@ sub disasm
   } while( $g_ced->next_off() < $s_size && $g_ced->next() );
 }
 
+sub gdisasm
+{
+}
+
 =pod
 
 =head1 CFG functions
@@ -530,6 +534,13 @@ And also there are strange dead-loops like
  NOP
 
 I don't want to add such blocks at all
+
+And finally we can have symbols in unpredictable places - lets check another couple of blocks
+  STG.E [R10], R12      Block A     @P1 BRA L_X
+symbol: ; some local/global function
+   ...                  Block B
+
+Seems that we must close previous block and start new one
 
 =head2 Complexity of algorithm
 
@@ -661,6 +672,7 @@ sub dg
                 $is_dl = 1;
               } else {
                 add_label(\%br, $addl, $off);
+                $gs_loffs->{$addl} = 0; # this is really some new labal - store it for later disasm too
               }
             }
           }
@@ -718,12 +730,12 @@ sub dg
   foreach my $cop ( @sorted ) {
 # we have 8 cases here
 # has block  current operand  what to do
-#   N          sym            add new block
+#   N          sym            add new block and add symbol
 #   Y          sym            close prev block and add new
 #   N        dead loop        skip
 #   Y        dead loop        close prev block
-#   N        back ref         add new block and add symbol
-#   Y        back ref         add symbol
+#   N        back ref         add new block and back ref to it
+#   Y        back ref         put back ref to current block
 #   N         marker          wtf? add new block with single instruction - don't know if it has sence
 #   Y         marker          close prev block
     if ( 'ARRAY' eq ref $cop->[1] ) {
@@ -841,7 +853,10 @@ foreach my $s ( @es ) {
  die("cannot setup section $s->[0]") unless $g_ced->set_s($s->[0]);
  my $off = $g_w == 128 ? 0: 8;
  die("initial offset") unless $g_ced->off($off);
- if ( defined $opt_g ) { dg($off, $s->[9]); } # args - start of code offset bcs we need at least 2 passes, section size
- else { disasm($s->[9]); }  # arg - section size
+ if ( defined $opt_g ) {
+   my $graph = dg($off, $s->[9]); # args - start of code offset bcs we need at least 2 passes, section size
+   sym_reset();
+   gdisasm($graph);
+ } else { disasm($s->[9]); }  # arg - section size
 }
 dump_barstat() if defined($opt_b);
