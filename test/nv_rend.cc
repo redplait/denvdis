@@ -1416,14 +1416,13 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       if ( ve.arg[len - 2] != 'R' ) return GENERIC;
       if ( ve.arg[len - 1] == 'a' ) return t_a;
       if ( ve.arg[len - 1] == 'b' ) return t_b;
+      if ( ve.arg[len - 1] == 'c' ) return t_c;
       if ( ve.arg[len - 1] == 'e' ) return t_e;
       if ( ve.arg[len - 1] == 'h' ) return t_h;
       return GENERIC;
     };
-    auto check_ve = [&](const ve_base &ve, reg_history::RH what) {
+    auto check_ve_t = [&](const ve_base &ve, reg_history::RH what, const nv_eattr *ea) {
         if ( ve.type == R_value ) return 0;
-        const nv_eattr *ea = find_ea(p.first, ve.arg);
-        if ( !ea ) return 0;
         auto kvi = p.second.find(ve.arg);
         if ( kvi == p.second.end() ) return 0;
         // check what we have
@@ -1437,6 +1436,12 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
         { rtdb->rugpr(kvi->second, off, what, 0, ve_type(ve)); return 1; }
         return 0;
     };
+    auto check_ve = [&](const ve_base &ve, reg_history::RH what) {
+        if ( ve.type == R_value ) return 0;
+        const nv_eattr *ea = find_ea(p.first, ve.arg);
+        if ( !ea ) return 0;
+        return check_ve_t(ve, what, ea);
+    };
     auto check_ve_list = [&](const std::list<ve_base> &l, reg_history::RH what) {
         int res = 0;
         for ( auto &ve: l ) {
@@ -1444,7 +1449,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
           const nv_eattr *ea = find_ea(p.first, ve.arg);
           if ( !ea ) continue;
           if ( ea->ignore ) continue;
-          res += check_ve(ve, what);
+          res += check_ve_t(ve, what, ea);
         }
         return res;
     };
