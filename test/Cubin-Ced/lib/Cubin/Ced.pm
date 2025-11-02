@@ -237,7 +237,8 @@ you also can gather boundaries of early selected section/function with couple or
 
 Also you can use method next to move and disassemly next instruction (if those offset >= start && < end)
 
-To get current/previous/next instruction offset use methods 'get_off', 'prev_off' & 'next_off'
+To get current/previous/next instruction offset use methods 'get_off', 'prev_off' & 'next_off'. On old SMs to get start
+address of block use method 'block_off'
 
 =head3 Patch methods
 

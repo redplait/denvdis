@@ -184,6 +184,10 @@ class Ced_perl: public CEd_base {
     if ( !ins() ) return &PL_sv_undef;
     return newSVuv(m_dis->off_next());
   }
+  SV *block_off(UV off) {
+    if ( !m_block_mask ) return newSVuv(off);
+    return newSVuv(off & ~m_block_mask);
+  }
   SV *prev_off(UV off) {
     if ( !m_block_mask ) {
       if ( off < 16 ) return &PL_sv_undef;
@@ -1132,10 +1136,12 @@ next_off(SV *obj)
 
 SV *
 prev_off(SV *obj, UV off)
+ ALIAS:
+  Cubin::Ced::block_off = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->prev_off(off);
+   RETVAL = (ix == 1) ? e->block_off(off) : e->prev_off(off);
  OUTPUT:
   RETVAL
 
