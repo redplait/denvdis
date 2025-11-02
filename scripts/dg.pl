@@ -73,23 +73,40 @@ sub setup_syms
   }
 }
 
+sub dump_sym_cmn
+{
+  my $sym = shift;
+  # global?
+  printf("\t.global %s\n", $sym->[0]) if ( STB_GLOBAL == $sym->[3] );
+  # size
+  printf("\t.size %X\n", $sym->[2]) if ( $sym->[2] );
+  # dump name label
+  printf("%s:\n", $sym->[0]);
+}
+
 sub check_sym
 {
   my $off = shift;
   my $res = 0;
   return if ( $gs_cidx >= scalar(@gs_syms) );
   while ( $gs_syms[$gs_cidx]->[1] <= $off ) {
-    my $sym = $gs_syms[$gs_cidx];
-    # global?
-    printf("\t.global %s\n", $sym->[0]) if ( STB_GLOBAL == $sym->[3] );
-    # size
-    printf("\t.size %X\n", $sym->[2]) if ( $sym->[2] );
+    dump_sym_cmn($gs_syms[$gs_cidx]);
     $res++;
-    # dump name label
-    printf("%s:\n", $sym->[0]);
     last if ( ++$gs_cidx >= scalar(@gs_syms) );
   }
   $res;
+}
+
+# skip all symbols below boff, dump symbols up to off
+sub head_syms
+{
+  my( $block_off, $off ) = @_;
+  return if ( $gs_cidx >= scalar(@gs_syms) );
+  # skip till block_off
+  while ( $gs_syms[$gs_cidx]->[1] < $block_off ) {
+    return if ( ++$gs_cidx >= scalar(@gs_syms) );
+  }
+  return check_sym($off);
 }
 
 # put first found symbol to br[off+2]
@@ -399,9 +416,13 @@ sub process_sched
   $sctx->{'dual'} = 1 if ( $is_dual && !$sctx->{'dual'} );
 }
 
+sub is_skip { $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name(); }
+
+# main horror - dump single instruction
+# args: offset, sched context, block (or undef)
 sub dump_ins
 {
-  my($off, $sctx) = @_;
+  my($off, $sctx, $block) = @_;
   my $brt = $g_ced->ins_brt();
   my $scbd = $g_ced->ins_scbd();
   my $mw = $g_ced->ins_min_wait();
@@ -416,16 +437,18 @@ sub dump_ins
     printf("\n");
   }
   # is empty instruction - nop or with !@PT predicate
-  my $skip = $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name();
+  my $skip = is_skip();
   # check instr for label
   if ( !$skip ) { # && $brt != Cubin::Ced::BRT_RETURN ) {
     my($rel, $is_a) = has_rel($off);
     # ignore instr having relocs
     unless($rel) {
-      my $addl = $g_ced->ins_clabs();
-      if ( defined($addl) ) {
-        printf(" ; add label %X\n", $addl) if defined($opt_v);
-        $gs_loffs->{$addl} = 0;
+      unless( defined $block ) {
+        my $addl = $g_ced->ins_clabs();
+        if ( defined($addl) ) {
+          printf(" ; add label %X\n", $addl) if defined($opt_v);
+          $gs_loffs->{$addl} = 0;
+        }
       }
     } else {
       printf("; has reloc%s\n", $is_a ? 'a' : '') if defined($opt_v);
@@ -501,6 +524,22 @@ sub disasm
 
 sub gdisasm
 {
+  my $dg = shift;
+  for my $block ( @$dg ) {
+    if ( !$g_ced->off($block->[0]) ) {
+      carp("cannot set offset $block->[0]");
+      next;
+    }
+    my $sctx = make_sctx();
+    my $off = $g_ced->get_off();
+    head_syms($g_ced->block_off($off), $off);
+    # disasm every instruction in this block
+    do {
+      $off = $g_ced->get_off();
+      dump_ins($off, $sctx, $block);
+    } while( $g_ced->next_off() < $block->[1] && $g_ced->next() );
+    # do block post-processing of block here
+  }
 }
 
 =pod
@@ -639,7 +678,7 @@ sub dg
   do {
     $off = $g_ced->get_off();
     gcheck_sym(\%br, $off);
-    my $skip = $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name();
+    my $skip = is_skip();
     if ( $skip ) { $add_prev->($off); }
     else {
       my $brt = $g_ced->ins_brt();
