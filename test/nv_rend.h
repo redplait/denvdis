@@ -67,7 +67,7 @@ struct reg_reuse {
     mask = mask2 = 0;
   }
   int apply(const struct nv_instr *, const NV_extracted &kv);
-  // 1 << (idx - ISRC_A
+  // 1 << (idx - ISRC_A)
   inline int ra() const { return mask & 1; }
   inline int rb() const { return mask & 2; }
   inline int rc() const { return mask & 4; }
@@ -119,20 +119,22 @@ struct track_snap {
   // key: GPR has prefix 0, UGPR 0x8000
   // value: 0x80 - write
   //        0x40 - reuse
-  //        0xxx - ISRC_XX
+  //        0x20 - read even if we already have write
+  //        0x0x - ISRC_XX
   std::unordered_map<unsigned short, unsigned char> gpr;
   // 2 set of predictes: 1 - read, 2 - write
-  char pr[7] = { 0, 0, 0, 0, 0, 0, 0 },
-      upr[7] = { 0, 0, 0, 0, 0, 0, 0 };
+  static constexpr int pr_size = 7;
+  char pr[pr_size] = { 0, 0, 0, 0, 0, 0, 0 },
+      upr[pr_size] = { 0, 0, 0, 0, 0, 0, 0 };
   void reset() {
     gpr.clear();
-    memset(pr, 0, 7); memset(upr, 0, 7);
+    memset(pr, 0, pr_size); memset(upr, 0, pr_size);
   }
   bool empty_pr() const {
-    return std::all_of(pr, pr + 7, [](char c) -> bool { return !c; });
+    return std::all_of(pr, pr + pr_size, [](char c) -> bool { return !c; });
   }
   bool empty_upr() const {
-    return std::all_of(upr, upr + 7, [](char c) -> bool { return !c; });
+    return std::all_of(upr, upr + pr_size, [](char c) -> bool { return !c; });
   }
   bool empty() const {
     if ( !gpr.empty() ) return false;
@@ -216,6 +218,11 @@ struct reg_pad {
   void rgpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {
      auto reuse = check_reuse(op);
      if ( snap ) {
+       std::unordered_map<unsigned short, unsigned char>::iterator si = snap->gpr.find(r);
+       if ( si != snap->gpr.end() ) {
+         si->second |= 0x20;
+         if ( reuse ) si->second |= 0x40;
+       } else
        snap->gpr[r] = op | (reuse ? 0x40 : 0) | (k & 0x8000 ? 0x80: 0);
      }
     _add(gpr, r, off, k | reuse, t);
@@ -227,6 +234,11 @@ struct reg_pad {
   void rugpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {
      auto reuse = check_reuse(op);
      if ( snap ) {
+       std::unordered_map<unsigned short, unsigned char>::iterator si = snap->gpr.find(r | 0x8000);
+       if ( si != snap->gpr.end() ) {
+         si->second |= 0x20;
+         if ( reuse ) si->second |= 0x40;
+       } else
        snap->gpr[r | 0x8000] = op | (reuse ? 0x40 : 0) | (k & 0x8000 ? 0x80: 0);
      }
     _add(ugpr, r, off, k | reuse, t);
