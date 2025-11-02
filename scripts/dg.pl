@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_d $opt_g $opt_p $opt_r $opt_v/;
+use vars qw/$opt_b $opt_d $opt_g $opt_p $opt_r $opt_t $opt_v/;
 
 sub usage()
 {
@@ -22,6 +22,7 @@ Usage: $0 [options] file.cubin
   -g - build cfg
   -p - dump properties
   -r - dump relocs
+  -t - track registers
   -v - verbose mode
 EOF
   exit(8);
@@ -419,10 +420,11 @@ sub process_sched
 sub is_skip { $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name(); }
 
 # main horror - dump single instruction
-# args: offset, sched context, block (or undef)
+# args: offset, sched context, block (or undef), reg track
+# returns 0 if this instruction should be skipped
 sub dump_ins
 {
-  my($off, $sctx, $block) = @_;
+  my($off, $sctx, $block, $rt) = @_;
   my $brt = $g_ced->ins_brt();
   my $scbd = $g_ced->ins_scbd();
   my $mw = $g_ced->ins_min_wait();
@@ -468,8 +470,10 @@ sub dump_ins
   printf("%s%s;", $g_ced->ins_text(), get_ssfx($dual));
   if ( $skip ) {
     printf("\n");
-    return;
+    return 0;
   }
+  # track regs
+  $g_ced->track($rt) if defined($rt);
   # check LUT
   my $lut = $g_ced->has_lut();
   if ( defined($lut) ) {
@@ -509,6 +513,7 @@ sub dump_ins
       }
     }
   }
+  1;
 }
 
 sub disasm
@@ -520,6 +525,24 @@ sub disasm
     check_sym($off);
     dump_ins($off, $sctx);
   } while( $g_ced->next_off() < $s_size && $g_ced->next() );
+}
+
+# dump reg track snapshot for current instruction
+sub dump_snap
+{
+  my($g, $pr) = @_;
+  if ( defined $g ) {
+    printf("; used regs:\n");
+    while( my($r, $flag) = each(%$g) ) {
+      printf(";  %sR%d: %d\n", $r & 0x8000 ? 'U' : '', $r & 0xff, $flag);
+    }
+  }
+  if ( defined $pr ) {
+    printf("; used predicates:\n");
+    while( my($r, $flag) = each(%$pr) ) {
+      printf(";  %sP%d: %d\n", $r & 0x8000 ? 'U' : '', $r & 0x7, $flag);
+    }
+  }
 }
 
 sub gdisasm
@@ -534,12 +557,21 @@ sub gdisasm
       carp("cannot set offset $off");
       next;
     }
+    # per-block data
     my $sctx = make_sctx();
     head_syms($block_off, $off);
+    my $rt;
+    $rt = Cubin::Ced::RegTrack->new() if defined($opt_t);
     # disasm every instruction in this block
     do {
       $off = $g_ced->get_off();
-      dump_ins($off, $sctx, $block);
+      my $res = dump_ins($off, $sctx, $block, $rt);
+      # dump snap
+      if ( $res && defined($rt) ) {
+        my($g, $pr) = $rt->snap();
+        dump_snap($g, $pr) if ( defined($g) || defined($pr) );
+      }
+      $rt->snap_clear() if ( defined $rt );
     } while( $g_ced->next_off() < $block->[1] && $g_ced->next() );
     # do block post-processing of block here
   }
@@ -844,12 +876,14 @@ sub dg
 }
 
 # main
-my $state = getopts("bdgprv");
+my $state = getopts("bdgprtv");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
   exit(5);
 }
+# some options validation
+croak("you can track registers only with -g option") if ( defined($opt_t) && !defined($opt_g) );
 
 # load elf, symbols, ced & attrs
 $g_elf = Elf::Reader->new($ARGV[0]);
