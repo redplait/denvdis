@@ -526,13 +526,16 @@ sub gdisasm
 {
   my $dg = shift;
   for my $block ( @$dg ) {
-    if ( !$g_ced->off($block->[0]) ) {
-      carp("cannot set offset $block->[0]");
+    my $off = $block->[0];
+    my $block_off = $g_ced->block_off($off);
+    # check if off starts at block boundary
+    $off += 8 if ( $g_w < 128 && $off == $block_off );
+    if ( !$g_ced->off($off) ) {
+      carp("cannot set offset $off");
       next;
     }
     my $sctx = make_sctx();
-    my $off = $g_ced->get_off();
-    head_syms($g_ced->block_off($off), $off);
+    head_syms($block_off, $off);
     # disasm every instruction in this block
     do {
       $off = $g_ced->get_off();
