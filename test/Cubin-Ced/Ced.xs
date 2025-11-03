@@ -331,9 +331,10 @@ class Ced_perl: public CEd_base {
     res = ins()->mask;
     return true;
   }
-  std::optional<long> ins_cb(unsigned short *cb_idx) {
+  std::optional<long> ins_cb(unsigned short *cb_idx, bool is_pure) {
     if ( !has_ins() ) return std::nullopt;
-    return check_cbank(m_rend, cex(), cb_idx);
+    return is_pure ? check_cbank_pure(m_rend, cex(), cb_idx):
+                     check_cbank(m_rend, cex(), cb_idx);
   }
   bool gen_mask(std::string &res) {
     if ( !has_ins() ) return false;
@@ -1575,6 +1576,8 @@ SV *tab_count(SV *obj)
 
 void
 ins_cbank(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_cbank_pure = 1
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
@@ -1586,7 +1589,7 @@ ins_cbank(SV *obj)
     ST(0) = &PL_sv_undef;
     XSRETURN(1);
   } else {
-    auto cb_off = e->ins_cb(&cb_idx);
+    auto cb_off = e->ins_cb(&cb_idx, 1 == ix);
     if ( 0xffff == cb_idx ) {
       ST(0) = &PL_sv_undef;
       XSRETURN(1);
