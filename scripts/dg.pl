@@ -534,7 +534,11 @@ sub dump_snap
   if ( defined $g ) {
     printf("; used regs:\n");
     while( my($r, $flag) = each(%$g) ) {
-      printf(";  %sR%d: %d\n", $r & 0x8000 ? 'U' : '', $r & 0xff, $flag);
+      printf(";  %sR%d: %X", $r & 0x8000 ? 'U' : '', $r & 0xff, $flag);
+      printf(" write") if ( $flag & 0x80 );
+      printf(" reuse") if ( $flag & 0x40 );
+      printf(" read")  if ( $flag & 0x20 );
+      printf("\n");
     }
   }
   if ( defined $pr ) {
@@ -568,6 +572,7 @@ sub gdisasm
       my $res = dump_ins($off, $sctx, $block, $rt);
       # dump snap
       if ( $res && defined($rt) ) {
+        printf("; mask %X mask2 %X\n", $rt->mask(), $rt->mask2()) if defined($opt_v);
         my($g, $pr) = $rt->snap();
         dump_snap($g, $pr) if ( defined($g) || defined($pr) );
       }
