@@ -7,6 +7,7 @@
 #include <list>
 #include <unordered_map>
 #include <unordered_set>
+#include <type_traits>
 #include "include/nv_types.h"
 
 template <typename T>
@@ -563,13 +564,6 @@ class NV_renderer {
    bool always_false(const struct nv_instr *, const NV_rlist *, const NV_extracted &kv) const;
    // check for some @PXX != PT
    bool has_predicate(const NV_rlist *, const NV_extracted &kv) const;
-   template <typename T>
-   bool check_cbank_t(T, const render_base *, const NV_extracted &kv, unsigned short &cb_idx,
-     unsigned long &cb_off) const;
-   bool check_cbank(const render_base *, const NV_extracted &kv, unsigned short &cb_idx,
-     unsigned long &cb_off) const;
-   bool check_cbank_pure(const render_base *, const NV_extracted &kv, unsigned short &cb_idx,
-     unsigned long &cb_off) const;
    // PRMT mask
    bool check_prmt(const struct nv_instr *, const NV_rlist *r, const NV_extracted &kv, unsigned long &mask) const;
    // LUT imm
@@ -578,8 +572,17 @@ class NV_renderer {
    bool is_setp(const struct nv_instr *, int &ends2) const;
    bool is_s2xx(const struct nv_instr *) const; // (C)S2(U)R
    // const bank methods
-   template <typename TFunc>
-   std::optional<long> check_cbank_t(TFunc, const NV_rlist *r, const NV_extracted &kv, unsigned short *cb_idx = nullptr) const;
+   template <typename T>
+     requires std::is_member_function_pointer_v<T>
+   bool check_cbank_t(T, const render_base *, const NV_extracted &kv, unsigned short &cb_idx,
+     unsigned long &cb_off) const;
+   bool check_cbank(const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
+     unsigned long &cb_off) const;
+   bool check_cbank_pure(const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
+     unsigned long &cb_off) const;
+   template <typename T>
+     requires std::is_member_function_pointer_v<T>
+   std::optional<long> get_cbank_t(T, const NV_rlist *r, const NV_extracted &kv, unsigned short *cb_idx) const;
    std::optional<long> check_cbank_right(const std::list<ve_base> &l, const NV_extracted &kv) const;
    std::optional<long> check_cbank_right_pure(const std::list<ve_base> &l, const NV_extracted &kv) const;
    // c[cb_idx][reg + imm] - returns imm

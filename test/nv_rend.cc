@@ -1865,8 +1865,8 @@ std::optional<long> NV_renderer::check_cbank_right_pure(const std::list<ve_base>
   return std::nullopt;
 }
 
-template <typename TFunc>
-std::optional<long> NV_renderer::check_cbank_t(TFunc tptr, const NV_rlist *rl, const NV_extracted &kv, unsigned short *cb_idx) const
+template <typename T> requires std::is_member_function_pointer_v<T>
+std::optional<long> NV_renderer::get_cbank_t(T tptr, const NV_rlist *rl, const NV_extracted &kv, unsigned short *cb_idx) const
 {
   for ( auto ri: *rl ) {
     if ( ri->type == R_C || ri->type == R_CX ) {
@@ -1884,18 +1884,31 @@ std::optional<long> NV_renderer::check_cbank_t(TFunc tptr, const NV_rlist *rl, c
   return std::nullopt;
 }
 
+// you can't inline all methods below in nv_rend.h bcs stupid gcc won't inline them and you will get linker error
 std::optional<long> NV_renderer::check_cbank(const NV_rlist *rl, const NV_extracted &kv, unsigned short *cb_idx) const
 {
-  return check_cbank_t(&NV_renderer::check_cbank_right, rl, kv, cb_idx);
+  return get_cbank_t(&NV_renderer::check_cbank_right, rl, kv, cb_idx);
 }
 
 std::optional<long> NV_renderer::check_cbank_pure(const NV_rlist *rl, const NV_extracted &kv, unsigned short *cb_idx) const
 {
-  return check_cbank_t(&NV_renderer::check_cbank_right_pure, rl, kv, cb_idx);
+  return get_cbank_t(&NV_renderer::check_cbank_right_pure, rl, kv, cb_idx);
 }
 
-template <typename TFunc>
-bool NV_renderer::check_cbank_t(TFunc tptr, const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
+bool NV_renderer::check_cbank(const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
+     unsigned long &cb_off) const
+{
+  return check_cbank_t(&NV_renderer::check_cbank_right, rb, kv, cb_idx, cb_off);
+}
+
+bool NV_renderer::check_cbank_pure(const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
+     unsigned long &cb_off) const
+{
+  return check_cbank_t(&NV_renderer::check_cbank_right_pure, rb, kv, cb_idx, cb_off);
+}
+
+template <typename T> requires std::is_member_function_pointer_v<T>
+bool NV_renderer::check_cbank_t(T tptr, const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
      unsigned long &cb_off) const
 {
   if ( rb->type != R_C && rb->type != R_CX ) return false;
@@ -1910,18 +1923,6 @@ bool NV_renderer::check_cbank_t(TFunc tptr, const render_base *rb, const NV_extr
   if ( !res.has_value() ) return false;
   cb_off = res.value();
   return true;
-}
-
-bool NV_renderer::check_cbank(const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
-     unsigned long &cb_off) const
-{
-  return check_cbank_t(&NV_renderer::check_cbank_right, rb, kv, cb_idx, cb_off);
-}
-
-bool NV_renderer::check_cbank_pure(const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
-     unsigned long &cb_off) const
-{
-  return check_cbank_t(&NV_renderer::check_cbank_right_pure, rb, kv, cb_idx, cb_off);
 }
 
 int NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, const NV_extracted &kv,
