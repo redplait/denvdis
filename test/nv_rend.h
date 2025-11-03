@@ -620,6 +620,10 @@ class NV_renderer {
    {
      return NV_renderer::is_sv(sv, name) || !strcmp(name, pfx);
    }
+   const NV_Prop *match_compound_prop(const nv_instr *i, const ve_base &) const;
+   const NV_Prop *match_compound_prop(const nv_instr *i, const std::list<ve_base> &) const;
+   template <typename T>
+   const NV_Prop *find_compound_prop(const nv_instr *i, const T*) const;
    int track_regs(reg_pad *, const NV_rlist *, const NV_pair &p, unsigned long off);
    void dump_rt(reg_pad *) const;
    void dump_rset(const reg_pad::RSet &, const char *pfx) const;

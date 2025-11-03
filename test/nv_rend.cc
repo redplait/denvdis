@@ -1112,6 +1112,48 @@ int reg_reuse::apply(const struct nv_instr *ins, const NV_extracted &kv) {
   return mask2;
 }
 
+const NV_Prop *NV_renderer::match_compound_prop(const nv_instr *i, const ve_base &vb) const
+{
+  if ( !i->props ) return nullptr;
+  for ( auto p: *i->props ) {
+    if ( std::any_of( p->fields.begin(), p->fields.end(), [&vb](const std::string_view &s) { return is_sv(&s, vb.arg); }) )
+      return p;
+  }
+  return nullptr;
+}
+
+const NV_Prop *NV_renderer::match_compound_prop(const nv_instr *i, const std::list<ve_base> &vl) const
+{
+  if ( !i->props ) return nullptr;
+  for ( auto &v: vl ) {
+    auto res = match_compound_prop(i, v);
+    if ( res ) return res;
+  }
+  return nullptr;
+}
+
+template <typename T>
+const NV_Prop *NV_renderer::find_compound_prop(const nv_instr *i, const T* ct) const
+{
+  if ( !i->props ) return nullptr;
+  const NV_Prop *res = nullptr;
+  constexpr bool has_left = requires(const T *t) {
+    t->left;
+  };
+  if constexpr ( has_left ) {
+    res = match_compound_prop(i, ct->left);
+    if ( res ) return res;
+  }
+  constexpr bool has_right = requires(const T *t) {
+    t->right;
+  };
+  if constexpr ( has_right ) {
+    res = match_compound_prop(i, ct->right);
+    if ( res ) return res;
+  }
+  return nullptr;
+}
+
 int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &p, unsigned long off)
 {
   int res = 0;
@@ -1426,7 +1468,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       if ( ve.arg[len - 1] == 'h' ) return t_h;
       return GENERIC;
     };
-    auto check_ve_t = [&](const ve_base &ve, reg_history::RH what, const nv_eattr *ea) {
+    auto check_ve_t = [&](const ve_base &ve, reg_history::RH what, const nv_eattr *ea, const NV_Prop *pr) {
         if ( ve.type == R_value ) return 0;
         auto kvi = p.second.find(ve.arg);
         if ( kvi == p.second.end() ) return 0;
@@ -1436,25 +1478,32 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
         if ( is_upred(ea, kvi) )
         { rtdb->rupred(kvi->second, off, what); return 1; }
         if ( is_reg(ea, kvi) )
-        { rtdb->rgpr(kvi->second, off, what, 0, ve_type(ve)); return 1; }
-        if ( is_ureg(ea, kvi) )
-        { rtdb->rugpr(kvi->second, off, what, 0, ve_type(ve)); return 1; }
+        {
+          auto type = pr ? pr->t : ve_type(ve);
+          rtdb->rgpr(kvi->second, off, what, pr ? pr->op : 0, type);
+          return 1;
+        }
+        if ( is_ureg(ea, kvi) ) {
+          auto type = pr ? pr->t : ve_type(ve);
+          rtdb->rugpr(kvi->second, off, what, pr ? pr->op : 0, type);
+          return 1;
+        }
         return 0;
     };
-    auto check_ve = [&](const ve_base &ve, reg_history::RH what) {
+    auto check_ve = [&](const ve_base &ve, reg_history::RH what, const NV_Prop *pr) {
         if ( ve.type == R_value ) return 0;
         const nv_eattr *ea = find_ea(p.first, ve.arg);
         if ( !ea ) return 0;
-        return check_ve_t(ve, what, ea);
+        return check_ve_t(ve, what, ea, pr);
     };
-    auto check_ve_list = [&](const std::list<ve_base> &l, reg_history::RH what) {
+    auto check_ve_list = [&](const std::list<ve_base> &l, reg_history::RH what, const NV_Prop *pr) {
         int res = 0;
         for ( auto &ve: l ) {
           if ( ve.type == R_value ) continue;
           const nv_eattr *ea = find_ea(p.first, ve.arg);
           if ( !ea ) continue;
           if ( ea->ignore ) continue;
-          res += check_ve_t(ve, what, ea);
+          res += check_ve_t(ve, what, ea, pr);
         }
         return res;
     };
@@ -1463,21 +1512,26 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
 #endif
     if ( r->type == R_C || r->type == R_CX ) {
       const render_C *rn = (const render_C *)r;
-      res += check_ve(rn->left, 1 << 3);
-      res += check_ve_list(rn->right, 4 | (1 << 3));
+      auto ctype = find_compound_prop(p.first, rn);
+      res += check_ve(rn->left, 1 << 3, ctype);
+      res += check_ve_list(rn->right, 4 | (1 << 3), ctype);
     } else if ( r->type == R_desc ) {
       const render_desc *rd = (const render_desc *)r;
-      res += check_ve(rd->left, 2 << 3);
-      res += check_ve_list(rd->right, 4 | (2 << 3));
+      auto ctype = find_compound_prop(p.first, rd);
+      res += check_ve(rd->left, 2 << 3, ctype);
+      res += check_ve_list(rd->right, 4 | (2 << 3), ctype);
     } else if ( r->type == R_mem ) {
       const render_mem *rm = (const render_mem *)r;
-      res += check_ve_list(rm->right, 4 | (3 << 3));
+      auto ctype = find_compound_prop(p.first, rm);
+      res += check_ve_list(rm->right, 4 | (3 << 3), ctype);
     } else if ( r->type == R_TTU ) {
       const render_TTU *rt = (const render_TTU *)r;
-      res += check_ve(rt->left, 3 << 3);
+      auto ctype = find_compound_prop(p.first, rt);
+      res += check_ve(rt->left, 3 << 3, ctype);
     } else if ( r->type == R_M1 ) {
       const render_M1 *rt = (const render_M1 *)r;
-      res += check_ve(rt->left, 3 << 3);
+      auto ctype = find_compound_prop(p.first, rt);
+      res += check_ve(rt->left, 3 << 3, ctype);
     }
     idx++;
   }
