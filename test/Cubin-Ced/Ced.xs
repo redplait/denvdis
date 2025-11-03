@@ -116,6 +116,9 @@ class Ced_perl: public CEd_base {
   inline bool is_dirty() const {
     return block_dirty;
   }
+  int get_rz() const {
+    return m_dis->rz;
+  }
   int sm_num() const {
     return m_sm;
   }
@@ -1260,6 +1263,14 @@ instrs(SV *obj)
  OUTPUT:
   RETVAL
 
+int rz(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->get_rz();
+ OUTPUT:
+  RETVAL
+
 int
 sm_num(SV *obj)
  INIT:
@@ -2000,6 +2011,27 @@ clear(SV *obj)
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
  CODE:
    r->clear();
+
+UV
+mask(SV *obj)
+ ALIAS:
+  Cubin::Ced::RegTrack::mask2 = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+   RETVAL = ix == 1 ? r->m_reuse.mask2 : r->m_reuse.mask;
+ OUTPUT:
+  RETVAL
+
+IV keep(SV *obj)
+ ALIAS:
+  Cubin::Ced::RegTrack::keep2 = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+   RETVAL = ix == 1 ? r->m_reuse.keep2 : r->m_reuse.keep;
+ OUTPUT:
+  RETVAL
 
 void
 snap_clear(SV *obj)
