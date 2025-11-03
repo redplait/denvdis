@@ -563,7 +563,12 @@ class NV_renderer {
    bool always_false(const struct nv_instr *, const NV_rlist *, const NV_extracted &kv) const;
    // check for some @PXX != PT
    bool has_predicate(const NV_rlist *, const NV_extracted &kv) const;
-   bool check_cbank(const struct nv_instr *, const render_base *, const NV_extracted &kv, unsigned short &cb_idx,
+   template <typename T>
+   bool check_cbank_t(T, const render_base *, const NV_extracted &kv, unsigned short &cb_idx,
+     unsigned long &cb_off) const;
+   bool check_cbank(const render_base *, const NV_extracted &kv, unsigned short &cb_idx,
+     unsigned long &cb_off) const;
+   bool check_cbank_pure(const render_base *, const NV_extracted &kv, unsigned short &cb_idx,
      unsigned long &cb_off) const;
    // PRMT mask
    bool check_prmt(const struct nv_instr *, const NV_rlist *r, const NV_extracted &kv, unsigned long &mask) const;
@@ -572,9 +577,15 @@ class NV_renderer {
    // check for xxSETP
    bool is_setp(const struct nv_instr *, int &ends2) const;
    bool is_s2xx(const struct nv_instr *) const; // (C)S2(U)R
-   // check const bank[0][imm]
-   std::optional<long> check_cbank(const NV_rlist *r, const NV_extracted &kv, unsigned short *cb_idx = nullptr) const;
+   // const bank methods
+   template <typename TFunc>
+   std::optional<long> check_cbank_t(TFunc, const NV_rlist *r, const NV_extracted &kv, unsigned short *cb_idx = nullptr) const;
    std::optional<long> check_cbank_right(const std::list<ve_base> &l, const NV_extracted &kv) const;
+   std::optional<long> check_cbank_right_pure(const std::list<ve_base> &l, const NV_extracted &kv) const;
+   // c[cb_idx][reg + imm] - returns imm
+   std::optional<long> check_cbank(const NV_rlist *r, const NV_extracted &kv, unsigned short *cb_idx = nullptr) const;
+   // c[cb_idx][imm]
+   std::optional<long> check_cbank_pure(const NV_rlist *r, const NV_extracted &kv, unsigned short *cb_idx = nullptr) const;
    // try to find item in renderer for some NV_Prop where count of fields > 1
    const render_base *try_compound_prop(const NV_rlist *r, const NV_Prop *) const;
    bool _cmp_prop(const std::list<ve_base> &vb, const NV_Prop *pr) const;

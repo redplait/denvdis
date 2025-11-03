@@ -1203,7 +1203,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     }
     unsigned short cb_idx = 0;
     unsigned long cb_off = 0;
-    if ( check_cbank(p.first, r, p.second, cb_idx, cb_off) ) {
+    if ( check_cbank_pure(r, p.second, cb_idx, cb_off) ) {
       rtdb->add_cb(off, cb_off, cb_idx, d_size >> 3);
       idx++;
       continue;
@@ -1407,8 +1407,10 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
          }
         }
       }
+      idx++;
+      continue;
     }
-    // ok, we have something compound
+    // we have something compound
     auto ve_type = [&](const ve_base &ve) -> NVP_type {
       auto len = strlen(ve.arg);
       if ( len < 2 ) return GENERIC;
@@ -1475,7 +1477,6 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       res += check_ve(rt->left, 3 << 3);
     }
     idx++;
-    continue;
   }
   return res;
 }
@@ -1851,7 +1852,21 @@ std::optional<long> NV_renderer::check_cbank_right(const std::list<ve_base> &rl,
   return std::nullopt;
 }
 
-std::optional<long> NV_renderer::check_cbank(const NV_rlist *rl, const NV_extracted &kv, unsigned short *cb_idx) const
+std::optional<long> NV_renderer::check_cbank_right_pure(const std::list<ve_base> &rl, const NV_extracted &kv) const
+{
+  for ( auto &ve: rl ) {
+    if ( ve.type == R_value )
+    {
+      auto kvi = kv.find(ve.arg);
+      if ( kvi == kv.end() ) continue;
+      return std::optional<long>(kvi->second);
+    } else return std::nullopt;
+  }
+  return std::nullopt;
+}
+
+template <typename TFunc>
+std::optional<long> NV_renderer::check_cbank_t(TFunc tptr, const NV_rlist *rl, const NV_extracted &kv, unsigned short *cb_idx) const
 {
   for ( auto ri: *rl ) {
     if ( ri->type == R_C || ri->type == R_CX ) {
@@ -1863,13 +1878,24 @@ std::optional<long> NV_renderer::check_cbank(const NV_rlist *rl, const NV_extrac
         return std::nullopt;
       if ( cb_idx ) *cb_idx = (unsigned short)(kvi->second);
       // if ( kvi->second ) return std::nullopt;
-      return check_cbank_right(rn->right, kv);
+      return (this->*tptr)(rn->right, kv);
     }
   }
   return std::nullopt;
 }
 
-bool NV_renderer::check_cbank(const struct nv_instr *i, const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
+std::optional<long> NV_renderer::check_cbank(const NV_rlist *rl, const NV_extracted &kv, unsigned short *cb_idx) const
+{
+  return check_cbank_t(&NV_renderer::check_cbank_right, rl, kv, cb_idx);
+}
+
+std::optional<long> NV_renderer::check_cbank_pure(const NV_rlist *rl, const NV_extracted &kv, unsigned short *cb_idx) const
+{
+  return check_cbank_t(&NV_renderer::check_cbank_right_pure, rl, kv, cb_idx);
+}
+
+template <typename TFunc>
+bool NV_renderer::check_cbank_t(TFunc tptr, const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
      unsigned long &cb_off) const
 {
   if ( rb->type != R_C && rb->type != R_CX ) return false;
@@ -1880,10 +1906,22 @@ bool NV_renderer::check_cbank(const struct nv_instr *i, const render_base *rb, c
   if ( kvi == kv.end() )
     return false;
   cb_idx = (unsigned short)kvi->second;
-  auto res = check_cbank_right(rn->right, kv);
+  auto res = (this->*tptr)(rn->right, kv);
   if ( !res.has_value() ) return false;
   cb_off = res.value();
   return true;
+}
+
+bool NV_renderer::check_cbank(const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
+     unsigned long &cb_off) const
+{
+  return check_cbank_t(&NV_renderer::check_cbank_right, rb, kv, cb_idx, cb_off);
+}
+
+bool NV_renderer::check_cbank_pure(const render_base *rb, const NV_extracted &kv, unsigned short &cb_idx,
+     unsigned long &cb_off) const
+{
+  return check_cbank_t(&NV_renderer::check_cbank_right_pure, rb, kv, cb_idx, cb_off);
 }
 
 int NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, const NV_extracted &kv,
