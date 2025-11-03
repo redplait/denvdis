@@ -403,7 +403,7 @@ Holds in separate object Cubin::Ced::RegTrack. There are 4 kind of registers in 
 
 =over
 
-=item * GPR
+=item * GPRs
 
 =item * Predicates
 
@@ -413,7 +413,7 @@ Holds in separate object Cubin::Ced::RegTrack. There are 4 kind of registers in 
 
 =back
 
-Main method in Ced is $ced->track($track_db)
+Main method in Ced is $ced->track($track_db). Also you should call 'finalize' before get totals
 
 RegTrack can give you all 4 set of registers with (u)rs/(u)ps for registers/predicates - it retuns ref to hash where key is register number
 
@@ -444,6 +444,36 @@ They return array of refs to array where indexes
 =item 3 - if those instruction has condition predicate
 
 =item 4 - type of register if presents
+
+=back
+
+To get list of used const banks use 'cbs' method - it support wantarray and return list of array where indexes
+
+=over
+
+=item 0 - instruction offset
+
+=item 1 - cb index
+
+=item 2 - cb offset
+
+=item 3 - kind
+
+=back
+
+You can also extract only snapshot data for currently processed instruction with methods
+
+=over
+
+=item mask/mask2 for reuse
+
+=item keep/keep2
+
+=item snap_clear to clear snapshot
+
+=item snap_empty to check if snapshot is empty
+
+=item snap - main method, returns [ gprs, predicates ]
 
 =back
 

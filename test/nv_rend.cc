@@ -861,6 +861,9 @@ void NV_renderer::finalize_rt(reg_pad *rtdb) {
   for ( auto &r: rtdb->pred ) std::sort(r.second.begin(), r.second.end(), srt);
  if ( !rtdb->upred.empty() )
   for ( auto &r: rtdb->upred ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !rtdb->cbs.empty() ) {
+  std::sort(rtdb->cbs.begin(), rtdb->cbs.end(), [](const cbank_history &a, const cbank_history &b) { return a.off < b.off; });
+ }
 }
 
 void NV_renderer::dump_rt(reg_pad *rtdb) const {
@@ -1884,7 +1887,8 @@ std::optional<long> NV_renderer::get_cbank_t(T tptr, const NV_rlist *rl, const N
   return std::nullopt;
 }
 
-// you can't inline all methods below in nv_rend.h bcs stupid gcc won't inline them and you will get linker error
+// you can't inline all methods below in nv_rend.h bcs stupid gcc (at least v12) won't instantiate template method for them
+// and you will get linker error
 std::optional<long> NV_renderer::check_cbank(const NV_rlist *rl, const NV_extracted &kv, unsigned short *cb_idx) const
 {
   return get_cbank_t(&NV_renderer::check_cbank_right, rl, kv, cb_idx);

@@ -979,6 +979,16 @@ SV *fill_reg(const std::vector<T> &vt, unsigned long from) {
   return newRV_noinc((SV*)av);
 }
 
+static SV *
+make_one_cb(const cbank_history &cbh) {
+  AV *curr = newAV();
+  av_push(curr, newSVuv(cbh.off));
+  av_push(curr, newSViv(cbh.cb_num));
+  av_push(curr, newSVuv(cbh.cb_off));
+  av_push(curr, newSViv(cbh.kind));
+  return newRV_noinc((SV*)curr);
+}
+
 // magic table for Cubin::Ced::Render
 static const char *s_ca_render = "Cubin::Ced::Render";
 static HV *s_ca_render_pkg = nullptr;
@@ -1426,25 +1436,13 @@ ins_alt(SV *obj)
 
 SV *
 ins_mask(SV *obj)
+ ALIAS:
+  Cubin::Ced::mask = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
    std::string mask;
  CODE:
-   bool res = e->ins_mask(mask);
-   if ( !res )
-     RETVAL = &PL_sv_undef;
-   else
-     RETVAL = newSVpv(mask.c_str(), mask.size());
- OUTPUT:
-  RETVAL
-
-SV *
-mask(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
-   std::string mask;
- CODE:
-   bool res = e->gen_mask(mask);
+   bool res = 1 == ix ? e->gen_mask(mask) : e->ins_mask(mask);
    if ( !res )
      RETVAL = &PL_sv_undef;
    else
@@ -1477,49 +1475,29 @@ ins_pred(SV *obj)
 
 SV *
 ins_reuse(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_reuse2 = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
   if ( !e->has_ins() )
    RETVAL = &PL_sv_undef;
   else
-   RETVAL = newSVuv(e->reus.mask);
- OUTPUT:
-  RETVAL
-
-SV *
-ins_reuse2(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-  if ( !e->has_ins() )
-   RETVAL = &PL_sv_undef;
-  else
-   RETVAL = newSVuv(e->reus.mask2);
+   RETVAL = newSVuv(ix == 1 ? e->reus.mask2 : e->reus.mask);
  OUTPUT:
   RETVAL
 
 SV *
 ins_keep(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_keep2 = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
   if ( !e->has_ins() )
    RETVAL = &PL_sv_undef;
   else
-   RETVAL = newSVuv(e->reus.keep);
- OUTPUT:
-  RETVAL
-
-SV *
-ins_keep2(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-  if ( !e->has_ins() )
-   RETVAL = &PL_sv_undef;
-  else
-   RETVAL = newSVuv(e->reus.keep2);
+   RETVAL = newSVuv(ix == 1 ? e->reus.keep2 : e->reus.keep);
  OUTPUT:
   RETVAL
 
@@ -1990,6 +1968,13 @@ new(obj_or_pkg)
   }
   XSRETURN(1);
 
+void
+finalize(SV *obj)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+   NV_renderer::finalize_rt(r);
+
 SV *
 empty(SV *obj)
  INIT:
@@ -2066,6 +2051,28 @@ snap(SV *obj)
       AV *av = newAV();
       av_push(av, regs);
       if ( prs != &PL_sv_undef ) av_push(av, prs);
+      mXPUSHs(newRV_noinc((SV*)av));
+      XSRETURN(1);
+    }
+  }
+
+SV *
+cbs(SV *obj)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ PPCODE:
+  if ( r->cbs.empty() ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+  } else {
+    if ( gimme == G_ARRAY) {
+      EXTEND(SP, r->cbs.size());
+      for ( auto &cbh: r->cbs ) { mPUSHs(make_one_cb(cbh)); }
+    } else {
+      AV *av = newAV();
+      for ( auto &cbh: r->cbs ) av_push(av, make_one_cb(cbh));
       mXPUSHs(newRV_noinc((SV*)av));
       XSRETURN(1);
     }
