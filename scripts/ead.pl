@@ -4795,7 +4795,10 @@ sub try_hack_render
     if ( $f->[0] eq '[' ) {
       $what = process_rlist($f, 4, 'GENERIC_ADDRESS', \@body);
     } elsif ( $f->[0] eq 'A' ) {
-      $what = process_rlist($f, 4, 'TRAM_ADDRESS', \@body);
+      my $a_type = 'TRAM_ADDRESS';
+      # class containing _PATCH has type PATCH_OFFSET_ADDRESS - don't ask my why
+      $a_type = 'PATCH_OFFSET_ADDRESS' if ( $op->[0] =~ /_PATCH/ );
+      $what = process_rlist($f, 4, $a_type, \@body);
     } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) { # R_C || R_CX
       $what = process_C_list($f, 'CONSTANT_ADDRESS', \@body);
     } elsif ( $f->[0] eq 'D' ) { # R_desc
