@@ -150,6 +150,23 @@ sub scbd_type_name($)
   undef;
 }
 
+# registry tracking history mask helpers
+sub rh_write { $_[0] & 0x8000; }
+sub rh_upred { $_[0] & 0x4000; }
+sub rh_reuse { $_[0] & (1 << 9); }
+sub rh_comp  { $_[0] & (1 << 8); }
+sub rh_inlist { $_[0] & (1 << 7); }
+sub rh_pred {
+  my $v = ($_[0] >> 11 ) & 7;
+  return unless $v;
+  1 + $v;
+}
+sub rh_ops {
+  my $v = $_[0] & 0xf;
+  return unless $v;
+  1 + $v;
+}
+
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
@@ -162,6 +179,13 @@ our @EXPORT = qw(
  RType_name
  scbd_name
  scbd_type_name
+ rh_write
+ rh_upred
+ rh_pred
+ rh_reuse
+ rh_comp
+ rh_inlist
+ rh_ops
 );
 
 our $VERSION = '0.01';
@@ -382,6 +406,8 @@ left & right are ref to array where indexes
 =item 2 - argument name if presents
 
 =back
+
+To extract only rendering item(s) of specific type you can use 'grep' method - it supports wantarray
 
 =head4 Methods to extract fields grouped in tables
 
