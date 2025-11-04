@@ -305,6 +305,24 @@ class NV_renderer {
     if ( m_out && m_out != stdout) fclose(m_out);
   }
   static void finalize_rt(reg_pad *);
+  static bool is_compound(NV_rend r) { return r >= R_C; }
+  // string_view methods
+  static bool cmp(const std::string_view &, const char *);
+  static bool is_sv(const std::string_view *sv, const char *name)
+  {
+     if ( !sv ) return false;
+     size_t i = 0;
+     for ( auto c = sv->cbegin(); c != sv->cend(); ++c, ++i ) {
+       char nc = name[i];
+       if ( !nc ) return false;
+       if ( *c != nc ) return false;
+     }
+    return !name[i] && (i == sv->size());
+  }
+  static bool is_sv2(const std::string_view *sv, const char *name, const char *pfx)
+  {
+     return NV_renderer::is_sv(sv, name) || !strcmp(name, pfx);
+  }
   int load(const char *);
   int load(std::string &s) {
     return load(s.c_str());
@@ -461,19 +479,6 @@ class NV_renderer {
      const render_named *rn = (const render_named *)r;
      return is_tail(find(i->vas, rn->name), rn);
    }
-   // string_view methods
-   static bool cmp(const std::string_view &, const char *);
-   static bool is_sv(const std::string_view *sv, const char *name)
-   {
-     if ( !sv ) return false;
-     size_t i = 0;
-     for ( auto c = sv->cbegin(); c != sv->cend(); ++c, ++i ) {
-       char nc = name[i];
-       if ( !nc ) return false;
-       if ( *c != nc ) return false;
-     }
-    return !name[i] && (i == sv->size());
-   }
    void dump_tab_fields(const NV_tab_fields *) const;
    void dump_sv(const std::string_view &) const;
    void dump_out(const std::string_view &) const;
@@ -620,10 +625,6 @@ class NV_renderer {
    bool check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    bool check_ret(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    // reg_pads
-   static bool is_sv2(const std::string_view *sv, const char *name, const char *pfx)
-   {
-     return NV_renderer::is_sv(sv, name) || !strcmp(name, pfx);
-   }
    const NV_Prop *match_compound_prop(const nv_instr *i, const ve_base &) const;
    const NV_Prop *match_compound_prop(const nv_instr *i, const std::list<ve_base> &) const;
    template <typename T> requires std::is_base_of_v<render_base, T>

@@ -230,6 +230,12 @@ class Ced_perl: public CEd_base {
     buf[127] = 0;
     return newSVpv(buf, strlen(buf));
   }
+  SV *has_comp() const {
+    if ( !ins() ) return &PL_sv_undef;
+    for ( auto r: *m_rend )
+      if ( is_compound(r->type) ) return newSViv(r->type);
+    return &PL_sv_no;
+  }
   // patch methods
   SV *nop();
   int replace(const char *s);
@@ -1832,6 +1838,14 @@ track(SV *obj, SV *rt)
  OUTPUT:
   RETVAL
 
+SV *
+has_comp(SV *obj)
+ INIT:
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+    RETVAL = e->has_comp();
+ OUTPUT:
+  RETVAL
 
 MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::Render
 
