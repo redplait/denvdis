@@ -85,9 +85,13 @@ struct reg_history {
   // 0x4000 - Uniform predicate, else just predicate
   // next 3 bits are predicate reg index + 1 (bcs T == 7 and 0 is perfectly valid predicate)
   // next 1 bit - if was load from Special Reg (1 << 10)
-  // next 1 bit - reise flag (1 << 9)
+  // next 1 bit - reuse flag (1 << 9)
+  // next 1 bit - part of compound (1 << 8)
+  // next 1 bit - list of compount (1 << 7)
   typedef unsigned short RH;
   static constexpr RH reuse = 1 << 9;
+  static constexpr RH comp  = 1 << 8;
+  static constexpr RH in_list = 1 << 7;
   RH kind;
   inline bool is_upred() const {
     return kind & 0x4000;
@@ -622,7 +626,7 @@ class NV_renderer {
    }
    const NV_Prop *match_compound_prop(const nv_instr *i, const ve_base &) const;
    const NV_Prop *match_compound_prop(const nv_instr *i, const std::list<ve_base> &) const;
-   template <typename T>
+   template <typename T> requires std::is_base_of_v<render_base, T>
    const NV_Prop *find_compound_prop(const nv_instr *i, const T*) const;
    int track_regs(reg_pad *, const NV_rlist *, const NV_pair &p, unsigned long off);
    void dump_rt(reg_pad *) const;

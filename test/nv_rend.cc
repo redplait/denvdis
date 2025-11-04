@@ -1132,7 +1132,7 @@ const NV_Prop *NV_renderer::match_compound_prop(const nv_instr *i, const std::li
   return nullptr;
 }
 
-template <typename T>
+template <typename T> requires std::is_base_of_v<render_base, T>
 const NV_Prop *NV_renderer::find_compound_prop(const nv_instr *i, const T* ct) const
 {
   if ( !i->props ) return nullptr;
@@ -1480,12 +1480,14 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
         if ( is_reg(ea, kvi) )
         {
           auto type = pr ? pr->t : ve_type(ve);
-          rtdb->rgpr(kvi->second, off, what, pr ? pr->op : 0, type);
+          if ( pr ) what |= 1 + pr->op;
+          rtdb->rgpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type);
           return 1;
         }
         if ( is_ureg(ea, kvi) ) {
           auto type = pr ? pr->t : ve_type(ve);
-          rtdb->rugpr(kvi->second, off, what, pr ? pr->op : 0, type);
+          if ( pr ) what |= 1 + pr->op;
+          rtdb->rugpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type);
           return 1;
         }
         return 0;
@@ -1510,28 +1512,29 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
 #ifdef DEBUG
  fprintf(m_out, "@%lX: r->type %d\n", off, r->type);
 #endif
+    // AGALIARETPH - HELL
     if ( r->type == R_C || r->type == R_CX ) {
       const render_C *rn = (const render_C *)r;
       auto ctype = find_compound_prop(p.first, rn);
-      res += check_ve(rn->left, 1 << 3, ctype);
-      res += check_ve_list(rn->right, 4 | (1 << 3), ctype);
+      res += check_ve(rn->left, 0, ctype);
+      res += check_ve_list(rn->right, reg_history::in_list, ctype);
     } else if ( r->type == R_desc ) {
       const render_desc *rd = (const render_desc *)r;
       auto ctype = find_compound_prop(p.first, rd);
-      res += check_ve(rd->left, 2 << 3, ctype);
-      res += check_ve_list(rd->right, 4 | (2 << 3), ctype);
+      res += check_ve(rd->left, 0, ctype);
+      res += check_ve_list(rd->right, reg_history::in_list, ctype);
     } else if ( r->type == R_mem ) {
       const render_mem *rm = (const render_mem *)r;
       auto ctype = find_compound_prop(p.first, rm);
-      res += check_ve_list(rm->right, 4 | (3 << 3), ctype);
+      res += check_ve_list(rm->right, reg_history::in_list, ctype);
     } else if ( r->type == R_TTU ) {
       const render_TTU *rt = (const render_TTU *)r;
       auto ctype = find_compound_prop(p.first, rt);
-      res += check_ve(rt->left, 3 << 3, ctype);
+      res += check_ve(rt->left, 0, ctype);
     } else if ( r->type == R_M1 ) {
       const render_M1 *rt = (const render_M1 *)r;
       auto ctype = find_compound_prop(p.first, rt);
-      res += check_ve(rt->left, 3 << 3, ctype);
+      res += check_ve(rt->left, 0, ctype);
     }
     idx++;
   }
