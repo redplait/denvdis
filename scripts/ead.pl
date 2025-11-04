@@ -4724,7 +4724,91 @@ sub hack_props
     $i->[22] = \%u;
     return 1;
   }
+  # as last resort we can extract at least complex props from renderer
+  my $from_rend = try_hack_render($i);
+  if ( defined $from_rend ) {
+    printf("[Part] %s %s line %d\n", $i->[0], $i->[1], $i->[4]);
+    $i->[22] = $from_rend;
+    return 1;
+  }
   0;
+}
+
+my %type_letters = (
+ 'a' => 'ISRC_A',
+ 'b' => 'ISRC_B',
+ 'c' => 'ISRC_C',
+ 'e' => 'ISRC_E',
+ 'd' => 'IDEST',
+);
+
+sub try_rtype
+{
+  my $what = shift;
+  return unless ( $what =~ /^U?R(\w)/ );
+  return $type_letters{$1} if exists($type_letters{$1});
+  undef;
+}
+
+sub process_rlist
+{
+  my($f, $idx, $type, $out_res) = @_;
+  my @fields;
+  my $res;
+  for my $i ($idx .. scalar @$f) {
+    next unless defined $f->[$i];
+    next if ( '+' eq $f->[$i] );
+    if ( 'ARRAY' eq ref $f->[$i] ) {
+      push @fields, $f->[$i]->[3];
+      $res = try_rtype($f->[$i]->[3]) unless defined($res);
+    } else {
+      push @fields, $f->[$i];
+    }
+  }
+  return unless defined($res);
+  push @$out_res, $type;
+  push @$out_res, \@fields;
+  $res;
+}
+
+sub process_C_list
+{
+  my($f, $type, $out_res) = @_;
+  return unless ( defined $f->[7] );
+  my $res = try_rtype($f->[7]->[3]);
+  return unless defined($res);
+  push @$out_res, $type;
+  push @$out_res, [ $f->[7]->[3], $f->[6] ];
+  $res;
+}
+
+sub try_hack_render
+{
+  my $op = shift;
+  return unless defined($op->[15]);
+  my %res;
+  my $added;
+  # see details in gen_render
+  foreach my $f ( @{ $op->[15] } ) {
+    my($what, @body);
+    # check R_mem
+    if ( $f->[0] eq '[' ) {
+      $what = process_rlist($f, 4, 'GENERIC_ADDRESS', \@body);
+    } elsif ( $f->[0] eq 'A' ) {
+      $what = process_rlist($f, 4, 'TRAM_ADDRESS', \@body);
+    } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) { # R_C || R_CX
+      $what = process_C_list($f, 'CONSTANT_ADDRESS', \@body);
+    } elsif ( $f->[0] eq 'D' ) { # R_desc
+      $what = process_rlist($f, 5, 'MEMORY_DESCRIPTOR', \@body);
+    }
+    # apply if found
+    if ( defined $what ) {
+      $res{$what} = \@body;
+      $added++;
+    }
+  }
+  return \%res if ( $added );
+  undef;
 }
 
 sub apply_props
