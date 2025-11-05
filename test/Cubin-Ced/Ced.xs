@@ -480,6 +480,18 @@ class Ced_perl: public CEd_base {
     }
     return newRV_noinc((SV*)hv);
   }
+  // almost as ins_prop
+  SV *grep_prop(IV key) {
+    if ( !has_ins() ) return &PL_sv_undef;
+    if ( !ins()->props ) return &PL_sv_undef;
+    for ( size_t i = 0; i < ins()->props->size(); ++i ) {
+      auto prop = get_it(*ins()->props, i);
+      if ( prop->op != key ) continue;
+      return make_prop(prop);
+    }
+    // not found
+    return &PL_sv_undef;
+  }
   bool collect_labels(long *);
   bool make_render(RItems &);
   SV *extract_cb();
@@ -1600,6 +1612,15 @@ ins_prop(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->ins_prop();
+ OUTPUT:
+  RETVAL
+
+SV *
+grep_prop(SV *obj, IV key)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->grep_prop(key);
  OUTPUT:
   RETVAL
 
