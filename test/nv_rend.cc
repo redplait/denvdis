@@ -435,6 +435,7 @@ static const char *prop_type_names[] = {
  "VERTEX_HANDLE", // 26
  "MEMORY_DESCRIPTOR", // 27
  "FP8SIMD", // 28
+ "TMEM_ADDRESS", // 29
 };
 
 const char *get_prop_type_name(int i) {

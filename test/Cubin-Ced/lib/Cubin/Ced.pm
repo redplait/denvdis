@@ -61,6 +61,7 @@ our %PTypes = (
  26 => "VERTEX_HANDLE",
  27 => "MEMORY_DESCRIPTOR",
  28 => "FP8SIMD",
+ 29 => 'TMEM_ADDRESS',
 );
 
 sub PType_name($)

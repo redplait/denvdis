@@ -49,6 +49,7 @@ enum NVP_type {
  VERTEX_HANDLE = 26,
  MEMORY_DESCRIPTOR = 27,
  FP8SIMD = 28,
+ TMEM_ADDRESS = 29,
 };
 
 enum NVP_ops {
