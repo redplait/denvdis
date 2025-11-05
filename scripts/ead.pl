@@ -4782,11 +4782,73 @@ sub process_C_list
   $res;
 }
 
+# collect simple regs from render
+# returns map ( what => reg )
+sub regs_from_render
+{
+  my $op = shift;
+  return unless defined($op->[15]);
+  my %res;
+  my $was_op = 0;
+  my $added = 0;
+  foreach my $f ( @{ $op->[15] } ) {
+    if ( $f->[0] eq '$') {
+      $was_op++;
+      next;
+    }
+    next unless $was_op;
+    if ( $f->[0] eq 'E' ) {
+      last if ( $f->[4]->[3] eq 'usched_info'); # skip tail bcs it does not have registers
+      my $what = try_rtype($f->[4]->[3]);
+      next unless defined($what);
+#  printf("Add %s -> %s\n", $what, $f->[4]->[3]) if defined($opt_v);
+      $res{$what} = $f->[4]->[3];
+      $added++;
+    }
+  }
+  return \%res if ( $added );
+  undef;
+}
+
+# args: op, result map, regs map from regs_from_render, type for dest, type for rest
+sub merge_with_render_regs
+{
+  my($op, $res, $regs, $d_type, $r_type) = @_;
+  my $added = 0;
+  return 0 unless defined($regs);
+  while( my($what, $r) = each(%$regs) ) {
+    if ( $what eq 'IDEST' ) {
+      $res->{$what} = [ $d_type, [$r] ];
+      $added++;
+    } else {
+      $res->{$what} = [ $r_type, [$r] ];
+      $added++;
+    }
+  }
+  printf("[add] %s\n", $op->[0]) if ( $added );
+  $added;
+}
+
+# args: instr, result map, regs map from regs_from_render
+sub heur_rend
+{
+  my($op, $res, $regs) = @_;
+  return 0 unless defined($regs);
+  return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'INTEGER') if ( $op->[0] =~ /i2fp/ );
+  return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'GENERIC') if ( $op->[0] =~ /2fp/ );
+  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /iadd/ );
+  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /mov.*imm/ );
+  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /imnm/ );
+  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'GENERIC') if ( $op->[0] =~ /2i/ );
+  0;
+}
+
 sub try_hack_render
 {
   my $op = shift;
   return unless defined($op->[15]);
   my %res;
+  my $regs = regs_from_render($op);
   my $added = 0;
   # see details in gen_render
   foreach my $f ( @{ $op->[15] } ) {
@@ -4803,6 +4865,8 @@ sub try_hack_render
       $what = process_C_list($f, 'CONSTANT_ADDRESS', \@body);
     } elsif ( $f->[0] eq 'D' ) { # R_desc
       $what = process_rlist($f, 5, 'MEMORY_DESCRIPTOR', \@body);
+    } elsif ( $f->[0] eq 'M2' ) { # tmem
+      $what = process_rlist($f, 4, 'TMEM_ADDRESS', \@body);
     }
     # apply if found
     if ( defined $what ) {
@@ -4810,6 +4874,7 @@ sub try_hack_render
       $added++;
     }
   }
+  $added += heur_rend($op, \%res, $regs);
   return \%res if ( $added );
   undef;
 }
