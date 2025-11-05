@@ -4787,7 +4787,7 @@ sub try_hack_render
   my $op = shift;
   return unless defined($op->[15]);
   my %res;
-  my $added;
+  my $added = 0;
   # see details in gen_render
   foreach my $f ( @{ $op->[15] } ) {
     my($what, @body);
@@ -4796,7 +4796,7 @@ sub try_hack_render
       $what = process_rlist($f, 4, 'GENERIC_ADDRESS', \@body);
     } elsif ( $f->[0] eq 'A' ) {
       my $a_type = 'TRAM_ADDRESS';
-      # class containing _PATCH has type PATCH_OFFSET_ADDRESS - don't ask my why
+      # class containing _PATCH has type PATCH_OFFSET_ADDRESS - don't ask me why
       $a_type = 'PATCH_OFFSET_ADDRESS' if ( $op->[0] =~ /_PATCH/ );
       $what = process_rlist($f, 4, $a_type, \@body);
     } elsif ( $f->[0] eq 'C' || $f->[0] eq 'X' ) { # R_C || R_CX

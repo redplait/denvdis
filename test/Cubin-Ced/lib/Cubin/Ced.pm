@@ -159,12 +159,12 @@ sub rh_inlist { $_[0] & (1 << 7); }
 sub rh_pred {
   my $v = ($_[0] >> 11 ) & 7;
   return unless $v;
-  1 + $v;
+  $v - 1;
 }
 sub rh_ops {
   my $v = $_[0] & 0xf;
   return unless $v;
-  1 + $v;
+  $v - 1;
 }
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
