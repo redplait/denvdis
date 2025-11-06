@@ -62,6 +62,7 @@ our %PTypes = (
  27 => "MEMORY_DESCRIPTOR",
  28 => "FP8SIMD",
  29 => 'TMEM_ADDRESS',
+ 30 => 'FLOAT128',
 );
 
 sub PType_name($)

@@ -50,6 +50,7 @@ enum NVP_type {
  MEMORY_DESCRIPTOR = 27,
  FP8SIMD = 28,
  TMEM_ADDRESS = 29,
+ FLOAT128 = 30,
 };
 
 enum NVP_ops {

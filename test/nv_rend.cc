@@ -436,6 +436,7 @@ static const char *prop_type_names[] = {
  "MEMORY_DESCRIPTOR", // 27
  "FP8SIMD", // 28
  "TMEM_ADDRESS", // 29
+ "FLOAT128", // 30 - since 10.0: see 17.1 https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
 };
 
 const char *get_prop_type_name(int i) {
