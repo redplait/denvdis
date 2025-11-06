@@ -395,6 +395,8 @@ EOF
 # ENCODING WIDTH
 my $g_size;
 my $g_min_len;
+# sm number - from opt_C
+my $g_sm_num;
 
 # for masks we need 2 map - first with name as key, second as mask
 # both contains as value array where
@@ -3469,6 +3471,7 @@ sub gen_C
   open($fh, '>', $fname) or die("Cannot create $fname, error $!");
   # make header
   printf($fh "// Dont edit this file - it was generated %s with option %s", scalar(localtime), $opt_C);
+  printf($fh " ALT") if ( defined $opt_a );
   printf($fh " with predicates") if ( defined $opt_p );
   printf($fh " with groups") if ( defined $opt_g );
   # include
@@ -4740,12 +4743,13 @@ my %type_letters = (
  'c' => 'ISRC_C',
  'e' => 'ISRC_E',
  'd' => 'IDEST',
+ 'd2' => 'IDEST2',
 );
 
 sub try_rtype
 {
   my $what = shift;
-  return unless ( $what =~ /^U?R(\w)/ );
+  return unless ( $what =~ /^U?R(\w|d2)/ );
   return $type_letters{$1} if exists($type_letters{$1});
   undef;
 }
@@ -4834,11 +4838,19 @@ sub heur_rend
 {
   my($op, $res, $regs) = @_;
   return 0 unless defined($regs);
+  if ( $g_sm_num >= 100 ) {
+    return merge_with_render_regs($op, $res, $regs, 'FLOAT128', 'FLOAT128') if ( $op->[0] =~ /qmul/ );
+    return merge_with_render_regs($op, $res, $regs, 'FLOAT128', 'FLOAT128') if ( $op->[0] =~ /qadd/ );
+  }
   return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'INTEGER') if ( $op->[0] =~ /i2fp/ );
+  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'FLOAT') if ( $op->[0] =~ /fp2i/ );
   return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'GENERIC') if ( $op->[0] =~ /2fp/ );
+  return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'FLOAT') if ( $op->[0] =~ /fadd/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /iadd/ );
+  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /imul/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /mov.*imm/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /imnm/ );
+  # must be last
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'GENERIC') if ( $op->[0] =~ /2i/ );
   0;
 }
@@ -5937,8 +5949,11 @@ if ( defined($opt_m) ) {
       $g_dec_tree = build_tree();
       printf("min mask len %d\n", $g_min_len);
       store_props() if defined($opt_u);
+      if ( defined $opt_C ) {
+        $g_sm_num = int($1) if ( $opt_C =~ /(\d+)/ );
+      }
       apply_props() if defined($opt_U);
-      gen_C() if defined($opt_C);
+      gen_C() if ( defined $opt_C );
     } else {
       dump_dup_masks();
       dump_incompleted();
