@@ -475,27 +475,33 @@ class Ced_perl: public CEd_base {
   // return ref to hash where key is enum NVP_ops and value is ref to array where
   // [0] - type - enum NVP_type
   // [1..n] - field names
-  SV *ins_prop() {
-    if ( !has_ins() ) return &PL_sv_undef;
-    if ( !ins()->props ) return &PL_sv_undef;
+  SV *ins_prop(const nv_instr *inst) const {
+    if ( !inst->props ) return &PL_sv_undef;
     HV *hv = newHV();
-    for ( size_t i = 0; i < ins()->props->size(); ++i ) {
-      auto prop = get_it(*ins()->props, i);
+    for ( size_t i = 0; i < inst->props->size(); ++i ) {
+      auto prop = get_it(*inst->props, i);
       hv_store_ent(hv, newSViv(prop->op), make_prop(prop), 0);
     }
     return newRV_noinc((SV*)hv);
   }
-  // almost as ins_prop
-  SV *grep_prop(IV key) {
+  SV *ins_prop() const {
     if ( !has_ins() ) return &PL_sv_undef;
-    if ( !ins()->props ) return &PL_sv_undef;
-    for ( size_t i = 0; i < ins()->props->size(); ++i ) {
-      auto prop = get_it(*ins()->props, i);
+    return ins_prop(ins());
+  }
+  // almost as ins_prop
+  SV *grep_prop(IV key, const nv_instr *inst) const {
+    if ( !inst->props ) return &PL_sv_undef;
+    for ( size_t i = 0; i < inst->props->size(); ++i ) {
+      auto prop = get_it(*inst->props, i);
       if ( prop->op != key ) continue;
       return make_prop(prop);
     }
     // not found
     return &PL_sv_undef;
+  }
+  SV *grep_prop(IV key) const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    return grep_prop(key, ins());
   }
   bool collect_labels(long *);
   bool make_render(RItems &);
@@ -516,7 +522,7 @@ class Ced_perl: public CEd_base {
     return has_ins() ? track_regs(rt, m_rend, curr_dis, m_dis->offset()) : 0;
   }
  protected:
-  SV *make_prop(const NV_Prop *prop);
+  SV *make_prop(const NV_Prop *prop) const;
   SV *make_enum_arr(const nv_eattr *ea);
   HV *make_enum(const std::unordered_map<int, const char *> *);
   SV *make_vfield(const nv_vattr &);
@@ -830,7 +836,7 @@ SV *Ced_perl::fill_tab(const std::unordered_map<int, const unsigned short *> *t,
 }
 
 // return ref to array of property fields, item at index 0 is type
-SV *Ced_perl::make_prop(const NV_Prop *prop) {
+SV *Ced_perl::make_prop(const NV_Prop *prop) const {
   AV *av = newAV();
   av_push(av, newSViv(prop->t));
   for ( size_t i = 0; i < prop->fields.size(); ++i ) {
@@ -2092,6 +2098,24 @@ line(SV *obj)
       break;
      default: croak("unknown ix %d in Cubin::Ced::Instr", ix);
     }
+ OUTPUT:
+  RETVAL
+
+SV *
+prop(SV *obj)
+ INIT:
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ CODE:
+   RETVAL = e->base->ins_prop(e->ins);
+ OUTPUT:
+  RETVAL
+
+SV *
+grep_prop(SV *obj, IV key)
+ INIT:
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ CODE:
+   RETVAL = e->base->grep_prop(key, e->ins);
  OUTPUT:
   RETVAL
 
