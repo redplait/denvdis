@@ -148,6 +148,8 @@ class Perl_ELog: public NV_ELog {
 };
 
 class Ced_perl: public CEd_base {
+ private:
+   int ref_cnt = 1;
  public:
   reg_reuse reus;
   Ced_perl(IElf *e) {
@@ -161,6 +163,8 @@ class Ced_perl: public CEd_base {
     if ( m_elog ) delete m_elog;
     for ( auto &iter: m_cached_hvs ) SvREFCNT_dec(iter.second);
   }
+  void add_ref() { ref_cnt++; }
+  void release() { if ( !--ref_cnt ) delete this; }
   virtual int check_rel(unsigned long off) override {
      m_cur_rsym = nullptr;
      m_cur_rel = nullptr;
@@ -1009,6 +1013,25 @@ static SV *gprs(const track_snap *snap) {
   return newRV_inc((SV *)hv);
 }
 
+struct one_instr {
+  const nv_instr *ins;
+  const NV_rlist *rend;
+  Ced_perl *base;
+  ~one_instr() {
+    if ( base ) base->release();
+  }
+  template <auto nv_instr::*fptr>
+  SV *iv() const {
+    return newSViv(ins->*fptr);
+  }
+  template <auto nv_instr::*fptr>
+  SV *strv() const {
+    auto v = ins->*fptr;
+    if ( !v ) return &PL_sv_undef;
+    return newSVpv(v, strlen(v));
+  }
+};
+
 #ifdef MGf_LOCAL
 #define TAB_TAIL ,0
 #else
@@ -1023,7 +1046,21 @@ static MGVTBL ca_magic_vt = {
         0, /* write */
         0, /* length */
         0, /* clear */
-        magic_del<Ced_perl>,
+        magic_release<Ced_perl>,
+        0, /* copy */
+        0 /* dup */
+        TAB_TAIL
+};
+
+// magic table for Cubin::Ced::Instr
+static const char *s_ca_instr = "Cubin::Ced::Instr";
+static HV *s_ca_instr_pkg = nullptr;
+static MGVTBL ca_instr_magic_vt = {
+        0, /* get */
+        0, /* write */
+        0, /* length */
+        0, /* clear */
+        magic_del<one_instr>,
         0, /* copy */
         0 /* dup */
         TAB_TAIL
@@ -1955,6 +1992,17 @@ has_comp(SV *obj)
  OUTPUT:
   RETVAL
 
+MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::Instr
+
+SV *
+line(SV *obj)
+ INIT:
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ CODE:
+    RETVAL = e->iv<&nv_instr::line>();
+ OUTPUT:
+  RETVAL
+
 MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::Render
 
 void
@@ -2212,6 +2260,9 @@ BOOT:
  s_ca_regtrack_pkg = gv_stashpv(s_ca_regtrack, 0);
  if ( !s_ca_regtrack_pkg )
     croak("Package %s does not exists", s_ca_regtrack);
+ s_ca_instr_pkg = gv_stashpv(s_ca_instr, 0);
+ if ( !s_ca_instr_pkg )
+    croak("Package %s does not exists", s_ca_instr);
  // add enums from nv_types.h
  HV *stash = gv_stashpvn(s_ca, 10, 1);
  EXPORT_ENUM(NVP_ops, IDEST)
