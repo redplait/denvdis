@@ -2052,6 +2052,16 @@ SV *
 line(SV *obj)
  ALIAS:
   Cubin::Ced::Instr::alt = 1
+  Cubin::Ced::Instr::mask = 2
+  Cubin::Ced::Instr::name = 3
+  Cubin::Ced::Instr::class = 4
+  Cubin::Ced::Instr::min_wait = 5
+  Cubin::Ced::Instr::setp = 6
+  Cubin::Ced::Instr::brt = 7
+  Cubin::Ced::Instr::scbd = 8
+  Cubin::Ced::Instr::scbd_type = 9
+  Cubin::Ced::Instr::target = 10
+  Cubin::Ced::Instr::cc = 11
  INIT:
   one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
  CODE:
@@ -2059,6 +2069,26 @@ line(SV *obj)
      case 0: RETVAL = e->iv<&nv_instr::line>();
       break;
      case 1: RETVAL = e->iv<&nv_instr::alt>();
+      break;
+     case 2: RETVAL = e->strv<&nv_instr::mask>();
+      break;
+     case 3: RETVAL = e->strv<&nv_instr::name>();
+      break;
+     case 4: RETVAL = e->strv<&nv_instr::cname>();
+      break;
+     case 5: RETVAL = e->iv<&nv_instr::min_wait>();
+      break;
+     case 6: RETVAL = e->iv<&nv_instr::setp>();
+      break;
+     case 7: RETVAL = e->iv<&nv_instr::brt>();
+      break;
+     case 8: RETVAL = e->iv<&nv_instr::scbd>();
+      break;
+     case 9: RETVAL = e->iv<&nv_instr::scbd_type>();
+      break;
+     case 10: RETVAL = e->strv<&nv_instr::target_index>();
+      break;
+     case 11: RETVAL = e->strv<&nv_instr::cc_index>();
       break;
      default: croak("unknown ix %d in Cubin::Ced::Instr", ix);
     }
