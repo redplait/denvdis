@@ -1085,10 +1085,11 @@ bool Ced_perl::extract_insn(const char *name, std::vector<SV *> &sres) {
     res->rend = m_dis->get_rend(i->n);
     res->base = this; add_ref();
     SV *msv = newSViv(0);
-    SV *objref= sv_2mortal(newRV_noinc(msv));
+    SV *objref = newRV_noinc(msv);
     sv_bless(objref, s_ca_instr_pkg);
     // attach magic
     sv_magicext(msv, NULL, PERL_MAGIC_ext, &ca_instr_magic_vt, (const char*)res, 0);
+    SvREADONLY_on((SV*)msv);
     sres.push_back(objref);
   }
   return !sres.empty();
@@ -2049,10 +2050,18 @@ MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::Instr
 
 SV *
 line(SV *obj)
+ ALIAS:
+  Cubin::Ced::Instr::alt = 1
  INIT:
   one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
  CODE:
-    RETVAL = e->iv<&nv_instr::line>();
+    switch(ix) {
+     case 0: RETVAL = e->iv<&nv_instr::line>();
+      break;
+     case 1: RETVAL = e->iv<&nv_instr::alt>();
+      break;
+     default: croak("unknown ix %d in Cubin::Ced::Instr", ix);
+    }
  OUTPUT:
   RETVAL
 
