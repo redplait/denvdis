@@ -217,6 +217,7 @@ class Ced_perl: public CEd_base {
     return m_sm_name;
   }
   SV *extract_instrs() const;
+  bool extract_insn(const char *, std::vector<SV *> &);
   int sef_func(const char *fname) {
     if ( has_ins() && block_dirty ) flush_buf();
     reset_ins();
@@ -498,6 +499,7 @@ class Ced_perl: public CEd_base {
   }
   bool collect_labels(long *);
   bool make_render(RItems &);
+  bool make_render(RItems &, const NV_rlist *);
   SV *extract_cb();
   SV *extract_efield(const char *);
   SV *extract_efields();
@@ -570,9 +572,8 @@ SV *Ced_perl::nop()
   return &PL_sv_yes;
 }
 
-bool Ced_perl::make_render(RItems &res) {
-  if ( !has_ins() || !m_rend ) return false;
-  for ( auto r: *m_rend ) {
+bool Ced_perl::make_render(RItems &res, const NV_rlist *rend) {
+  for ( auto r: *rend ) {
     if ( r->type == R_enum ) {
       const render_named *rn = (const render_named *)r;
       auto ea = find(ins()->eas, rn->name);
@@ -584,6 +585,11 @@ bool Ced_perl::make_render(RItems &res) {
     res.push_back( { r, {} });
   }
   return !res.empty();
+}
+
+bool Ced_perl::make_render(RItems &res) {
+  if ( !has_ins() || !m_rend ) return false;
+  return make_render(res, m_rend);
 }
 
 // return array of insns mnemonic names
@@ -1066,6 +1072,28 @@ static MGVTBL ca_instr_magic_vt = {
         TAB_TAIL
 };
 
+bool Ced_perl::extract_insn(const char *name, std::vector<SV *> &sres) {
+  if ( !m_sorted ) return false;
+  std::string_view key{name};
+  NV_sorted::const_iterator si = std::lower_bound(m_sorted->cbegin(), m_sorted->cend(), key,
+    [](const auto &a, const std::string_view &b) { return a.first < b; });
+  if ( si == m_sorted->cend() ) return false;
+  if ( !is_sv(&si->first, name) ) return false;
+  for ( auto i: si->second ) {
+    auto *res = new one_instr;
+    res->ins = i;
+    res->rend = m_dis->get_rend(i->n);
+    res->base = this; add_ref();
+    SV *msv = newSViv(0);
+    SV *objref= sv_2mortal(newRV_noinc(msv));
+    sv_bless(objref, s_ca_instr_pkg);
+    // attach magic
+    sv_magicext(msv, NULL, PERL_MAGIC_ext, &ca_instr_magic_vt, (const char*)res, 0);
+    sres.push_back(objref);
+  }
+  return !sres.empty();
+}
+
 // magic table for Cubin::Ced::RegTrack
 static const char *s_ca_regtrack = "Cubin::Ced::RegTrack";
 static HV *s_ca_regtrack_pkg = nullptr;
@@ -1415,6 +1443,31 @@ instrs(SV *obj)
    RETVAL = e->extract_instrs();
  OUTPUT:
   RETVAL
+
+SV *
+by_name(SV *obj, const char *name)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   std::vector<SV *> res;
+ PPCODE:
+  if ( !e->extract_insn(name, res) ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+  } else {
+    if ( gimme == G_ARRAY) {
+      EXTEND(SP, res.size());
+      for ( auto si: res )
+       mPUSHs(si);
+    } else {
+      AV *av = newAV();
+      for ( auto si: res )
+       av_push(av, si);
+      mXPUSHs(newRV_noinc((SV*)av));
+      XSRETURN(1);
+    }
+  }
 
 int rz(SV *obj)
  INIT:
@@ -1955,7 +2008,7 @@ render(SV *obj)
   MAGIC* magic;
   RItems *res;
   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
-PPCODE:
+ PPCODE:
   res = new RItems;
   if ( e->make_render(*res) ) {
     fake = newAV();
@@ -2002,6 +2055,29 @@ line(SV *obj)
     RETVAL = e->iv<&nv_instr::line>();
  OUTPUT:
   RETVAL
+
+SV *
+render(SV *obj)
+ INIT:
+  AV *fake;
+  SV *objref= NULL;
+  MAGIC* magic;
+  RItems *res;
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+PPCODE:
+  res = new RItems;
+  if ( e->base->make_render(*res, e->rend) ) {
+    fake = newAV();
+    objref = newRV_noinc((SV*)fake);
+    sv_bless(objref, s_ca_render_pkg);
+    magic = sv_magicext((SV*)fake, NULL, PERL_MAGIC_tied, &ca_rend_magic_vt, (const char *)res, 0);
+    SvREADONLY_on((SV*)fake);
+    ST(0) = objref;
+  } else {
+    delete res;
+    ST(0) = &PL_sv_undef;
+  }
+  XSRETURN(1);
 
 MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::Render
 

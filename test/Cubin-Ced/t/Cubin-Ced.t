@@ -95,6 +95,12 @@ ok( defined($r20), 'r test');
 ok( $r20->[0]->[2], 'r20 updated');
 $t_num+=8;
 
+# by_name
+my $tx = $cub->by_name('TXA');
+ok( defined($tx), 'by_name 1');
+ok( 2 == scalar @$tx, 'by_name 1');
+$t_num+=2;
+
 # done_testing must be last
 done_testing($t_num);
 
