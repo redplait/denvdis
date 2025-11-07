@@ -506,11 +506,16 @@ class Ced_perl: public CEd_base {
   bool collect_labels(long *);
   bool make_render(RItems &);
   bool make_render(RItems &, const NV_rlist *);
-  SV *extract_cb();
-  SV *extract_efield(const char *);
-  SV *extract_efields();
-  SV *extract_vfield(const char *);
-  SV *extract_vfields();
+  SV *extract_cb() const;
+  SV *extract_cb(const nv_instr *) const;
+  SV *extract_efield(const char *) const;
+  SV *extract_efield(const nv_instr *, const char *) const;
+  SV *extract_efields() const;
+  SV *extract_efields(const nv_instr *) const;
+  SV *extract_vfield(const char *) const;
+  SV *extract_vfield(const nv_instr *, const char *) const;
+  SV *extract_vfields() const;
+  SV *extract_vfields(const nv_instr *) const;
   SV *make_enum(const char *);
   // tabs
   SV *tab_count() {
@@ -523,9 +528,9 @@ class Ced_perl: public CEd_base {
   }
  protected:
   SV *make_prop(const NV_Prop *prop) const;
-  SV *make_enum_arr(const nv_eattr *ea);
+  SV *make_enum_arr(const nv_eattr *ea) const;
   HV *make_enum(const std::unordered_map<int, const char *> *);
-  SV *make_vfield(const nv_vattr &);
+  SV *make_vfield(const nv_instr *, const nv_vattr &) const;
   SV *fill_simple_tab(const std::unordered_map<int, const unsigned short *> *);
   SV *fill_tab(const std::unordered_map<int, const unsigned short *> *, size_t);
   IElf *m_e;
@@ -847,15 +852,20 @@ SV *Ced_perl::make_prop(const NV_Prop *prop) const {
 }
 
 // return array with couple of fields names, 3rd is scale when non-zero
-SV *Ced_perl::extract_cb()
+SV *Ced_perl::extract_cb(const nv_instr *inst) const
 {
-  if ( !has_ins() || !ins()->cb_field ) return &PL_sv_undef;
+  if ( !inst->cb_field ) return &PL_sv_undef;
   AV *av = newAV();
-  av_push(av, newSVpv(ins()->cb_field->f1.data(), ins()->cb_field->f1.size()) );
-  av_push(av, newSVpv(ins()->cb_field->f2.data(), ins()->cb_field->f2.size()) );
-  if ( ins()->cb_field->scale )
-    av_push(av, newSViv(ins()->cb_field->scale));
+  av_push(av, newSVpv(inst->cb_field->f1.data(), inst->cb_field->f1.size()) );
+  av_push(av, newSVpv(inst->cb_field->f2.data(), inst->cb_field->f2.size()) );
+  if ( inst->cb_field->scale )
+    av_push(av, newSViv(inst->cb_field->scale));
   return newRV_noinc((SV*)av);
+}
+
+SV *Ced_perl::extract_cb() const {
+  if ( !has_ins() ) return &PL_sv_undef;
+  return extract_cb(ins());
 }
 
 // return hash with nv_eattr, key is field name, value is ref to array:
@@ -863,7 +873,7 @@ SV *Ced_perl::extract_cb()
 // 1 - print
 // 2 - has_def_value
 // 3 - def value if presents
-SV *Ced_perl::make_enum_arr(const nv_eattr *ea)
+SV *Ced_perl::make_enum_arr(const nv_eattr *ea) const
 {
   AV *av = newAV();
   av_push(av, ea->ignore ? &PL_sv_yes : &PL_sv_no);
@@ -874,24 +884,30 @@ SV *Ced_perl::make_enum_arr(const nv_eattr *ea)
   return newRV_noinc((SV*)av);
 }
 
-SV *Ced_perl::extract_efields()
+SV *Ced_perl::extract_efields(const nv_instr *inst) const
 {
-  if ( !has_ins() || !ins()->eas.size() ) return &PL_sv_undef;
+  if ( !inst->eas.size() ) return &PL_sv_undef;
   HV *hv = newHV();
-  for ( size_t i = 0; i < ins()->eas.size(); ++i ) {
-    auto &ea = get_it(ins()->eas, i);
+  for ( size_t i = 0; i < inst->eas.size(); ++i ) {
+    auto &ea = get_it(inst->eas, i);
     hv_store(hv, ea.name.data(), ea.name.size(), make_enum_arr(ea.ea), 0);
   }
   return newRV_noinc((SV*)hv);
 }
 
+SV *Ced_perl::extract_efields() const
+{
+  if ( !has_ins() ) return &PL_sv_undef;
+  return extract_efields(ins());
+}
+
 // if we have width for some field - return [ type, width ]
 // else just return type in SViv
-SV *Ced_perl::make_vfield(const nv_vattr &v)
+SV *Ced_perl::make_vfield(const nv_instr *inst, const nv_vattr &v) const
 {
   SV *t = newSViv(v.kind);
-  if ( !ins()->vwidth ) return t;
-  auto vw = find(ins()->vwidth, v.name);
+  if ( !inst->vwidth ) return t;
+  auto vw = find(inst->vwidth, v.name);
   if ( !vw ) return t;
   AV *av = newAV();
   av_push(av, t);
@@ -899,24 +915,36 @@ SV *Ced_perl::make_vfield(const nv_vattr &v)
   return newRV_noinc((SV*)av);
 }
 
-SV *Ced_perl::extract_vfields()
+SV *Ced_perl::extract_vfields(const nv_instr *inst) const
 {
-  if ( !has_ins() || !ins()->vas ) return &PL_sv_undef;
+  if ( !inst->vas ) return &PL_sv_undef;
   HV *hv = newHV();
-  for ( size_t i = 0; i < ins()->vas->size(); ++i ) {
-    auto &va = get_it(*ins()->vas, i);
-    hv_store(hv, va.name.data(), va.name.size(), make_vfield(va), 0);
+  for ( size_t i = 0; i < inst->vas->size(); ++i ) {
+    auto &va = get_it(*inst->vas, i);
+    hv_store(hv, va.name.data(), va.name.size(), make_vfield(inst, va), 0);
   }
   return newRV_noinc((SV*)hv);
 }
 
-SV *Ced_perl::extract_vfield(const char *name)
+SV *Ced_perl::extract_vfields() const
 {
-  if ( !has_ins() || !ins()->vas ) return &PL_sv_undef;
+  if ( !has_ins() ) return &PL_sv_undef;
+  return extract_vfields(ins());
+}
+
+SV *Ced_perl::extract_vfield(const nv_instr *inst, const char *name) const
+{
+  if ( !inst->vas ) return &PL_sv_undef;
   std::string_view tmp{ name, strlen(name) };
-  auto va = find(ins()->vas, tmp);
+  auto va = find(inst->vas, tmp);
   if ( !va ) return &PL_sv_undef;
-  return make_vfield(*va);
+  return make_vfield(inst, *va);
+}
+
+SV *Ced_perl::extract_vfield(const char *name) const
+{
+  if ( !has_ins() ) return &PL_sv_undef;
+  return extract_vfield(ins(), name);
 }
 
 HV *Ced_perl::make_enum(const std::unordered_map<int, const char *> *em)
@@ -928,13 +956,18 @@ HV *Ced_perl::make_enum(const std::unordered_map<int, const char *> *em)
   return hv;
 }
 
-SV *Ced_perl::extract_efield(const char *name)
+SV *Ced_perl::extract_efield(const nv_instr *inst, const char *name) const
 {
-  if ( !has_ins() ) return &PL_sv_undef;
   std::string_view tmp{ name, strlen(name) };
-  auto ea = find(ins()->eas, tmp);
+  auto ea = find(inst->eas, tmp);
   if ( !ea ) return &PL_sv_undef;
   return make_enum_arr(ea->ea);
+}
+
+SV *Ced_perl::extract_efield(const char *name) const
+{
+  if ( !has_ins() ) return &PL_sv_undef;
+  return extract_efield(ins(), name);
 }
 
 SV *Ced_perl::make_enum(const char *name)
