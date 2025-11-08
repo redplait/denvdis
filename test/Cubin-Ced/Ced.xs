@@ -322,11 +322,15 @@ class Ced_perl: public CEd_base {
     buf[127] = 0;
     return newSVpv(buf, strlen(buf));
   }
-  SV *has_comp() const {
-    if ( !ins() ) return &PL_sv_undef;
-    for ( auto r: *m_rend )
+  SV *has_comp(const NV_rlist *rl) const {
+    if ( !rl ) return &PL_sv_undef;
+    for ( auto r: *rl )
       if ( is_compound(r->type) ) return newSViv(r->type);
     return &PL_sv_no;
+  }
+  SV *has_comp() const {
+    if ( !ins() ) return &PL_sv_undef;
+    return has_comp(m_rend);
   }
   // patch methods
   SV *nop();
@@ -398,11 +402,14 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return has_predicate(m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
   }
-  SV *check_pred() const {
-    if ( !has_ins() ) return &PL_sv_undef;
-    auto pred_name = has_predicate(m_rend);
+  SV *check_pred(const NV_rlist *rl) const {
+    auto pred_name = has_predicate(rl);
     if ( !pred_name ) return &PL_sv_no;
     return newSVpv(pred_name, strlen(pred_name));
+  }
+  SV *check_pred() const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    return check_pred(m_rend);
   }
   SV *check_lut() const {
     if ( !has_ins() ) return &PL_sv_undef;
@@ -1873,19 +1880,12 @@ ins_cb(SV *obj)
 
 SV *
 has_pred(SV *obj)
+ ALIAS:
+  Cubin::Ced::pred_name = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->has_pred();
- OUTPUT:
-  RETVAL
-
-SV *
-pred_name(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   RETVAL = e->check_pred();
+   RETVAL = 1 == ix ? e->check_pred() : e->has_pred();
  OUTPUT:
   RETVAL
 
@@ -2074,6 +2074,8 @@ line(SV *obj)
   Cubin::Ced::Instr::target = 10
   Cubin::Ced::Instr::cc = 11
   Cubin::Ced::Instr::tab_count = 12
+  Cubin::Ced::Instr::has_comp = 13
+  Cubin::Ced::Instr::pred_name = 14
  INIT:
   one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
  CODE:
@@ -2103,6 +2105,10 @@ line(SV *obj)
      case 11: RETVAL = e->strv<&nv_instr::cc_index>();
       break;
      case 12: RETVAL = e->base->tab_count(e->ins);
+      break;
+     case 13: RETVAL = e->base->has_comp(e->rend);
+      break;
+     case 14: RETVAL = e->base->check_pred(e->rend);
       break;
      default: croak("unknown ix %d in Cubin::Ced::Instr", ix);
     }

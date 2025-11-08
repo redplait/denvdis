@@ -321,6 +321,8 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * ins_text - disaasemled string
 
+=item * has_comp - check if current instructions rebder has compound item, return it's type is presents
+
 =item * pred_name - returns name of instruction predicate field @PXX
 
 =item * has_pred - returns 1 if instruction predicate @PXX and not PT
