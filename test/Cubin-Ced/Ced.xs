@@ -1371,43 +1371,26 @@ prev_off(SV *obj, UV off)
 
 SV *
 start(SV *obj)
+ ALIAS:
+  Cubin::Ced::end = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->get_start();
- OUTPUT:
-  RETVAL
-
-SV *
-end(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   RETVAL = e->get_end();
+   RETVAL = ix == 1 ? e->get_end() : e->get_start();
  OUTPUT:
   RETVAL
 
 SV *
 ctrl(SV *obj)
+ ALIAS:
+  Cubin::Ced::opcode = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    if ( !e->has_ins() )
      RETVAL = &PL_sv_undef;
    else
-     RETVAL = e->get_ctrl();
- OUTPUT:
-  RETVAL
-
-SV *
-opcode(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   if ( !e->has_ins() )
-     RETVAL = &PL_sv_undef;
-   else
-     RETVAL = e->get_opcode();
+     RETVAL = 1 == ix ? e->get_opcode() : e->get_ctrl();
  OUTPUT:
   RETVAL
 
@@ -1453,7 +1436,7 @@ width(SV *obj)
  OUTPUT:
   RETVAL
 
-int
+UV
 block_mask(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
@@ -1546,10 +1529,12 @@ ins_dual(SV *obj)
 
 SV *
 ins_name(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_class = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->ins_name();
+   RETVAL = ix == 1 ? e->ins_class() : e->ins_name();
  OUTPUT:
   RETVAL
 
@@ -1567,15 +1552,6 @@ ins_clabs(SV *obj)
    else
     RETVAL = &PL_sv_undef;
   }
- OUTPUT:
-  RETVAL
-
-SV *
-ins_class(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   RETVAL = e->ins_class();
  OUTPUT:
   RETVAL
 
@@ -1756,35 +1732,23 @@ grep_prop(SV *obj, IV key)
 
 SV *
 efield(SV *obj, const char *fname)
+ ALIAS:
+  Cubin::Ced::vfield = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->extract_efield(fname);
+   RETVAL = ix == 1 ? e->extract_vfield(fname) : e->extract_efield(fname);
  OUTPUT:
   RETVAL
 
 SV *
 efields(SV *obj)
+ ALIAS:
+  Cubin::Ced::vfields = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->extract_efields();
- OUTPUT:
-  RETVAL
-
-SV *vfield(SV *obj, const char *fname)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   RETVAL = e->extract_vfield(fname);
- OUTPUT:
-  RETVAL
-
-SV *vfields(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   RETVAL = e->extract_vfields();
+   RETVAL = ix == 1 ? e->extract_vfields() : e->extract_efields();
  OUTPUT:
   RETVAL
 
@@ -2131,6 +2095,37 @@ line(SV *obj)
       break;
      default: croak("unknown ix %d in Cubin::Ced::Instr", ix);
     }
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_cb(SV *obj)
+ INIT:
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ CODE:
+   RETVAL = e->base->extract_cb(e->ins);
+ OUTPUT:
+  RETVAL
+
+SV *
+efield(SV *obj, const char *fname)
+ ALIAS:
+  Cubin::Ced::Instr::vfield = 1
+ INIT:
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ CODE:
+   RETVAL = ix == 1 ? e->base->extract_vfield(e->ins, fname) : e->base->extract_efield(e->ins, fname);
+ OUTPUT:
+  RETVAL
+
+SV *
+efields(SV *obj)
+ ALIAS:
+  Cubin::Ced::Instr::vfields = 1
+ INIT:
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ CODE:
+   RETVAL = ix == 1 ? e->base->extract_vfields(e->ins) : e->base->extract_efields(e->ins);
  OUTPUT:
   RETVAL
 
