@@ -518,11 +518,15 @@ class Ced_perl: public CEd_base {
   SV *extract_vfields(const nv_instr *) const;
   SV *make_enum(const char *);
   // tabs
-  SV *tab_count() {
+  SV *tab_count(const nv_instr *inst) const {
+    return newSViv(inst->tab_fields.size());
+  }
+  SV *tab_count() const {
     if ( !has_ins() ) return &PL_sv_undef;
     return newSViv(ins()->tab_fields.size());
   }
-  bool get_tab(IV, SV **n, SV **d);
+  bool get_tab(IV, SV **n, SV **d) const;
+  bool get_tab(const nv_instr *,IV, SV **n, SV **d) const;
   inline int apply(reg_pad *rt) {
     return has_ins() ? track_regs(rt, m_rend, curr_dis, m_dis->offset()) : 0;
   }
@@ -531,8 +535,8 @@ class Ced_perl: public CEd_base {
   SV *make_enum_arr(const nv_eattr *ea) const;
   HV *make_enum(const std::unordered_map<int, const char *> *);
   SV *make_vfield(const nv_instr *, const nv_vattr &) const;
-  SV *fill_simple_tab(const std::unordered_map<int, const unsigned short *> *);
-  SV *fill_tab(const std::unordered_map<int, const unsigned short *> *, size_t);
+  SV *fill_simple_tab(const std::unordered_map<int, const unsigned short *> *) const;
+  SV *fill_tab(const std::unordered_map<int, const unsigned short *> *, size_t) const;
   IElf *m_e;
   // cached enums (HV *), key is nv_eattr->ename
   std::unordered_map<std::string_view, HV *> m_cached_hvs;
@@ -799,10 +803,9 @@ int Ced_perl::patch_cb(unsigned long v1, unsigned long v2)
 // extract tab with index idx
 // put ref to array with names into n
 // put ref to hash into d
-bool Ced_perl::get_tab(IV idx, SV **n, SV **d) {
-  if ( !has_ins() ) return false;
-  if ( idx < 0 || idx >= ins()->tab_fields.size() ) return false;
-  auto t = get_it(ins()->tab_fields, idx);
+bool Ced_perl::get_tab(const nv_instr *inst, IV idx, SV **n, SV **d) const {
+  if ( idx < 0 || idx >= inst->tab_fields.size() ) return false;
+  auto t = get_it(inst->tab_fields, idx);
   // fill names
   AV *av = newAV();
   for ( size_t ni = 0; ni < t->fields.size(); ++ni ) {
@@ -819,7 +822,12 @@ bool Ced_perl::get_tab(IV idx, SV **n, SV **d) {
   return true;
 }
 
-SV *Ced_perl::fill_simple_tab(const std::unordered_map<int, const unsigned short *> *t)
+bool Ced_perl::get_tab(IV idx, SV **n, SV **d) const {
+  if ( !has_ins() ) return false;
+  return get_tab(ins(), idx, n, d);
+}
+
+SV *Ced_perl::fill_simple_tab(const std::unordered_map<int, const unsigned short *> *t) const
 {
   HV *hv = newHV();
   for ( auto ei: *t ) {
@@ -828,7 +836,7 @@ SV *Ced_perl::fill_simple_tab(const std::unordered_map<int, const unsigned short
   return newRV_noinc((SV*)hv);
 }
 
-SV *Ced_perl::fill_tab(const std::unordered_map<int, const unsigned short *> *t, size_t ts)
+SV *Ced_perl::fill_tab(const std::unordered_map<int, const unsigned short *> *t, size_t ts) const
 {
   HV *hv = newHV();
   for ( auto ei: *t ) {
@@ -2065,6 +2073,7 @@ line(SV *obj)
   Cubin::Ced::Instr::scbd_type = 9
   Cubin::Ced::Instr::target = 10
   Cubin::Ced::Instr::cc = 11
+  Cubin::Ced::Instr::tab_count = 12
  INIT:
   one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
  CODE:
@@ -2092,6 +2101,8 @@ line(SV *obj)
      case 10: RETVAL = e->strv<&nv_instr::target_index>();
       break;
      case 11: RETVAL = e->strv<&nv_instr::cc_index>();
+      break;
+     case 12: RETVAL = e->base->tab_count(e->ins);
       break;
      default: croak("unknown ix %d in Cubin::Ced::Instr", ix);
     }
@@ -2128,6 +2139,33 @@ efields(SV *obj)
    RETVAL = ix == 1 ? e->base->extract_vfields(e->ins) : e->base->extract_efields(e->ins);
  OUTPUT:
   RETVAL
+
+void
+tab(SV *obj, IV key)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  bool res;
+  SV *names = nullptr, *dict = nullptr;
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ PPCODE:
+  res = e->base->get_tab(e->ins, key, &names, &dict);
+  if ( !res ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+  } else {
+    if ( gimme == G_ARRAY) {
+      EXTEND(SP, 2);
+      mPUSHs(names);
+      mPUSHs(dict);
+    } else {
+      AV *av = newAV();
+      av_push(av, names);
+      av_push(av, dict);
+      mXPUSHs(newRV_noinc((SV*)av));
+      XSRETURN(1);
+    }
+  }
 
 SV *
 prop(SV *obj)
