@@ -413,6 +413,7 @@ sub process_sched
       $sctx->{'c'}->{$off} = $sctx->{'roll'} if ( $wrtdb != 7 || $readb != 7 );
     }
   }
+  # store dual flag in sched ctx
 # printf(" dual %d %d\n", $is_dual, $sctx->{'dual'});
   $sctx->{'dual'} = 1 if ( $is_dual && !$sctx->{'dual'} );
 }
@@ -557,16 +558,19 @@ sub dump_ps
   my $is_u = $pfx ne '';
   my $res = 0;
   foreach my $k ( sort { $a <=> $b } keys %$rs ) {
-    my $l = $is_u ? $rt->p($k) : $rt->up($k);
+    my $l = $is_u ? $rt->up($k) : $rt->p($k);
     next unless defined($l);
     printf("; %sP%d\n", $pfx, $k);
     $res++;
     foreach my $ar ( @$l ) {
       printf(";   %X", $ar->[0]); # offset
+      printf(" mask %X", $ar->[1]) if defined($opt_d);
       # check predicate
       if ( defined $ar->[3] ) {
         my $pr = rh_pred($ar->[1]);
-        printf(" @%sP%d", rh_upred($ar->[1]) ? 'U' : '', $pr);
+        # for @P there will be rh_pred having the same value as our key k - then ingore it
+        # else you can't use pfx bcs there can be instruction like @UP1 setp p2
+        printf(" @%sP%d", rh_upred($ar->[1]) ? 'U' : '', $pr)  if ( $pr != $k );
       }
       printf(" <-") if ( $ar->[2] );
       # finally add new line
@@ -591,15 +595,25 @@ sub dump_gpr
     $res++;
     foreach my $ar ( @$l ) {
       printf(";   %X", $ar->[0]); # offset
+      printf(" mask %X", $ar->[1]) if defined($opt_d);
       # check predicate
       if ( defined $ar->[3] ) {
         my $pr = rh_pred($ar->[1]);
         printf(" @%sP%d", rh_upred($ar->[1]) ? 'U' : '', $pr);
       }
-      my $in_list = rh_inlist($ar->[1]);
+      my $is_comp = rh_comp($ar->[1]);
       if ( $ar->[2] ) { # check is_write
-        printf(" %s", $in_list ? 'W' : '<-');
+        printf(" %s", $is_comp ? 'W' : '<-');
       }
+      # for compound also dump it's prop
+      if ( $is_comp ) {
+        my $pr = rh_ops($ar->[1]);
+        if ( defined $pr ) {
+          my $pr_name = PR_name($pr);
+          printf(" [%s]", $pr_name) if defined($pr_name);
+        }
+      }
+      printf(" reuse") if ( rh_reuse($ar->[1]) );
       # last is type
       if ( defined $ar->[4] ) {
         my $t_name = PType_name($ar->[4]);
