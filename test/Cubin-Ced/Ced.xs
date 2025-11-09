@@ -2415,7 +2415,7 @@ rs(SV *obj)
   Cubin::Ced::RegTrack::urs = 1
  INIT:
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
-   auto &rs = ix == 1 ? r->ugpr: r->gpr;
+   auto &rs = (ix == 1) ? r->ugpr: r->gpr;
  CODE:
   RETVAL = fill_rhash(rs);
  OUTPUT:
@@ -2427,7 +2427,7 @@ ps(SV *obj)
   Cubin::Ced::RegTrack::ups = 1
  INIT:
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
-   auto &rs = ix == 1 ? r->upred: r->pred;
+   auto &rs = (ix == 1) ? r->upred: r->pred;
  CODE:
   RETVAL = fill_rhash(rs);
  OUTPUT:
@@ -2439,7 +2439,7 @@ r(SV *obj, IV key, unsigned long from = 0)
   Cubin::Ced::RegTrack::ur = 1
  INIT:
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
-   auto &rs = ix == 1 ? r->ugpr: r->gpr;
+   auto &rs = (ix == 1) ? r->ugpr: r->gpr;
    auto rs_iter = rs.find(key);
  CODE:
   if ( rs_iter == rs.end() ) RETVAL = &PL_sv_undef;
@@ -2453,7 +2453,7 @@ p(SV *obj, IV key, unsigned long from = 0)
   Cubin::Ced::RegTrack::up = 1
  INIT:
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
-   auto &rs = ix == 1 ? r->upred: r->pred;
+   auto &rs = (ix == 1) ? r->upred: r->pred;
    auto rs_iter = rs.find(key);
  CODE:
   if ( rs_iter == rs.end() ) RETVAL = &PL_sv_undef;

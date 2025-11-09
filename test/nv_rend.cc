@@ -1278,16 +1278,22 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     if ( setp && !idx && (r->type == R_predicate || r->type == R_enum) ) {
       const render_named *rn = (const render_named *)r;
       const nv_eattr *ea = find_ea(p.first, rn->name);
+      idx++;
       if ( !ea ) continue;
       if ( ea->ignore ) continue;
       auto kvi = p.second.find(rn->name);
       if ( kvi == p.second.end() ) continue;
       if ( !strcmp(ea->ename, "Predicate") && kvi->second != 7 )
-       { rtdb->wpred(kvi->second, off, 0); res++; }
+       { rtdb->wpred(kvi->second, off, 0);
+         res++;
+         continue;
+       }
       else if ( !strcmp(ea->ename, "UniformPredicate") && kvi->second != 7 )
-       { rtdb->wupred(kvi->second, off, 0); res++; }
-      idx++;
-      continue;
+       { rtdb->wupred(kvi->second, off, 0);
+         res++;
+         continue;
+       }
+      idx--;
     }
     // it seems that some SETP variants can assign 2 predicate register in one instruction, like
     //  DSETP.MAX.AND P2, P3, R2, R12, PT
@@ -1298,17 +1304,17 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       const render_named *rn = (const render_named *)r;
       if ( !strcmp("nPd", rn->name) ||
            (ends2 && (!strcmp("Pv", rn->name) || !strcmp("UPv", rn->name))) ) {
+        idx++;
         const nv_eattr *ea = find_ea(p.first, rn->name);
         if ( !ea ) continue;
         if ( ea->ignore ) continue;
         auto kvi = p.second.find(rn->name);
         if ( kvi == p.second.end() ) continue;
         if ( !strcmp(ea->ename, "Predicate") && kvi->second != 7 )
-         { rtdb->wpred(kvi->second, off, 0); res++; }
+         { rtdb->wpred(kvi->second, off, 0); res++; continue; }
         else if ( !strcmp(ea->ename, "UniformPredicate") && kvi->second != 7 )
-         { rtdb->wupred(kvi->second, off, 0); res++; }
-        idx++;
-        continue;
+         { rtdb->wupred(kvi->second, off, 0); res++; continue; }
+        idx--;
       }
     }
     if ( r->type == R_opcode ) {
@@ -1359,15 +1365,33 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     if ( idx >= 0 && (r->type == R_predicate || r->type == R_enum) ) {
       const render_named *rn = (const render_named *)r;
       const nv_eattr *ea = find_ea(p.first, rn->name);
-      if ( !ea ) continue;
+#ifdef DEBUG
+ printf("%lX idx %d %s\n", off, idx, rn->name);
+#endif
+      if ( !ea ) {
+#ifdef DEBUG
+  printf("%lX cannot find %s\n", off, rn->name);
+#endif
+        idx++;
+        continue;
+      }
       if ( ea->ignore ) continue;
       auto kvi = p.second.find(rn->name);
       if ( kvi == p.second.end() ) continue;
+#ifdef DEBUG
+printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
+#endif
       if ( is_pred(ea, kvi) )
-       { rtdb->rpred(kvi->second, off, 0); res++; }
-      else if ( is_upred(ea, kvi) )
-       { rtdb->rupred(kvi->second, off, 0); res++; }
-      else if ( is_reg(ea, kvi) )
+       { rtdb->rpred(kvi->second, off, 0);
+         res++; idx++;
+         continue;
+       }
+      if ( is_upred(ea, kvi) )
+       { rtdb->rupred(kvi->second, off, 0);
+         res++; idx++;
+         continue;
+       }
+      if ( is_reg(ea, kvi) )
       {
         if ( is_sv(d_sv, rn->name) ) {
          if ( d_size <= 32 )
@@ -1457,6 +1481,9 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       idx++;
       continue;
     }
+#ifdef DEBUG
+printf("%lX idx %d rtype %d\n", off, idx, r->type);
+#endif
     // we have something compound
     auto ve_type = [&](const ve_base &ve) -> NVP_type {
       auto len = strlen(ve.arg);
@@ -1475,10 +1502,6 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
         auto kvi = p.second.find(ve.arg);
         if ( kvi == p.second.end() ) return 0;
         // check what we have
-        if ( is_pred(ea, kvi) )
-        { rtdb->rpred(kvi->second, off, what); return 1; }
-        if ( is_upred(ea, kvi) )
-        { rtdb->rupred(kvi->second, off, what); return 1; }
         if ( is_reg(ea, kvi) )
         {
           auto type = pr ? pr->t : ve_type(ve);
@@ -1492,6 +1515,11 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
           rtdb->rugpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type);
           return 1;
         }
+        // do we really can have predicates inside compound render items?
+        if ( is_pred(ea, kvi) )
+        { rtdb->rpred(kvi->second, off, what); return 1; }
+        if ( is_upred(ea, kvi) )
+        { rtdb->rupred(kvi->second, off, what); return 1; }
         return 0;
     };
     auto check_ve = [&](const ve_base &ve, reg_history::RH what, const NV_Prop *pr) {
