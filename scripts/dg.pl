@@ -549,6 +549,91 @@ sub dump_snap
   }
 }
 
+# dump track of predicates
+# args: RegTrack, map where keys are regs and prefix U for universal
+sub dump_ps
+{
+  my($rt, $rs, $pfx) = @_;
+  my $is_u = $pfx ne '';
+  my $res = 0;
+  foreach my $k ( sort { $a <=> $b } keys %$rs ) {
+    my $l = $is_u ? $rt->p($k) : $rt->up($k);
+    next unless defined($l);
+    printf("; %sP%d\n", $pfx, $k);
+    $res++;
+  }
+  $res;
+}
+
+# dump track of (u)gprs
+# args: RegTrack, map where keys are regs and prefix U for universal
+# format of each list entry see in fill_reg file Ced.xs
+sub dump_gpr
+{
+  my($rt, $rs, $pfx) = @_;
+  my $is_u = $pfx ne '';
+  my $res = 0;
+  foreach my $k ( sort { $a <=> $b } keys %$rs ) {
+    my $l = $is_u ? $rt->ur($k) : $rt->r($k);
+    next unless defined($l);
+    printf("; %sR%d\n", $pfx, $k);
+    $res++;
+    foreach my $ar ( @$l ) {
+      printf(";   %X", $ar->[0]); # offset
+      # check predicate
+      if ( defined $ar->[3] ) {
+        my $pr = rh_pred($ar->[1]);
+        printf(" @%sP%d", rh_upred($ar->[1]) ? 'U' : '', $pr);
+      }
+      my $in_list = rh_inlist($ar->[1]);
+      if ( $ar->[2] ) { # check is_write
+        printf(" %s", $in_list ? 'W' : '<-');
+      }
+      # last is type
+      if ( defined $ar->[4] ) {
+        my $t_name = PType_name($ar->[4]);
+        printf(" %s", $t_name) if defined($t_name);
+      }
+      # finally add new line
+      printf("\n");
+    }
+  }
+  $res;
+}
+
+sub dump_rt
+{
+  my $rt = shift;
+  return if ( $rt->empty() );
+  my $cbs = $rt->cbs();
+  if ( defined $cbs ) {
+    printf(";;; Const banks\n");
+    foreach my $cb ( @$cbs ) {
+      printf(";  at %X idx %d off %X %X\n", $cb->[0], $cb->[1], $cb->[2], $cb->[3]);
+    }
+  }
+  my $ps = $rt->ps();
+  if ( defined $ps && scalar keys %$ps ) {
+    printf(";;; Predicates\n");
+    dump_ps($rt, $ps, '');
+  }
+  my $ups = $rt->ups();
+  if ( defined $ups && scalar keys %$ups ) {
+    printf(";;; UPredicates\n");
+    dump_ps($rt, $ups, 'U');
+  }
+  my $rs = $rt->rs();
+  if ( defined $rs && scalar keys %$rs ) {
+    printf(";;; GPRs\n");
+    dump_gpr($rt, $rs, '');
+  }
+  my $urs = $rt->urs();
+  if ( defined $urs && scalar keys %$urs) {
+    printf(";;; Universal Regs\n");
+    dump_gpr($rt, $rs, 'U');
+  }
+}
+
 sub gdisasm
 {
   my $dg = shift;
@@ -579,6 +664,10 @@ sub gdisasm
       $rt->snap_clear() if ( defined $rt );
     } while( $g_ced->next_off() < $block->[1] && $g_ced->next() );
     # do block post-processing of block here
+    if ( defined $rt ) {
+      $rt->finalize();
+      dump_rt($rt);
+    }
   }
 }
 
