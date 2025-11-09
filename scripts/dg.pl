@@ -550,7 +550,7 @@ sub dump_snap
 }
 
 # dump track of predicates
-# args: RegTrack, map where keys are regs and prefix U for universal
+# args: RegTrack, map where keys are predicates and prefix U for universal
 sub dump_ps
 {
   my($rt, $rs, $pfx) = @_;
@@ -561,6 +561,17 @@ sub dump_ps
     next unless defined($l);
     printf("; %sP%d\n", $pfx, $k);
     $res++;
+    foreach my $ar ( @$l ) {
+      printf(";   %X", $ar->[0]); # offset
+      # check predicate
+      if ( defined $ar->[3] ) {
+        my $pr = rh_pred($ar->[1]);
+        printf(" @%sP%d", rh_upred($ar->[1]) ? 'U' : '', $pr);
+      }
+      printf(" <-") if ( $ar->[2] );
+      # finally add new line
+      printf("\n");
+    }
   }
   $res;
 }
@@ -630,7 +641,7 @@ sub dump_rt
   my $urs = $rt->urs();
   if ( defined $urs && scalar keys %$urs) {
     printf(";;; Universal Regs\n");
-    dump_gpr($rt, $rs, 'U');
+    dump_gpr($rt, $urs, 'U');
   }
 }
 
