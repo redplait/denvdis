@@ -347,9 +347,43 @@ sub check_wait
   $res;
 }
 
+# prepare sched data in block for next instruction - swap array from 4 to 6 and map from 5 to 7
+sub sched_next
+{
+  my $b = shift;
+  $b->[6] = $b->[4];
+  $b->[4] = undef;
+  $b->[7] = $b->[5];
+  $b->[7] = undef;
+}
+
+# check if array at index ai waits some barriers map at index mi
+sub sched_cross_check
+{
+  my($b, $ai, $mi, $what) = @_;
+  return 0 if ( !defined($b->[$ai]) || !defined($b->[$mi]) );
+  my $ar = $b->[$ai];
+  for my $i ( 0..5 ) {
+    next unless($ar->[$i]);
+    return $what if exists($b->[$mi]->{$i});
+  }
+  0;
+}
+
+# check if two adjacent instructions share common barriers
+sub sched_check
+{
+  my $b = shift;
+  my $res = sched_cross_check($b, 4, 7, 1);
+  $res = sched_cross_check($b, 6, 5, 2) unless $res;
+  sched_next($b);
+  $res;
+}
+
+# args: offset, sched ctx, block
 sub process_sched
 {
-  my($off, $sctx) = @_;
+  my($off, $sctx, $b) = @_;
   my $ctrl;
   my $is_dual = 0;
   my $stall = 0;
@@ -384,6 +418,24 @@ sub process_sched
       my $wrtdb = ($ctrl & 0x000e0) >> 5;  # 3bit write dependency barrier
       my $readb = ($ctrl & 0x00700) >> 8;  # 3bit read  dependency barrier
       my $watdb = ($ctrl & 0x1f800) >> 11; # 6bit wait on dependency barrier
+      # store sched data in block - array at index 4, map at 5
+      if ( defined $b ) {
+        my $ar;
+        if ( $watdb ) {
+          $ar = [ 0 x 6 ];
+          for my $idx ( 0..5 ) {
+            $ar->[$idx] = 1 if ( $watdb & (1 << $idx) );
+          }
+        }
+        # store wait array
+        $b->[4] = $ar;
+        if ( $wrtdb || $readb ) {
+          my %mb;
+          $mb{$wrtdb} = 1 if ( $wrtdb );
+          $mb{$readb} = 1 if ( $readb );
+          $b->[5] = \%mb;
+        } else { $b->[5] = undef; }
+      }
       # check barriers - if watdb non-zero
       if ( $watdb ) {
         $stat[0] = 1;
@@ -794,6 +846,15 @@ sub merge_ibts
   \@res;
 }
 
+# check if some instruction with label is 'pre' - see details at
+#  https://docs.nvidia.com/cuda/archive/12.2.1/cuda-binary-utilities/index.html#maxwell-and-pascal-instruction-set
+sub is_pre
+{
+  return 0 if ( $g_w > 88 );
+  my $n = $g_ced->ins_name();
+  return ($n eq 'PRET' || $n eq 'PBK' || $n eq 'PCNT' || $n eq 'PEXIT' );
+}
+
 sub dg
 {
   my($code_off, $s_size) = @_;
@@ -851,6 +912,7 @@ sub dg
         # check if have some branch
         my $is_dl = 0;
         my $added = 0;
+        my $pre = 0;
         if ( $brt == Cubin::Ced::BRT_RETURN || $brt == Cubin::Ced::BRT_BRANCHOUT ) {
           # return/exit don't have address - so logic is the same as for IBT
           $link_prev->();
@@ -865,6 +927,7 @@ sub dg
                 $is_dl = 1;
               } else {
                 add_label(\%br, $addl, $off);
+                $pre = is_pre();
                 $gs_loffs->{$addl} = 0; # this is really some new labal - store it for later disasm too
               }
             }
@@ -873,7 +936,8 @@ sub dg
           $add_prev->($off) unless($is_dl);
           if ( $added ) {
             # check if we have conditional branch
-            $cnd_sub->($cond, $off) if ( $brt );
+            if ( $pre ) { $cnd_sub->($pre, $off); }
+            else { $cnd_sub->($cond, $off) if ( $brt ); }
             if ( $is_dl ) {
               $br{$off+1} = -1; # put dead-loop marker
             } elsif ( $brt != Cubin::Ced::BRT_CALL && !$cond ) { $br{$off+1} = 1; }
@@ -900,12 +964,22 @@ sub dg
       printf("\n");
     }
   }
-  # pass 2 - make blocks, complexity O(m) where m is number of marks/symbols/back references in @sorted array
-  # indexes in block:
-  # [0] - start address
-  # [1] - last address
-  # [2] - symbol index or undef
-  # [3] - map with back-refs
+=comment
+  pass 2 - make blocks, complexity O(m) where m is number of marks/symbols/back references in @sorted array
+  indexes in block:
+   [0] - start address
+   [1] - last address
+   [2] - symbol index or undef
+   [3] - map with back-refs
+  below is data for barriers tracking
+   [4] - array of wait or undef
+   [5] - map of read/write
+   [6] - array of wait for previous instruction
+   [7] - map of read/write for previous instruction
+  indexes > 7 for registers tracking
+   [8] - snap array from current instruction
+   [9] - snap array from previous instruction
+=cut
   my @bbs;
   my $add_block = sub {
     my $off = shift;
