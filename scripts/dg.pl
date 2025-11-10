@@ -363,6 +363,7 @@ sub sched_cross_check
   my($b, $ai, $mi, $what) = @_;
   return 0 if ( !defined($b->[$ai]) || !defined($b->[$mi]) );
   my $ar = $b->[$ai];
+# print 'cross_check ', Dumper($b->[$ai], $b->[$mi]);
   for my $i ( 0..5 ) {
     next unless($ar->[$i]);
     return $what if exists($b->[$mi]->{$i});
@@ -422,17 +423,17 @@ sub process_sched
       if ( defined $b ) {
         my $ar;
         if ( $watdb ) {
-          $ar = [ 0 x 6 ];
+          $ar = [ (0) x 6 ];
           for my $idx ( 0..5 ) {
             $ar->[$idx] = 1 if ( $watdb & (1 << $idx) );
           }
         }
         # store wait array
         $b->[4] = $ar;
-        if ( $wrtdb || $readb ) {
+        if ( $wrtdb != 7 || $readb != 7 ) {
           my %mb;
-          $mb{$wrtdb} = 1 if ( $wrtdb );
-          $mb{$readb} = 1 if ( $readb );
+          $mb{$wrtdb} = 1 if ( $wrtdb != 7 );
+          $mb{$readb} = 1 if ( $readb != 7 );
           $b->[5] = \%mb;
         } else { $b->[5] = undef; }
       }
@@ -516,7 +517,7 @@ sub dump_ins
     else { printf("LABEL_%X: ; %s\n", $off, $g_attrs->attr_name($l)); }
   }
   # process scheduling/find dual instr
-  process_sched($off, $sctx);
+  process_sched($off, $sctx, $block);
   my $dual = get_dual($sctx);
   # dump body
   printf("/*%X*/%s", $off, get_spfx($dual));
@@ -728,10 +729,16 @@ sub gdisasm
     head_syms($block_off, $off);
     my $rt;
     $rt = Cubin::Ced::RegTrack->new() if defined($opt_t);
+    my $idx = 0;
     # disasm every instruction in this block
     do {
       $off = $g_ced->get_off();
       my $res = dump_ins($off, $sctx, $block, $rt);
+      # check shared barriers
+      if ( defined $opt_b ) {
+        my $sc = sched_check($block);
+        printf("; shared barrier(s) %d\n", $sc) if ( $sc );
+      }
       # dump snap
       if ( $res && defined($rt) ) {
         printf("; mask %X mask2 %X\n", $rt->mask(), $rt->mask2()) if defined($opt_v);
@@ -739,6 +746,7 @@ sub gdisasm
         dump_snap($g, $pr) if ( defined($g) || defined($pr) );
       }
       $rt->snap_clear() if ( defined $rt );
+      $idx++;
     } while( $g_ced->next_off() < $block->[1] && $g_ced->next() );
     # do block post-processing of block here
     if ( defined $rt ) {
