@@ -712,6 +712,64 @@ sub dump_rt
   }
 }
 
+# logic for checking regs/predicates interleaving
+# preds filling in merge_preds - they are map where key is pred number and value is int - we need check 2 for write operation
+sub dep_preds
+{
+  my($cur, $up) = @_;
+  while( my($k, $v) = each %$cur ) {
+    next if ( !($v & 1) ); # ignore non-read
+    next if ( !exists $up->{$k} );
+    if ( $up->{$k} & 2 ) {
+      printf("; dep from pred %d\n", $k) if defined($opt_d);
+      return 1;
+    }
+  }
+  0;
+}
+
+# regs filling in gprs - they are map where key is reg number
+# value is 0x80 for write, 0x20 for read
+sub dep_regs
+{
+  my($cur, $up) = @_;
+  while( my($k, $v) = each %$cur ) {
+    next if ( ($v & 0x80) && !($v & 0x20) ); # write-only
+    next if ( !exists $up->{$k} );
+    if ( $up->{$k} & 0x80 ) {
+      printf("; dep from reg %d\n", $k) if defined($opt_d);
+      return 1;
+    }
+  }
+  0;
+}
+
+sub int_preds
+{
+  my($cur, $up) = @_;
+  dep_preds($cur, $up) || dep_preds($up, $cur);
+}
+
+sub int_regs
+{
+  my($cur, $up) = @_;
+  dep_regs($cur, $up) || dep_regs($up, $cur);
+}
+
+# curr instr snap in block->[8], prev in block->[9]
+# return 1 if 2 instrs are interleaved on some register/predicate
+sub is_interleaved
+{
+  my $b = shift;
+  return 0 unless(defined($b->[8]) && defined($b->[9]));
+  my $curr = $b->[8];
+  my $prev = $b->[9];
+  my $res = 0;
+  $res += int_preds($curr->[1], $prev->[1]) if ( defined($curr->[1]) && defined($prev->[1]) );
+  $res += int_regs($curr->[0], $prev->[0]) if ( defined($curr->[0]) && defined($prev->[0]) );
+  $res;
+}
+
 sub gdisasm
 {
   my $dg = shift;
@@ -744,6 +802,17 @@ sub gdisasm
         printf("; mask %X mask2 %X\n", $rt->mask(), $rt->mask2()) if defined($opt_v);
         my($g, $pr) = $rt->snap();
         dump_snap($g, $pr) if ( defined($g) || defined($pr) );
+        # compare snap from current at index 8 with prev at index 9
+        if ( !$idx ) {
+          # no prev - just store current in ->[9]
+          $block->[9] = [ $g, $pr ];
+        } else {
+          $block->[8] = [ $g, $pr ];
+          is_interleaved($block);
+          # shift for next instruction
+          $block->[9] = $block->[8];
+          $block->[8] = undef;
+        }
       }
       $rt->snap_clear() if ( defined $rt );
       $idx++;
