@@ -979,7 +979,7 @@ sub dg
    [1] - last address
    [2] - symbol index or undef
    [3] - map with back-refs
-  below is data for barriers tracking
+  below is data for barriers tracking - used in process_sched & check_sched
    [4] - array of wait or undef
    [5] - map of read/write
    [6] - array of wait for previous instruction
@@ -1014,7 +1014,18 @@ sub dg
 #   N         marker          wtf? add new block with single instruction - don't know if it has sence
 #   Y         marker          close prev block
     if ( 'ARRAY' eq ref $cop->[1] ) {
-      $cb = $add_block->($cop->[0]) unless $cb;
+      my $need_close = 0;
+      if ( defined $cb ) {
+        # check if all labels located in current block
+        for ( @{ $cop->[1] } ) {
+          if ( $_ < $cb->[0] || $_ > $cop->[0] ) {
+            $need_close++;
+            last;
+          }
+        }
+      }
+      $close_block->($cop->[0]-1) if ( $need_close );
+      $cb = $add_block->($cop->[0])  unless $cb;
       $cb->[3]->{$_} = 0 for ( @{ $cop->[1] } );
       next;
     }
