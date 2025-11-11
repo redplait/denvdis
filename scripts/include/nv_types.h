@@ -61,6 +61,7 @@ enum NVP_ops {
  ISRC_C = 4,
  ISRC_E = 5,
  ISRC_H = 6,
+ ISRC_I = 7, // since sm100, seems that nvidia does not like letters F & G
 };
 
 struct NV_Prop {

@@ -4958,6 +4958,7 @@ my %prop_map = (
   'ISRC_C_OPERAND_MAP' => 'ISRC_C',
   'ISRC_E_OPERAND_MAP' => 'ISRC_E',
   'ISRC_H_OPERAND_MAP' => 'ISRC_H',
+  'ISRC_I_OPERAND_MAP' => 'ISRC_I',
 );
 
 my %prop_type = (
@@ -4968,6 +4969,7 @@ my %prop_type = (
   'ISRC_C_OPERAND_TYPE' => 'ISRC_C',
   'ISRC_E_OPERAND_TYPE' => 'ISRC_E',
   'ISRC_H_OPERAND_TYPE' => 'ISRC_H',
+  'ISRC_I_OPERAND_TYPE' => 'ISRC_I',
 );
 
 my(%s_props_cache);
