@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_d $opt_g $opt_p $opt_r $opt_t $opt_v/;
+use vars qw/$opt_b $opt_d $opt_g $opt_p $opt_r $opt_t $opt_u $opt_v/;
 
 sub usage()
 {
@@ -23,6 +23,7 @@ Usage: $0 [options] file.cubin
   -p - dump properties
   -r - dump relocs
   -t - track registers
+  -u - try detect register reuse cache
   -v - verbose mode
 EOF
   exit(8);
@@ -41,6 +42,42 @@ my($gs_rel, $gs_rela);
 my(@gs_cbs, $gs_cb_size, $gs_cb_off);
 # labels from attrs
 my($gs_loffs, $gs_ibt);
+# for -u
+my $gu_max = 0;
+my($gu_off, %gu_cache);
+
+sub dump_ruc
+{
+  return unless($gu_max);
+  printf("max RUC:%d at %X:\n", $gu_max, $gu_off);
+  printf(" %s%d\n", $_ & 0x8000 ? 'UR' : 'R', $_ & ~0x8000) for ( keys %gu_cache );
+}
+
+# args: block, off, regs from snap
+sub add_ruc
+{
+  my($block, $off, $rs) = @_;
+  return unless defined($rs);
+  my $added = 0;
+  while( my($r, $flag) = each(%$rs) ) {
+    if ( $flag & 0x40 ) {
+      $block->[10]->{$r} = $off;
+      $added++;
+    } else {
+      delete $block->[10]->{$r};
+    }
+  }
+  if ( $added ) {
+    my $cur_size = scalar keys %{ $block->[10] };
+    if ( $cur_size > $gu_max ) {
+      $gu_max = $cur_size;
+      $gu_off = $off;
+      # copy RUC from block to gu_cache
+      %gu_cache = %{ $block->[10] };
+    }
+  }
+  $added;
+}
 
 sub sym_reset { $gs_cidx = 0; }
 
@@ -717,6 +754,8 @@ sub dump_rt
 sub dep_preds
 {
   my($cur, $up) = @_;
+  # reset bcs we have return in middle of while each
+  keys %$cur;
   while( my($k, $v) = each %$cur ) {
     next if ( !($v & 1) ); # ignore non-read
     next if ( !exists $up->{$k} );
@@ -733,6 +772,8 @@ sub dep_preds
 sub dep_regs
 {
   my($cur, $up) = @_;
+  # reset bcs we have return in middle of while each
+  keys %$cur;
   while( my($k, $v) = each %$cur ) {
     next if ( ($v & 0x80) && !($v & 0x20) ); # write-only
     next if ( !exists $up->{$k} );
@@ -802,6 +843,7 @@ sub gdisasm
         printf("; mask %X mask2 %X\n", $rt->mask(), $rt->mask2()) if defined($opt_v);
         my($g, $pr) = $rt->snap();
         dump_snap($g, $pr) if ( defined($g) || defined($pr) );
+        add_ruc($block, $off, $g) if ( defined($g) && defined($opt_u) );
         # compare snap from current at index 8 with prev at index 9
         if ( !$idx ) {
           # no prev - just store current in ->[9]
@@ -1056,6 +1098,7 @@ sub dg
   indexes > 7 for registers tracking
    [8] - snap array from current instruction
    [9] - snap array from previous instruction
+  [10] - map with currently reused registers
 =cut
   my @bbs;
   my $add_block = sub {
@@ -1064,6 +1107,10 @@ sub dg
     my %bl;
     $res[3] = \%bl;
     push @bbs, \@res;
+    if ( defined $opt_u ) {
+      my %ruc;
+      $res[10] = \%ruc;
+    }
     \@res;
   };
   my $cb;
@@ -1157,7 +1204,7 @@ sub dg
 }
 
 # main
-my $state = getopts("bdgprtv");
+my $state = getopts("bdgprtuv");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -1165,6 +1212,7 @@ if ( -1 == $#ARGV ) {
 }
 # some options validation
 croak("you can track registers only with -g option") if ( defined($opt_t) && !defined($opt_g) );
+croak("-u must be used with -t option") if ( defined($opt_u) && !defined($opt_t) );
 
 # load elf, symbols, ced & attrs
 $g_elf = Elf::Reader->new($ARGV[0]);
@@ -1216,4 +1264,5 @@ foreach my $s ( @es ) {
    gdisasm($graph);
  } else { disasm($s->[9]); }  # arg - section size
 }
+dump_ruc() if defined($opt_u);
 dump_barstat() if defined($opt_b);
