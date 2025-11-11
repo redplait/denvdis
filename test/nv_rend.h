@@ -87,7 +87,9 @@ struct reg_history {
   // next 1 bit - if was load from Special Reg (1 << 10)
   // next 1 bit - reuse flag (1 << 9)
   // next 1 bit - part of compound (1 << 8)
-  // next 1 bit - list of compount (1 << 7)
+  // next 1 bit - list of compound (1 << 7)
+  // next 3 bit is index for wide operation - it can be up to 256 bit (like SRC_I) / 32 = 8
+  // finally low 4 bit is NVP_ops
   typedef unsigned short RH;
   static constexpr RH reuse = 1 << 9;
   static constexpr RH comp  = 1 << 8;
@@ -106,6 +108,20 @@ struct reg_history {
       return true;
     }
     return false;
+  }
+  inline bool has_ops(int &op) const {
+    op = kind & 0x7;
+    if ( op ) {
+      op--;
+      return true;
+    }
+    return false;
+  }
+  static inline RH windex(int w) {
+    return (w & 7) << 4;
+  }
+  inline int windex() const {
+    return (kind >> 4) & 7;
   }
 };
 

@@ -1211,7 +1211,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     }
   }
   // predicates
-  int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, c_size = 0, e_size = 0, h_size = 0;
+  int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, c_size = 0, e_size = 0, h_size = 0, i_size = 0;
   if ( p.first->predicated ) {
     auto pi = p.first->predicated->find("IDEST_SIZE"sv);
     if ( pi != p.first->predicated->end() )
@@ -1234,6 +1234,9 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     pi = p.first->predicated->find("ISRC_H_SIZE"sv);
     if ( pi != p.first->predicated->end() )
       h_size = pi->second(p.second);
+    pi = p.first->predicated->find("ISRC_I_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      i_size = pi->second(p.second);
   }
   int idx = -1;
   rtdb->pred_mask = 0;
@@ -1324,7 +1327,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     auto rgpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, int op_idx, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
-        reg_history::RH what = i;
+        reg_history::RH what = reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
         rtdb->rgpr(kvi->second + i, off, what, op_idx, _t);
         res++;
@@ -1334,7 +1337,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     auto gpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
-        reg_history::RH what = i;
+        reg_history::RH what = reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
         rtdb->wgpr(kvi->second + i, off, what, _t);
         res++;
@@ -1344,7 +1347,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     auto rugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, int op_idx, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
-        reg_history::RH what = i;
+        reg_history::RH what = reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
         rtdb->rugpr(kvi->second + i, off, what, op_idx, _t);
         res++;
@@ -1354,7 +1357,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     auto ugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
-        reg_history::RH what = i;
+        reg_history::RH what = reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
         rtdb->wugpr(kvi->second + i, off, what, _t);
         res++;
@@ -1420,6 +1423,8 @@ printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
           res += rgpr_multi(e_size, kvi, ISRC_E, t_e);
          else if ( h_size > 32 && is_sv2(h_sv, rn->name, "Rh") )
           res += rgpr_multi(h_size, kvi, ISRC_H, t_h);
+         else if ( i_size > 32 && is_sv2(nullptr, rn->name, "Ri") )
+          res += rgpr_multi(i_size, kvi, 0);
          else
          {
            if ( is_sv2(a_sv, rn->name, "Ra") )
@@ -1463,6 +1468,8 @@ printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
           res += rugpr_multi(c_size, kvi, ISRC_C, t_c);
          else if ( e_size > 32 && is_sv2(e_sv, rn->name, "URe") )
           res += rugpr_multi(e_size, kvi, ISRC_E, t_e);
+         else if ( i_size > 32 && is_sv2(nullptr, rn->name, "URi") )
+          res += rgpr_multi(i_size, kvi, 0);
          else
          {
            if ( is_sv2(a_sv, rn->name, "URa") )
@@ -1473,6 +1480,8 @@ printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
              rtdb->rugpr(kvi->second, off, 0, ISRC_C, t_c);
            else if ( is_sv2(a_sv, rn->name, "URe") )
              rtdb->rugpr(kvi->second, off, 0, ISRC_E, t_e);
+           else if ( is_sv2(nullptr, rn->name, "URi") )
+             rtdb->rugpr(kvi->second, off, 0, 0);
            else rtdb->rugpr(kvi->second, off, 0, 0);
            res++;
          }
