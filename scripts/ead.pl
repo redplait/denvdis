@@ -4744,6 +4744,8 @@ my %type_letters = (
  'b' => 'ISRC_B',
  'c' => 'ISRC_C',
  'e' => 'ISRC_E',
+ 'h' => 'ISRC_H',
+ 'i' => 'ISRC_I',
  'd' => 'IDEST',
  'd2' => 'IDEST2',
 );
