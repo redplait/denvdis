@@ -100,6 +100,7 @@ our %PRs = (
  4 => 'ISRC_C',
  5 => 'ISRC_E',
  6 => 'ISRC_H',
+ 7 => 'ISRC_I',
 );
 
 sub PR_name($)
@@ -168,6 +169,7 @@ sub rh_ops {
   return unless $v;
   $v - 1;
 }
+sub rh_widx { ($_[0] >> 4) & 7; }
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
@@ -188,6 +190,7 @@ our @EXPORT = qw(
  rh_comp
  rh_inlist
  rh_ops
+ rh_widx
 );
 
 our $VERSION = '0.01';
