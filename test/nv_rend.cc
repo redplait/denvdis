@@ -1278,14 +1278,17 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       continue;
     }
     // xxSETP
+#ifdef DEBUG
+    if ( setp ) printf("%lX setp %d idx %d\n", off, setp, idx);
+#endif
     if ( setp && !idx && (r->type == R_predicate || r->type == R_enum) ) {
       const render_named *rn = (const render_named *)r;
       const nv_eattr *ea = find_ea(p.first, rn->name);
-      idx++;
       if ( !ea ) continue;
       if ( ea->ignore ) continue;
       auto kvi = p.second.find(rn->name);
       if ( kvi == p.second.end() ) continue;
+      idx++;
       if ( !strcmp(ea->ename, "Predicate") && kvi->second != 7 )
        { rtdb->wpred(kvi->second, off, 0);
          res++;
@@ -1307,12 +1310,12 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       const render_named *rn = (const render_named *)r;
       if ( !strcmp("nPd", rn->name) ||
            (ends2 && (!strcmp("Pv", rn->name) || !strcmp("UPv", rn->name))) ) {
-        idx++;
         const nv_eattr *ea = find_ea(p.first, rn->name);
         if ( !ea ) continue;
         if ( ea->ignore ) continue;
         auto kvi = p.second.find(rn->name);
         if ( kvi == p.second.end() ) continue;
+        idx++;
         if ( !strcmp(ea->ename, "Predicate") && kvi->second != 7 )
          { rtdb->wpred(kvi->second, off, 0); res++; continue; }
         else if ( !strcmp(ea->ename, "UniformPredicate") && kvi->second != 7 )
