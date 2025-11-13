@@ -330,9 +330,9 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * has_pred - returns 1 if instruction predicate @PXX and not PT
 
-=item * ins_pred - returns ref to hash with predicates, see details https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-6.html
+=item * ins_pred - returns ref to hash with predicates, see details L<https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-6.html>
 
-=item * ins_prop - returns ref to hash with properties, see details https://redplait.blogspot.com/2025/07/sass-instructions-properties.html
+=item * ins_prop - returns ref to hash with properties, see details L<https://redplait.blogspot.com/2025/07/sass-instructions-properties.html>
 
 =item * ins_cb - if instruction has Const Bank - returns ref to array where
   a[0] - name of first CB field
@@ -370,7 +370,7 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * opcode - for old 64 bit width SM returns so called opcode for block of 7 instructions  - WTF is this
 
-=item * cword - for 88 bit width SM returns control word - see maxas https://github.com/NervanaSystems/maxas/wiki/Control-Codes for details
+=item * cword - for 88 bit width SM returns control word - see maxas L<https://github.com/NervanaSystems/maxas/wiki/Control-Codes for details>
 
 =item * print_cword - render CWord in form similar to official nvdisasm
 
@@ -430,7 +430,7 @@ To extract only rendering item(s) of specific type you can use 'grep' method - i
 
 =head4 Registers tracking
 
-See https://redplait.blogspot.com/2025/07/sass-instructions-registers-tracking.html
+See L<https://redplait.blogspot.com/2025/07/sass-instructions-registers-tracking.html>
 
 Holds in separate object Cubin::Ced::RegTrack. There are 4 kind of registers in SASS:
 
@@ -440,7 +440,7 @@ Holds in separate object Cubin::Ced::RegTrack. There are 4 kind of registers in 
 
 =item * Predicates
 
-=item * Universal registers: https://redplait.blogspot.com/2025/07/sass-instructions-uniform-registers.html
+=item * Universal registers: L<https://redplait.blogspot.com/2025/07/sass-instructions-uniform-registers.html>
 
 =item * Universal predicates (UPxx)
 
@@ -522,7 +522,7 @@ You can also extract only snapshot data for currently processed instruction with
 
 =item * sm_name
 
-=item * lut(index) - decoded string of LUT operation, see details https://redplait.blogspot.com/2025/07/sass-instructions-lut-operations.html
+=item * lut(index) - decoded string of LUT operation, see details L<https://redplait.blogspot.com/2025/07/sass-instructions-lut-operations.html>
 
 =item * stat - return statistics of IO operations in form [flush_count, read_count, is_dirty]. Supports wantarray
 
@@ -537,11 +537,11 @@ RTypes & RType_name - names of render types (R_xx)
 
 =head1 SEE ALSO
 
-C++ version of Ced: https://redplait.blogspot.com/2025/07/ced-sed-like-cubin-editor.html
+C++ version of Ced: L<https://redplait.blogspot.com/2025/07/ced-sed-like-cubin-editor.html>
 
-Cubin::Attrs module: https://github.com/redplait/dwarfdump/tree/main/perl/Cubin-Attrs
+Cubin::Attrs module: L<https://github.com/redplait/dwarfdump/tree/main/perl/Cubin-Attrs>
 
-base module Elf::Reader: https://github.com/redplait/dwarfdump/tree/main/perl/Elf-Reader
+base module Elf::Reader: L<https://github.com/redplait/dwarfdump/tree/main/perl/Elf-Reader>
 
 =head1 AUTHOR
 
