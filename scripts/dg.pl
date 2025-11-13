@@ -46,12 +46,24 @@ my($gs_loffs, $gs_ibt);
 # for -u
 my $gu_max = 0;
 my($gu_off, %gu_cache);
+# for -U - reuse stat
+my $gU_found = 0; # total possible reuse count
+my $gU_solved = 0; # actual reuse count
+my $gU_dis_failed = 0; # times of disasm failures
+my $gU_not_found = 0;  # cannot find reg or mask
 
 sub dump_ruc
 {
   return unless($gu_max);
   printf("max RUC:%d at %X:\n", $gu_max, $gu_off);
   printf(" %s%d\n", $_ & 0x8000 ? 'UR' : 'R', $_ & ~0x8000) for ( keys %gu_cache );
+}
+
+sub dump_rU
+{
+  return unless($gU_found);
+  printf("Found %d reuse cases, solved %d, not found %d, dis fails %d\n",
+    $gU_found, $gU_solved, $gU_not_found, $gU_dis_failed);
 }
 
 # args: block, off, regs from snap
@@ -745,6 +757,47 @@ sub dump_snap
   }
 }
 
+# check if found instruction for reuse really has reusage mask
+# args:
+#  [ offset, mask ] from collect_reuse
+#  register index
+#  is universal register
+# returns true/false
+sub resolve_rusage
+{
+  my($rt, $ridx, $is_u) = @_;
+  my $off = $rt->[0];
+  printf("resolve_rusage at %X for %X is_u %d\n", $off, $ridx, $is_u) if defined($opt_d);
+  if ( !$g_ced->off($off) ) {
+    carp("off $off failed");
+    $gU_dis_failed++;
+    return 0;
+  }
+  my $pr = rh_ops($rt->[1]);
+  if ( defined $pr ) {
+    my $rname = rkey($pr, $is_u);
+    return 0 unless defined($rname);
+    my $r_value = $g_ced->get($rname);
+    if ( defined $r_value && $g_ced->get($rname) == $ridx ) { # sanity check
+      my $reuse_name = reuse_attr($pr);
+      # reuse_src_e and next are efields while reuse_src_a is table field, so check both
+      return 1 if ( $g_ced->has_tfield($reuse_name) || $g_ced->efield($reuse_name) );
+    }
+  } else {
+    # well, lets do some brute-force
+    for my $t ( Cubin::Ced::ISRC_A() .. Cubin::Ced::ISRC_I() ) {
+      my $rname = rkey($t, $is_u);
+      next unless $rname;
+      my $r_value = $g_ced->get($rname);
+      next if ( !defined($r_value) || $r_value != $ridx );
+      my $reuse_name = reuse_attr($t);
+      return 1 if ( $g_ced->has_tfield($reuse_name) || $g_ced->efield($reuse_name) );
+    }
+  }
+  $gU_not_found++;
+  0;
+}
+
 # dump track of predicates
 # args: RegTrack, map where keys are predicates and prefix U for universal
 sub dump_ps
@@ -824,8 +877,17 @@ sub dump_gpr
     if ( defined $opt_U ) {
       my $reus = collect_reuse($l);
       if ( defined $reus ) {
-        printf("; %d reuses:\n", scalar @$reus);
-        printf(";   %X mask %d\n", $_->[0], $_->[1]) for ( @$reus );
+        my $r_size = scalar @$reus;
+        printf("; %d reuses:\n", $r_size);
+        $gU_found += $r_size;
+        for my $ru ( @$reus ) {
+          printf(";   %X mask %d", $ru->[0], $ru->[1]);
+          if ( resolve_rusage($ru, $k, $is_u) ) {
+            $gU_solved++;
+            printf(" can patch") if defined($opt_v);
+          }
+          printf("\n");
+        }
       }
     }
   }
@@ -1399,4 +1461,5 @@ foreach my $s ( @es ) {
  } else { disasm($s->[9]); }  # arg - section size
 }
 dump_ruc() if defined($opt_u);
+dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
