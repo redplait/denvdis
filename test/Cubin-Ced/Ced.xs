@@ -249,10 +249,16 @@ class Ced_perl: public CEd_base {
     return setup_s(siter->second);
   }
   int set_off(UV off) {
-    if ( m_state < WantOff ) return 0;
+    if ( m_state < WantOff ) {
+      my_warn("m_state %d for off %lX", m_state, off);
+      return 0;
+    }
     if ( !flush_buf() ) return 0;
     int res = _verify_off(off);
-    if ( !res ) reset_ins();
+    if ( !res ) {
+      my_warn("verify_off %lX failed", off);
+      reset_ins();
+    }
     else reus.apply(ins(), cex());
     return res;
   }
@@ -812,16 +818,18 @@ int Ced_perl::patch_cb(unsigned long v1, unsigned long v2)
   return generic_cb(ins(), v1, v2, true);
 }
 
+// check if some table contains field with name tfname
+// returns index of table or undef
 SV *Ced_perl::has_tfield(const nv_instr *inst, std::string_view &tfname) const
 {
   for ( size_t idx = 0; idx < inst->tab_fields.size(); ++idx ) {
     auto t = get_it(inst->tab_fields, idx);
     for ( size_t ni = 0; ni < t->fields.size(); ++ni ) {
       auto &nf = get_it(t->fields, ni);
-      if ( !nf.compare(tfname) ) &PL_sv_yes;
+      if ( !nf.compare(tfname) ) return newSViv(idx);
     }
   }
-  return &PL_sv_no;
+  return &PL_sv_undef;
 }
 
 // extract tab with index idx

@@ -445,6 +445,8 @@ To extract only rendering item(s) of specific type you can use 'grep' method - i
  hash is just dictionary with key of possible values and value is array with values for each field. If there is single field then
  key is just single value
 
+=item * has_tfield(field_name) - tries to find field in tables, returns table index or undef
+
 =back
 
 =head4 Registers tracking
