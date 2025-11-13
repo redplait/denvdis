@@ -698,10 +698,10 @@ sub collect_reuse
     if ( defined $l->[3] ) { $state = 0; undef $prev; next; }
     # we have some read operation - check if it's not first
     if ( $state && defined($prev)) {
-      # check distance
-      if ( $l->[0] - $prev->[0] <= 0x70 ) {
+      # check distance and that this is not Nth operand in the same instruction
+      if ( $l->[0] != $prev->[0] && $l->[0] - $prev->[0] <= 0x70 ) {
         # check if previous read not marked already with reuse
-        push(@res, $prev) unless ( rh_reuse($l->[1]) );
+        push(@res, $prev) unless ( rh_reuse($prev->[1]) );
       }
     }
     # store current operation in $prev
