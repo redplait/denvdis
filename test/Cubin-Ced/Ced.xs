@@ -532,6 +532,11 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return newSViv(ins()->tab_fields.size());
   }
+  SV *has_tfield(const nv_instr *inst, std::string_view &) const;
+  SV *has_tfield(std::string_view &sv) const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    return has_tfield(ins(), sv);
+  }
   bool get_tab(IV, SV **n, SV **d) const;
   bool get_tab(const nv_instr *,IV, SV **n, SV **d) const;
   inline int apply(reg_pad *rt) {
@@ -805,6 +810,18 @@ int Ced_perl::patch_cb(unsigned long v1, unsigned long v2)
 {
   if ( !ins() || !ins()->cb_field ) return 0;
   return generic_cb(ins(), v1, v2, true);
+}
+
+SV *Ced_perl::has_tfield(const nv_instr *inst, std::string_view &tfname) const
+{
+  for ( size_t idx = 0; idx < inst->tab_fields.size(); ++idx ) {
+    auto t = get_it(inst->tab_fields, idx);
+    for ( size_t ni = 0; ni < t->fields.size(); ++ni ) {
+      auto &nf = get_it(t->fields, ni);
+      if ( !nf.compare(tfname) ) &PL_sv_yes;
+    }
+  }
+  return &PL_sv_no;
 }
 
 // extract tab with index idx
@@ -1767,6 +1784,17 @@ efields(SV *obj)
  OUTPUT:
   RETVAL
 
+SV *
+has_tfield(SV *obj, const char *tfname)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   std::string_view tmp{tfname};
+ CODE:
+   RETVAL = e->has_tfield(tmp);
+ OUTPUT:
+  RETVAL
+
+
 SV *tab_count(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
@@ -2143,6 +2171,16 @@ efields(SV *obj)
   one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
  CODE:
    RETVAL = ix == 1 ? e->base->extract_vfields(e->ins) : e->base->extract_efields(e->ins);
+ OUTPUT:
+  RETVAL
+
+SV *
+has_tfield(SV *obj, const char *tfname)
+ INIT:
+   one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+   std::string_view tmp{tfname};
+ CODE:
+   RETVAL = e->base->has_tfield(e->ins, tmp);
  OUTPUT:
   RETVAL
 
