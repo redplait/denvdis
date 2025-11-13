@@ -153,6 +153,22 @@ sub scbd_type_name($)
   undef;
 }
 
+our @reg_sfx = ( 'd', 'd2', 'a', 'b', 'c', 'e', 'h', 'i' );
+
+# args: type, is universal
+sub rkey($$) {
+  my($t, $ur) = @_;
+  return if ( $t < 0 || $t > ISRC_I() );
+  sprintf("%sR%s", $ur ? 'U' : '', $reg_sfx[$t]);
+}
+
+# arg: type
+sub reuse_attr($) {
+  my $t = shift;
+  return if ( $t < 0 || $t > ISRC_I() );
+  sprintf("reuse_src_%s", $reg_sfx[$t]);
+}
+
 # registry tracking history mask helpers
 sub rh_write { $_[0] & 0x8000; }
 sub rh_upred { $_[0] & 0x4000; }
@@ -181,6 +197,9 @@ our @EXPORT = qw(
  PType_name
  RTypes
  RType_name
+ reg_sfx
+ rkey
+ reuse_attr
  scbd_name
  scbd_type_name
  rh_write
@@ -534,6 +553,10 @@ You can also extract only snapshot data for currently processed instruction with
 PTypes & PType_name - names of types
 
 RTypes & RType_name - names of render types (R_xx)
+
+rkey($type, $is_universal) - returns name of key name for some register like 'URc'
+
+reuse_attr($type) - returns name of reuse key like 'reuse_src_c'
 
 =head1 SEE ALSO
 
