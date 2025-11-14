@@ -447,6 +447,8 @@ To extract only rendering item(s) of specific type you can use 'grep' method - i
 
 =item * has_tfield(field_name) - tries to find field in tables, returns table index or undef
 
+=item * tab_fields($idx) - returns array of fields names for table with index $idx (must be in 0 .. tab_count), supports wantarray
+
 =back
 
 =head4 Registers tracking

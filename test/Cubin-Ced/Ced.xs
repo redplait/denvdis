@@ -548,6 +548,11 @@ class Ced_perl: public CEd_base {
   inline int apply(reg_pad *rt) {
     return has_ins() ? track_regs(rt, m_rend, curr_dis, m_dis->offset()) : 0;
   }
+  void tab_fields(const nv_instr *inst, IV, std::vector<std::string_view> &) const;
+  void tab_fields(IV key, std::vector<std::string_view> &res) const {
+    if ( !has_ins() ) return;
+    tab_fields(ins(), key, res);
+  }
  protected:
   SV *make_prop(const NV_Prop *prop) const;
   SV *make_enum_arr(const nv_eattr *ea) const;
@@ -852,6 +857,14 @@ bool Ced_perl::get_tab(const nv_instr *inst, IV idx, SV **n, SV **d) const {
   else
     *d = fill_tab(t->tab, t->fields.size());
   return true;
+}
+
+void Ced_perl::tab_fields(const nv_instr *inst, IV idx, std::vector<std::string_view> &res) const {
+  if ( idx < 0 || idx >= inst->tab_fields.size() ) return;
+  auto t = get_it(inst->tab_fields, idx);
+  for ( size_t ni = 0; ni < t->fields.size(); ++ni ) {
+    res.push_back(get_it(t->fields, ni));
+  }
 }
 
 bool Ced_perl::get_tab(IV idx, SV **n, SV **d) const {
@@ -1876,6 +1889,30 @@ tab(SV *obj, IV key)
   }
 
 void
+tab_fields(SV *obj, IV key)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  std::vector<std::string_view> names;
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ PPCODE:
+  e->tab_fields(key, names);
+  if ( names.empty() ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+  } else {
+    if ( gimme == G_ARRAY) {
+      EXTEND(SP, names.size());
+      for ( auto &s: names ) mPUSHs(newSVpv(s.data(), s.size()));
+    } else {
+      AV *av = newAV();
+      for ( auto &s: names ) av_push(av, newSVpv(s.data(), s.size()));
+      mXPUSHs(newRV_noinc((SV*)av));
+      XSRETURN(1);
+    }
+  }
+
+void
 stat(SV *obj)
  PREINIT:
   U8 gimme = GIMME_V;
@@ -2191,6 +2228,30 @@ has_tfield(SV *obj, const char *tfname)
    RETVAL = e->base->has_tfield(e->ins, tmp);
  OUTPUT:
   RETVAL
+
+void
+tab_fields(SV *obj, IV key)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  std::vector<std::string_view> names;
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ PPCODE:
+  e->base->tab_fields(e->ins, key, names);
+  if ( names.empty() ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+  } else {
+    if ( gimme == G_ARRAY) {
+      EXTEND(SP, names.size());
+      for ( auto &s: names ) mPUSHs(newSVpv(s.data(), s.size()));
+    } else {
+      AV *av = newAV();
+      for ( auto &s: names ) av_push(av, newSVpv(s.data(), s.size()));
+      mXPUSHs(newRV_noinc((SV*)av));
+      XSRETURN(1);
+    }
+  }
 
 void
 tab(SV *obj, IV key)
