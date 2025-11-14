@@ -442,12 +442,15 @@ To extract only rendering item(s) of specific type you can use 'grep' method - i
 =item * tab_count - returns count of tables
 
 =item * tab(table_index) - returns table with table_index - ref to array [ fields_names. hash ]
- hash is just dictionary with key of possible values and value is array with values for each field. If there is single field then
- key is just single value
+ hash is just dictionary with key of possible values and value is array ref with integer values for each field. If there is single
+ field then values are single integer
 
 =item * has_tfield(field_name) - tries to find field in tables, returns table index or undef
 
 =item * tab_fields($idx) - returns array of fields names for table with index $idx (must be in 0 .. tab_count), supports wantarray
+ In essecne it returns first value from I<tab> method
+
+=item * tab_map($idx) - return second value from I<tab> method
 
 =back
 

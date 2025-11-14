@@ -548,6 +548,11 @@ class Ced_perl: public CEd_base {
   inline int apply(reg_pad *rt) {
     return has_ins() ? track_regs(rt, m_rend, curr_dis, m_dis->offset()) : 0;
   }
+  SV *tab_map(const nv_instr *inst, IV) const;
+  SV *tab_map(IV key) const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    return tab_map(ins(), key);
+  }
   void tab_fields(const nv_instr *inst, IV, std::vector<std::string_view> &) const;
   void tab_fields(IV key, std::vector<std::string_view> &res) const {
     if ( !has_ins() ) return;
@@ -558,6 +563,7 @@ class Ced_perl: public CEd_base {
   SV *make_enum_arr(const nv_eattr *ea) const;
   HV *make_enum(const std::unordered_map<int, const char *> *);
   SV *make_vfield(const nv_instr *, const nv_vattr &) const;
+  SV *fill_tab(const NV_tab_fields *t) const;
   SV *fill_simple_tab(const std::unordered_map<int, const unsigned short *> *) const;
   SV *fill_tab(const std::unordered_map<int, const unsigned short *> *, size_t) const;
   IElf *m_e;
@@ -837,6 +843,21 @@ SV *Ced_perl::has_tfield(const nv_instr *inst, std::string_view &tfname) const
   return &PL_sv_undef;
 }
 
+SV *Ced_perl::fill_tab(const NV_tab_fields *t) const {
+  // dict can be just int key -> int value
+  // or int key -> ref to array when fields > 1
+  if ( 1 == t->fields.size() )
+    return fill_simple_tab(t->tab);
+  else
+    return fill_tab(t->tab, t->fields.size());
+}
+
+SV *Ced_perl::tab_map(const nv_instr *inst, IV idx) const {
+  if ( idx < 0 || idx >= inst->tab_fields.size() ) return &PL_sv_undef;
+  auto t = get_it(inst->tab_fields, idx);
+  return fill_tab(t);
+}
+
 // extract tab with index idx
 // put ref to array with names into n
 // put ref to hash into d
@@ -850,12 +871,7 @@ bool Ced_perl::get_tab(const nv_instr *inst, IV idx, SV **n, SV **d) const {
     av_push(av, newSVpv( nf.data(), nf.size() ));
   }
   *n = newRV_noinc((SV*)av);
-  // dict can be just int key -> int value
-  // or int key -> ref to array when fields > 1
-  if ( 1 == t->fields.size() )
-    *d = fill_simple_tab(t->tab);
-  else
-    *d = fill_tab(t->tab, t->fields.size());
+  if ( d ) *d = fill_tab(t);
   return true;
 }
 
@@ -1888,6 +1904,15 @@ tab(SV *obj, IV key)
     }
   }
 
+SV *
+tab_map(SV *obj, IV key)
+ INIT:
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->tab_map(key);
+ OUTPUT:
+  RETVAL
+
 void
 tab_fields(SV *obj, IV key)
  PREINIT:
@@ -2252,6 +2277,15 @@ tab_fields(SV *obj, IV key)
       XSRETURN(1);
     }
   }
+
+SV *
+tab_map(SV *obj, IV key)
+ INIT:
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ CODE:
+   RETVAL = e->base->tab_map(e->ins, key);
+ OUTPUT:
+  RETVAL
 
 void
 tab(SV *obj, IV key)
