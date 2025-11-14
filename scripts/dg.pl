@@ -762,7 +762,7 @@ sub dump_snap
 #  [ offset, mask ] from collect_reuse
 #  register index
 #  is universal register
-# returns true/false
+# returns [ attribute_name, tab_index if attr in table ]
 sub resolve_rusage
 {
   my($rt, $ridx, $is_u) = @_;
@@ -781,7 +781,11 @@ sub resolve_rusage
     if ( defined $r_value && $g_ced->get($rname) == $ridx ) { # sanity check
       my $reuse_name = reuse_attr($pr);
       # reuse_src_e and next are efields while reuse_src_a is table field, so check both
-      return 1 if ( $g_ced->has_tfield($reuse_name) || $g_ced->efield($reuse_name) );
+      my $t_idx = $g_ced->has_tfield($reuse_name);
+      if ( defined($t_idx) || $g_ced->efield($reuse_name) ) {
+        printf(" %s", $reuse_name) if defined($opt_v);
+        return [ $reuse_name, $t_idx ];
+      }
     }
   } else {
     # well, lets do some brute-force
@@ -791,7 +795,11 @@ sub resolve_rusage
       my $r_value = $g_ced->get($rname);
       next if ( !defined($r_value) || $r_value != $ridx );
       my $reuse_name = reuse_attr($t);
-      return 1 if ( $g_ced->has_tfield($reuse_name) || $g_ced->efield($reuse_name) );
+      my $t_idx = $g_ced->has_tfield($reuse_name);
+      if ( defined($t_idx) || $g_ced->efield($reuse_name) ) {
+        printf(" %s", $reuse_name) if defined($opt_v);
+        return [ $reuse_name, $t_idx ];
+      }
     }
   }
   $gU_not_found++;
