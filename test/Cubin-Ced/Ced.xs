@@ -1127,6 +1127,7 @@ static SV *gprs(const track_snap *snap) {
   return newRV_inc((SV *)hv);
 }
 
+// from SM dis - don't have KV, only render
 struct one_instr {
   const nv_instr *ins;
   const NV_rlist *rend;
@@ -1146,6 +1147,12 @@ struct one_instr {
   }
 };
 
+// latency table indexes
+struct lat_idx {
+  const NV_tabref *tr = nullptr;
+  char is_col = 0; // 0 - row, 1 - column
+};
+
 #ifdef MGf_LOCAL
 #define TAB_TAIL ,0
 #else
@@ -1161,6 +1168,20 @@ static MGVTBL ca_magic_vt = {
         0, /* length */
         0, /* clear */
         magic_release<Ced_perl>,
+        0, /* copy */
+        0 /* dup */
+        TAB_TAIL
+};
+
+// magic table for Cubin::Ced::LatIndex
+static const char *s_ca_latindex = "Cubin::Ced::LatIndex";
+static HV *s_ca_latindex_pkg = nullptr;
+static MGVTBL ca_latindex_magic_vt = {
+        0, /* get */
+        0, /* write */
+        0, /* length */
+        0, /* clear */
+        magic_del<lat_idx>,
         0, /* copy */
         0 /* dup */
         TAB_TAIL
@@ -2405,6 +2426,43 @@ INIT:
     }
   }
 
+MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::LatIndex
+
+IV
+idx(SV *obj)
+ INIT:
+    lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+ CODE:
+   RETVAL = li->tr->idx;
+ OUTPUT:
+  RETVAL
+
+int
+is_col(SV *obj)
+ ALIAS:
+  Cubin::Ced::LatIndex::is_row = 1
+ INIT:
+   lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+ CODE:
+   if ( ix == 1 ) RETVAL = !li->is_col;
+   else RETVAL = li->is_col;
+ OUTPUT:
+  RETVAL
+
+SV *
+name(SV *obj)
+ INIT:
+   lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+   const NV_gnames &what = li->is_col ? li->tr->tab->cols : li->tr->tab->rows;
+ CODE:
+   if ( li->tr->idx >= what.size() ) RETVAL = &PL_sv_undef;
+   else {
+     auto &sv = *(what.begin() + li->tr->idx);
+     RETVAL = newSVpv(sv.first, strlen(sv.first));
+   }
+ OUTPUT:
+  RETVAL
+
 MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::RegTrack
 
 void
@@ -2615,6 +2673,9 @@ BOOT:
  s_ca_instr_pkg = gv_stashpv(s_ca_instr, 0);
  if ( !s_ca_instr_pkg )
     croak("Package %s does not exists", s_ca_instr);
+ s_ca_latindex_pkg = gv_stashpv(s_ca_latindex, 0);
+ if ( !s_ca_latindex_pkg )
+    croak("Package %s does not exists", s_ca_latindex);
  // add enums from nv_types.h
  HV *stash = gv_stashpvn(s_ca, 10, 1);
  EXPORT_ENUM(NVP_ops, IDEST)
