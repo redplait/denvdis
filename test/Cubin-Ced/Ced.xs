@@ -2463,6 +2463,52 @@ name(SV *obj)
  OUTPUT:
   RETVAL
 
+const char *
+tab_name(SV *obj)
+ ALIAS:
+  Cubin::Ced::LatIndex::conn_name = 1
+ INIT:
+   lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+ CODE:
+   RETVAL = (ix == 1) ? li->tr->tab->connection : li->tr->tab->name;
+ OUTPUT:
+  RETVAL
+
+UV
+tab(SV *obj)
+ INIT:
+   lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+ CODE:
+   // extemly bad idea but I need key to group results by real table and their names can be non-uniq
+   RETVAL = (UV)li->tr->tab;
+ OUTPUT:
+  RETVAL
+
+SV *
+at(SV *obj, SV *other)
+ INIT:
+   lat_idx *idx1 = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt),
+           *idx2 = get_magic_ext<lat_idx>(other, &ca_latindex_magic_vt);
+ CODE:
+   // check if both indexes refers to the same table
+   if ( idx1->tr->tab != idx2->tr->tab ) RETVAL = &PL_sv_undef;
+   else {
+     // check if one is column and other is row
+     if ( idx1->is_col == idx2->is_col ) RETVAL = &PL_sv_undef;
+     else {
+       std::optional<short> res;
+       // tab_get(col, row)
+       if ( idx1->is_col ) // this is column, then idx2 is row
+         res = idx1->tr->tab->get(idx1->tr->idx, idx2->tr->idx);
+       else // this is row, then idx2 is column
+         res = idx2->tr->tab->get(idx2->tr->idx, idx1->tr->idx);
+       if ( !res.has_value() ) RETVAL = &PL_sv_undef;
+       else RETVAL = newSViv(res.value());
+     }
+   }
+ OUTPUT:
+  RETVAL
+
 MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::RegTrack
 
 void
