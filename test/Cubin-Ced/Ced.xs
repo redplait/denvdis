@@ -485,6 +485,7 @@ class Ced_perl: public CEd_base {
     }
     return newRV_noinc((SV*)hv);
   }
+  bool get_lxx(std::vector<SV *> &, int is_col) const;
   // return ref to hash where key is enum NVP_ops and value is ref to array where
   // [0] - type - enum NVP_type
   // [1..n] - field names
@@ -1186,6 +1187,34 @@ static MGVTBL ca_latindex_magic_vt = {
         0 /* dup */
         TAB_TAIL
 };
+
+bool Ced_perl::get_lxx(std::vector<SV *> &res, int is_col) const {
+  if ( !has_ins() ) return false;
+  auto *what = is_col ? ins()->cols : ins()->rows;
+  if ( !what ) return false;
+  // filter out and fill res
+  for ( auto &tr: *what ) {
+    // check table
+    if ( tr.filter ) {
+      if ( !tr.filter(ins(), cex()) ) continue;
+    }
+    auto &tr_what = is_col ? tr.tab->cols : tr.tab->rows;
+    // check cond list
+    auto &cl = get_it(tr_what, tr.idx);
+    if ( !check_sched_cond(ins(), cex(), cl) ) continue;
+    // store tr into res
+    lat_idx *li = new lat_idx;
+    li->is_col = is_col;
+    li->tr = &tr;
+    SV *msv = newSViv(0);
+    SV *objref= newRV_noinc(msv);
+    sv_bless(objref, s_ca_latindex_pkg);
+    // attach magic
+    sv_magicext(msv, NULL, PERL_MAGIC_ext, &ca_latindex_magic_vt, (const char*)li, 0);
+    res.push_back(objref);
+  }
+  return !res.empty();
+}
 
 // magic table for Cubin::Ced::Instr
 static const char *s_ca_instr = "Cubin::Ced::Instr";
@@ -1953,6 +1982,31 @@ tab_fields(SV *obj, IV key)
     } else {
       AV *av = newAV();
       for ( auto &s: names ) av_push(av, newSVpv(s.data(), s.size()));
+      mXPUSHs(newRV_noinc((SV*)av));
+      XSRETURN(1);
+    }
+  }
+
+void
+lcols(SV *obj)
+ ALIAS:
+  Cubin::Ced::lrows = 1
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  std::vector<SV *> indexes;
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ PPCODE:
+  if ( !e->get_lxx(indexes, !ix) ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+  } else {
+    if ( gimme == G_ARRAY) {
+      EXTEND(SP, indexes.size());
+      for ( auto s: indexes ) mPUSHs(s);
+    } else {
+      AV *av = newAV();
+      for ( auto s: indexes ) av_push(av, s);
       mXPUSHs(newRV_noinc((SV*)av));
       XSRETURN(1);
     }

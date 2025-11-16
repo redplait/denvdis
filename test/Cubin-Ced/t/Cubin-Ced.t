@@ -101,6 +101,13 @@ ok( defined($tx), 'by_name 1');
 ok( 2 == scalar @$tx, 'by_name 1');
 $t_num+=2;
 
+# latency
+my @lcs = $cub->lcols();
+ok( scalar @lcs, 'lcols');
+my @lrs = $cub->lrows();
+ok( scalar @lrs, 'lrows');
+$t_num+=2;
+
 # done_testing must be last
 done_testing($t_num);
 
