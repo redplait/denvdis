@@ -2460,13 +2460,13 @@ void NV_renderer::dump_ops(const struct nv_instr *i, const NV_extracted &kv) con
   }
 }
 
-bool NV_renderer::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist)
+bool NV_renderer::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist) const
 {
   return check_sched_cond(i, kv, clist, nullptr);
 }
 
 bool NV_renderer::check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist,
- NV_Tabset *out_res)
+ NV_Tabset *out_res) const
 {
   if ( !clist.second || !clist.second->size() ) return true;
   int res = 0;

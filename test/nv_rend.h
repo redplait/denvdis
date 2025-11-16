@@ -476,8 +476,8 @@ class NV_renderer {
    int fill_sched(const struct nv_instr *, const NV_extracted &);
    int dump_sched(const struct nv_instr *, const NV_extracted &);
    void dump_cond_list(const NV_Tabset *) const;
-   bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist);
-   bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, NV_Tabset *);
+   bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist) const;
+   bool check_sched_cond(const struct nv_instr *i, const NV_extracted &kv, const NV_one_cond &clist, NV_Tabset *) const;
    void dump_ops(const struct nv_instr *, const NV_extracted &) const;
    inline bool is_tail(const nv_vattr *vi, const render_named *rn) const {
      return vi && vi->kind == NV_BITSET && !strncmp(rn->name, "req_", 4);
