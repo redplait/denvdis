@@ -187,11 +187,27 @@ sub rh_ops {
 }
 sub rh_widx { ($_[0] >> 4) & 7; }
 
+# lcols/lwors returns just array of LatIndex objects
+# to gtoup them by table we need map where key is tab and value is [ array of LatIndex objects ]
+sub l2map
+{
+  my $l = shift;
+  return unless defined($l);
+  my %res;
+  foreach ( @$l ) {
+    my $t = $_->tab();
+    if ( exists $res{$t} ) { push @{ $res{$t} }, $_; }
+    else { $res{$t} = [ $_ ]; }
+  }
+  \%res;
+}
+
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
  brt_name
  exs
+ l2map
  PR_name
  PTypes
  PType_name
