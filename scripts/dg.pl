@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_d $opt_g $opt_p $opt_r $opt_t $opt_u $opt_U $opt_v/;
+use vars qw/$opt_b $opt_d $opt_g $opt_l $opt_p $opt_r $opt_t $opt_u $opt_U $opt_v/;
 
 sub usage()
 {
@@ -20,6 +20,7 @@ Usage: $0 [options] file.cubin
   -b - track read/write barriers
   -d - debug mode
   -g - build cfg
+  -l - dump latency info
   -p - dump properties
   -r - dump relocs
   -t - track registers
@@ -313,6 +314,31 @@ sub get_ins_cb0
   return if ( $res->[0] );
   return unless defined($res->[1]);
   $res->[1];
+}
+
+# dump latency tables
+sub dump_lat
+{
+  my $block = shift;
+  # columns
+  my $cols = $g_ced->lcols();
+  my $l2cols;
+  if ( defined $cols ) {
+    printf("; %d latency tab columns\n", scalar @$cols);
+    $l2cols = l2map($cols);
+  }
+  # rows
+  my $rows = $g_ced->lrows();
+  my $l2rows;
+  if ( defined $rows ) {
+    printf("; %d latency tab rows\n", scalar @$rows);
+    $l2rows = l2map($rows);
+  }
+  # store
+  if ( defined $block ) {
+    $block->[11] = $l2cols;
+    $block->[12] = $l2rows;
+  }
 }
 
 # scheduler context
@@ -617,6 +643,8 @@ sub dump_ins
       }
     }
   }
+  # latency tabs
+  dump_lat($block) if defined ( $opt_l );
   1;
 }
 
@@ -1298,10 +1326,13 @@ sub dg
    [5] - map of read/write
    [6] - array of wait for previous instruction
    [7] - map of read/write for previous instruction
-  indexes > 7 for registers tracking
+  registers tracking
    [8] - snap array from current instruction
    [9] - snap array from previous instruction
   [10] - map with currently reused registers - for -u option
+   latency tables
+  [11] - col indexes of previous instruction from l2map
+  [12] - row indexes of previous instruction from l2map
 =cut
   my @bbs;
   my $add_block = sub {
@@ -1407,7 +1438,7 @@ sub dg
 }
 
 # main
-my $state = getopts("bdgprtUuv");
+my $state = getopts("bdglprtUuv");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
