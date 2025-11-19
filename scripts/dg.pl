@@ -317,6 +317,23 @@ sub get_ins_cb0
 }
 
 # dump latency tables
+sub dump_latmap
+{
+  my($t, $pfx) = @_;
+  foreach my $tab ( sort { $a cmp $b } keys %$t ) {
+    my $ar = $t->{$tab};
+    my $ar_size = scalar @$ar;
+    next unless($ar_size); # empty?
+    if ( 1 == $ar_size ) {
+      my $single = $ar->[0];
+      printf(";  table %s (%s) %s index %d\n", $single->tab_name(), $single->conn_name(), $pfx, $single->idx());
+    } else {
+      printf(";  table %s (%s) %d %ss:\n", $ar->[0]->tab_name(), $ar->[0]->conn_name(), $ar_size, $pfx);
+      printf(";   %d\n", $_->idx()) for ( @$ar );
+    }
+  }
+}
+
 sub dump_lat
 {
   my $block = shift;
@@ -326,6 +343,7 @@ sub dump_lat
   if ( defined $cols ) {
     printf("; %d latency tab columns\n", scalar @$cols);
     $l2cols = l2map($cols);
+    dump_latmap($l2cols, 'col');
   }
   # rows
   my $rows = $g_ced->lrows();
@@ -333,6 +351,7 @@ sub dump_lat
   if ( defined $rows ) {
     printf("; %d latency tab rows\n", scalar @$rows);
     $l2rows = l2map($rows);
+    dump_latmap($l2rows, 'row');
   }
   # store
   if ( defined $block ) {
