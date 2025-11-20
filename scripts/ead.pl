@@ -4068,8 +4068,8 @@ sub gen_c_gtab
     }
     printf($fh " }, // row %d\n", $i - 4);
   }
-  # end
-  printf($fh "} };\n");
+  # line number
+  printf($fh "}, %d };\n", $t->[2]);
 }
 
 my $m_ccond_fwd = '(const struct nv_instr *i, const NV_extracted &kv)';

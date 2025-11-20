@@ -183,6 +183,7 @@ struct NV_tab {
    *connection;
   const NV_gnames cols, rows; // names of columns & rows
   const std::initializer_list< const std::initializer_list<short> > values;
+  int line = 0; // line number - for debuging
   std::optional<short> get(int col, int row) const {
     if ( row < 0 || (size_t)row >= values.size() ) return std::nullopt;
     auto &r = *( values.begin() + row );
