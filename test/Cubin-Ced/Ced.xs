@@ -2528,6 +2528,15 @@ tab_name(SV *obj)
  OUTPUT:
   RETVAL
 
+IV
+line(SV *obj)
+ INIT:
+   lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+ CODE:
+   RETVAL = li->tr->tab->line;
+ OUTPUT:
+  RETVAL
+
 UV
 tab(SV *obj)
  INIT:
