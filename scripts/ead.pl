@@ -3573,7 +3573,28 @@ sub gen_aliased_extract
   return $res . "}\n";
 }
 
+sub make_PR_CC_ccond
+{
+  my $name = shift;
+  return 1 if exists($g_used_ccond{$name} );
+  # in body check presents any of 4 fields:
+  # inputCC
+  # dummyCC
+  # writeCC
+  # TestCC
+  my $body = <<'END_PR_CC';
+  auto fie = kv.find("inputCC"); if ( fie != kv.end() ) return 1;
+  fie = kv.find("dummyCC"); if ( fie != kv.end() ) return 1;
+  fie = kv.find("writeCC"); if ( fie != kv.end() ) return 1;
+  fie = kv.find("TestCC"); if ( fie != kv.end() ) return 1;
+  return 0;
+END_PR_CC
+  $g_used_ccond{$name} = $body;
+  $name;
+}
+
 # try translate condition function to c++
+# return 1 in case of success, store body in g_used_ccond
 sub try_convert_ccond
 {
   my($name, $body) = @_;
@@ -3823,10 +3844,19 @@ sub parse_cond
   $body =~ s/\s+//g;
   # return name if we already cache this condition
   return $g_cond_list{$body}->[0] if exists($g_cond_list{$body});
+  my @res;
+  # special case for PR_CC
+  if ( $body eq 'PR_CC' ) {
+    # fill g_cond_list
+    # make new cond list name
+    my $name = 'cond_list' . $g_cond_list_idx++;
+    push @res, [ $body, make_PR_CC_ccond($body) ];
+    $g_cond_list{$body} = [ $name, \@res, $line ];
+    return $name;
+  }
   # parse body
   my @cond = split /,/, $body;
   return undef unless @cond;
-  my @res;
   foreach my $cond ( @cond ) {
     # some are not fields - ignore them
     next if ( $cond eq 'Ctl' or $cond eq 'sBoard' or $cond eq 'Mem' or $cond eq 'CgaBar' );
