@@ -2480,6 +2480,8 @@ bool NV_renderer::check_sched_cond(const struct nv_instr *i, const NV_extracted 
     if ( kiter == kv.end() ) { if ( opt_m ) m_missed.insert({cond.first.begin(), cond.first.end()}); continue; }
     if ( out_res )
      (*out_res)[cond.first] = (int)kiter->second;
+    else
+     return 1;
     res++;
   }
   return res != 0;
