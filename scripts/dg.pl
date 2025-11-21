@@ -316,6 +316,40 @@ sub get_ins_cb0
   $res->[1];
 }
 
+# args: cols from l2map, rows from l2map, header
+sub intersect_lat
+{
+  my($cs, $rs, $hdr) = @_;
+  return if ( !defined($cs) || !defined($rs) );
+  my $res;
+  # clojure to assign max latency
+  my $asmax = sub {
+    my $what = shift;
+    unless( defined($res) ) {
+      $res = $what;
+      return;
+    }
+    $res = $what if ( $what > $res );
+  };
+  my $latch = 0;
+  foreach my $tab ( sort { $a cmp $b } keys %$cs ) {
+    next unless exists($rs->{$tab});
+    # extract value from col and row
+    my $m_y = $cs->{$tab};
+    my $their = $rs->{$tab};
+    printf("; -- %s:\n", $hdr) if ( !$latch++ );
+    printf(";    tab %s (%s line %d):\n", $m_y->[0]->tab_name(), $m_y->[0]->conn_name(), $m_y->[0]->line());
+    foreach my $c ( @$m_y ) {
+      foreach my $r ( @$their ) {
+        my $what = $c->at($r);
+        $asmax->($what);
+        printf(";      col %d (%s) row %d (%s): %d\n", $c->idx(), $c->name(), $r->idx(), $r->name(), $what);
+      }
+    }
+  }
+  $res;
+}
+
 # dump latency tables
 sub dump_latmap
 {
@@ -353,6 +387,15 @@ sub dump_lat
     printf("; %d latency tab rows\n", scalar @$rows);
     $l2rows = l2map($rows);
     dump_latmap($l2rows, 'row');
+  }
+  # brute force 3 variants
+  # 1) intersect with itself
+  intersect_lat($l2cols, $l2rows, 'self cols with self rows') if ( defined($l2cols) && defined($l2rows) );
+  if ( defined $block ) {
+    # 2) intersect current columns with rows from previous instruction
+    intersect_lat($l2cols, $block->[12], 'current cols with previous rows') if defined($block->[12]);
+    # 3) intersect columns from previous instruction with current rows
+    intersect_lat($block->[11], $l2rows, 'previous cols with current rows') if defined($block->[11]);
   }
   # store
   if ( defined $block ) {
