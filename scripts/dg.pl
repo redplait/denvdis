@@ -326,10 +326,11 @@ sub dump_latmap
     next unless($ar_size); # empty?
     if ( 1 == $ar_size ) {
       my $single = $ar->[0];
-      printf(";  table %s (%s) %s index %d\n", $single->tab_name(), $single->conn_name(), $pfx, $single->idx());
+      printf(";  table %s (%s line %d) %s index %d (%s)\n", $single->tab_name(), $single->conn_name(), $single->line(),
+       $pfx, $single->idx(), $single->name());
     } else {
-      printf(";  table %s (%s) %d %ss:\n", $ar->[0]->tab_name(), $ar->[0]->conn_name(), $ar_size, $pfx);
-      printf(";   %d\n", $_->idx()) for ( @$ar );
+      printf(";  table %s (%s line %d) %d %ss:\n", $ar->[0]->tab_name(), $ar->[0]->conn_name(), $ar->[0]->line(), $ar_size, $pfx);
+      printf(";   %d (%s)\n", $_->idx(), $_->name()) for ( @$ar );
     }
   }
 }
