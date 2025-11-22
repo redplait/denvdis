@@ -3587,6 +3587,8 @@ sub make_PR_CC_ccond
   fie = kv.find("dummyCC"); if ( fie != kv.end() ) return 1;
   fie = kv.find("writeCC"); if ( fie != kv.end() ) return 1;
   fie = kv.find("TestCC"); if ( fie != kv.end() ) return 1;
+  // last field - CCPR
+  fie = kv.find("CCPR"); if ( fie != kv.end() ) return 1;
   return 0;
 END_PR_CC
   $g_used_ccond{$name} = $body;
