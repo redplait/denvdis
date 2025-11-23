@@ -52,6 +52,15 @@ my $gU_found = 0; # total possible reuse count
 my $gU_solved = 0; # actual reuse count
 my $gU_dis_failed = 0; # times of disasm failures
 my $gU_not_found = 0;  # cannot find reg or mask
+# latency stat, 0 - total, 1 - missed predicted stall, 2 - bad stall
+my @gl_stat = ( 0, 0, 0 );
+
+sub dump_lstat
+{
+  return unless($gl_stat[0]);
+  printf("Missed latency: %d (%f)\n", $gl_stat[1], $gl_stat[1] * 1.0 / $gl_stat[0] ) if ( $gl_stat[1] );
+  printf("Mismatched latency: %d (%f)\n", $gl_stat[2], $gl_stat[2] * 1.0 / $gl_stat[0] ) if ( $gl_stat[2] );
+}
 
 sub dump_ruc
 {
@@ -350,6 +359,26 @@ sub intersect_lat
   $res;
 }
 
+# update latency stat
+# args: current predicted stall (or undef), sched ctx to extract 'curr' stall
+sub update_lstat
+{
+  my($pred, $sctx) = @_;
+  $gl_stat[0]++;
+  unless( defined $pred ) {
+    $gl_stat[1]++;
+    printf("; [!] Missed latency\n");
+    return;
+  }
+  return unless defined($sctx);
+  my $diff = abs( $pred - $sctx->{'curr'});
+  if ( $diff > 1 ) {
+    $gl_stat[2]++;
+    printf("; [!] Mismatched latency\n");
+    return;
+  }
+}
+
 # dump latency tables
 sub dump_latmap
 {
@@ -369,9 +398,10 @@ sub dump_latmap
   }
 }
 
+# args: block, sched ctx
 sub dump_lat
 {
-  my $block = shift;
+  my($block, $sctx) = @_;
   # columns
   my $cols = $g_ced->lcols();
   my $l2cols;
@@ -390,7 +420,7 @@ sub dump_lat
   }
   # brute force 3 variants
   # 1) intersect with itself
-  intersect_lat($l2cols, $l2rows, 'self cols with self rows') if ( defined($l2cols) && defined($l2rows) );
+  update_lstat( intersect_lat($l2cols, $l2rows, 'self cols with self rows'), $sctx ) if ( defined($l2cols) && defined($l2rows) );
   if ( defined $block ) {
     # 2) intersect current columns with rows from previous instruction
     intersect_lat($l2cols, $block->[12], 'current cols with previous rows') if defined($block->[12]);
@@ -407,7 +437,8 @@ sub dump_lat
 # scheduler context
 # for old 64/88 bit SM has 'dual' field
 # for -b option this is just map where key is barrier index and value is [ offset, R/W ]
-# current stall count stored in 'roll' field
+# current stall rolling sum stored in 'roll' field
+# current stall count in field 'curr', previous in 'prev'
 # for new 88/128 bit stall count for barriers insts map in field 'c', key is offset
 sub make_sctx
 {
@@ -537,6 +568,9 @@ sub process_sched
     $is_dual = $stall == 0x4;
     $stall &= 0xf; # bit 0..3
     if ( defined $opt_b ) {
+      # previous & current stall
+      $sctx->{'prev'} = $sctx->{'curr'};
+      $sctx->{'curr'} = $stall;
       # update rolling stall count
       $sctx->{'roll'} += $stall;
       # dump current stall counts
@@ -552,6 +586,9 @@ sub process_sched
       my $curr_stall = $sctx->{'roll'};
       my $s = $g_ced->render_cword($ctrl);
       $stall = ($ctrl & 0x0000f) >> 0;
+      # previous & current stall
+      $sctx->{'prev'} = $sctx->{'curr'};
+      $sctx->{'curr'} = $stall;
       # dump current stall counts
       printf("; stall %d total %d cword %X %s\n", $stall, $curr_stall, $ctrl, $s);
       # track barriers - ripped from maxas printCtrl
@@ -707,7 +744,7 @@ sub dump_ins
     }
   }
   # latency tabs
-  dump_lat($block) if defined ( $opt_l );
+  dump_lat($block, $sctx) if defined ( $opt_l );
   1;
 }
 
@@ -1565,3 +1602,4 @@ foreach my $s ( @es ) {
 dump_ruc() if defined($opt_u);
 dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
+dump_lstat() if defined($opt_l);
