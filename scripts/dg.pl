@@ -52,14 +52,43 @@ my $gU_found = 0; # total possible reuse count
 my $gU_solved = 0; # actual reuse count
 my $gU_dis_failed = 0; # times of disasm failures
 my $gU_not_found = 0;  # cannot find reg or mask
-# latency stat, 0 - total, 1 - missed predicted stall, 2 - bad stall
-my @gl_stat = ( 0, 0, 0 );
+# latency stat, 0 - total, 1 - missed predicted stall, 2 - bad stall, 3 - map of missed opcodes, 4 - map of bad stalls opcodes
+my @gl_stat = ( 0, 0, 0, (), () );
+my @gl_pcols_stat = ( 0, 0, 0, (), () );
+my @gl_prows_stat = ( 0, 0, 0, (), () );
 
+# arg - one of 3 latency stat, header
 sub dump_lstat
 {
-  return unless($gl_stat[0]);
-  printf("Missed latency: %d (%f)\n", $gl_stat[1], $gl_stat[1] * 1.0 / $gl_stat[0] ) if ( $gl_stat[1] );
-  printf("Mismatched latency: %d (%f)\n", $gl_stat[2], $gl_stat[2] * 1.0 / $gl_stat[0] ) if ( $gl_stat[2] );
+  my($gls, $hdr) = @_;
+  return unless($gls->[0]);
+  printf("; -- %s:\n", $hdr) if defined($hdr);
+  printf("Missed latency: %d (%f)\n", $gls->[1], $gls->[1] * 1.0 / $gls->[0] ) if ( $gls->[1] );
+  # dump missed opcodes
+  my $missed = $gls->[3];
+  if ( defined $missed ) {
+    my @m = sort { $missed->{$b} <=> $missed->{$a} } keys %$missed;
+    if ( scalar @m ) {
+      printf(" missed stat:\n");
+      printf("  %d - %s\n", $missed->{$_}, $_) for @m;
+    }
+  }
+  printf("Mismatched latency: %d (%f)\n", $gls->[2], $gls->[2] * 1.0 / $gls->[0] ) if ( $gls->[2] );
+  my $bad = $gls->[4];
+  if ( defined $bad ) {
+    my @m = sort { $bad->{$b} <=> $bad->{$a} } keys %$bad;
+    if ( scalar @m ) {
+      printf(" bad stalls stat:\n");
+      printf("  %d - %s\n", $bad->{$_}, $_) for @m;
+    }
+  }
+}
+
+sub dump_lat_stat
+{
+  dump_lstat(\@gl_stat, 'curr columns with curr rows');
+  dump_lstat(\@gl_pcols_stat, 'prev columns with curr rows');
+  dump_lstat(\@gl_prows_stat, 'curr columns with prev rows');
 }
 
 sub dump_ruc
@@ -360,21 +389,23 @@ sub intersect_lat
 }
 
 # update latency stat
-# args: current predicted stall (or undef), sched ctx to extract 'curr' stall
+# args: current predicted stall (or undef), sched ctx to extract 'curr' stall, ref to lstat data
 sub update_lstat
 {
-  my($pred, $sctx) = @_;
-  $gl_stat[0]++;
+  my($pred, $sctx, $gl) = @_;
+  $gl->[0]++;
   unless( defined $pred ) {
-    $gl_stat[1]++;
+    $gl->[1]++;
+    $gl->[3]->{$g_ced->ins_name()}++;
     printf("; [!] Missed latency\n");
     return;
   }
   return unless defined($sctx);
   my $diff = abs( $pred - $sctx->{'curr'});
   if ( $diff > 1 ) {
-    $gl_stat[2]++;
+    $gl->[2]++;
     printf("; [!] Mismatched latency\n");
+    $gl->[4]->{$g_ced->ins_name()}++;
     return;
   }
 }
@@ -420,7 +451,7 @@ sub dump_lat
   }
   # brute force 3 variants
   # 1) intersect with itself
-  update_lstat( intersect_lat($l2cols, $l2rows, 'self cols with self rows'), $sctx ) if ( defined($l2cols) && defined($l2rows) );
+  update_lstat( intersect_lat($l2cols, $l2rows, 'self cols with self rows'), $sctx, \@gl_stat ) if ( defined($l2cols) && defined($l2rows) );
   if ( defined $block ) {
     # 2) intersect current columns with rows from previous instruction
     intersect_lat($l2cols, $block->[12], 'current cols with previous rows') if defined($block->[12]);
@@ -1602,4 +1633,4 @@ foreach my $s ( @es ) {
 dump_ruc() if defined($opt_u);
 dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
-dump_lstat() if defined($opt_l);
+dump_lat_stat() if defined($opt_l);
