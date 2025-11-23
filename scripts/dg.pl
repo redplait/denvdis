@@ -66,7 +66,7 @@ sub dump_lstat
   printf("Missed latency: %d (%f)\n", $gls->[1], $gls->[1] * 1.0 / $gls->[0] ) if ( $gls->[1] );
   # dump missed opcodes
   my $missed = $gls->[3];
-  if ( defined $missed ) {
+  if ( defined($opt_v) && defined($missed) ) {
     my @m = sort { $missed->{$b} <=> $missed->{$a} } keys %$missed;
     if ( scalar @m ) {
       printf(" missed stat:\n");
@@ -75,7 +75,7 @@ sub dump_lstat
   }
   printf("Mismatched latency: %d (%f)\n", $gls->[2], $gls->[2] * 1.0 / $gls->[0] ) if ( $gls->[2] );
   my $bad = $gls->[4];
-  if ( defined $bad ) {
+  if ( defined($opt_v) && defined($bad) ) {
     my @m = sort { $bad->{$b} <=> $bad->{$a} } keys %$bad;
     if ( scalar @m ) {
       printf(" bad stalls stat:\n");
@@ -390,7 +390,7 @@ sub intersect_lat
 
 # update latency stat
 # args: current predicted stall (or undef), sched ctx to extract 'curr' stall, ref to lstat data
-sub update_lstat
+sub update_lstat($$$)
 {
   my($pred, $sctx, $gl) = @_;
   $gl->[0]++;
@@ -454,12 +454,10 @@ sub dump_lat
   update_lstat( intersect_lat($l2cols, $l2rows, 'self cols with self rows'), $sctx, \@gl_stat ) if ( defined($l2cols) && defined($l2rows) );
   if ( defined $block ) {
     # 2) intersect current columns with rows from previous instruction
-    intersect_lat($l2cols, $block->[12], 'current cols with previous rows') if defined($block->[12]);
+    update_lstat( intersect_lat($l2cols, $block->[12], 'current cols with previous rows'), $sctx, \@gl_prows_stat) if defined($block->[12]);
     # 3) intersect columns from previous instruction with current rows
-    intersect_lat($block->[11], $l2rows, 'previous cols with current rows') if defined($block->[11]);
-  }
-  # store
-  if ( defined $block ) {
+    update_lstat( intersect_lat($block->[11], $l2rows, 'previous cols with current rows'), $sctx, \@gl_pcols_stat) if defined($block->[11]);
+    # store
     $block->[11] = $l2cols;
     $block->[12] = $l2rows;
   }
