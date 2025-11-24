@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_d $opt_g $opt_l $opt_p $opt_r $opt_t $opt_u $opt_U $opt_v/;
+use vars qw/$opt_b $opt_d $opt_g $opt_l $opt_p $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v/;
 
 sub usage()
 {
@@ -23,6 +23,7 @@ Usage: $0 [options] file.cubin
   -l - dump latency info
   -p - dump properties
   -r - dump relocs
+  -s - try to find instructions to swap and reduce stall count
   -t - track registers
   -u - try detect register reuse cache
   -U - analyze possible registers reuse
@@ -580,6 +581,17 @@ sub sched_check
   $res;
 }
 
+# args: block, index, value
+sub store_s_idx($$$)
+{
+  my($block, $idx, $v) = @_;
+  return unless defined($block);
+  return unless defined($opt_s);
+  my $ar = $block->[13];
+  $ar->[$idx] = $v;
+  1;
+}
+
 # args: offset, sched ctx, block
 sub process_sched
 {
@@ -596,6 +608,8 @@ sub process_sched
     $stall = $ctrl & 0x2f;
     $is_dual = $stall == 0x4;
     $stall &= 0xf; # bit 0..3
+    store_s_idx($b, 7, $stall);
+    store_s_idx($b, 8, $is_dual);
     if ( defined $opt_b ) {
       # previous & current stall
       $sctx->{'prev'} = $sctx->{'curr'};
@@ -608,13 +622,17 @@ sub process_sched
   } else {
     $ctrl = $g_ced->cword();
     # low 5 bits
-    $is_dual = $g_ced->ins_dual() if ( $g_w == 88 );
+    if ( $g_w == 88 ) {
+      $is_dual = $g_ced->ins_dual();
+      store_s_idx($b, 8, $is_dual) if ( $is_dual );
+    }
     # render
     if ( defined $opt_b ) {
       my @stat = (0, 0, 0);
       my $curr_stall = $sctx->{'roll'};
       my $s = $g_ced->render_cword($ctrl);
       $stall = ($ctrl & 0x0000f) >> 0;
+      store_s_idx($b, 7, $stall);
       # previous & current stall
       $sctx->{'prev'} = $sctx->{'curr'};
       $sctx->{'curr'} = $stall;
@@ -687,6 +705,7 @@ sub dump_ins
   my $brt = $g_ced->ins_brt();
   my $scbd = $g_ced->ins_scbd();
   my $mw = $g_ced->ins_min_wait();
+  my $i_text = $g_ced->ins_text();
   if ( defined $opt_v ) {
     my $cl = $g_ced->ins_class();
     my $ln = $g_ced->ins_line();
@@ -697,11 +716,26 @@ sub dump_ins
     printf(" min_wait: %d", $mw) if $mw;
     printf("\n");
   }
+  # store data for -s
+  if ( defined($block) && defined($opt_s) ) {
+    my $ar = $block->[13];
+    $ar->[0] = $off;
+    $ar->[1] = $g_ced->ins_name();
+    $ar->[2] = $i_text;
+    $ar->[5] = $brt;
+    $ar->[6] = $g_ced->has_pred();
+  }
   # is empty instruction - nop or with !@PT predicate
   my $skip = is_skip();
   # check instr for label
   if ( !$skip ) { # && $brt != Cubin::Ced::BRT_RETURN ) {
     my($rel, $is_a) = has_rel($off);
+    # store data for -s
+    if ( defined($block) && defined($opt_s) && defined($rel) ) {
+      my $ar = $block->[13];
+      if ( $is_a ) { $ar->[4] = 1; }
+      else { $ar->[3] = 1; }
+    }
     # ignore instr having relocs
     unless($rel) {
       unless( defined $block ) {
@@ -726,7 +760,7 @@ sub dump_ins
   my $dual = get_dual($sctx);
   # dump body
   printf("/*%X*/%s", $off, get_spfx($dual));
-  printf("%s%s;", $g_ced->ins_text(), get_ssfx($dual));
+  printf("%s%s;", $i_text, get_ssfx($dual));
   if ( $skip ) {
     printf("\n");
     return 0;
@@ -1455,13 +1489,27 @@ sub dg
    [5] - map of read/write
    [6] - array of wait for previous instruction
    [7] - map of read/write for previous instruction
-  registers tracking
+  registers tracking (-t option):
    [8] - snap array from current instruction
    [9] - snap array from previous instruction
   [10] - map with currently reused registers - for -u option
-   latency tables
+   latency tables (-l option):
   [11] - col indexes of previous instruction from l2map
   [12] - row indexes of previous instruction from l2map
+   to find swappable instructions (-s option) we need more sophisticated data to keep some instructions properties
+   I chose array, indexes (first 7 from dump_ins) are
+    * 0 - offset
+    * 1 - instruction name
+    * 2 - full instruction text
+    * 3 - has rel offset
+    * 4 - has rela offset
+    * 5 - brt
+    * 6 - has cond
+    * 7 - stall count - filled in process_sched
+    * 8 - is dual - filled in process_sched
+    * 9 - TBC
+  [13] - properties for current instruction
+  [14] - properties for previous instruction
 =cut
   my @bbs;
   my $add_block = sub {
@@ -1474,6 +1522,10 @@ sub dg
       my %ruc;
       $res[10] = \%ruc;
     }
+    if ( defined $opt_s ) {
+      my @tmp;
+      $res[13] = \@tmp;
+    }
     \@res;
   };
   my $cb;
@@ -1485,7 +1537,7 @@ sub dg
 # we have 8 cases here
 # has block  current operand  what to do
 #   N          sym            add new block and add symbol
-#   Y          sym            close prev block and add new
+#   Y          sym            close prev block and start new, also add symbol
 #   N        dead loop        skip
 #   Y        dead loop        close prev block
 #   N        back ref         add new block and back ref to it
@@ -1567,7 +1619,7 @@ sub dg
 }
 
 # main
-my $state = getopts("bdglprtUuv");
+my $state = getopts("bdglprstUuv");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -1577,6 +1629,11 @@ if ( -1 == $#ARGV ) {
 croak("you can track registers only with -g option") if ( defined($opt_t) && !defined($opt_g) );
 croak("-u must be used with -t option") if ( defined($opt_u) && !defined($opt_t) );
 croak("-U must be used with -t option") if ( defined($opt_U) && !defined($opt_t) );
+if ( defined $opt_s ) {
+ croak("you can use -s only with CFG -g option") unless defined($opt_g);
+ croak("-s must be used with -t option") unless defined($opt_t);
+ croak("-s must be used with -b option") unless defined($opt_b);
+}
 
 # load elf, symbols, ced & attrs
 $g_elf = Elf::Reader->new($ARGV[0]);
