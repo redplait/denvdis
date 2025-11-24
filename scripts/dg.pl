@@ -592,6 +592,38 @@ sub store_s_idx($$$)
   1;
 }
 
+# check if two adjacent instructions can be swapped
+# Warning! this function should be called after checking that they are truly independent - it just estimate if they can be swapped
+# args: block ref
+# returns still gains
+sub can_swap
+{
+  my $b = shift;
+  return unless defined($b);
+  return if ( !defined($b->[13]) || !defined($b->[14]) );
+  my $curr = $b->[13];
+  my $prev = $b->[14];
+  # check if any of instructions
+  # 1) dual
+  return 0 if ( $curr->[8] || $prev->[8] );
+  # 2) brt
+  return 0 if ( $curr->[5] || $prev->[5] );
+  # 3) has rela
+  return 0 if ( $curr->[4] || $prev->[4] );
+  # check cond
+  return 0 if ( $curr->[6] != $prev->[6] );
+  # if they have cond - check that they are the same
+  if ( $curr->[6] ) {
+    return 0 if ( $curr->[2] !~ /^@(\!?\w+)/ );
+    my $c_cond = $1;
+    return 0 if ( $prev->[2] !~ /^@(\!?\w+)/ );
+    return 0 unless ( $c_cond eq $1 );
+  }
+  # check if we can get some gain from swapping
+  return $prev->[7] if ( $curr->[7] > $prev->[7] );
+  0;
+}
+
 # args: offset, sched ctx, block
 sub process_sched
 {
@@ -1208,12 +1240,15 @@ sub gdisasm
     my $idx = 0;
     # disasm every instruction in this block
     do {
+      my $may_swap = 0;
       $off = $g_ced->get_off();
       my $res = dump_ins($off, $sctx, $block, $rt);
       # check shared barriers
       if ( defined $opt_b ) {
         my $sc = sched_check($block);
         printf("; shared barrier(s) %d\n", $sc) if ( $sc );
+        # check if we don't share any barriers
+        $may_swap = 1 if ( defined($opt_s) && $res && !$sc );
       }
       # dump snap
       if ( $res && defined($rt) ) {
@@ -1227,10 +1262,24 @@ sub gdisasm
           $block->[9] = [ $g, $pr ];
         } else {
           $block->[8] = [ $g, $pr ];
-          is_interleaved($block);
+          my $inter = is_interleaved($block);
+          if ( $may_swap && !$inter ) {
+            my $gain = can_swap($block);
+            printf("; Can swap to reduce %d\n", $gain) if ( defined($gain) && $gain > 0 );
+          }
           # shift for next instruction
           $block->[9] = $block->[8];
           $block->[8] = undef;
+        }
+      }
+      # swap -s data
+      if ( defined $opt_s ) {
+        if ( !$res ) {
+          $block->[13] = [];
+          $block->[14] = [];
+        } else {
+          $block->[14] = $block->[13];
+          $block->[13] = [];
         }
       }
       $rt->snap_clear() if ( defined $rt );
