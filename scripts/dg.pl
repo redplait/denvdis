@@ -58,20 +58,22 @@ my @gl_stat = ( 0, 0, 0, (), () );
 my @gl_pcols_stat = ( 0, 0, 0, (), () );
 my @gl_prows_stat = ( 0, 0, 0, (), () );
 # reordering stat - total amount of instructions, swappable pairs count, total stall gain
-my($gs_total, $gs_ords, $gs_gain);
+my($gs_total, $gs_ords, $gs_gain, $gs_old_stall);
 
 sub dump_swap_stat
 {
   return unless($gs_ords);
   printf("Reordering stat: total %d swappable %d (%f)\n", $gs_total, $gs_ords, $gs_ords * 1.0 / $gs_total);
-  printf(" total gain %d (%f avg)\n", $gs_gain, $gs_gain * 1.0 / $gs_ords);
+  printf(" total gain %d (%f avg) gain/old ratio %f \n", $gs_gain, $gs_gain * 1.0 / $gs_ords, $gs_gain * 1.0 / $gs_old_stall);
 }
 
-# arg: stall gain
+# args: stall gain, total old stall in pair
 sub upd_swap_stat
 {
+  my($gain, $old) = @_;
   $gs_ords++;
-  $gs_gain += shift;
+  $gs_gain += $gain;
+  $gs_old_stall += $old;
 }
 
 # arg - one of 3 latency stat, header
@@ -627,6 +629,7 @@ sub can_swap
   # 3) has rela
   return 0 if ( $curr->[4] || $prev->[4] );
   # check cond
+  return 0 if ( !defined($curr->[6]) || !defined($prev->[6]) );
   return 0 if ( $curr->[6] != $prev->[6] );
   # if they have cond - check that they are the same
   if ( $curr->[6] ) {
@@ -638,6 +641,14 @@ sub can_swap
   # check if we can get some gain from swapping
   return $prev->[7] if ( $curr->[7] > $prev->[7] );
   0;
+}
+
+# extract old stall count for pair of adjacent instructions
+# arg - block
+sub get_old_pair_stall
+{
+  my $b = shift;
+  $b->[13]->[7] + $b->[14]->[7];
 }
 
 # args: offset, sched ctx, block
@@ -1282,7 +1293,7 @@ sub gdisasm
           if ( $may_swap && !$inter ) {
             my $gain = can_swap($block);
             if ( defined($gain) && $gain > 0 ) {
-              upd_swap_stat($gain);
+              upd_swap_stat($gain, get_old_pair_stall($block));
               printf("; Can swap to reduce %d\n", $gain);
             }
           }
