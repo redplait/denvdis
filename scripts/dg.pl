@@ -57,6 +57,22 @@ my $gU_not_found = 0;  # cannot find reg or mask
 my @gl_stat = ( 0, 0, 0, (), () );
 my @gl_pcols_stat = ( 0, 0, 0, (), () );
 my @gl_prows_stat = ( 0, 0, 0, (), () );
+# reordering stat - total amount of instructions, swappable pairs count, total stall gain
+my($gs_total, $gs_ords, $gs_gain);
+
+sub dump_swap_stat
+{
+  return unless($gs_ords);
+  printf("Reordering stat: total %d swappable %d (%f)\n", $gs_total, $gs_ords, $gs_ords * 1.0 / $gs_total);
+  printf(" total gain %d (%f avg)\n", $gs_gain, $gs_gain * 1.0 / $gs_ords);
+}
+
+# arg: stall gain
+sub upd_swap_stat
+{
+  $gs_ords++;
+  $gs_gain += shift;
+}
 
 # arg - one of 3 latency stat, header
 sub dump_lstat
@@ -1265,7 +1281,10 @@ sub gdisasm
           my $inter = is_interleaved($block);
           if ( $may_swap && !$inter ) {
             my $gain = can_swap($block);
-            printf("; Can swap to reduce %d\n", $gain) if ( defined($gain) && $gain > 0 );
+            if ( defined($gain) && $gain > 0 ) {
+              upd_swap_stat($gain);
+              printf("; Can swap to reduce %d\n", $gain);
+            }
           }
           # shift for next instruction
           $block->[9] = $block->[8];
@@ -1278,6 +1297,7 @@ sub gdisasm
           $block->[13] = [];
           $block->[14] = [];
         } else {
+          $gs_total++;
           $block->[14] = $block->[13];
           $block->[13] = [];
         }
@@ -1738,3 +1758,4 @@ dump_ruc() if defined($opt_u);
 dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
 dump_lat_stat() if defined($opt_l);
+dump_swap_stat() if defined($opt_s);
