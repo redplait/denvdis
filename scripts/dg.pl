@@ -327,13 +327,13 @@ sub dump_rels
   my $is_a = $pfx =~ /A$/;
   my $rsub = $is_a ? \&read_rela : \&read_rel;
   my $res = $rsub->($g_attrs, $g_elf, $s_idx, \%rels);
-  printf(" %s %d: %d\n", $pfx, $r_idx, $res);
   if ( $is_a ) {
     $gs_rela = $res ? \%rels: undef;
   } else {
     $gs_rel = $res ? \%rels: undef;
   }
   return if ( !$res );
+  printf(" %s %d: %d\n", $pfx, $r_idx, $res);
   foreach my $r ( sort { $a <=> $b } keys %rels ) {
     printf("  %X [%d] type %d", $r, $rels{$r}->[0], $rels{$r}->[2]);
     my $rname = $g_ced->reloc_name($rels{$r}->[2]);
