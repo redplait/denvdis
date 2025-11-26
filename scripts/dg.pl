@@ -37,8 +37,8 @@ my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
 # stat for barriers, key is ins name, value is [ wait, read, write ] count
 my %g_barstat;
 # per code section globals
-# syms inside section & curr_index
-my(@gs_syms, $gs_cidx);
+# syms inside section, curr_index and cached symbols
+my(@gs_syms, $gs_cidx, $g_afsyms);
 # relocs
 my($gs_rel, $gs_rela);
 # cb params
@@ -170,10 +170,11 @@ sub sym
 sub setup_syms
 {
   my $sidx = shift;
-  @gs_syms = sort { $a->[1] <=> $b->[1] }
-   # grep named with right section at [5] and type at [4]
-   grep { $_->[5] == $sidx && $_->[0] ne '' && $_->[4] != STT_SECTION } @$g_syms;
   $gs_cidx = 0;
+  return unless defined($g_afsyms);
+  @gs_syms = sort { $a->[1] <=> $b->[1] }
+   # grep named with right section at [5]
+   grep { $_->[5] == $sidx } @$g_afsyms;
   if ( defined $opt_v ) {
     printf(" %d symbols:\n", scalar @gs_syms);
     foreach my $s ( @gs_syms ) {
@@ -1725,6 +1726,10 @@ if ( defined $opt_s ) {
 $g_elf = Elf::Reader->new($ARGV[0]);
 die("cannot open $ARGV[0]") unless defined($g_elf);
 $g_syms = read_symbols($g_elf);
+if ( defined $g_syms ) {
+  my @tmp = grep { $_->[0] ne '' && $_->[4] != STT_SECTION && $_->[4] != STT_FILE } @$g_syms;
+  $g_afsyms = \@tmp;
+}
 $g_ced = Cubin::Ced->new($g_elf);
 die("cannot load cubin $ARGV[0]") unless defined($g_ced);
 $g_w = $g_ced->width();
