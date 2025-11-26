@@ -1613,6 +1613,10 @@ sub dg
     $cb->[1] = shift;
     undef $cb;
   };
+  # check if we need to add first block
+  my $need_firstb = 1;
+  $need_firstb = 0 if ( scalar(@sorted) && 'ARRAY' eq $sorted[0]->[1] && $sorted[0]->[0] <= $code_off );
+  $cb = $add_block->($code_off) if ( $need_firstb );
   foreach my $cop ( @sorted ) {
 # we have 8 cases here
 # has block  current operand  what to do
@@ -1671,7 +1675,9 @@ sub dg
     # Как будто, как будто... Только я зачем тут-то?
   }
   # check if last block has last addr
-  $bbs[-1]->[1] = $off + 1 unless( defined $bbs[-1]->[1] );
+  if ( scalar @bbs ) {
+    $bbs[-1]->[1] = $off + 1 unless( defined $bbs[-1]->[1] );
+  }
   dump_blocks(\@bbs, 0) if ( defined $opt_d );
   # pass 3 - resolve all back-references to blocks (now they are just offsets)
   # surprisingly this is most compute-intensive part - if we have M blocks then complexity will be O(M * M * log(M))
