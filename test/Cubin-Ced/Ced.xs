@@ -216,6 +216,10 @@ class Ced_perl: public CEd_base {
   const char *sm_name() const {
     return m_sm_name;
   }
+  const NV_field *field_at(IV off) const {
+    if ( !has_ins() ) return nullptr;
+    return ins()->field_atoff((short)off);
+  }
   SV *extract_instrs() const;
   bool extract_insn(const char *, std::vector<SV *> &);
   int sef_func(const char *fname) {
@@ -1610,6 +1614,29 @@ by_name(SV *obj, const char *name)
       XSRETURN(1);
     }
   }
+
+void
+field_at(SV *obj, IV off)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   auto *f = e->field_at(off);
+ PPCODE:
+   if ( !f ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+   } else {
+    SV *name = newSVpv(f->name.data(), f->name.size());
+    if ( gimme == G_ARRAY) {
+      EXTEND(SP, 2);
+      mPUSHs(name);
+      mPUSHi(f->mask[0].second); // size
+    } else {
+      ST(0) = name;
+      XSRETURN(1);
+    }
+   }
 
 int rz(SV *obj)
  INIT:
