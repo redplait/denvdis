@@ -2065,9 +2065,11 @@ sub make_single_test
   my @fout;
   if ( defined $opt_B ) {
     my @res;
-    find_in_dectree($g_dec_tree, \@nb, \@res, 1);
+    my @verb = ( ('.') x $g_size );
+    find_in_dectree($g_dec_tree, \@nb, \@res, \@verb);
     # dump results
     printf("found %d\n", scalar @res);
+    printf("%s\n", join('', @verb));
     foreach my $r ( @res ) {
       printf("%s\n", $r);
       # cmp with mask
@@ -2447,7 +2449,10 @@ sub find_in_dectree
   }
   push @$curr, @{ $n->[4] } if ( scalar @{ $n->[4] } );
   my $bit = $b->[$n->[1]];
-  printf("check_bit %d: %d\n", $g_size - 1 - $n->[1], $bit) if defined($verb);
+  if ( defined $verb ) {
+    printf("check_bit %d: %d\n", $g_size - 1 - $n->[1], $bit);
+    $verb->[$n->[1]] = $bit if ( 'ARRAY' eq ref $verb );
+  }
   if ( !$bit ) {
     return 0 if ( !defined $n->[2] );
     return find_in_dectree($n->[2], $b, $curr, $verb);
