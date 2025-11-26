@@ -264,6 +264,13 @@ struct nv_instr {
     return ( eic != prs.end() );
    });
  }
+ // find field at some offset
+ const NV_field *field_atoff(short idx) const {
+   for ( auto &f: fields ) {
+     if ( f.mask[0].first == idx ) return &f;
+   }
+   return nullptr;
+ }
 } __attribute__ ((aligned (8)));
 
 // binary tree
