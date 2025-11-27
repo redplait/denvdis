@@ -1,0 +1,235 @@
+OPERATION SETS
+    int_pipe = {CS2R,CS2Rint_pipe,ICMP,ICMPint_pipe,ISCADD,ISCADDint_pipe,ISCADD32I,ISCADD32Iint_pipe,IMNMX,IMNMXint_pipe,BFE,BFEint_pipe,BFI,BFIint_pipe,SHR,SHRint_pipe,SHL,SHLint_pipe,ISET,ISETint_pipe,ISETP,ISETPint_pipe,SHF,SHFint_pipe,FCMP,FCMPint_pipe,FMNMX,FMNMXint_pipe,FSET,FSETint_pipe,FSETP,FSETPint_pipe,SEL,SELint_pipe,FSEL,FSELint_pipe,P2R,P2Rint_pipe,R2P,R2Pint_pipe,CSET,CSETint_pipe,CSETP,CSETPint_pipe,PSET,PSETint_pipe,PSETP,PSETPint_pipe,LEPC,LEPCint_pipe,VOTE,VOTEint_pipe,LEA,LEAint_pipe,PRMT,PRMTint_pipe,VMAD,VMADint_pipe,VADD,VADDint_pipe,VABSDIFF,VABSDIFFint_pipe,VMNMX,VMNMXint_pipe,VSET,VSETint_pipe,VSHL,VSHLint_pipe,VSHR,VSHRint_pipe,VSETP,VSETPint_pipe,VABSDIFF4,VABSDIFF4int_pipe,IDE,IDEint_pipe,IADD3,IADD3int_pipe,IADD,IADDint_pipe,IADD32I,IADD32Iint_pipe,LOP,LOPint_pipe,LOP32I,LOP32Iint_pipe,LOP3,LOP3int_pipe,XMAD,XMADint_pipe,MOV,MOVint_pipe,MOV32I,MOV32Iint_pipe,PLOP3,PLOP3int_pipe,SGXT,SGXTint_pipe,BMSK,BMSKint_pipe,IABS,IABSint_pipe,IDP4A,IDP4Aint_pipe,IDP,IDPint_pipe,RPCMOV,RPCMOVint_pipe};
+
+    mio_pipe = {IMADSP,IMADSPmio_pipe,MUFU,MUFUmio_pipe,POPC,POPCmio_pipe,FLO,FLOmio_pipe,BREV,BREVmio_pipe,IPA,IPAmio_pipe,F2F,F2Fmio_pipe,F2I,F2Imio_pipe,I2F,I2Fmio_pipe,I2I,I2Imio_pipe,FRND,FRNDmio_pipe,FCHK,FCHKmio_pipe,F2F64,F2F64mio_pipe,I2F64,I2F64mio_pipe,F2I64,F2I64mio_pipe,FRND64,FRND64mio_pipe,AL2P,AL2Pmio_pipe,SETLMEMBASE,SETLMEMBASEmio_pipe,GETLMEMBASE,GETLMEMBASEmio_pipe,S2R,S2Rmio_pipe,B2R,B2Rmio_pipe,R2B,R2Bmio_pipe,BAR,BARmio_pipe,TEX,TEXmio_pipe,TEXS,TEXSmio_pipe,TLD,TLDmio_pipe,TLDS,TLDSmio_pipe,TLD4,TLD4mio_pipe,TLD4S,TLD4Smio_pipe,TMML,TMMLmio_pipe,TXA,TXAmio_pipe,TXD,TXDmio_pipe,TXQ,TXQmio_pipe,PIXLD,PIXLDmio_pipe,LDC,LDCmio_pipe,VILD,VILDmio_pipe,ALD,ALDmio_pipe,LDS,LDSmio_pipe,SHFL,SHFLmio_pipe,ISBERD,ISBERDmio_pipe,ATOMS,ATOMSmio_pipe,AST,ASTmio_pipe,STS,STSmio_pipe,OUT,OUTmio_pipe,MEMBAR,MEMBARmio_pipe,ERRBAR,ERRBARmio_pipe,STG,STGmio_pipe,STL,STLmio_pipe,ST,STmio_pipe,RED,REDmio_pipe,SUST,SUSTmio_pipe,SURED,SUREDmio_pipe,LDG,LDGmio_pipe,LDL,LDLmio_pipe,LD,LDmio_pipe,ATOM,ATOMmio_pipe,ATOMG,ATOMGmio_pipe,CCTL,CCTLmio_pipe,CCTLL,CCTLLmio_pipe,SULD,SULDmio_pipe,SUATOM,SUATOMmio_pipe,SUCCTL,SUCCTLmio_pipe,CCTLT,CCTLTmio_pipe,MATCH,MATCHmio_pipe,QSPC,QSPCmio_pipe,SETCTAID,SETCTAIDmio_pipe};
+
+    fe_pipe = {PMTRIGfe_pipe,PMTRIG,NOP,NOPfe_pipe,DEPBAR,DEPBARfe_pipe,STP,STPfe_pipe,VOTE_VTG,VOTE_VTGfe_pipe,CSMTEST,CSMTESTfe_pipe};
+
+    fmalighter_pipe = {FFMA,FFMAfmalighter_pipe,FFMA32I,FFMA32Ifmalighter_pipe,FADD,FADDfmalighter_pipe,FADD32I,FADD32Ifmalighter_pipe,FMUL,FMULfmalighter_pipe,FMUL32I,FMUL32Ifmalighter_pipe,FSWZADD,FSWZADDfmalighter_pipe,RRO,RROfmalighter_pipe,IMAD,IMADfmalighter_pipe,IMUL,IMULfmalighter_pipe,IMAD32I,IMAD32Ifmalighter_pipe,IMUL32I,IMUL32Ifmalighter_pipe,};
+
+    fp16_pipe = {HADD2fp16_pipe,HADD2,HADD2_32Ifp16_pipe,HADD2_32I,HFMA2fp16_pipe,HFMA2,HFMA2_32Ifp16_pipe,HFMA2_32I,HMUL2fp16_pipe,HMUL2,HMUL2_32Ifp16_pipe,HMUL2_32I,HSET2fp16_pipe,HSET2,HSETP2fp16_pipe,HSETP2,HMMA,HMMAfp16_pipe};
+
+    cbu_pipe = {BSYNC,BSYNCcbu_pipe,KIL,KILcbu_pipe,KILL,KILLcbu_pipe,YIELD,YIELDcbu_pipe,NANOSLEEP,NANOSLEEPcbu_pipe,NANOTRAP,NANOTRAPcbu_pipe,BRX,BRXcbu_pipe,JMX,JMXcbu_pipe,CALL,CALLcbu_pipe,RET,RETcbu_pipe,BRA,BRAcbu_pipe,JMP,JMPcbu_pipe,EXIT,EXITcbu_pipe,RTT,RTTcbu_pipe,BPT,BPTcbu_pipe,BSSY,BSSYcbu_pipe,BSSY_OLD,BSSY_OLDcbu_pipe,BMOVcbu_pipe,BMOV,BREAK,BREAKcbu_pipe,WARPSYNC,WARPSYNCcbu_pipe};
+
+    fma64lite_pipe = {DFMA,DFMAfma64lite_pipe,DADD,DADDfma64lite_pipe,DMUL,DMULfma64lite_pipe,DSETP,DSETPfma64lite_pipe};
+
+    fma64heavy_pipe = {DMNMX,DMNMXfma64heavy_pipe,DSET,DSETfma64heavy_pipe};
+
+
+    mixed_pipe = { VMAD, VMADmio_pipe };
+
+
+    HMMA_OP = {HMMA,HMMAfp16_pipe};
+
+
+
+    FXU_OPS = int_pipe + fe_pipe;
+    FMAI_OPS = fmalighter_pipe;
+    FMALITE_OPS = fma64lite_pipe + fp16_pipe - HMMA_OP;
+    MATH_OPS = FXU_OPS + FMAI_OPS + FMALITE_OPS;
+
+    MIO_OPS = mio_pipe;
+    BRU_OPS = cbu_pipe;
+    MIO_CBU_OPS = MIO_OPS + BRU_OPS;
+
+    MIO_SLOW_OPS = {LDS,LDSmio_pipe,STS,STSmio_pipe,ATOMS,ATOMSmio_pipe,ALD,ALDmio_pipe,AST,ASTmio_pipe,
+                    OUT,OUTmio_pipe,IPA,IPAmio_pipe,ISBERD,ISBERDmio_pipe,PIXLD,PIXLDmio_pipe,SHFL,SHFLmio_pipe,
+                    S2R,S2Rmio_pipe,MEMBAR,MEMBARmio_pipe,QSPC,QSPCmio_pipe,BAR,BARmio_pipe,B2R,B2Rmio_pipe,R2B,
+                    R2Bmio_pipe,LDL,LDLmio_pipe,LDG,LDGmio_pipe,LD,LDmio_pipe,STL,STLmio_pipe,STG,STGmio_pipe,ST,
+                    STmio_pipe,ATOM,ATOMmio_pipe,RED,REDmio_pipe,ATOMG,ATOMGmio_pipe,CCTL,CCTLmio_pipe,CCTLL,CCTLLmio_pipe};
+
+    MIO_FAST_OPS = MIO_OPS - MIO_SLOW_OPS;
+
+    ALL_OPS_WITHOUT_CBU = FXU_OPS + FMAI_OPS + FMALITE_OPS + MIO_OPS + HMMA_OP;
+
+
+    IMAD_OP = {IMAD,IMADfmalighter_pipe,IMAD32I,IMAD32Ifmalighter_pipe,
+                                IMUL,IMULfmalighter_pipe,IMUL32I,IMUL32Ifmalighter_pipe};
+    CCTL_OP = {CCTL,CCTLmio_pipe};
+    BMOV_OP = {BMOV,BMOVcbu_pipe};
+
+    FMAI_WITHOUT_IMAD = FMAI_OPS - IMAD_OP;
+    BRU_WITHOUT_BMOV = BRU_OPS - BMOV_OP;
+    ALL_OPS_WITH_BMOV = ALL_OPS_WITHOUT_CBU + BMOV_OP;
+
+
+    ALL_OPS = ALL_OPS_WITHOUT_CBU + BRU_OPS;
+HARD RESOURCE
+    GPR(R1) = { R(0..254), RZ } DEFAULT_ANTI=ORDERED_ZERO DEFAULT_OUTPUT=ORDERED_ZERO;
+
+CONNECTOR NAMES
+    Ra_with_offset, barname, barcount, Ra, Rb, Rc, Rd, Rd2: GPR;
+
+CONNECTOR CONDITIONS
+
+    RaRange = (((((MD_PRED(ISRC_A_SIZE)) >= (1)) ? (MD_PRED(ISRC_A_SIZE)) : (1)) - 1) >> 5) + 1;
+    RbRange = (((((MD_PRED(ISRC_B_SIZE)) >= (1)) ? (MD_PRED(ISRC_B_SIZE)) : (1)) - 1) >> 5) + 1;
+    RcRange = (((((MD_PRED(ISRC_C_SIZE)) >= (1)) ? (MD_PRED(ISRC_C_SIZE)) : (1)) - 1) >> 5) + 1;
+    RdRange = (((((MD_PRED(IDEST_SIZE)) >= (1)) ? (MD_PRED(IDEST_SIZE)) : (1)) - 1) >> 5) + 1;
+    Rd2Range = (((((MD_PRED(IDEST2_SIZE)) >= (1)) ? (MD_PRED(IDEST2_SIZE)) : (1)) - 1) >> 5) + 1;
+
+
+TABLE_TRUE(GPR) : FXU_OPS`{Ra @RaRange,Rb @RbRange,Rc @RcRange}
+                                                          FMAI_OPS`{Ra @RaRange,Rb @RbRange,Rc @RcRange}
+                                                              FMALITE_OPS`{Ra @RaRange,Rb @RbRange,Rc @RcRange}
+                                                                  MIO_FAST_OPS`{Ra_with_offset @RaRange,barname @RaRange,barcount @RaRange,Ra @RaRange,Rb @RbRange,Rc @RcRange}
+                                                                      MIO_SLOW_OPS`{Ra @RaRange,Rb @RbRange,Rc @RcRange}
+                                                                          BRU_WITHOUT_BMOV`{Ra @RaRange,Rb @RbRange,Rc @RcRange}
+                                                                              BMOV_OP`{Ra @RaRange,Rb @RbRange,Rc @RcRange}
+                                                                                  HMMA_OP`{Ra @RaRange,Rb @RbRange,Rc @RcRange}=
+{
+    FXU_OPS`{Rd @RdRange,Rd2 @Rd2Range} : 6 6 6 6 8 6 6 6
+    FMAI_WITHOUT_IMAD`{Rd @RdRange,Rd2 @Rd2Range} : 6 6 6 6 8 6 6 6
+    IMAD_OP`{Rd @RdRange,Rd2 @Rd2Range} : 6 6 6 6 8 6 6 6
+    FMALITE_OPS`{Rd @RdRange,Rd2 @Rd2Range} : 9 9 9 9 9 9 9 9
+    HMMA_OP`{Rd @RdRange,Rd2 @Rd2Range} : 13 13 13 13 13 13 13 13
+};
+
+
+
+TABLE_OUTPUT(GPR) : FXU_OPS`{Rd @RdRange,Rd2 @Rd2Range}
+                                                    FMAI_OPS`{Rd @RdRange,Rd2 @Rd2Range}
+                                                        FMALITE_OPS`{Rd @RdRange,Rd2 @Rd2Range}
+                                                            MIO_OPS`{Rd @RdRange,Rd2 @Rd2Range}
+                                                                BRU_WITHOUT_BMOV`{Rd @RdRange,Rd2 @Rd2Range}
+                                                                    BMOV_OP`{Rd @RdRange,Rd2 @Rd2Range}
+                                                                        HMMA_OP`{Rd @RdRange,Rd2 @Rd2Range}=
+{
+    FXU_OPS`{Rd @RdRange,Rd2 @Rd2Range} : 1 1 2 2 2 9 2
+    FMAI_OPS`{Rd @RdRange,Rd2 @Rd2Range} : 1 1 2 2 2 9 2
+    FMALITE_OPS`{Rd @RdRange,Rd2 @Rd2Range} : 5 5 2 2 2 9 2
+    HMMA_OP`{Rd @RdRange,Rd2 @Rd2Range} : 8 8 6 2 2 9 4
+};
+
+
+
+TABLE_ANTI(GPR) : FMALITE_OPS`{Rd @RdRange,Rd2 @Rd2Range}
+                                                            MIO_OPS`{Rd @RdRange,Rd2 @Rd2Range}
+                                                                BRU_WITHOUT_BMOV`{Rd @RdRange,Rd2 @Rd2Range}
+                                                                    BMOV_OP`{Rd @RdRange,Rd2 @Rd2Range}
+                                                                        HMMA_OP`{Rd @RdRange,Rd2 @Rd2Range}=
+{
+    MATH_OPS`{Ra @RaRange,Rb @RbRange,Rc @RcRange} : 2 2 2 9 2
+    CCTL_OP`{Ra @RaRange,Rb @RbRange} : 1 1 1 9 2
+    HMMA_OP`{Ra @RaRange,Rb @RbRange,Rc @RcRange} : 2 2 2 9 1
+};
+
+TABLE_TRUE(GPR) : ALL_OPS`{Ra @RaRange,Rb @RbRange,Rc @RcRange} = { MIO_CBU_OPS`{Rd @RdRange,Rd2 @Rd2Range} : 2 };
+RESOURCE
+    SCOREBOARD (SB0) = { SB(0..5) } DEFAULT_OUTPUT=- DEFAULT_ANTI=ORDERED_ZERO;
+
+
+CONNECTOR NAME
+    sBoard {} : SCOREBOARD;
+    sbidx : SCOREBOARD;
+
+
+OPERATION SETS
+    DEPBAR = {DEPBAR,DEPBARfe_pipe};
+    CBU_OPS_WITH_REQ = {BRA,BRAcbu_pipe,NANOSLEEP,NANOSLEEPcbu_pipe,NANOTRAP,NANOTRAPcbu_pipe,BRX,BRXcbu_pipe,JMX,JMXcbu_pipe,CALL,CALLcbu_pipe,RET,RETcbu_pipe,BMOV,BMOVcbu_pipe,BREAK,BREAKcbu_pipe,WARPSYNC,WARPSYNCcbu_pipe};
+
+
+
+
+
+TABLE_TRUE(SCOREBOARD) : ALL_OPS_WITH_BMOV`{sBoard}
+                         DEPBAR`{sbidx}
+                         CBU_OPS_WITH_REQ`{sBoard}
+= { ALL_OPS_WITH_BMOV`{sBoard} : ORDERED_ZERO };
+HARD RESOURCE
+    PRED(P1) = { P(0..6), PT } DEFAULT_ANTI=ORDERED_ZERO DEFAULT_OUTPUT=ORDERED_ZERO;
+
+CONNECTOR NAMES
+    Pr, Pu, Pv, Pq, Pp, Pa, Pb, Pc, Pg, Ps, Plg, Pd, nPd : PRED;
+    PR_PRED { P(0..6) } : PRED;
+
+OPERATION SETS
+    OP_P2R = {P2Rint_pipe,P2R};
+    OP_R2P = {R2Pint_pipe,R2P};
+    OP_CSMTEST = {CSMTESTfe_pipe,CSMTEST,VOTE_VTGfe_pipe,VOTE_VTG};
+    OP_VOTE = {VOTE, VOTEint_pipe};
+    MATH_PRED_OPS = MATH_OPS - OP_VOTE;
+    CoupledDispOverlapWithMathOps = {NOP,NOPfe_pipe,CS2R,CS2Rint_pipe,LEPC,LEPCint_pipe,RPCMOV,RPCMOVint_pipe,PMTRIG,PMTRIGfe_pipe,DEPBAR,DEPBARfe_pipe,IDE,IDEint_pipe};
+    MATH_PRED_NO_FP16_FP64_OPS = MATH_OPS - OP_VOTE - FMALITE_OPS - CoupledDispOverlapWithMathOps;
+    FMALITE_WITH_HMMA = FMALITE_OPS + HMMA_OP;
+    MATH_WITH_MMA = MATH_OPS + HMMA_OP;
+
+CONNECTOR CONDITIONS
+    VTG_PRED = ((vtgmode == 2 || vtgmode == 3) _OR_ 0);
+
+CONNECTOR SETS
+    NON_MATH_PRED_READERS = OP_P2R`{PR_PRED} + OP_R2P`{PR_PRED} + OP_CSMTEST[VTG_PRED]`{PR_PRED} + OP_VOTE`{Pr,Pq,Pp,Pa,Pb,Pc,Ps,Plg};
+
+
+
+TABLE_TRUE(PRED) : MATH_PRED_NO_FP16_FP64_OPS`{Pr,Pq,Pp,Pa,Pb,Pc,Ps,Plg}
+                                              FMALITE_OPS`{Pr,Pq,Pp,Pa,Pb,Pc,Ps,Plg}
+                                                  NON_MATH_PRED_READERS
+                                                      CoupledDispOverlapWithMathOps`{Pr,Pq,Pp,Pa,Pb,Pc,Ps,Plg}
+                                                            MIO_OPS`{Pr,Pq,Pp,Pa,Pb,Pc,Pg,Ps,Plg}
+                                                              BRU_OPS`{Pr,Pq,Pp,Pa,Pb,Pc,Pg,Ps,Plg}
+                                                                  MATH_WITH_MMA`{Pg}=
+{
+    FXU_OPS`{Pu,Pv,Pd,nPd} : 6 12 12 12 12 12 12
+    FMAI_OPS`{Pu,Pv,Pd,nPd} : 6 12 12 12 12 12 12
+    FMALITE_WITH_HMMA`{Pu,Pv,Pd,nPd} : 9 15 15 15 15 15 15
+    MIO_OPS`{Pu,Pv,Pd,nPd} : 2 2 2 2 2 2 2
+    OP_R2P`{Pu,Pv,PR_PRED} : 6 12 12 12 12 12 12
+};
+
+
+
+
+TABLE_OUTPUT(PRED) : FXU_OPS`{Pu,Pv,Pd,nPd}
+                                              FMAI_OPS`{Pu,Pv,Pd,nPd}
+                                                  FMALITE_WITH_HMMA`{Pu,Pv,Pd,nPd}
+                                                      MIO_OPS`{Pu,Pv,Pd,nPd}=
+{
+    FXU_OPS`{Pu,Pv,Pd,nPd} : 1 1 2 2
+    FMAI_OPS`{Pu,Pv,Pd,nPd} : 1 1 2 2
+    FMALITE_WITH_HMMA`{Pu,Pv,Pd,nPd} : 5 5 2 2
+    OP_R2P`{Pu,Pv,PR_PRED} : 1 1 2 2
+};
+
+
+
+
+TABLE_ANTI(PRED) : FXU_OPS`{Pu,Pv,Pd,nPd}
+                                                    FMAI_OPS`{Pu,Pv,Pd,nPd}
+                                                        OP_R2P`{Pu,Pv,PR_PRED}
+                                                            FMALITE_WITH_HMMA`{Pu,Pv,Pd,nPd}
+                                                                MIO_OPS`{Pu,Pv,Pd,nPd}=
+{
+    MATH_PRED_OPS`{Pr,Pq,Pp,Pa,Pb,Pc,Ps,Plg}: 1 1 1 2 2
+    NON_MATH_PRED_READERS : 1 1 1 1 2
+    MIO_OPS`{Pr,Pq,Pp,Pa,Pb,Pc,Ps,Plg} : 1 1 1 2 2
+    MIO_OPS`{Pg} : 1 1 1 1 1
+    BRU_OPS`{Pr,Pq,Pp,Pa,Pb,Pc,Ps,Plg} : 1 1 1 2 2
+    BRU_OPS`{Pg} : 1 1 1 1 1
+    MATH_WITH_MMA`{Pg} : 1 1 1 1 1
+};
+HARD RESOURCE
+    MEMORY DEFAULT_OUTPUT=1 DEFAULT_ANTI=0;
+
+CONNECTOR NAME
+    Mem : MEMORY;
+RESOURCE
+    CC DEFAULT_OUTPUT=1 DEFAULT_ANTI=1;
+RESOURCE
+    BSTACK DEFAULT_OUTPUT=1 DEFAULT_ANTI=1;
+RESOURCE
+    CONTROL DEFAULT_OUTPUT=HARD(1) DEFAULT_ANTI=HARD(1);
+
+CONNECTOR NAME
+    Ctl : CONTROL;
+
+TABLE_OUTPUT(CONTROL) : BRU_OPS`{Ctl} = { BRU_OPS`{Ctl} : 1 };
+PIPELINE RESOURCE FXU_Occupancy : 1;
+PIPELINE RESOURCE FMAI_Occupancy : 1;
+PIPELINE RESOURCE FMALITE_Occupancy : 1;
+
+OPERATION PIPELINE RESOURCES
+    FXU_OPS : FXU_Occupancy [2];
+    FMAI_OPS : FMAI_Occupancy [2];
+    FMALITE_OPS : FMALITE_Occupancy [2];
+    HMMA_OP : FMALITE_Occupancy [2];
