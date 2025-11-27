@@ -355,12 +355,10 @@ sub has_rel($)
 {
   my $off = shift;
   if ( defined $gs_rel ) {
-    return (undef, 0) unless exists($gs_rel->{$off});
-    return ($gs_rel->{$off}, 0);
+    return ($gs_rel->{$off}, 0) if exists($gs_rel->{$off});
   }
   if ( defined $gs_rela ) {
-    return (undef, 0) unless exists($gs_rela->{$off});
-    return ($gs_rela->{$off}, 1);
+    return ($gs_rela->{$off}, 1) if exists($gs_rela->{$off});
   }
   (undef, 0);
 }
@@ -805,8 +803,14 @@ sub dump_ins
           $gs_loffs->{$addl} = 0;
         }
       }
-    } else {
-      printf("; has reloc%s\n", $is_a ? 'a' : '') if defined($opt_v);
+    }
+    if ( defined($rel) && defined($opt_v) ) {
+      my $f_off = rel2foff($g_ced->reloc_name($rel->[2]));
+      if ( defined $f_off ) {
+        printf("; has reloc%s type %X field offset %d\n", $is_a ? 'a' : '', $rel->[2], $f_off);
+      } else {
+        printf("; has reloc%s type %X\n", $is_a ? 'a' : '', $rel->[2]);
+      }
     }
   }
   # dump label for current instr
