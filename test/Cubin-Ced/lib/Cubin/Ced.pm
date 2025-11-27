@@ -282,6 +282,7 @@ our %rel_off_map = (
 sub rel2foff
 {
   my $b = shift;
+  return unless defined($b);
   return $rel_off_map{$b} if exists($rel_off_map{$b});
   undef;
 }
