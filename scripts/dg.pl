@@ -805,7 +805,7 @@ sub dump_ins
       }
     }
     if ( defined($rel) && defined($opt_v) ) {
-      my $f_off = rel2foff($g_ced->reloc_name($rel->[2]));
+      my $f_off = rel2foff($rel->[2]);
       if ( defined $f_off ) {
         printf("; has reloc%s type %X field offset %d\n", $is_a ? 'a' : '', $rel->[2], $f_off);
       } else {
