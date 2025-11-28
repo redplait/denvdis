@@ -13396,7 +13396,6 @@ Bcbank,Bcaddr =  ConstBankAddress2(constBank,immConstOffset);
            OEVarLatSrc = 7;
            OEReuseA = reuse_src_a;
            OEReuseB = reuse_src_b;
-           !OEReuseC;
        OECoupled = 0;
    !OEReserved1;
 
