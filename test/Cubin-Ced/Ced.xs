@@ -2886,7 +2886,7 @@ BOOT:
  for ( unsigned int rt = 1; ; rt++ ) {
    auto name = get_cuda_reloc_name(rt);
    if ( !name ) break;
-   auto len = strlen(name);
-   auto sv = newSVpvn_share(name, len, 0);
-   newCONSTSUB(stash, name, new_enum_dualvar(aTHX_ rt, sv));
+   SV *rel_v = newSViv(rt);
+   SvREADONLY_on(rel_v);
+   newCONSTSUB(stash, name, rel_v);
  }
