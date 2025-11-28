@@ -573,7 +573,7 @@ sub cmp_mask
     carp("length of second string must be $g_size");
     return 0;
   }
-  for ( my $i = 0; $i < $g_size; $i++ ) {
+  for my $i ( 0 .. $g_size - 1 ) {
     my $l = substr($m, $i, 1);
     if ( $l eq '0' ) {
       return 0 if ( substr($c, $i, 1) ne '0' );
@@ -592,7 +592,7 @@ sub cmp_maska
     carp("length of array must be $g_size");
     return 0;
   }
-  for ( my $i = 0; $i < $g_size; $i++ ) {
+  for my $i ( 0 .. $g_size - 1 ) {
     my $l = substr($m, $i, 1);
     if ( $l eq '0' ) {
       return 0 if ( $a->[$i] ne '0' );
@@ -611,7 +611,7 @@ sub cmpa_mask
     carp("length of mask array must be $g_size");
     return 0;
   }
-  for ( my $i = 0; $i < $g_size; $i++ ) {
+  for my $i ( 0 .. $g_size - 1 ) {
     my $l = substr($a, $i, 1);
     if ( $m->[$i] eq '0' ) {
       return 0 if ( $l ne '0' && $l ne '-' );
@@ -1305,7 +1305,7 @@ sub dump_filters
    elsif ( $f->[1] eq 'T' ) {
      printf("  %s %s %s:", $f->[0]->[0], $f->[1], $f->[3]);
      my $tlen = scalar @$f;
-     for ( my $i = 4; $i < $tlen; $i++ ) {
+     for my $i ( 4 .. $tlen - 1 ) {
        printf(",") if ( $i != 4 );
        printf("%s", $f->[$i]) if ( defined $f->[$i] );
      }
@@ -1487,7 +1487,8 @@ sub parse0b
   my $s = shift;
   my $res = 0;
   my @arr = split //, $s;
-  for ( my $i = 0; $i < length($s); $i++ ) {
+  my $l = length($s);
+  for my $i ( 0 .. $l - 1 ) {
     if ( $arr[$i] eq '0' ) { $res <<= 1; }
     elsif ( $arr[$i] eq '1' ) { $res <<= 1; $res |= 1; }
   }
@@ -2304,11 +2305,11 @@ sub build_node
   my @bits;
   my @masks;
   my @node_masks;
-  for ( my $i = 0; $i < $g_size; $i++ ) { push @bits, $u->[$i] ? undef : [ 0, 0, 0 ]; }
+  for my $i ( 0 .. $g_size - 1 ) { push @bits, $u->[$i] ? undef : [ 0, 0, 0 ]; }
   foreach my $kmask ( @$rem ) {
     if ( $lvl >= $g_min_len && cmpa_mask($a, $kmask) ) { push @node_masks, $kmask; next; }
     else { push @masks, $kmask; }
-    for ( my $i = 0; $i < $g_size; $i++ ) {
+    for my $i ( 0 .. $g_size - 1 ) {
       next if ( !defined $bits[$i] );
       my $letter = substr($kmask, $i, 1);
       if ( $letter eq '0' ) { $bits[$i]->[0]++; }
@@ -2394,15 +2395,15 @@ sub build_node
 
 sub build_tree
 {
-  # 1) lets exclude bits with the same valus in all instructions
+  # 1) lets exclude bits with the same values in all instructions
   # indexes are  0  1  X
   my @bits;
-  for ( my $i = 0; $i < $g_size; $i++ ) { push @bits, [ 0, 0, 0]; }
+  push @bits, [ 0, 0, 0] for ( 0 .. $g_size - 1 );
   my $cnt = 0;
   while( my($kmask, $op) = each(%g_masks) ) {
     my @ma = split //, $kmask;
     $cnt++;
-    for ( my $i = 0; $i < $g_size; $i++ ) {
+    for my $i ( 0 .. $g_size - 1 ) {
       if ( $ma[$i] eq '0' ) { $bits[$i]->[0]++; }
       elsif ( $ma[$i] eq '1' ) { $bits[$i]->[1]++; }
       else { $bits[$i]->[2]++; }
@@ -2411,7 +2412,7 @@ sub build_tree
   # 2) make initial mask and used
   my @init_a = ( 'X' ) x $g_size;
   my @init_u = ( 0 ) x $g_size;
-  for ( my $i = 0; $i < $g_size; $i++ ) {
+  for my $i ( 0 .. $g_size - 1 ) {
     my $b = $bits[$i];
     if ( $b->[0] == $cnt ) {
       $init_a[$i] = '0';
@@ -2428,7 +2429,12 @@ sub build_tree
       next;
     }
   }
-  # and finally build whole tree
+  # dump initial mask
+  if ( defined $opt_v ) {
+    printf("cnt %d initial mask:\n", $cnt);
+    printf("%s\n", join('', @init_a));
+  }
+  # finally build whole tree
   my @all = keys %g_masks;
   my $res = build_node(\@init_a, \@init_u, \@all, 0, 2);
   # 0 - lead nodes, 1 - nodes, 2 - max nesting level
