@@ -30,7 +30,7 @@ ina: ina.cc libced.a
 	gcc -Wall -std=c++20 -gdwarf-4 $(IFLAGS) $(FP16) -o $@ $^ -lreadline -lstdc++ -ldl
 
 nvd: nvd.cc libced.a
-	gcc -Wall -std=c++20 -g $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
+	gcc -Wall -std=c++20 -gdwarf-4 $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
 
 pa: pa.cc libced.a
 	gcc -Wall -std=c++20 -O -msse4 -mavx2 -gdwarf-4 $(IFLAGS) $(FP16) -o $@ $^ -lstdc++ -ldl
@@ -101,25 +101,25 @@ sm4.cc: $(EAD)
 sm5.cc: $(EAD)
 	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm5 ../data/sm5_1.txt
 
+# in data11
 sm52.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm52 ../data/sm52_1.txt
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm52 ../data11/sm52_1.txt
 
 sm55.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm55 ../data/sm55_1.txt
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm55 ../data11/sm55_1.txt
 
 sm57.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm57 ../data/sm57_1.txt
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm57 ../data11/sm57_1.txt
 
 sm70.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm70 ../data/sm70_1.txt
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm70 ../data11/sm70_1.txt
 
 sm72.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm72 ../data/sm72_1.txt
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm72 ../data11/sm72_1.txt
 
 sm75.cc: $(EAD)
-	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm75 ../data/sm75_1.txt
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm75 ../data11/sm75_1.txt
 
-# in data12
 sm80.cc: $(EAD)
 	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -C sm80 ../data11/sm80_1.txt
 
