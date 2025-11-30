@@ -456,7 +456,7 @@ int CEd_base::_next_off()
   return _disasm(off);
 }
 
-int CEd_base::_verify_off_cmn(unsigned long off)
+int CEd_base::_verify_off_cmn(unsigned long &off)
 {
   m_inc_tabs.clear();
   // check that offset is valid
@@ -511,7 +511,7 @@ int CEd_base::_verify_off(unsigned long off)
   else return _disasm(off);
 }
 
-int CEd_base::_verify_off_nodis(unsigned long off)
+int CEd_base::_verify_off_nodis(unsigned long &off)
 {
   auto res = _verify_off_cmn(off);
   if ( !res ) return res;

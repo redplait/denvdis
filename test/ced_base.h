@@ -124,8 +124,8 @@ class CEd_base: public CElf<ParseSASS> {
    int _disasm(unsigned long);
    int _next_off();
    int _verify_off(unsigned long);
-   int _verify_off_nodis(unsigned long);
-   int _verify_off_cmn(unsigned long);
+   int _verify_off_nodis(unsigned long &);
+   int _verify_off_cmn(unsigned long &);
    int parse_num(NV_Format, std::string_view &);
    // patcher
    virtual void patch_error(const char *what) = 0;
@@ -178,15 +178,15 @@ class CEd_base: public CElf<ParseSASS> {
    bool block_dirty = false;
    // swap buffer - 16 bytes
    static constexpr int swap_buf_size = 16;
+   // buf better to be aligned on 8 bytes - can use dirty hack from
+   // https://stackoverflow.com/questions/11558371/is-it-possible-to-align-a-particular-structure-member-in-single-byte-aligned-str
+   struct {} __attribute__ ((aligned (8)));
    unsigned char swap_buf1[swap_buf_size], swap_buf2[swap_buf_size];
    // instr buffer
    // 64bit - 8 + 7 * 8 = 64 bytes
    // 88bit - 8 + 3 * 8 = 32 bytes
    // 128bit - just 16 bytes
    static constexpr int buf_size = 64;
-   // buf better to be aligned on 8 bytes - can use dirty hack from
-   // https://stackoverflow.com/questions/11558371/is-it-possible-to-align-a-particular-structure-member-in-single-byte-aligned-str
-   struct {} __attribute__ ((aligned (8)));
    unsigned char buf[buf_size];
    size_t block_size = 0;
    int mask_size = 0;
