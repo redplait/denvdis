@@ -456,7 +456,7 @@ int CEd_base::_next_off()
   return _disasm(off);
 }
 
-int CEd_base::_verify_off(unsigned long off)
+int CEd_base::_verify_off_cmn(unsigned long off)
 {
   m_inc_tabs.clear();
   // check that offset is valid
@@ -501,7 +501,25 @@ int CEd_base::_verify_off(unsigned long off)
   }
   m_buf_off = block_off;
   if ( opt_h ) HexDump(m_out, buf, block_size);
-  return _disasm(off);
+  return 1;
+}
+
+int CEd_base::_verify_off(unsigned long off)
+{
+  auto res = _verify_off_cmn(off);
+  if ( !res ) return res;
+  else return _disasm(off);
+}
+
+int CEd_base::_verify_off_nodis(unsigned long off)
+{
+  auto res = _verify_off_cmn(off);
+  if ( !res ) return res;
+  if ( !m_dis->init(buf, block_size, off, m_bidx) ) {
+    Err("_verify_off_nodisdis: init failed\n");
+    return 0;
+  }
+  return 1;
 }
 
 int CEd_base::_disasm(unsigned long off)
