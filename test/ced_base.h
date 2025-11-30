@@ -157,6 +157,14 @@ class CEd_base: public CElf<ParseSASS> {
      block_dirty = true;
      return 1;
    }
+   int swap_store(unsigned char *b) {
+     return m_dis->swap_store(b);
+   }
+   int swap_load(unsigned char *b) {
+     auto res = m_dis->swap_load(b);
+     if ( res ) block_dirty = true;
+     return res;
+   }
    // generate some ins from fresh values
    // used in noping and patch from r instruction text
    int generic_ins(const nv_instr *, NV_extracted &);
@@ -166,6 +174,9 @@ class CEd_base: public CElf<ParseSASS> {
    unsigned long get_def_value(const nv_instr *, const std::string_view &);
    FILE *m_cubin_fp = nullptr;
    bool block_dirty = false;
+   // swap buffer - 16 bytes
+   static constexpr int swap_buf_size = 16;
+   unsigned char swap_buf1[swap_buf_size], swap_buf2[swap_buf_size];
    // instr buffer
    // 64bit - 8 + 7 * 8 = 64 bytes
    // 88bit - 8 + 3 * 8 = 32 bytes
