@@ -504,6 +504,12 @@ struct nv64: public NV_base_decoder {
     if ( 7 == m_idx ) m_idx = 0;
     return 1;
   }
+  int swap_load(unsigned char *buf) {
+    *value = *(uint64_t *)buf;
+    buf += 8;
+    ctrl = *(uint64_t *)buf;
+    return 1;
+  }
   void swap_store(unsigned char *buf) {
     *(uint64_t *)buf = *value;
     buf += 8;
@@ -636,6 +642,12 @@ printf("cqword %p (%lX) value %p (%lX) m_idx %d\n", cqword, *cqword, value, *val
     curr -= 8;
     if ( !m_idx ) m_idx = 2;
     else m_idx--;
+    return 1;
+  }
+  int swap_load(unsigned char *buf) {
+    *value = *(uint64_t *)buf;
+    buf += 8;
+    cword = *(uint64_t *)buf;
     return 1;
   }
   void swap_store(unsigned char *buf) {
@@ -870,6 +882,16 @@ printf("stop0 %d\n", i);
       if ( '0' == mask[i] && (q2 & m) ) return 0;
       m <<= 1;
     }
+#endif
+    return 1;
+  }
+  int swap_load(unsigned char *buf) {
+#ifdef __SIZEOF_INT128__
+    q = *(__uint128_t *)buf;
+#else
+    q1 = *(uint64_t *)buf;
+    buf += 8;
+    q2 = *(uint64_t *)buf;
 #endif
     return 1;
   }
@@ -1173,6 +1195,7 @@ struct INV_disasm {
   virtual const NV_dotted *get_dotted() const = 0;
   // for instuctions swapping, buffer size 128 bits = 16 bytes
   virtual int swap_store(unsigned char *out_buf) = 0;
+  virtual int swap_load(unsigned char *in_buf) = 0;
   // patch methods
   virtual int set_mask(const char *) = 0;
   virtual int put(const std::pair<short, short> *, size_t, uint64_t v) = 0;
@@ -1268,6 +1291,11 @@ struct NV_disasm: public INV_disasm, T
   }
   virtual int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v) {
     return T::put(mask, mask_size, v);
+  }
+  virtual int swap_load(unsigned char *in_buf)
+  {
+    if ( !T::is_inited() ) return 0;
+    return T::swap_load(in_buf);
   }
   virtual int swap_store(unsigned char *out_buf)
   {
