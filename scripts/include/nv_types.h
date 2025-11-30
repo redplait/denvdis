@@ -504,6 +504,11 @@ struct nv64: public NV_base_decoder {
     if ( 7 == m_idx ) m_idx = 0;
     return 1;
   }
+  void swap_store(unsigned char *buf) {
+    *(uint64_t *)buf = *value;
+    buf += 8;
+    *(uint64_t *)buf = ctrl;
+  }
   uint64_t extract(const std::pair<short, short> *mask, size_t mask_size) const
   {
     uint64_t res = 0L;
@@ -632,6 +637,11 @@ printf("cqword %p (%lX) value %p (%lX) m_idx %d\n", cqword, *cqword, value, *val
     if ( !m_idx ) m_idx = 2;
     else m_idx--;
     return 1;
+  }
+  void swap_store(unsigned char *buf) {
+    *(uint64_t *)buf = *value;
+    buf += 8;
+    *(uint64_t *)buf = cword;
   }
   // if idx == 0 - read control word, then first opcode
   int next() {
@@ -862,6 +872,15 @@ printf("stop0 %d\n", i);
     }
 #endif
     return 1;
+  }
+  void swap_store(unsigned char *buf) {
+#ifdef __SIZEOF_INT128__
+    *(__uint128_t *)buf = q;
+#else
+    *(uint64_t *)buf = q1;
+    buf += 8;
+    *(uint64_t *)buf = q2;
+#endif
   }
   int flush() {
     if ( curr >= end ) return -2;
@@ -1152,6 +1171,8 @@ struct INV_disasm {
   virtual const NV_sorted *get_instrs() const = 0;
   virtual const NV_Renums *get_renums() const = 0;
   virtual const NV_dotted *get_dotted() const = 0;
+  // for instuctions swapping, buffer size 128 bits = 16 bytes
+  virtual int swap_store(unsigned char *out_buf) = 0;
   // patch methods
   virtual int set_mask(const char *) = 0;
   virtual int put(const std::pair<short, short> *, size_t, uint64_t v) = 0;
@@ -1247,6 +1268,12 @@ struct NV_disasm: public INV_disasm, T
   }
   virtual int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v) {
     return T::put(mask, mask_size, v);
+  }
+  virtual int swap_store(unsigned char *out_buf)
+  {
+    if ( !T::is_inited() ) return 0;
+    T::swap_store(out_buf);
+    return 1;
   }
   virtual int flush()
   {
