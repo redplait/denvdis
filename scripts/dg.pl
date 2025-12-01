@@ -754,6 +754,26 @@ sub process_sched
 
 sub is_skip { $g_ced->ins_false() || 'NOP' eq $g_ced->ins_name(); }
 
+# args: is_rela, ref to rel
+# warning - don't put new line at the end
+sub dump_rel_with_off
+{
+  my($is_a, $rel) = @_;
+  printf("; has reloc%s type %X", $is_a ? 'a' : '', $rel->[2]);
+  # try find field offset for this reloc
+  my $f_off = rel2foff($rel->[2]);
+  return unless defined($f_off);
+  printf(" field offset %d", $f_off);
+  # field name at offset
+  my $fname = $g_ced->field_at($f_off);
+  return unless defined($fname);
+  printf(" %s", $fname);
+  # field value
+  my $v = $g_ced->get($fname);
+  return unless defined($v);
+  print ' ', $v;
+}
+
 # main horror - dump single instruction
 # args: offset, sched context, block (or undef), reg track
 # returns 0 if this instruction should be skipped
@@ -805,12 +825,8 @@ sub dump_ins
       }
     }
     if ( defined($rel) && defined($opt_v) ) {
-      my $f_off = rel2foff($rel->[2]);
-      if ( defined $f_off ) {
-        printf("; has reloc%s type %X field offset %d\n", $is_a ? 'a' : '', $rel->[2], $f_off);
-      } else {
-        printf("; has reloc%s type %X\n", $is_a ? 'a' : '', $rel->[2]);
-      }
+      dump_rel_with_off($is_a, $rel);
+      printf("\n");
     }
   }
   # dump label for current instr
