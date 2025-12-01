@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_d $opt_g $opt_l $opt_p $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v/;
+use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_l $opt_p $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v/;
 
 sub usage()
 {
@@ -18,6 +18,7 @@ sub usage()
 Usage: $0 [options] file.cubin
  Options:
   -b - track read/write barriers
+  -C config.file
   -d - debug mode
   -g - build cfg
   -l - dump latency info
@@ -59,6 +60,13 @@ my @gl_pcols_stat = ( 0, 0, 0, (), () );
 my @gl_prows_stat = ( 0, 0, 0, (), () );
 # reordering stat - total amount of instructions, swappable pairs count, total stall gain
 my($gs_total, $gs_ords, $gs_gain, $gs_old_stall);
+# config data
+my $has_gcd = 0; # if we have config
+# hash where key is section name and value is [ pairs of offset-size ]
+# filled in read_config
+my %gcd;
+# per-section filter, forms in filter_gcd, assigned in main sections loop
+my $gcdf;
 
 sub dump_swap_stat
 {
@@ -148,6 +156,110 @@ sub add_ruc
     }
   }
   $added;
+}
+
+=pod
+
+=head1 Config file
+
+To narrow areas of code patching to only specific section(s) or even range(s) of addresses inside section you can apply with -C
+option config file - just plain text file describing areas of CUBIN file. Format of this file looks like
+
+=begin text
+
+# comment
+
+# to apply only to specific section
+section_name
+
+# to apply to regions from 0 till 0x100 and from 0x200 till 0x300
+another_section 0-100 200-300
+
+=end text
+
+If no config file was provided - patching will be applied to all sections
+
+If you want exclude anything instead of empty config file you can also pass '-' like -C -
+
+=cut
+# args: config file name
+sub read_config
+{
+  my $cname = shift;
+  if ( $cname eq '-' ) {
+    $has_gcd = -1;
+    return 1;
+  }
+  # try open file
+  my $res = 0;
+  my $line = 0;
+  my($fh, $str, $sname);
+  open($fh, '<', $cname) or die("Cannot open config file $cname, $!");
+  while( $str = <$fh> ) {
+    chomp $str;
+    $line++;
+    next if ( $str eq '' ); # skip empty lines
+    next if ( $str =~ /^\s*#/ ); # comment
+    if ( $str =~ /^\s*(\S+)\s*$/ ) {
+      $res++;
+      $gcd{$1} = undef;
+      next;
+    }
+    if ( $str =~ /^\s*(\S+)\s*(.*)\s*$/ ) {
+      $sname = $1;
+      my $tail = $2;
+      my @tmp;
+      # parse tail
+      foreach my $item ( split /\s+/, $tail ) {
+        if ( $item !~ /([0-9a-f]+)-([0-9a-f]+)/i ) {
+          carp("bad range syntax at line $line: $item");
+          next;
+        }
+        push @tmp, [ hex($1), hex($2) ];
+      }
+      next if !scalar(@tmp);
+      # dump for debugging
+      if ( defined $opt_d ) {
+        printf("%s:\n", $sname);
+        printf(" %X-%X\n", $_->[0], $_->[1]) for ( @tmp );
+      }
+      $res++;
+      $gcd{$sname} = \@tmp;
+      next;
+    }
+    # bad syntax
+    carp("bad syntax at line $line: $str");
+  }
+  # setup has_gcd
+  $has_gcd = $res ? $res : -1;
+  close $fh;
+  $res;
+}
+
+sub dummy_yes { 1; }
+sub dummy_no  { 0; }
+
+# returns function to filter by offset
+# arg: section name
+sub filter_gcd
+{
+  my $sname = shift;
+  return \&dummy_no if ( $has_gcd < 0 ); # -C - means always no
+  return \&dummy_yes if ( !$has_gcd ); # no config means always yes
+  return \&dummy_no unless exists($gcd{$sname}); # no such section - always no
+printf("filter_gcd %s has_gcd %d\n", $sname, $has_gcd) if defined($opt_d);
+  my $ar = $gcd{$sname};
+  return \&dummy_yes unless defined($ar); # no ranges - always yes
+printf("need closure, size %d\n", scalar @$ar) if defined($opt_d);
+  # form closure
+  my $check_off = sub {
+    my $off = shift;
+    for my $r ( @$ar ) {
+      return 1 if ( $off >= $r->[0] && $off < $r->[1] );
+    }
+    0;
+  };
+  $check_off;
 }
 
 sub sym_reset { $gs_cidx = 0; }
@@ -1290,6 +1402,8 @@ sub gdisasm
     do {
       my $may_swap = 0;
       $off = $g_ced->get_off();
+      # apply filter
+      # my $can = $gcdf->($off);
       my $res = dump_ins($off, $sctx, $block, $rt);
       # check shared barriers
       if ( defined $opt_b ) {
@@ -1726,7 +1840,7 @@ sub dg
 }
 
 # main
-my $state = getopts("bdglprstUuv");
+my $state = getopts("bdglprstUuvC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -1741,6 +1855,8 @@ if ( defined $opt_s ) {
  croak("-s must be used with -t option") unless defined($opt_t);
  croak("-s must be used with -b option") unless defined($opt_b);
 }
+# read config
+read_config($opt_C) if defined($opt_C);
 
 # load elf, symbols, ced & attrs
 $g_elf = Elf::Reader->new($ARGV[0]);
@@ -1786,6 +1902,8 @@ foreach my $s ( @es ) {
      dump_rels('RELA', $s->[0], $rel_idx);
    } else { undef $gs_rela; }
  }
+ # setup section filter
+ $gcdf = filter_gcd($s->[1]);
  # setup ced
  die("cannot setup section $s->[0]") unless $g_ced->set_s($s->[0]);
  my $off = $g_w == 128 ? 0: 8;
