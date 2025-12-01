@@ -252,6 +252,7 @@ class Ced_perl: public CEd_base {
     }
     return setup_s(siter->second);
   }
+  int try_swap(UV off);
   int set_off(UV off) {
     if ( m_state < WantOff ) {
       my_warn("m_state %d for off %lX", m_state, off);
@@ -575,6 +576,43 @@ class Ced_perl: public CEd_base {
   // cached enums (HV *), key is nv_eattr->ename
   std::unordered_map<std::string_view, HV *> m_cached_hvs;
 };
+
+int Ced_perl::try_swap(UV off) {
+  if ( !has_ins() ) return 0;
+  // check offsets
+  auto curr_off = m_dis->offset();
+  if ( curr_off == off ) // do you srsly?
+    return 1;
+  // store current to swap_buf1
+  if ( !m_dis->swap_store(swap_buf1) ) {
+    Err("swap_store at %p failed", curr_off);
+    return 0;
+  }
+  // seek with no disasm
+  if ( !flush_buf() ) return 0;
+  if ( !_verify_off_nodis(off) ) return 0;
+  // store at off to swap_buf2
+  if ( !m_dis->swap_store(swap_buf2) ) {
+    Err("swap_store at %p failed", off);
+    return 0;
+  }
+  // replace with swap_buf1
+  if ( !swap_load(swap_buf1) ) {
+    Err("swap_load at %p failed", off);
+    return 0;
+  }
+  // fflush
+  if ( !flush_buf() ) return 0;
+  // seek back
+  if ( !_verify_off_nodis(curr_off) ) return 0;
+  // replace with swap_buf2
+  if ( !swap_load(swap_buf2) ) {
+    Err("swap_load at %p failed", curr_off);
+    return 0;
+  }
+  // do disasm - no init bcs it was inside _verify_off_nodis and then content was replaced with swap_load
+  return _disasm_cmn(curr_off);
+}
 
 int Ced_perl::replace(const char *s)
 {
@@ -1451,6 +1489,14 @@ off(SV *obj, UV off)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->set_off(off) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
+IV swap(SV *obj, UV off)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->try_swap(off);
  OUTPUT:
   RETVAL
 

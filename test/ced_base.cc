@@ -528,6 +528,11 @@ int CEd_base::_disasm(unsigned long off)
     Err("dis init failed\n");
     return 0;
   }
+  return _disasm_cmn(off);
+}
+
+int CEd_base::_disasm_cmn(unsigned long off)
+{
   // disasm instruction at offset
   NV_res res;
   int what = 1;
