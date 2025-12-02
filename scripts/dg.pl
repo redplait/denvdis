@@ -62,7 +62,7 @@ my @gl_prows_stat = ( 0, 0, 0, (), () );
 my($gs_total, $gs_ords, $gs_gain, $gs_old_stall);
 # config data
 my $has_gcd = 0; # if we have config
-# hash where key is section name and value is [ pairs of offset-size ]
+# hash where key is section name and value is [ pairs of offset-end ]
 # filled in read_config
 my %gcd;
 # per-section filter, forms in filter_gcd, assigned in main sections loop
@@ -215,7 +215,15 @@ sub read_config
           carp("bad range syntax at line $line: $item");
           next;
         }
-        push @tmp, [ hex($1), hex($2) ];
+        # some validation
+        my $s = hex($1);
+        my $e = hex($2);
+        if ( $s == $e ) {
+          carp("ignore empty range at line $line: $item");
+          next;
+        }
+        if ( $e > $s ) { push @tmp, [ $s, $e ]; }
+        else { push @tmp, [ $e, $s ]; }
       }
       next if !scalar(@tmp);
       # dump for debugging
@@ -1095,8 +1103,10 @@ sub collect_reuse
     if ( $state && defined($prev)) {
       # check distance and that this is not Nth operand in the same instruction
       if ( $l->[0] != $prev->[0] && $l->[0] - $prev->[0] <= 0x70 ) {
-        # check if previous read not marked already with reuse
-        push(@res, $prev) unless ( rh_reuse($prev->[1]) );
+        if ( $gcdf->($prev->[0]) ) { # this address is not filtered?
+          # check if previous read not marked already with reuse
+          push(@res, $prev) unless ( rh_reuse($prev->[1]) );
+        }
       }
     }
     # store current operation in $prev
