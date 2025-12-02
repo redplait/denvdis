@@ -461,6 +461,7 @@ class Ced_perl: public CEd_base {
     render(m_rend, res, ins(), cex(), nullptr, 1);
     return !res.empty();
   }
+  bool grep_kv(REGEXP *, std::vector<std::string_view> &) const;
   SV *special_kv(NV_extracted::const_iterator &);
   SV *get_kv(const std::string_view &fname) {
     if ( !has_ins() ) return &PL_sv_undef;
@@ -1096,6 +1097,21 @@ SV *Ced_perl::make_enum(const char *name)
   // store this hv in cache
   m_cached_hvs[key] = curr;
   return newRV_inc((SV *)curr);
+}
+
+bool Ced_perl::grep_kv(REGEXP *rx, std::vector<std::string_view> &res) const
+{
+  if ( !has_ins() ) return false;
+  for ( auto &kvi: cex() ) {
+    auto s = kvi.first.data();
+    SV *scream = newSVpv(s, kvi.first.size());
+    STRLEN retlen;
+    char *input = SvPVutf8(scream, retlen);
+    I32 nmatch = pregexec(rx, input, input + retlen, input, 0, scream, 0);
+    SvREFCNT_dec(scream);
+    if (nmatch > 0 ) res.push_back(kvi.first);
+  }
+  return !res.empty();
 }
 
 SV *Ced_perl::special_kv(NV_extracted::const_iterator &ei)
@@ -2176,6 +2192,36 @@ kv(SV *obj)
      RETVAL = newRV_noinc((SV*)e->make_kv());
  OUTPUT:
   RETVAL
+
+void
+grep(SV *obj, SV *re)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   std::vector<std::string_view> res;
+   REGEXP *rx;
+ PPCODE:
+   // from https://blogs.perl.org/users/robert_acock/2025/06/learning-xs---regular-expressions.html
+   if ( !SvROK(re) || SvTYPE(SvRV(re)) != SVt_REGEXP ) {
+     croak("grep: arg must be regexp, type %d", SvTYPE(SvRV(re)));
+   }
+   rx = (REGEXP *)SvRV(re);
+   e->grep_kv(rx, res);
+   if ( res.empty() ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+  } else {
+    if ( gimme == G_ARRAY) {
+      EXTEND(SP, res.size());
+      for ( auto &s: res ) mPUSHs(newSVpv(s.data(), s.size()));
+    } else {
+      AV *av = newAV();
+      for ( auto &s: res ) av_push(av, newSVpv(s.data(), s.size()));
+      mXPUSHs(newRV_noinc((SV*)av));
+      XSRETURN(1);
+    }
+  }
 
 SV *
 nop(SV *obj)

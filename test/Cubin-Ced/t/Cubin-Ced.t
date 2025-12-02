@@ -69,6 +69,11 @@ ok( defined($ef), 'efields');
 $t_num++;
 ok( exists $ef->{'Rd'}, 'Rd in efields');
 
+my $kgres = $cub->grep(qr/^Rd/);
+ok( defined($kgres), 'grep' );
+ok( 1 == scalar @$kgres, 'grep 2');
+$t_num+=2;
+
 $t_num++;
 ok( defined $cub->get_enum('Rd'), 'Rd in get_enum');
 
