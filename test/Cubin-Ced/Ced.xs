@@ -221,6 +221,7 @@ class Ced_perl: public CEd_base {
     return ins()->field_atoff((short)off);
   }
   SV *extract_instrs() const;
+  SV *extract_instrs(REGEXP *) const;
   bool extract_insn(const char *, std::vector<SV *> &);
   int sef_func(const char *fname) {
     if ( has_ins() && block_dirty ) flush_buf();
@@ -686,6 +687,22 @@ SV *Ced_perl::extract_instrs() const {
   AV *av = newAV();
   for ( auto it = m_sorted->begin(); it != m_sorted->end(); ++it )
     av_push(av, newSVpv( it->first.data(), it->first.size() ));
+  return newRV_noinc((SV*)av);
+}
+
+SV *Ced_perl::extract_instrs(REGEXP *rx) const {
+  if ( !m_sorted ) return &PL_sv_undef;
+  AV *av = newAV();
+  for ( auto it = m_sorted->begin(); it != m_sorted->end(); ++it )
+  {
+    auto s = it->first.data();
+    SV *scream = newSVpv(s, it->first.size());
+    STRLEN retlen;
+    char *input = SvPVutf8(scream, retlen);
+    I32 nmatch = pregexec(rx, input, input + retlen, input, 0, scream, 0);
+    SvREFCNT_dec(scream);
+    if ( nmatch > 0 ) av_push(av, newSVpv( it->first.data(), it->first.size() ));
+  }
   return newRV_noinc((SV*)av);
 }
 
@@ -1644,11 +1661,22 @@ reloc_name(SV *obj, IV rt)
   RETVAL
 
 SV *
-instrs(SV *obj)
+instrs(SV *obj, SV *re = nullptr)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   REGEXP *rx = nullptr;
  CODE:
-   RETVAL = e->extract_instrs();
+   // check if we have re
+   if ( re ) {
+     if ( !SvROK(re) || SvTYPE(SvRV(re)) != SVt_REGEXP ) {
+      if ( SvROK(re) )
+       croak("instrs: arg must be regexp, ref type %d", SvTYPE(SvRV(re)));
+      else
+       croak("instrs: arg must be regexp, type %d", SvTYPE(re));
+     }
+     rx = (REGEXP *)SvRV(re);
+   }
+   RETVAL = (rx != nullptr) ? e->extract_instrs(rx) : e->extract_instrs();
  OUTPUT:
   RETVAL
 

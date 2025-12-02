@@ -486,6 +486,10 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * kv - returns hash of all fields, key is field name and value is, well, field value
 
+=item * grep(regexp) - returns names of KV matched with regexp. support wantarray
+
+=item * get(name) - returns from KV value for field 'name'
+
 =item * get_enum(field_name) returns ref to dictionary with possible values of some enum
 
 =item * has_lut - check if instruction has LUT operation
@@ -656,6 +660,8 @@ You can also extract only snapshot data for currently processed instruction with
 =item * lut(index) - decoded string of LUT operation, see details L<https://redplait.blogspot.com/2025/07/sass-instructions-lut-operations.html>
 
 =item * stat - return statistics of IO operations in form [flush_count, read_count, is_dirty]. Supports wantarray
+
+=item * instrs - return names of all instructions in this SM, support regex as first optional arg
 
 =back
 

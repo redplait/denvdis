@@ -106,6 +106,11 @@ ok( defined($tx), 'by_name 1');
 is( 2, scalar @$tx, 'by_name 1');
 $t_num+=2;
 
+# check instrs
+my $add_ar = $cub->instrs( qr/^ISC/ );
+ok( scalar(@$add_ar), 'instrs with regex' );
+$t_num++;
+
 # latency
 my @lcs = $cub->lcols();
 ok( scalar @lcs, 'lcols');
