@@ -52,7 +52,7 @@ ok( !$rstat->[2], 'is dirty' );
 
 
 $t_num++;
-ok( 8 == $cub->get_off(), 'offset should be 8' );
+is( 8, $cub->get_off(), 'offset should be 8' );
 
 $t_num++;
 ok( 0 == $cub->start(), 'start of section in set_s should be 0' );
@@ -71,7 +71,7 @@ ok( exists $ef->{'Rd'}, 'Rd in efields');
 
 my $kgres = $cub->grep(qr/^Rd/);
 ok( defined($kgres), 'grep' );
-ok( 1 == scalar @$kgres, 'grep 2');
+is( 1, scalar @$kgres, 'grep 2');
 $t_num+=2;
 
 $t_num++;
@@ -83,7 +83,7 @@ ok( !$tc, 'tab_count');
 
 $t_num+=2;
 ok( $cub->next(), 'next');
-ok( 16 == $cub->get_off(), 'next offset should be 16' );
+is( 16, $cub->get_off(), 'next offset should be 16' );
 
 # regtrack
 my $rt = Cubin::Ced::RegTrack->new();
@@ -93,7 +93,7 @@ my $apply_res = $cub->track($rt);
 ok( defined($apply_res), 'apply test');
 my $regs = $rt->rs();
 ok( defined($regs), 'rt->rs test');
-ok( 1 == scalar keys %$regs, 'rs should have single key');
+is( 1, scalar keys %$regs, 'rs should have single key');
 ok( exists($regs->{20}), 'must be track for R20');
 my $r20 = $rt->r(20);
 ok( defined($r20), 'r test');
@@ -103,7 +103,7 @@ $t_num+=8;
 # by_name
 my $tx = $cub->by_name('TXA');
 ok( defined($tx), 'by_name 1');
-ok( 2 == scalar @$tx, 'by_name 1');
+is( 2, scalar @$tx, 'by_name 1');
 $t_num+=2;
 
 # latency

@@ -2204,7 +2204,10 @@ grep(SV *obj, SV *re)
  PPCODE:
    // from https://blogs.perl.org/users/robert_acock/2025/06/learning-xs---regular-expressions.html
    if ( !SvROK(re) || SvTYPE(SvRV(re)) != SVt_REGEXP ) {
-     croak("grep: arg must be regexp, type %d", SvTYPE(SvRV(re)));
+     if ( SvROK(re) )
+      croak("grep: arg must be regexp, ref type %d", SvTYPE(SvRV(re)));
+     else
+      croak("grep: arg must be regexp, type %d", SvTYPE(re));
    }
    rx = (REGEXP *)SvRV(re);
    e->grep_kv(rx, res);
