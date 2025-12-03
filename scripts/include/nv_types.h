@@ -246,11 +246,12 @@ struct nv_instr {
    for ( auto &ti: *tab ) {
      auto &ct = ti.second;
      if ( ct[0] != curr_size ) continue;
-     int idx = 0;
+     int idx = 0, bad = 0;
      for ( auto c: curr ) {
-       if ( c != ct[1+idx] ) continue;
+       if ( c != ct[1+idx] ) { bad = 1; break; }
        ++idx;
      }
+     if ( bad ) continue;
      res_val = ti.first;
      return true;
    }
