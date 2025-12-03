@@ -757,6 +757,9 @@ sub can_swap
     return 0 if ( $prev->[2] !~ /^@(\!?\w+)/ );
     return 0 unless ( $c_cond eq $1 );
   }
+  # appy config
+  return 0 unless( $gcdf->($curr->[0]) );
+  return 0 unless( $gcdf->($prev->[0]) );
   # check if we can get some gain from swapping
   return $prev->[7] if ( $curr->[7] > $prev->[7] );
   0;
