@@ -312,8 +312,8 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
   const nv_vattr *va = nullptr;
   int cb_idx = 0, tab_idx = 0;
   bool ctr = p == "Ctrl";
-  if ( ctr && m_width == 128 ) {
-    Err("Ctrl not supported for 128bit\n");
+  if ( ctr && m_width != 64 ) {
+    Err("Ctrl not supported for 88-128 bits\n");
     return 1;
   }
   const NV_cbank *cb = is_cb_field(in_s, p, cb_idx);
@@ -392,9 +392,6 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
       if ( opt_d )
         fprintf(m_out, "%.*s in %s has value %ld\n", sv_len, sv.data(), ea->ename, m_v);
     }
-  } else {
-    Err("unknown field %s, line %d - ignoring\n", p.c_str(), m_ln);
-    return 1;
   }
   // check how this field should be patched
   if ( ctr ) {
@@ -442,10 +439,8 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
       return 1;
     } else
      return patch(tab, tab_value, p.c_str());
-  } else {
-    Err("dont know how to patch %s, line %d\n", p.c_str(), m_ln);
-    return 0;
   }
+  Err("dont know how to patch %s, line %d\n", p.c_str(), m_ln);
   return 0;
 }
 

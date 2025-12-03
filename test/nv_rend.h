@@ -463,6 +463,18 @@ class NV_renderer {
      }
      return nullptr;
    }
+   const NV_tab_fields *is_tab_field(const struct nv_instr *ins, const char *fn, int &idx) const
+   {
+     if ( !ins->tab_fields.size() ) return nullptr;
+     for ( auto tf: ins->tab_fields ) {
+       idx = 0;
+       for ( auto &s: tf->fields ) {
+         if ( is_sv(&s, fn) ) return tf;
+         ++idx;
+       }
+     }
+     return nullptr;
+   }
    int copy_tail_values(const struct nv_instr *, const NV_rlist *, const NV_extracted &, NV_extracted &out_res) const;
    int make_tab_row(int optv, const struct nv_instr *ins, const NV_tab_fields *,
      const NV_extracted &, std::vector<unsigned short> &res, int ignore) const;

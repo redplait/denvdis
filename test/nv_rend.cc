@@ -974,9 +974,10 @@ int NV_renderer::make_tab_row(int optv, const struct nv_instr *ins, const NV_tab
      const NV_extracted &ex, std::vector<unsigned short> &res, int ignore) const
 {
   res.clear();
-  res.resize(tf->fields.size());
+  int fsize = int(tf->fields.size());
+  res.resize(fsize);
   int bad_cnt = 0;
-  for ( int i = 0; int(tf->fields.size()); i++ ) {
+  for ( int i = 0; i < fsize; i++ ) {
     if ( i == ignore ) continue;
     auto &cfname = get_it(tf->fields, i);
     auto kvi = ex.find(cfname);
