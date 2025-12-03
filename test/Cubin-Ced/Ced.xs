@@ -722,14 +722,14 @@ int Ced_perl::patch_field(const char *fname, SV *v)
   }
   const NV_cbank *cb = is_cb_field(ins(), p, cb_idx);
   if ( !ctr && !cb ) {
-    tab = is_tab_field(ins(), p, tab_idx);
+    tab = is_tab_field(ins(), fname, tab_idx);
     if ( !tab ) {
       field = std::lower_bound(ins()->fields.begin(), ins()->fields.end(), p,
        [](const NV_field &f, const std::string &w) {
          return f.name < w;
       });
       if ( field == ins()->fields.end() ) {
-        Err("unknown field %s\n", fname);
+        Err("unknown field %s, line %d\n", fname, ins()->line);
         return 0;
       }
       // cool, some real field
@@ -739,6 +739,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
     }
   }
   m_v = 0;
+  bool has_v = false;
   // check what we have and what kind of SV
   if ( va || ctr ) { // some imm value
     if ( va && SvPOK(v) ) { // string
@@ -777,34 +778,33 @@ int Ced_perl::patch_field(const char *fname, SV *v)
       auto pv = SvPVbyte(v, len);
       std::string_view sv{ pv, len };
       if ( !m_renums ) {
-        Err("no renums for field %s, enum %s\n", p.c_str(), ea->ename);
+        Err("no renums for field %s, enum %s\n", fname, ea->ename);
         return 0;
       }
       auto ed = m_renums->find(ea->ename);
       if ( ed == m_renums->end() ) {
-        Err("cannot find renum %s for field %s\n", ea->ename, p.c_str());
+        Err("cannot find renum %s for field %s\n", ea->ename, fname);
         return 0;
       }
       auto edi = ed->second->find(sv);
       if ( edi == ed->second->end() ) {
-        Err("cannot find %.*s in enum %s for field %s\n", len, sv.data(), ea->ename, p.c_str());
+        Err("cannot find %.*s in enum %s for field %s\n", len, sv.data(), ea->ename, fname);
         return 0;
       }
       m_v = edi->second;
+      has_v = true;
     } else if ( SvIOK(v) ) {
       m_v = SvIV(v);
       auto ei = ea->em->find(m_v);
       if ( ei == ea->em->end() ) {
-        Err("value %lX for field %s not in enum %s\n", m_v, p.c_str(), ea->ename);
+        Err("value %lX for field %s not in enum %s\n", m_v, fname, ea->ename);
         return 0;
       }
+      has_v = true;
     } else {
       Err("Unknown SV type %d for enum %s in patch", SvTYPE(v), ea->ename);
       return 0;
     }
-  } else {
-    Err("unknown field %s, ignoring\n", p.c_str());
-    return 0;
   }
   // check how this field should be patched
   if ( ctr ) {
@@ -813,9 +813,15 @@ int Ced_perl::patch_field(const char *fname, SV *v)
     return res;
   }
   if ( field ) {
-    int res = patch(field, field->scale ? m_v / field->scale : m_v, p.c_str());
+    int res = patch(field, field->scale ? m_v / field->scale : m_v, fname);
     ex()[field->name] = m_v;
     return res;
+  }
+  if ( !has_v && SvIOK(v) )
+    m_v = SvIV(v);
+  else {
+    Err("Unknown SV type %d for %s in patch(%s)", SvTYPE(v), tab ? "tab" : "cb", fname);
+    return 0;
   }
   if ( cb ) {
     unsigned long c1 = 0, c2 = 0;
@@ -844,17 +850,15 @@ int Ced_perl::patch_field(const char *fname, SV *v)
       kv[p] = m_v;
       m_inc_tabs.insert(tab);
       if ( opt_v ) {
-        Err("Warning: value %ld for %s invalid in table\n", m_v, p.c_str());
+        Err("Warning: value %ld for %s invalid in table\n", m_v, fname);
         dump_tab_fields(tab);
       }
       return 1;
     } else
-     return patch(tab, tab_value, p.c_str());
-  } else {
-    Err("dont know how to patch %s\n", p.c_str());
-    return 0;
+     return patch(tab, tab_value, fname);
   }
-  return 1;
+  Err("dont know how to patch %s\n", fname);
+  return 0;
 }
 
 int Ced_perl::patch_tab(int t_idx, int v)
