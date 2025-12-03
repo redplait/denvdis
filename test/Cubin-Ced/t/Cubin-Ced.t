@@ -109,7 +109,8 @@ $t_num+=2;
 # check instrs
 my $add_ar = $cub->instrs( qr/^ISC/ );
 ok( scalar(@$add_ar), 'instrs with regex' );
-$t_num++;
+ok( grep { $_ eq 'ISCADD' } @$add_ar, 'ISCADD instrs' );
+$t_num+=2;
 
 # latency
 my @lcs = $cub->lcols();

@@ -741,7 +741,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
   m_v = 0;
   // check what we have and what kind of SV
   if ( va || ctr ) { // some imm value
-    if ( SvPOK(v) ) { // string
+    if ( va && SvPOK(v) ) { // string
       STRLEN len;
       auto pv = SvPVbyte(v, len);
       std::string_view sv{ pv, len };
@@ -749,7 +749,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
         Err("cannot parse num %.*s\n", len, sv.data());
         return 0;
       }
-    } else if ( SvUOK(v) && (va->kind == NV_BITSET || va->kind == NV_UImm) )
+    } else if ( va && SvUOK(v) && (va->kind == NV_BITSET || va->kind == NV_UImm) )
      m_v = SvUV(v);
     else if ( SvIOK(v) )
      m_v = SvIV(v);
