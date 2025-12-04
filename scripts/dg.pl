@@ -55,6 +55,8 @@ my $gU_found = 0; # total possible reuse count
 my $gU_solved = 0; # actual reuse count
 my $gU_dis_failed = 0; # times of disasm failures
 my $gU_not_found = 0;  # cannot find reg or mask
+my $gU_patched = 0;    # count of patched with -P
+my $gU_bad_tabs = 0;   # count of patched with -P but having pending table
 # latency stat, 0 - total, 1 - missed predicted stall, 2 - bad stall, 3 - map of missed opcodes, 4 - map of bad stalls opcodes
 my @gl_stat = ( 0, 0, 0, (), () );
 my @gl_pcols_stat = ( 0, 0, 0, (), () );
@@ -129,8 +131,10 @@ sub dump_ruc
 sub dump_rU
 {
   return unless($gU_found);
-  printf("Found %d reuse cases, solved %d, not found %d, dis fails %d\n",
+  printf("Found %d reuse cases, solved %d, not found %d, dis fails %d",
     $gU_found, $gU_solved, $gU_not_found, $gU_dis_failed);
+  printf(", bad_tabs %s, patched %d", $gU_bad_tabs, $gU_patched) if defined($opt_P);
+  printf("\n");
 }
 
 # args: block, off, regs from snap
@@ -1295,7 +1299,11 @@ sub dump_gpr
             printf(" can patch") if defined($opt_v);
             if ( defined $opt_P ) {
               my $pres = $g_ced->patch( $can_reuse->[0], 1 );
-              printf(" %s $pres ptabs %d line %d", $can_reuse->[0], $g_ced->ptabs(), $g_ced->ins_line()) if defined($opt_v);
+              my $pends = $g_ced->ptabs();
+              if ( $pends ) {
+                $gU_bad_tabs++;
+              } elsif ( $pres ) { $gU_patched++; }
+              printf(" %s $pres ptabs %d line %d", $can_reuse->[0], $pends, $g_ced->ins_line()) if defined($opt_v);
             }
           }
           printf("\n");
