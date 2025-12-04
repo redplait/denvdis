@@ -851,8 +851,9 @@ int Ced_perl::patch_field(const char *fname, SV *v)
       m_inc_tabs.insert(tab);
       if ( opt_v ) {
         Err("Warning: value %ld for %s invalid in table\n", m_v, fname);
-        dump_tab_fields(tab);
       }
+      if ( opt_d )
+        dump_tab_fields(tab);
       return 1;
     } else
      return patch(tab, tab_value, fname);
