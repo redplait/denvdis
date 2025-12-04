@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_l $opt_p $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v/;
+use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_l $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v/;
 
 sub usage()
 {
@@ -22,6 +22,7 @@ Usage: $0 [options] file.cubin
   -d - debug mode
   -g - build cfg
   -l - dump latency info
+  -P - do real patch. Don't forget to backup your CUBIN files
   -p - dump properties
   -r - dump relocs
   -s - try to find instructions to swap and reduce stall count
@@ -1180,7 +1181,8 @@ sub resolve_rusage
       my $t_idx = $g_ced->has_tfield($reuse_name);
       if ( defined($t_idx) || $g_ced->efield($reuse_name) ) {
         printf(" %s", $reuse_name) if defined($opt_v);
-        return [ $reuse_name, $t_idx ];
+        return [ $reuse_name, $t_idx ] unless($g_ced->get($reuse_name));
+        return 0;
       }
     }
   } else {
@@ -1194,7 +1196,8 @@ sub resolve_rusage
       my $t_idx = $g_ced->has_tfield($reuse_name);
       if ( defined($t_idx) || $g_ced->efield($reuse_name) ) {
         printf(" %s", $reuse_name) if defined($opt_v);
-        return [ $reuse_name, $t_idx ];
+        return [ $reuse_name, $t_idx ] unless($g_ced->get($reuse_name));
+        return 0;
       }
     }
   }
@@ -1286,9 +1289,14 @@ sub dump_gpr
         $gU_found += $r_size;
         for my $ru ( @$reus ) {
           printf(";   %X mask %d", $ru->[0], $ru->[1]);
-          if ( resolve_rusage($ru, $k, $is_u) ) {
+          my $can_reuse = resolve_rusage($ru, $k, $is_u);
+          if ( $can_reuse ) {
             $gU_solved++;
             printf(" can patch") if defined($opt_v);
+            if ( defined $opt_P ) {
+              my $pres = $g_ced->patch( $can_reuse->[0], 1 );
+              printf(" %s $pres ptabs %d line %d", $can_reuse->[0], $g_ced->ptabs(), $g_ced->ins_line()) if defined($opt_v);
+            }
           }
           printf("\n");
         }
@@ -1738,6 +1746,7 @@ sub dg
     * 9 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
+  [15] - array of pairs [ prev, curr ] for processing at end of block
 =cut
   my @bbs;
   my $add_block = sub {
@@ -1853,7 +1862,7 @@ sub dg
 }
 
 # main
-my $state = getopts("bdglprstUuvC:");
+my $state = getopts("bdglPprstUuvC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -1881,6 +1890,7 @@ if ( defined $g_syms ) {
 }
 $g_ced = Cubin::Ced->new($g_elf);
 die("cannot load cubin $ARGV[0]") unless defined($g_ced);
+$g_ced->optv(1) if defined($opt_v);
 $g_w = $g_ced->width();
 if ( defined $opt_v ) {
   printf("SM %s width %d block_mask %d\n", $g_ced->sm_name(), $g_w, $g_ced->block_mask());
