@@ -41,6 +41,9 @@ ced: ced.cc libced.a
 sm120.so: sm120.cc
 	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
+sm103.so: sm103.cc
+	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+
 sm101.so: sm101.cc
 	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
@@ -139,6 +142,9 @@ sm100.cc: $(EAD) 90.props
 
 sm101.cc: $(EAD) 90.props
 	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -U 90.props -C sm101 ../data12/sm101_1.txt
+
+sm103.cc: $(EAD) 90.props
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -U 90.props -C sm103 ../data12/sm103_1.txt
 
 sm120.cc: $(EAD) 90.props
 	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -U 90.props -C sm120 ../data12/sm120_1.txt

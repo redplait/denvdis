@@ -74,7 +74,10 @@ std::map<int, std::pair<const char *, const char *> > NV_renderer::s_sms = {
  { 0x5a, { "sm90", nullptr } },
  { 0x64, { "sm100", nullptr } },
  { 0x65, { "sm101", nullptr } },
+ { 0x67, { "sm103", nullptr } },
+ { 0x6e, { "sm110", "sm103" } },
  { 0x78, { "sm120", nullptr } },
+ { 0x79, { "sm121", "sm120" } },
 };
 
 const char *NV_renderer::s_ltypes[] = {
