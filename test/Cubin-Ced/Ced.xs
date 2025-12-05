@@ -729,7 +729,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
          return f.name < w;
       });
       if ( field == ins()->fields.end() ) {
-        Err("unknown field %s, line %d\n", fname, ins()->line);
+        Err("unknown field %s, line %d, offset %lX\n", fname, ins()->line, m_dis->offset());
         return 0;
       }
       // cool, some real field
@@ -747,7 +747,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
       auto pv = SvPVbyte(v, len);
       std::string_view sv{ pv, len };
       if ( !parse_num(va->kind, sv) ) {
-        Err("cannot parse num %.*s\n", len, sv.data());
+        Err("cannot parse num %.*s, offset %lX\n", len, sv.data(), m_dis->offset());
         return 0;
       }
     } else if ( va && SvUOK(v) && (va->kind == NV_BITSET || va->kind == NV_UImm) )
@@ -768,7 +768,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
         skip = 0;
       }
       if ( skip ) {
-        Err("Unknown SV type %d in patch", SvTYPE(v));
+        Err("Unknown SV type %d in patch, offset %lX", SvTYPE(v), m_dis->offset());
         return 0;
       }
     }
@@ -778,17 +778,17 @@ int Ced_perl::patch_field(const char *fname, SV *v)
       auto pv = SvPVbyte(v, len);
       std::string_view sv{ pv, len };
       if ( !m_renums ) {
-        Err("no renums for field %s, enum %s\n", fname, ea->ename);
+        Err("no renums for field %s, enum %s, offset %lX\n", fname, ea->ename, m_dis->offset());
         return 0;
       }
       auto ed = m_renums->find(ea->ename);
       if ( ed == m_renums->end() ) {
-        Err("cannot find renum %s for field %s\n", ea->ename, fname);
+        Err("cannot find renum %s for field %s, offset %lX\n", ea->ename, fname, m_dis->offset());
         return 0;
       }
       auto edi = ed->second->find(sv);
       if ( edi == ed->second->end() ) {
-        Err("cannot find %.*s in enum %s for field %s\n", len, sv.data(), ea->ename, fname);
+        Err("cannot find %.*s in enum %s for field %s, offset %lX\n", len, sv.data(), ea->ename, fname, m_dis->offset());
         return 0;
       }
       m_v = edi->second;
@@ -797,12 +797,12 @@ int Ced_perl::patch_field(const char *fname, SV *v)
       m_v = SvIV(v);
       auto ei = ea->em->find(m_v);
       if ( ei == ea->em->end() ) {
-        Err("value %lX for field %s not in enum %s\n", m_v, fname, ea->ename);
+        Err("value %lX for field %s not in enum %s, offset %lX\n", m_v, fname, ea->ename, m_dis->offset());
         return 0;
       }
       has_v = true;
     } else {
-      Err("Unknown SV type %d for enum %s in patch", SvTYPE(v), ea->ename);
+      Err("Unknown SV type %d for enum %s in patch, offset %lX", SvTYPE(v), ea->ename, m_dis->offset());
       return 0;
     }
   }
@@ -820,7 +820,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
   if ( !has_v && SvIOK(v) )
     m_v = SvIV(v);
   else {
-    Err("Unknown SV type %d for %s in patch(%s)", SvTYPE(v), tab ? "tab" : "cb", fname);
+    Err("Unknown SV type %d for %s in patch(%s), offset %lX", SvTYPE(v), tab ? "tab" : "cb", fname, m_dis->offset());
     return 0;
   }
   if ( cb ) {
@@ -850,7 +850,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
       kv[p] = m_v;
       m_inc_tabs.insert(tab);
       if ( opt_v ) {
-        Err("Warning: value %ld for %s invalid in table\n", m_v, fname);
+        Err("Warning: value %ld for %s invalid in table, offset %lX\n", m_v, fname, m_dis->offset());
       }
       if ( opt_d )
         dump_tab_fields(tab);
@@ -858,7 +858,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
     } else
      return patch(tab, tab_value, fname);
   }
-  Err("dont know how to patch %s\n", fname);
+  Err("dont know how to patch %s, offset %lX\n", fname, m_dis->offset());
   return 0;
 }
 
@@ -871,7 +871,7 @@ int Ced_perl::patch_tab(int t_idx, int v)
   // check if v is valid value for this tab
   auto ti = f->tab->find(v);
   if ( ti == f->tab->end() ) {
-    Err("invalid value %d for tab %d", v, t_idx);
+    Err("invalid value %d for tab %d, offset %lX", v, t_idx, m_dis->offset());
     return 0;
   }
   std::string tmp = "tab ";
