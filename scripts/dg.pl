@@ -762,6 +762,9 @@ sub can_swap
     return 0 if ( $prev->[2] !~ /^@(\!?\w+)/ );
     return 0 unless ( $c_cond eq $1 );
   }
+  # both instructions are ld/st of the same type
+  # see details in paper https://arxiv.org/html/2501.08071v1 p3.5
+  return 0 if ( $curr->[1] =~ /^(?:LD|ST)[LGS]/ && $curr->[1] eq $prev->[1] );
   # appy config
   return 0 unless( $gcdf->($curr->[0]) );
   return 0 unless( $gcdf->($prev->[0]) );
