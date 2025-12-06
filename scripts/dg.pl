@@ -44,8 +44,8 @@ my %g_barstat;
 # per code section globals
 # syms inside section, curr_index and cached symbols
 my(@gs_syms, $gs_cidx, $g_afsyms);
-# relocs
-my($gs_rel, $gs_rela);
+# relocs + indexes of reloc(a) sections
+my($gs_rel, $gs_rela, $gs_rel_idx, $gs_rela_idx);
 # cb params
 my(@gs_cbs, $gs_cb_size, $gs_cb_off);
 # labels from attrs
@@ -276,6 +276,13 @@ printf("need closure, size %d\n", scalar @$ar) if defined($opt_d);
     0;
   };
   $check_off;
+}
+
+# process swap candidates list
+sub post_process_swaps
+{
+  my $b = shift;
+  
 }
 
 sub sym_reset { $gs_cidx = 0; }
@@ -1580,6 +1587,7 @@ sub gdisasm
     # do block post-processing of block here
     if ( defined $rt ) {
       $rt->finalize();
+      post_process_swaps($block) if ( defined $block->[15] );
       dump_rt($rt);
     }
   }
@@ -2021,13 +2029,13 @@ foreach my $s ( @es ) {
  ($gs_loffs, $gs_ibt) = $g_attrs->collect();
  # relocs
  if ( defined $opt_r ) {
-   my $rel_idx = $g_attrs->try_rel($s->[0]);
-   if ( defined($rel_idx) ) {
-     dump_rels('REL', $s->[0], $rel_idx);
+   $gs_rel_idx = $g_attrs->try_rel($s->[0]);
+   if ( defined($gs_rel_idx) ) {
+     dump_rels('REL', $s->[0], $gs_rel_idx);
    } else { undef $gs_rel; }
-   $rel_idx = $g_attrs->try_rela($s->[0]);
-   if ( defined($rel_idx) ) {
-     dump_rels('RELA', $s->[0], $rel_idx);
+   $gs_rela_idx = $g_attrs->try_rela($s->[0]);
+   if ( defined($gs_rela_idx) ) {
+     dump_rels('RELA', $s->[0], $gs_rela_idx);
    } else { undef $gs_rela; }
  }
  # setup section filter
