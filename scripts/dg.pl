@@ -34,7 +34,10 @@ EOF
   exit(8);
 }
 
-# globals
+### constants
+use constant MAX_SWAP_DIST => 0x70;
+
+### globals
 my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
 # stat for barriers, key is ins name, value is [ wait, read, write ] count
 my %g_barstat;
@@ -781,6 +784,95 @@ sub get_old_pair_stall
   $b->[13]->[7] + $b->[14]->[7];
 }
 
+# args: prev curr
+sub stall_gain
+{
+  my($p, $c) = @_;
+  $c->[7] - $p->[7];
+}
+
+=pod
+
+=head1 Notes about independent instructions
+
+They does not have transitive relation. Lets illustate this on simple example - we have 3 consecutive instructions:
+
+=begin text
+
+ instruction A sets some read/write barrier X
+ instruction B independent from instruction A
+ instruction C independent from instruction B, wait on barrier X
+
+=end text
+
+It's easy to see that despite the fact that A & B independent and B & C independent too A & C are not independent
+
+So when you add candidates to swap you can use only previous and current instructions. Lets check sequence from 2 pairs:
+
+=begin text
+
+ A stall 1, B stall 2 - if we swap them we can gain stall 1
+ B stall 2, C stall 4 - if we swap them we can gain stall 2
+
+=end text
+
+Obviously we should choose B & C bcs they have bigger stall gain. Unfortunatelly simple greedy algo can choose not global maximum, like in
+following example (remember that max stall can be 31):
+
+=begin text
+
+ A stall 1, B stall 2 - if we swap them we can gain stall 1
+ B stall 2, C stall 4 - if we swap them we can gain stall 2
+ C stall 4, D stall 7 - gain 3
+ D stall 7, E stall 11 - gain 4
+ E stall 11, F stall 16 - gain 5
+ F stall 16, G stall 22 - gain 6
+ G stall 22, H stall 29 - gain 7
+
+=end text
+
+Here result will be swap G & H to gain 7, but if we save A & B, C & D and E & F we could also additioanl gain 1 + 3 + 5 = 9
+
+What is probability of those bad sequences? Well, lets assume that for pair of adjacent instructions probability to be independent is
+0.5 (in reality it in best case 0.25). I don't know how to estimate probability that gain of next pair will be better - so let it be 0.5 too
+
+Then for worst case we have P = (0,5 * 0,5) ^ 7 = 0,000061035 or 0.006%, loss 9
+
+For 6 consecutive instructions P = (0,5 * 0,5) ^ 6 = 0,000244141 or 0.024%, B & C = 2 + D & E = 4, loss 6
+
+For 5 consecutive instructions P = (0,5 * 0,5) ^ 5 = 0,000976562 or 0.1%, A & B = 1 + C & D = 3, loss 4
+
+For 4 consecutive instructions P = (0,5 * 0,5) ^ 4 = 0,00390625 or 0.4%, B + C = 2
+
+Seems that probability is not very high and using of simple and quick greedy algo here is ok
+
+=cut
+
+# arg - block
+# put block->[13] curr & block->[14] prev into block->[15] in form [ [ prev, curr ] ]
+sub greedy_add_swap
+{
+  my $b = shift;
+  unless( defined $b->[15] ) {
+    $b->[15] = [ [ $b->[14], $b->[13] ] ];
+    return 1;
+  }
+  # check if curr is prev from previous pair, offset is at index 0
+  my $prev = $b->[15]->[-1];
+  if ( $prev->[0] != $b->[13]->[0] ) {
+    push @{ $b->[15] }, [ $b->[14], $b->[13] ];
+    return 1;
+  }
+  # we have two adjacent pair of independent instructions - see note above
+  # calc gain from previous pair
+  my $p_gain = stall_gain( $prev->[0], $prev->[1] );
+  my $c_gain = stall_gain( $b->[14], $b->[13] );
+  return 0 if ( $c_gain <= $p_gain ); # keep previous pair
+  # replace with new pair
+  $b->[15]->[-1] = [ $b->[14], $b->[13] ];
+  2;
+}
+
 # args: offset, sched ctx, block
 sub process_sched
 {
@@ -1063,7 +1155,7 @@ So we can build FSM to traverse registers track and try to find where we can ins
 =item * register is not wide
 
 =item * and those instructions are located not very far from each other - bcs reuse cache size is unknown but obviously limited.
-I arbitrary choosed value 0x70
+I arbitrary choosed value 0x70 - see constant MAX_SWAP_DIST
 
 =back
 
@@ -1113,7 +1205,7 @@ sub collect_reuse
     # we have some read operation - check if it's not first
     if ( $state && defined($prev)) {
       # check distance and that this is not Nth operand in the same instruction
-      if ( $l->[0] != $prev->[0] && $l->[0] - $prev->[0] <= 0x70 ) {
+      if ( $l->[0] != $prev->[0] && $l->[0] - $prev->[0] <= MAX_SWAP_DIST ) {
         if ( $gcdf->($prev->[0]) ) { # this address is not filtered?
           # check if previous read not marked already with reuse
           push(@res, $prev) unless ( rh_reuse($prev->[1]) );
@@ -1460,8 +1552,10 @@ sub gdisasm
           if ( $may_swap && !$inter ) {
             my $gain = can_swap($block);
             if ( defined($gain) && $gain > 0 ) {
-              upd_swap_stat($gain, get_old_pair_stall($block));
-              printf("; Can swap to reduce %d\n", $gain);
+              if ( greedy_add_swap($block) ) {
+                upd_swap_stat($gain, get_old_pair_stall($block));
+                printf("; Can swap to reduce %d\n", $gain);
+              }
             }
           }
           # shift for next instruction
@@ -1872,7 +1966,7 @@ sub dg
   \@bbs;
 }
 
-# main
+### main
 my $state = getopts("bdglPprstUuvC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
