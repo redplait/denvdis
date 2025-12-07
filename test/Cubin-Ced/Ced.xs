@@ -448,6 +448,9 @@ class Ced_perl: public CEd_base {
     res = ins()->mask;
     return true;
   }
+  bool is_branch(long &off) {
+    return 0 != NV_renderer::collect_labels(m_rend, ins(), cex(), nullptr, &off);
+  }
   std::optional<long> ins_cb(unsigned short *cb_idx, bool is_pure) {
     if ( !has_ins() ) return std::nullopt;
     return is_pure ? check_cbank_pure(m_rend, cex(), cb_idx):
@@ -612,6 +615,8 @@ int Ced_perl::try_swap(UV off) {
     Err("swap_load at %p failed", curr_off);
     return 0;
   }
+  // fflush
+  if ( !flush_buf() ) return 0;
   // do disasm - no init bcs it was inside _verify_off_nodis and then content was replaced with swap_load
   return _disasm_cmn(curr_off);
 }
@@ -2003,6 +2008,28 @@ has_tfield(SV *obj, const char *tfname)
  OUTPUT:
   RETVAL
 
+void
+ins_branch(SV *obj)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ PPCODE:
+  if ( !e->has_ins() ) {
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+  } else {
+    long off = 0;
+    bool res = e->is_branch(off);
+    if ( !res || gimme != G_ARRAY ) {
+      ST(0) = res ? &PL_sv_yes : &PL_sv_no;
+      XSRETURN(1);
+    } else {
+      EXTEND(SP, 2);
+      mXPUSHs(res ? &PL_sv_yes : &PL_sv_no);
+      mXPUSHi(off);
+    }
+  }
 
 SV *tab_count(SV *obj)
  INIT:
@@ -2033,7 +2060,7 @@ ins_cbank(SV *obj)
       XSRETURN(1);
     } else {
       if ( cb_off.has_value() ) res_size++;
-      if ( gimme == G_ARRAY) {
+      if ( gimme == G_ARRAY ) {
         EXTEND(SP, res_size);
         mXPUSHi(cb_idx);
         if ( res_size > 1 )
