@@ -66,6 +66,11 @@ my @gl_pcols_stat = ( 0, 0, 0, (), () );
 my @gl_prows_stat = ( 0, 0, 0, (), () );
 # reordering stat - total amount of instructions, swappable pairs count, total stall gain
 my($gs_total, $gs_ords, $gs_gain, $gs_old_stall);
+# reordering patch stat
+my $gsp_skipped = 0;
+my $gsp_patched = 0;
+my $gsp_bad = 0;
+my $gsp_bad_attrs = 0;
 # config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -79,6 +84,7 @@ sub dump_swap_stat
   return unless($gs_ords);
   printf("Reordering stat: total %d swappable %d (%f)\n", $gs_total, $gs_ords, $gs_ords * 1.0 / $gs_total);
   printf(" total gain %d (%f avg) gain/old ratio %f \n", $gs_gain, $gs_gain * 1.0 / $gs_ords, $gs_gain * 1.0 / $gs_old_stall);
+  printf(" skipped %d, patched %d, bad %d, bad attrs %d\n", $gsp_skipped, $gsp_patched, $gsp_bad, $gsp_bad_attrs) if defined($opt_P);
 }
 
 # args: stall gain, total old stall in pair
@@ -281,8 +287,9 @@ printf("need closure, size %d\n", scalar @$ar) if defined($opt_d);
 # process swap candidates list
 sub post_process_swaps
 {
-  my $b = shift;
-  foreach my $sr ( @{ $b->[15] } ) {
+  my $bl = shift;
+  my $c_ibt = get_ibt();
+  foreach my $sr ( @{ $bl->[15] } ) {
     # sr is ref to [ prev, curr ] swap candidates
     # field at index [2] will be flag what to do
     # -1 - nothing, no post processing requires
@@ -315,50 +322,134 @@ sub post_process_swaps
        }
     }
     # check INSTR_OFFSETs
+    my $p_off = $sr->[0]->[0];
+    my $c_off = $sr->[1]->[0];
     # patch data [ 1, attribute, old offset, new offset ]
     if ( defined($gs_loffs) ) {
-      my $p_attr = exists($gs_loffs->{$sr->[0]->[0]}) ? 1 : 0;
-      my $c_attr = exists($gs_loffs->{$sr->[1]->[0]}) ? 1 : 0;
+      my $p_attr = exists($gs_loffs->{$p_off}) ? 1 : 0;
+      my $c_attr = exists($gs_loffs->{$c_off}) ? 1 : 0;
       if ( $p_attr && $c_attr ) {
         # both side has INSTR_OFFSET attributes
         # if they are the same - nothing to do
-        if ( $gs_loffs->{$sr->[0]->[0]} != $gs_loffs->{$sr->[1]->[0]} ) {
+        if ( $gs_loffs->{$p_off} != $gs_loffs->{$c_off} ) {
           # unfortunatelly no - make patch data for both sides
           $sr->[2] = 1;
-          push @$sr, [ 1, $gs_loffs->{$sr->[0]->[0]}, $sr->[0]->[0], $sr->[1]->[0] ];
-          push @$sr, [ 1, $gs_loffs->{$sr->[1]->[0]}, $sr->[1]->[0], $sr->[0]->[0] ];
+          push @$sr, [ 1, $gs_loffs->{$p_off}, $p_off, $c_off ];
+          push @$sr, [ 1, $gs_loffs->{$c_off}, $c_off, $p_off ];
         }
       } elsif ( $p_attr ) { # patch attr for prev
         $sr->[2] = 1;
-        push @$sr, [ 1, $gs_loffs->{$sr->[0]->[0]}, $sr->[0]->[0], $sr->[1]->[0] ];
-      } else { # patch attr for curr
+        push @$sr, [ 1, $gs_loffs->{$p_off}, $p_off, $c_off ];
+      } elsif ( $c_attr ) { # patch attr for curr
         $sr->[2] = 1;
-        push @$sr, [ 1, $gs_loffs->{$sr->[1]->[0]}, $sr->[1]->[0], $sr->[0]->[0] ];
+        push @$sr, [ 1, $gs_loffs->{$c_off}, $c_off, $p_off ];
       }
     }
     # finally check IBT
-    my $c_ibt = get_ibt();
     if ( defined($c_ibt) ) {
-      my $p_attr = exists($c_ibt->{$sr->[0]->[0]}) ? 1 : 0;
-      my $c_attr = exists($c_ibt->{$sr->[1]->[0]}) ? 1 : 0;
+      my $p_attr = exists($c_ibt->{$p_off}) ? 1 : 0;
+      my $c_attr = exists($c_ibt->{$c_off}) ? 1 : 0;
       if ( $p_attr && $c_attr ) {
         # both side has IBT, oops
           $sr->[2] = 0;
-          printf("Adjacent pair has IBT at %X, skipping\n", $sr->[0]->[0]);
+          printf("Adjacent pair has IBT at %X, skipping\n", $p_off);
       } elsif ( $p_attr ) { # patch prev IBT
         $sr->[2] = 1;
         my $pleft_ibt = sub {
-          print("patch prev IBT at %X to %X\n", $sr->[0]->[0], $sr->[1]->[0]) if defined($opt_v);
-          $g_attrs->patch_ib_addr($sr->[0]->[0], $sr->[1]->[0]);
+          print("patch prev IBT at %X to %X\n", $p_off, $c_off) if defined($opt_v);
+          $g_attrs->patch_ib_addr($p_off, $c_off);
         };
         push @$sr, $pleft_ibt;
-      } else { # patch curr IBT
+      } elsif ( $c_attr ) { # patch curr IBT
         $sr->[2] = 1;
         my $pc_ibt = sub {
-          print("patch prev IBT at %X to %X\n", $sr->[1]->[0], $sr->[0]->[0]) if defined($opt_v);
-          $g_attrs->patch_ib_addr($sr->[1]->[0], $sr->[0]->[0]);
+          print("patch prev IBT at %X to %X\n", $c_off, $p_off) if defined($opt_v);
+          $g_attrs->patch_ib_addr($c_off, $p_off);
         };
         push @$sr, $pc_ibt;
+      }
+    }
+  }
+  # data for attrs patching, key is attr, value is hash where key is old_addr, value - new_addr
+  my %ah;
+  # iterate and swap, fill %ah for attributes
+  foreach my $sr ( @{ $bl->[15] } ) {
+    unless($sr->[2]) {
+      $gsp_skipped++;
+      next;
+    }
+    my $p_off = $sr->[0]->[0];
+    my $c_off = $sr->[1]->[0];
+    # swap - requires offset at prev
+    unless ( $g_ced->off( $p_off ) ) {
+      carp("post_process_swaps: off($p_off) failed");
+      $gsp_bad++;
+      next;
+    }
+    unless( $g_ced->swap( $c_off ) ) {
+      printf("post_process_swaps: swap(%X) failed\n", $p_off);
+      $gsp_bad++;
+      next;
+    }
+    # patch ushed_info, new stall is curr stall - prev stall
+    my $patched_stall = $sr->[1]->[7] - $sr->[0]->[7];
+    unless ( $g_ced->patch('usched_info', $patched_stall) ) {
+      printf("post_process_swaps: patch stall(%X) failed\n", $p_off);
+      $gsp_bad++;
+      next;
+    }
+    $gsp_patched++;
+    # we have some tail for post-patching?
+    next if ( $sr->[2] < 0 );
+    # need patch relocs/attrs/something else
+    my $what = ref $sr->[3];
+    if ( 'CODE' eq $what ) {
+      $gsp_bad_attrs++ unless ( $sr->[3]->() );
+      next;
+    }
+    if ( 'ARRAY' ne $what ) {
+      carp("unknown post-action $what");
+      next;
+    }
+    # some attributes - can be several
+    my $sr_size = scalar @$sr;
+    for my $i ( 3 .. $sr_size - 1 ) {
+      my $ap = $sr->[$i];
+      my $atr = $ap->[1];
+      next unless($atr); # skip zeros
+      next unless ( $g_attrs->is_addr_list($atr) );
+      if ( exists $ah{$atr} ) {
+        my $hr = $ah{$atr};
+        $hr->{ $ap->[2] } = $ap->[3];
+      } else { # no such attribute yet - add new map
+        my %tmp = ( $ap->[2], $ap->[3] );
+        $ah{$atr} = \%tmp;
+      }
+    }
+  }
+  # patch attributes with batch patch_alist
+  if ( keys %ah ) {
+    while( my($at, $am) = each %ah ) {
+      my $old_at = $g_attrs->grep($at);
+      unless( defined $old_at ) {
+        printf("Cannot extract attr %X\n", $at);
+        next;
+      }
+      my $at_values = $g_attrs->value($old_at->[0]->{'id'});
+      my @new_ar;
+      foreach my $off ( @$at_values ) {
+        if ( exists $am->{$off} ) {
+          push @new_ar, $am->{$off};
+        } else {
+          push @new_ar, $off;
+        }
+      }
+      # sort
+      my @sorted = sort { $a <=> $b } @new_ar;
+      # finally patch whole attr list
+      unless( $g_attrs->patch_alist($old_at->[0]->{'id'}, \@sorted) ) {
+        printf("Cannot patch_alist for %X\n", $at);
+        $gsp_bad_attrs++;
       }
     }
   }
