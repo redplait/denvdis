@@ -615,10 +615,8 @@ int Ced_perl::try_swap(UV off) {
     Err("swap_load at %p failed", curr_off);
     return 0;
   }
-  // fflush
-  if ( !flush_buf() ) return 0;
   // do disasm - no init bcs it was inside _verify_off_nodis and then content was replaced with swap_load
-  return _disasm_cmn(curr_off);
+  return _disasm_cmn(curr_off, 0);
 }
 
 int Ced_perl::replace(const char *s)

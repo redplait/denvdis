@@ -528,15 +528,14 @@ int CEd_base::_disasm(unsigned long off)
     Err("dis init failed\n");
     return 0;
   }
-  return _disasm_cmn(off);
+  return _disasm_cmn(off, 1);
 }
 
-int CEd_base::_disasm_cmn(unsigned long off)
+int CEd_base::_disasm_cmn(unsigned long off, int what)
 {
   // disasm instruction at offset
   NV_res res;
-  int what = 1;
-  if ( m_width > 64 ) what = 2;
+  if ( what && m_width > 64 ) what = 2;
   int get_res = m_dis->get(res, what);
   if ( get_res < 0 || res.empty() ) {
     Err("cannot disasm at offset %lX\n", m_dis->offset());

@@ -121,7 +121,7 @@ class CEd_base: public CElf<ParseSASS> {
    inline bool has_nop() const {
      return m_nop && m_nop_rend;
    }
-   int _disasm_cmn(unsigned long);
+   int _disasm_cmn(unsigned long, int next);
    int _disasm(unsigned long);
    int _next_off();
    int _verify_off(unsigned long);
