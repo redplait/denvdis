@@ -282,7 +282,86 @@ printf("need closure, size %d\n", scalar @$ar) if defined($opt_d);
 sub post_process_swaps
 {
   my $b = shift;
-  
+  foreach my $sr ( @{ $b->[15] } ) {
+    # sr is ref to [ prev, curr ] swap candidates
+    # field at index [2] will be flag what to do
+    # -1 - nothing, no post processing requires
+    # 0 - ignore
+    # 1 - apply tail starting from index 3
+    $sr->[2] = -1;
+    # check if any side has rel
+    if ( defined($sr->[0]->[3]) || defined($sr->[1]->[3]) ) {
+      if ( defined($sr->[0]->[3]) && defined($sr->[1]->[3]) ) { # both - call swap_rel
+         $sr->[2] = 1;
+         my $both_rel = sub {
+           printf("swap relocs in section %d, %X & %X\n", $gs_rel_idx, $sr->[0]->[0], $sr->[1]->[0]) if defined($opt_v);
+           $g_attrs->swap_rel($gs_rel_idx, $sr->[0]->[3]->[0], $sr->[1]->[3]->[0]);
+         };
+         push @$sr, $both_rel;
+       } elsif ( defined($sr->[0]->[3]) ) { # patch prev rel - new offset at curr
+         $sr->[2] = 1;
+         my $prev_rel = sub {
+           printf("patch prev rel at %X section %d\n", $sr->[0]->[0], $gs_rel_idx) if defined($opt_v);
+           $g_attrs->patch_foff($gs_rel_idx, $sr->[0]->[3]->[0], $sr->[1]->[0]);
+         };
+         push @$sr, $prev_rel;
+       } else { # patch curr - new offser at prev
+         $sr->[2] = 1;
+         my $curr_rel = sub {
+           printf("patch next rel at %X section %d\n", $sr->[1]->[0], $gs_rel_idx) if defined($opt_v);
+           $g_attrs->patch_foff($gs_rel_idx, $sr->[1]->[3]->[0], $sr->[0]->[0]);
+         };
+         push @$sr, $curr_rel;
+       }
+    }
+    # check INSTR_OFFSETs
+    # patch data [ 1, attribute, old offset, new offset ]
+    if ( defined($gs_loffs) ) {
+      my $p_attr = exists($gs_loffs->{$sr->[0]->[0]}) ? 1 : 0;
+      my $c_attr = exists($gs_loffs->{$sr->[1]->[0]}) ? 1 : 0;
+      if ( $p_attr && $c_attr ) {
+        # both side has INSTR_OFFSET attributes
+        # if they are the same - nothing to do
+        if ( $gs_loffs->{$sr->[0]->[0]} != $gs_loffs->{$sr->[1]->[0]} ) {
+          # unfortunatelly no - make patch data for both sides
+          $sr->[2] = 1;
+          push @$sr, [ 1, $gs_loffs->{$sr->[0]->[0]}, $sr->[0]->[0], $sr->[1]->[0] ];
+          push @$sr, [ 1, $gs_loffs->{$sr->[1]->[0]}, $sr->[1]->[0], $sr->[0]->[0] ];
+        }
+      } elsif ( $p_attr ) { # patch attr for prev
+        $sr->[2] = 1;
+        push @$sr, [ 1, $gs_loffs->{$sr->[0]->[0]}, $sr->[0]->[0], $sr->[1]->[0] ];
+      } else { # patch attr for curr
+        $sr->[2] = 1;
+        push @$sr, [ 1, $gs_loffs->{$sr->[1]->[0]}, $sr->[1]->[0], $sr->[0]->[0] ];
+      }
+    }
+    # finally check IBT
+    my $c_ibt = get_ibt();
+    if ( defined($c_ibt) ) {
+      my $p_attr = exists($c_ibt->{$sr->[0]->[0]}) ? 1 : 0;
+      my $c_attr = exists($c_ibt->{$sr->[1]->[0]}) ? 1 : 0;
+      if ( $p_attr && $c_attr ) {
+        # both side has IBT, oops
+          $sr->[2] = 0;
+          printf("Adjacent pair has IBT at %X, skipping\n", $sr->[0]->[0]);
+      } elsif ( $p_attr ) { # patch prev IBT
+        $sr->[2] = 1;
+        my $pleft_ibt = sub {
+          print("patch prev IBT at %X to %X\n", $sr->[0]->[0], $sr->[1]->[0]) if defined($opt_v);
+          $g_attrs->patch_ib_addr($sr->[0]->[0], $sr->[1]->[0]);
+        };
+        push @$sr, $pleft_ibt;
+      } else { # patch curr IBT
+        $sr->[2] = 1;
+        my $pc_ibt = sub {
+          print("patch prev IBT at %X to %X\n", $sr->[1]->[0], $sr->[0]->[0]) if defined($opt_v);
+          $g_attrs->patch_ib_addr($sr->[1]->[0], $sr->[0]->[0]);
+        };
+        push @$sr, $pc_ibt;
+      }
+    }
+  }
 }
 
 sub sym_reset { $gs_cidx = 0; }
@@ -1688,6 +1767,13 @@ sub dump_blocks
   }
 }
 
+sub get_ibt
+{
+  my $id = $g_attrs->grep(0x34);
+  return unless defined($id);
+  return $g_attrs->value($id->[0]->{'id'});
+}
+
 # merge IBTs from $gs_ibt with back-refs
 sub merge_ibts
 {
@@ -1698,9 +1784,7 @@ sub merge_ibts
   # we just copy it to br map to avoind patching of original $gs_ibt
   $br->{$_} = $gs_ibt->{$_} for ( keys %$gs_ibt );
   # get original IBTs
-  my $id = $g_attrs->grep(0x34);
-  return unless defined($id);
-  my $ib_values = $g_attrs->value($id->[0]->{'id'});
+  my $ib_values = get_ibt();
   return unless defined($ib_values);
   # and make sorted array of source instructions
   my @res;
