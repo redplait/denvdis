@@ -7,7 +7,7 @@ int CEd_base::flush_buf()
   m_dis->flush();
   if ( !m_cubin_fp || !block_dirty ) return 1;
   fseek(m_cubin_fp, m_buf_off, SEEK_SET);
-  if ( opt_h ) HexDump(m_out, buf, block_size);
+  if ( opt_h ) { fprintf(m_out,"on flush_buf:\n"); HexDump(m_out, buf, block_size); }
   if ( 1 != fwrite(buf, block_size, 1, m_cubin_fp) ) {
     Err("fwrite at %lX failed, error %d (%s)\n", m_buf_off, errno, strerror(errno));
     return 0;
@@ -500,7 +500,7 @@ int CEd_base::_verify_off_cmn(unsigned long &off)
     rdr_cnt++;
   }
   m_buf_off = block_off;
-  if ( opt_h ) HexDump(m_out, buf, block_size);
+  if ( opt_h ) { fprintf(m_out, "_verify_off_cmn:\n"); HexDump(m_out, buf, block_size); }
   return 1;
 }
 
@@ -559,6 +559,12 @@ int CEd_base::_disasm_cmn(unsigned long off, int what)
   return 1;
 }
 
+void CEd_base::hdump(const char *pfx, const unsigned char *buf, int len) const
+{
+  fprintf(m_out, "%s:\n", pfx);
+  HexDump(m_out, buf, len);
+}
+
 int CEd_base::swap_with(unsigned long off)
 {
   // check offsets
@@ -570,14 +576,20 @@ int CEd_base::swap_with(unsigned long off)
     Err("swap_store at %lX failed", curr_off);
     return 0;
   }
+#ifdef DEBUG
+ hdump("swap_buf1", swap_buf1, 16);
+#endif
   // seek with no disasm
   if ( !flush_buf() ) return 0;
   if ( !_verify_off_nodis(off) ) return 0;
   // store at off to swap_buf2
-  if ( !m_dis->swap_store(swap_buf2) ) {
+  if ( !m_dis->swap_store(swap_buf2, 1) ) {
     Err("swap_store at %lX failed", off);
     return 0;
   }
+#ifdef DEBUG
+ hdump("swap_buf2", swap_buf2, 16);
+#endif
   // replace with swap_buf1
   if ( !swap_load(swap_buf1) ) {
     Err("swap_load at %lX failed", off);
@@ -588,6 +600,9 @@ int CEd_base::swap_with(unsigned long off)
   // seek back
   if ( !_verify_off_nodis(curr_off) ) return 0;
   // replace with swap_buf2
+#ifdef DEBUG
+ hdump("swap_buf2", swap_buf2, 16);
+#endif
   if ( !swap_load(swap_buf2) ) {
     Err("swap_load at %lX failed", curr_off);
     return 0;

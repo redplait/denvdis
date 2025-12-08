@@ -169,6 +169,7 @@ class CEd_base: public CElf<ParseSASS> {
      return res;
    }
    int swap_with(unsigned long);
+   void hdump(const char *pfx, const unsigned char *, int len) const;
    // generate some ins from fresh values
    // used in noping and patch from r instruction text
    int generic_ins(const nv_instr *, NV_extracted &);

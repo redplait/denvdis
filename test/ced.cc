@@ -174,7 +174,7 @@ int CEd::parse_S(int idx, std::string &s, unsigned long &to_off)
     return 0;
   }
   if ( !verify_off(from_off) ) return 0;
-  m_state = HasOff;
+  m_state = HasP;
   // check if both offsets are the same
   if ( to_off == from_off ) {
     Err("swap useless\n");
