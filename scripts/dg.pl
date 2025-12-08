@@ -321,9 +321,10 @@ sub post_process_swaps
          push @$sr, $curr_rel;
        }
     }
-    # check INSTR_OFFSETs
+    # previous & next instructions offsets
     my $p_off = $sr->[0]->[0];
     my $c_off = $sr->[1]->[0];
+    # check INSTR_OFFSETs
     # patch data [ 1, attribute, old offset, new offset ]
     if ( defined($gs_loffs) ) {
       my $p_attr = exists($gs_loffs->{$p_off}) ? 1 : 0;
@@ -340,7 +341,7 @@ sub post_process_swaps
       } elsif ( $p_attr ) { # patch attr for prev
         $sr->[2] = 1;
         push @$sr, [ 1, $gs_loffs->{$p_off}, $p_off, $c_off ];
-      } elsif ( $c_attr ) { # patch attr for curr
+      } elsif ( $c_attr ) { # patch attr for next
         $sr->[2] = 1;
         push @$sr, [ 1, $gs_loffs->{$c_off}, $c_off, $p_off ];
       }
@@ -360,7 +361,7 @@ sub post_process_swaps
           $g_attrs->patch_ib_addr($p_off, $c_off);
         };
         push @$sr, $pleft_ibt;
-      } elsif ( $c_attr ) { # patch curr IBT
+      } elsif ( $c_attr ) { # patch next IBT
         $sr->[2] = 1;
         my $pc_ibt = sub {
           print("patch prev IBT at %X to %X\n", $c_off, $p_off) if defined($opt_v);
@@ -930,6 +931,8 @@ sub can_swap
   return 0 if ( $curr->[8] || $prev->[8] );
   # 2) brt
   return 0 if ( $curr->[5] || $prev->[5] );
+  # 2.1) has branch like BSSY
+  return 0 if ( $curr->[9] || $prev->[9] );
   # 3) has rela
   return 0 if ( $curr->[4] || $prev->[4] );
   # check cond
@@ -1202,6 +1205,7 @@ sub dump_ins
     $ar->[2] = $i_text;
     $ar->[5] = $brt;
     $ar->[6] = $g_ced->has_pred();
+    $ar->[9] = $brt ? 1 : $g_ced->ins_branch();
   }
   # is empty instruction - nop or with !@PT predicate
   my $skip = is_skip();
@@ -2031,7 +2035,8 @@ sub dg
     * 6 - has cond
     * 7 - stall count - filled in process_sched
     * 8 - is dual - filled in process_sched
-    * 9 - TBC
+    * 9 - has branch like BSSY
+    * 10 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
