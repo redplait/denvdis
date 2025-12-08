@@ -584,39 +584,7 @@ class Ced_perl: public CEd_base {
 
 int Ced_perl::try_swap(UV off) {
   if ( !has_ins() ) return 0;
-  // check offsets
-  auto curr_off = m_dis->offset();
-  if ( curr_off == off ) // do you srsly?
-    return 1;
-  // store current to swap_buf1
-  if ( !m_dis->swap_store(swap_buf1) ) {
-    Err("swap_store at %p failed", curr_off);
-    return 0;
-  }
-  // seek with no disasm
-  if ( !flush_buf() ) return 0;
-  if ( !_verify_off_nodis(off) ) return 0;
-  // store at off to swap_buf2
-  if ( !m_dis->swap_store(swap_buf2) ) {
-    Err("swap_store at %p failed", off);
-    return 0;
-  }
-  // replace with swap_buf1
-  if ( !swap_load(swap_buf1) ) {
-    Err("swap_load at %p failed", off);
-    return 0;
-  }
-  // fflush
-  if ( !flush_buf() ) return 0;
-  // seek back
-  if ( !_verify_off_nodis(curr_off) ) return 0;
-  // replace with swap_buf2
-  if ( !swap_load(swap_buf2) ) {
-    Err("swap_load at %p failed", curr_off);
-    return 0;
-  }
-  // do disasm - no init bcs it was inside _verify_off_nodis and then content was replaced with swap_load
-  return _disasm_cmn(curr_off, 0);
+  return swap_with(off);
 }
 
 int Ced_perl::replace(const char *s)

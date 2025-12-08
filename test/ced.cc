@@ -74,7 +74,7 @@ class CEd: public CEd_base {
    }
    // parsers
    int parse_s(int idx, std::string &);
-   int parse_S(int idx, std::string &);
+   int parse_S(int idx, std::string &, unsigned long &to_off);
    int parse_f(int idx, std::string &);
    int parse_if(int idx, std::string &);
    int parse_tail(int idx, std::string &);
@@ -138,7 +138,7 @@ int CEd::parse_f(int idx, std::string &s)
 }
 
 // S from_off to_off
-int CEd::parse_S(int idx, std::string &s)
+int CEd::parse_S(int idx, std::string &s, unsigned long &to_off)
 {
   rstrip(s);
   if ( s.empty() ) {
@@ -167,20 +167,20 @@ int CEd::parse_S(int idx, std::string &s)
     Err("invalid S syntax: %s, line %d\n", s.c_str(), m_ln);
       return 0;
   }
-  unsigned long to_off = strtoul(next, &next, 16);
+  to_off = strtoul(next, &next, 16);
   // check if we have section/function
   if ( m_state < WantOff ) {
     Err("swap(%lX, %lX) not prepared\n", from_off, to_off);
+    return 0;
   }
   if ( !verify_off(from_off) ) return 0;
   m_state = HasOff;
   // check if both offsets are the same
   if ( to_off == from_off ) {
     Err("swap useless\n");
-    return 1;
+    return 2;
   }
-  // try swap
-  return swap_with(to_off);
+  return 1;
 }
 
 // s or sn
@@ -533,7 +533,12 @@ int CEd::process(ParseSASS::Istr *is)
     }
     // swap - 'S'
     if ( c == 'S' ) {
-      if ( !parse_S(1, s) ) break;
+      unsigned long to_off = 0;
+      int S_res = parse_S(1, s, to_off);
+      if ( !S_res ) break;
+      if ( 2 == S_res ) continue;
+      if ( !swap_with(to_off) ) break;
+      continue;
     }
     // if
     if ( c == 'i' && s.size() > 3 && s.at(1) == 'f' ) {
