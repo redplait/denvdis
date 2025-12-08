@@ -168,6 +168,7 @@ class CEd_base: public CElf<ParseSASS> {
      if ( res ) block_dirty = true;
      return res;
    }
+   int swap_with(unsigned long);
    // generate some ins from fresh values
    // used in noping and patch from r instruction text
    int generic_ins(const nv_instr *, NV_extracted &);

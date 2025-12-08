@@ -74,6 +74,7 @@ class CEd: public CEd_base {
    }
    // parsers
    int parse_s(int idx, std::string &);
+   int parse_S(int idx, std::string &);
    int parse_f(int idx, std::string &);
    int parse_if(int idx, std::string &);
    int parse_tail(int idx, std::string &);
@@ -136,12 +137,58 @@ int CEd::parse_f(int idx, std::string &s)
   return setup_f(fiter, s.c_str());
 }
 
+// S from_off to_off
+int CEd::parse_S(int idx, std::string &s)
+{
+  rstrip(s);
+  if ( s.empty() ) {
+    Err("invalid S syntax: %s, line %d\n", s.c_str(), m_ln);
+    return 0;
+  }
+  char c = s.at(idx);
+  if ( isspace(c) ) { // s index
+    for ( ++idx; idx < int(s.size()); idx++ )
+      if ( !isspace(s.at(idx)) ) break;
+    if ( idx == int(s.size()) ) {
+      Err("invalid S syntax: %s, line %d\n", s.c_str(), m_ln);
+      return 0;
+    }
+  }
+  char *next = nullptr;
+  unsigned long from_off = strtoul(s.c_str() + idx, &next, 16);
+  // read to_off
+  if ( !isspace(*next) ) {
+      Err("invalid S syntax: %s, line %d\n", next, m_ln);
+      return 0;
+  }
+  for ( ; *next; next++ )
+      if ( !isspace(*next) ) break;
+  if ( !*next ) {
+    Err("invalid S syntax: %s, line %d\n", s.c_str(), m_ln);
+      return 0;
+  }
+  unsigned long to_off = strtoul(next, &next, 16);
+  // check if we have section/function
+  if ( m_state < WantOff ) {
+    Err("swap(%lX, %lX) not prepared\n", from_off, to_off);
+  }
+  if ( !verify_off(from_off) ) return 0;
+  m_state = HasOff;
+  // check if both offsets are the same
+  if ( to_off == from_off ) {
+    Err("swap useless\n");
+    return 1;
+  }
+  // try swap
+  return swap_with(to_off);
+}
+
 // s or sn
 int CEd::parse_s(int idx, std::string &s)
 {
   rstrip(s);
   if ( s.empty() ) {
-    Err("invalid syntax: %s, line %d\n", s.c_str(), m_ln);
+    Err("invalid s syntax: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   }
   int s_idx = 0;
@@ -483,6 +530,10 @@ int CEd::process(ParseSASS::Istr *is)
       if ( !parse_f(1, s) ) break;
       if ( opt_d ) printf("state %d off %lX\n", m_state, m_obj_off);
       continue;
+    }
+    // swap - 'S'
+    if ( c == 'S' ) {
+      if ( !parse_S(1, s) ) break;
     }
     // if
     if ( c == 'i' && s.size() > 3 && s.at(1) == 'f' ) {

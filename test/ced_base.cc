@@ -558,3 +558,40 @@ int CEd_base::_disasm_cmn(unsigned long off, int what)
   }
   return 1;
 }
+
+int CEd_base::swap_with(unsigned long off)
+{
+  // check offsets
+  auto curr_off = m_dis->offset();
+  if ( curr_off == off ) // do you srsly?
+    return 1;
+  // store current to swap_buf1
+  if ( !m_dis->swap_store(swap_buf1) ) {
+    Err("swap_store at %lX failed", curr_off);
+    return 0;
+  }
+  // seek with no disasm
+  if ( !flush_buf() ) return 0;
+  if ( !_verify_off_nodis(off) ) return 0;
+  // store at off to swap_buf2
+  if ( !m_dis->swap_store(swap_buf2) ) {
+    Err("swap_store at %lX failed", off);
+    return 0;
+  }
+  // replace with swap_buf1
+  if ( !swap_load(swap_buf1) ) {
+    Err("swap_load at %lX failed", off);
+    return 0;
+  }
+  // fflush
+  if ( !flush_buf() ) return 0;
+  // seek back
+  if ( !_verify_off_nodis(curr_off) ) return 0;
+  // replace with swap_buf2
+  if ( !swap_load(swap_buf2) ) {
+    Err("swap_load at %lX failed", curr_off);
+    return 0;
+  }
+  // do disasm - no init bcs it was inside _verify_off_nodis and then content was replaced with swap_load
+  return _disasm_cmn(curr_off, 0);
+}
