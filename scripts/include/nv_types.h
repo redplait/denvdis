@@ -7,6 +7,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string.h>
 #include <string_view>
 #include <set>
 #include <climits>
@@ -1195,7 +1196,7 @@ struct INV_disasm {
   virtual const NV_Renums *get_renums() const = 0;
   virtual const NV_dotted *get_dotted() const = 0;
   // for instuctions swapping, buffer size 128 bits = 16 bytes
-  virtual int swap_store(unsigned char *out_buf) = 0;
+  virtual int swap_store(unsigned char *out_buf, int reload = 0) = 0;
   virtual int swap_load(unsigned char *in_buf) = 0;
   // patch methods
   virtual int set_mask(const char *) = 0;
@@ -1298,9 +1299,16 @@ struct NV_disasm: public INV_disasm, T
     if ( !T::is_inited() ) return 0;
     return T::swap_load(in_buf);
   }
-  virtual int swap_store(unsigned char *out_buf)
+  virtual int swap_store(unsigned char *out_buf, int reload = 0) override
   {
     if ( !T::is_inited() ) return 0;
+    if ( reload ) {
+      // fill internal state - like in get
+      if ( !T::next() ) return -1;
+      // and restore
+      int prev = T::_prev();
+      if ( prev < 0 ) return prev;
+    }
     T::swap_store(out_buf);
     return 1;
   }
