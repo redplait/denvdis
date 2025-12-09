@@ -797,8 +797,7 @@ struct nv128: public NV_base_decoder {
     if ( !is_inited() ) return 0;
 #ifdef __SIZEOF_INT128__
     __uint128_t m = 1L;
-    int i = 127;
-    for ( int j = 0; j < 128; i--, j++ ) {
+    for ( int j = 0; j < 128; j++ ) {
       if ( q & m ) res.push_back('1');
       else res.push_back('0');
       m <<= 1L;
@@ -1231,33 +1230,33 @@ struct NV_disasm: public INV_disasm, T
     m_renums = _re;
     m_dotted = _d;
   }
-  virtual int width() const { return T::_width; }
-  virtual size_t offset() const { return T::curr_off(); }
-  virtual size_t off_next() const { return T::offset_next(); }
+  virtual int width() const override { return T::_width; }
+  virtual size_t offset() const override { return T::curr_off(); }
+  virtual size_t off_next() const override { return T::offset_next(); }
   virtual int init(const unsigned char *buf, size_t size, ptrdiff_t _d, int idx = 0) override {
     T::_init(buf, size, _d);
     if ( idx )
      return T::_set_idx(idx);
     return 1;
   }
-  virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const {
+  virtual void get_ctrl(uint8_t &_op, uint8_t &_ctrl) const override {
    _op = T::opcode;
    _ctrl = T::ctrl;
   }
-  virtual uint64_t get_cword() const {
+  virtual uint64_t get_cword() const override {
     return T::get_cword();
   }
-  virtual int gen_mask(std::string &res) {
+  virtual int gen_mask(std::string &res) override {
     return T::gen_mask(res);
   }
-  const NV_rlist *get_rend(int idx) const
+  const NV_rlist *get_rend(int idx) const override
   {
     if ( idx < 0 || idx >= m_cnt ) return nullptr;
     NV_rlist *res = &ins_render[idx].rlist;
     std::call_once(ins_render[idx].once, ins_render[idx].fill, res);
     return res;
   }
-  virtual int get(std::vector< std::pair<const struct nv_instr *, NV_extracted> > &res, int do_next = 1)
+  virtual int get(std::vector< std::pair<const struct nv_instr *, NV_extracted> > &res, int do_next = 1) override
   {
     if ( do_next ) {
       if ( !T::next() ) return -1;
@@ -1279,22 +1278,22 @@ struct NV_disasm: public INV_disasm, T
     }
     return !res.empty();
   }
-  virtual const NV_sorted *get_instrs() const {
+  virtual const NV_sorted *get_instrs() const override {
     return m_instr;
   }
-  virtual const NV_Renums *get_renums() const {
+  virtual const NV_Renums *get_renums() const override {
     return m_renums;
   }
-  virtual const NV_dotted *get_dotted() const {
+  virtual const NV_dotted *get_dotted() const override {
     return m_dotted;
   }
-  virtual int set_mask(const char *mask) {
+  virtual int set_mask(const char *mask) override {
     return T::set_mask(mask);
   }
-  virtual int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v) {
+  virtual int put(const std::pair<short, short> *mask, size_t mask_size, uint64_t v) override {
     return T::put(mask, mask_size, v);
   }
-  virtual int swap_load(unsigned char *in_buf)
+  virtual int swap_load(unsigned char *in_buf) override
   {
     if ( !T::is_inited() ) return 0;
     return T::swap_load(in_buf);
@@ -1312,7 +1311,7 @@ struct NV_disasm: public INV_disasm, T
     T::swap_store(out_buf);
     return 1;
   }
-  virtual int flush()
+  virtual int flush() override
   {
     if ( !T::is_inited() ) return -1;
     return T::flush();
