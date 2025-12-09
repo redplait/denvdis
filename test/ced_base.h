@@ -181,10 +181,14 @@ class CEd_base: public CElf<ParseSASS> {
    bool block_dirty = false;
    // swap buffer - 16 bytes
    static constexpr int swap_buf_size = 16;
-   // buf better to be aligned on 8 bytes - can use dirty hack from
+   // bufs better to be aligned on 8 bytes - can use dirty hack for gcc
+#if __clang__
+   unsigned char swap_buf1[swap_buf_size] __attribute__ ((aligned (8))), swap_buf2[swap_buf_size];
+#else
    // https://stackoverflow.com/questions/11558371/is-it-possible-to-align-a-particular-structure-member-in-single-byte-aligned-str
    struct {} __attribute__ ((aligned (8)));
    unsigned char swap_buf1[swap_buf_size], swap_buf2[swap_buf_size];
+#endif
    // instr buffer
    // 64bit - 8 + 7 * 8 = 64 bytes
    // 88bit - 8 + 3 * 8 = 32 bytes

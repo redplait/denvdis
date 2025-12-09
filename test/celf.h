@@ -63,8 +63,8 @@ class CElf: public T {
  protected:
    // key - section index, value - cb num (like 3 for .nv.constant3)
    bool gather_cbsections(std::map<Elf_Half, int> &out_res) {
-     constexpr const char *spfx = ".nv.constant";
-     constexpr size_t spfx_len = strlen(spfx);
+     constexpr const char spfx[] = ".nv.constant";
+     constexpr size_t spfx_len = sizeof(spfx) - 1;
      for ( Elf_Half i = 0; i < n_sec; ++i )
      {
        section* sec = m_reader->sections[i];
