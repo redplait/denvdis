@@ -764,7 +764,7 @@ void nv_dis::process()
 
 void usage(const char *prog)
 {
-  printf("%s usage: [options] cubin(s)]n", prog);
+  printf("%s usage: [options] cubin(s)\n", prog);
   printf("Options:\n");
   printf("-c - dump instruction in form similar to original nvdisasm\n");
   printf("-e - dump attributes\n");
