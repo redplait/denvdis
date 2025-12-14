@@ -38,7 +38,12 @@ class decuda {
      if ( m_rdr ) delete m_rdr;
    }
    int read();
+   void dump_syms() const;
  protected:
+   bool in_sec(std::optional<ELFIO::section *> &s, uint64_t addr) const {
+     if ( !s.has_value() ) return false;
+     return addr >= (*s)->get_address() && addr < ((*s)->get_address() + (*s)->get_size());
+   }
    int read_syms(ELFIO::section *);
    int read_rels(std::unordered_set<ELFIO::Elf_Half> &, int);
    ELFIO::elfio *m_rdr;

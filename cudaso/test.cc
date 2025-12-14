@@ -32,5 +32,6 @@ int main(int argc, char **argv) {
   decuda *dc = get_decuda(argv[optind]);
   if ( !dc ) return 2;
   dc->read();
+  if ( opt_t ) dc->dump_syms();
   delete dc;
 }

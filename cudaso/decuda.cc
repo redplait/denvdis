@@ -1,6 +1,11 @@
 #include "decuda.h"
 #include "bm_search.h"
 
+void decuda::dump_syms() const {
+  for ( auto &s: m_syms )
+    printf("%lX %s %d sec %d\n", s.second.addr, s.first.c_str(), s.second.type, s.second.section);
+}
+
 int decuda::read_rels(std::unordered_set<ELFIO::Elf_Half> &r, int is_ra) {
   if ( r.empty() ) return 0;
   for ( auto ri: r ) {
@@ -12,7 +17,7 @@ int decuda::read_rels(std::unordered_set<ELFIO::Elf_Half> &r, int is_ra) {
       unsigned type;
       ELFIO::Elf_Sxword add;
       if ( rsa.get_entry(ri, addr, sym, type, add) ) {
-        m_relocs[addr] = { addr, type, add, is_ra };
+        m_relocs.push_back( { addr, type, add, is_ra } );
       }
     }
   }
@@ -32,7 +37,8 @@ int decuda::read_syms(ELFIO::section *s) {
     elf_symbol sym;
     sym.idx = i;
     symbols.get_symbol( i, sym.name, sym.addr, sym.size, sym.bind, sym.type, sym.section, sym.other );
-    if ( sym.type != ELFIO::STT_SECTION )
+    if ( sym.type == ELFIO::STT_SECTION ) continue;
+    if ( sym.section == ELFIO::SHN_UNDEF ) continue;
       m_syms[sym.name] = std::move(sym);
   }
    return 1;
