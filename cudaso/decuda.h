@@ -39,6 +39,7 @@ class decuda {
    }
    int read();
    void dump_syms() const;
+   void dump_res() const;
  protected:
    bool in_sec(std::optional<ELFIO::section *> &s, uint64_t addr) const {
      if ( !s.has_value() ) return false;
@@ -46,6 +47,8 @@ class decuda {
    }
    int read_syms(ELFIO::section *);
    int read_rels(std::unordered_set<ELFIO::Elf_Half> &, int);
+   int find_intf_tab();
+   bool is_32;
    ELFIO::elfio *m_rdr;
    std::vector<elf_reloc> m_relocs;
    std::map<std::string, elf_symbol> m_syms;
@@ -53,6 +56,7 @@ class decuda {
    ELFIO::Elf_Half n_sec = 0;
    std::optional<ELFIO::section *> s_text, s_rodata, s_bss, s_data, s_data_rel;
    // output data
+   uint64_t m_intf_tab = 0;
 };
 
 decuda *get_decuda(const char *);

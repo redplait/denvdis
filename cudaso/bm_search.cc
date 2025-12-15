@@ -3,7 +3,7 @@
 #include <algorithm>
 #include "bm_search.h"
 
-static int suffix_match(const PBYTE needle, DWORD nlen, DWORD offset, DWORD suffixlen)
+static int suffix_match(const unsigned char *needle, DWORD nlen, DWORD offset, DWORD suffixlen)
 {
     if ( offset > suffixlen )
       return needle[offset - suffixlen - 1] != needle[nlen - suffixlen - 1] &&
@@ -19,14 +19,14 @@ bm_search::bm_search()
   m_plen = 0;
 }
 
-bm_search::bm_search(const PBYTE pattern, DWORD plen)
+bm_search::bm_search(const unsigned char *pattern, DWORD plen)
  : m_pattern(pattern),
    m_plen(plen)
 {
   make(pattern, plen);
 }
 
-int bm_search::make(const PBYTE pattern, DWORD plen)
+int bm_search::make(const unsigned char *pattern, DWORD plen)
 {
   DWORD i;
   /* build stop-symbols table */
@@ -47,7 +47,7 @@ int bm_search::make(const PBYTE pattern, DWORD plen)
   return 1;
 }
 
-int bm_search::set(const PBYTE pattern, DWORD plen)
+int bm_search::set(const unsigned char *pattern, DWORD plen)
 {
   if ( m_skip != NULL )
   {
@@ -68,7 +68,7 @@ bm_search::~bm_search()
   }
 }
 
-const PBYTE bm_search::search(const PBYTE mem, size_t mlen)
+const unsigned char *bm_search::search(const unsigned char *mem, size_t mlen)
 {
   if ( (m_skip == NULL) || (m_pattern == NULL) )
     return NULL;
