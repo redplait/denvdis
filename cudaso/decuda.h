@@ -28,6 +28,12 @@ struct elf_reloc
   int is_rela;
 };
 
+struct one_intf {
+  unsigned char uuid[16];
+  uint64_t addr;
+  int size = 0;
+};
+
 class decuda {
  public:
    decuda(ELFIO::elfio *rdr):
@@ -45,6 +51,8 @@ class decuda {
      if ( !s.has_value() ) return false;
      return addr >= (*s)->get_address() && addr < ((*s)->get_address() + (*s)->get_size());
    }
+   uint32_t read_size(uint64_t);
+   uint32_t read_size(ELFIO::section *, uint64_t off);
    int read_syms(ELFIO::section *);
    int read_rels(std::unordered_set<ELFIO::Elf_Half> &, int);
    int find_intf_tab();
@@ -57,6 +65,7 @@ class decuda {
    std::optional<ELFIO::section *> s_text, s_rodata, s_bss, s_data, s_data_rel;
    // output data
    uint64_t m_intf_tab = 0;
+   std::vector<one_intf> m_intfs;
 };
 
 decuda *get_decuda(const char *);

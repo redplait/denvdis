@@ -116,12 +116,64 @@ int decuda::find_intf_tab() {
      break;
    }
  }
- return m_intf_tab != 0;
+ auto prev = riter->offset;
+ if ( !m_intf_tab || ++riter == m_relocs.end() ) return 0;
+ // dirty hack - read till relocs are adjacent
+ one_intf curr;
+ int state = 1;
+ memcpy(&curr.uuid, first_intf, 16);
+ auto cnt = drs + (riter->offset - start);
+ for ( ; riter != m_relocs.end(); ++riter, cnt += 8 ) {
+   if ( opt_d ) printf("state %d off %lX\n", state, riter->offset);
+   if ( riter->offset >= end ) break;
+   if ( riter->offset != 8 + prev ) break;
+   if ( 1 == state ) { // read addr and size
+     curr.addr = *(uint64_t *)cnt;
+     if ( !curr.addr ) break;
+     curr.size = read_size(curr.addr);
+   } else { // read uuid
+    uint64_t uid_addr = *(uint64_t *)cnt;
+// printf("uid_addr %lX\n", uid_addr);
+    if ( !uid_addr ) break;
+    if ( !in_sec(s_rodata, uid_addr) ) break;
+    auto ua = rs + uid_addr - rstart;
+    memcpy(&curr.uuid, (const unsigned char *)ua, 16);
+   }
+   // for next cycle
+   if ( 2 == ++state ) {
+     m_intfs.push_back(curr);
+     memset(&curr, 0, sizeof(curr));
+     state = 0;
+   }
+   prev = riter->offset;
+ }
+ return !m_intfs.empty();
+}
+
+uint32_t decuda::read_size(ELFIO::section *s, uint64_t off) {
+  auto rs = s->get_data() + (off - s->get_address());
+  return *(uint32_t *)rs;
+}
+
+uint32_t decuda::read_size(uint64_t off) {
+  if ( in_sec(s_data, off) ) return read_size(*s_data, off);
+  if ( in_sec(s_data_rel, off) ) return read_size(*s_data_rel, off);
+  return 0;
 }
 
 void decuda::dump_res() const {
-  if ( m_intf_tab )
+  if ( m_intf_tab ) {
     printf("intf_tab: %lX\n", m_intf_tab);
+    for ( auto &oi: m_intfs ) {
+      // dump UUID
+      printf("%8.8X-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X",
+       *(uint32_t *)(oi.uuid), *(unsigned short *)(oi.uuid + 4), *(unsigned short *)(oi.uuid + 6),
+       oi.uuid[8], oi.uuid[9], oi.uuid[10], oi.uuid[11], oi.uuid[12], oi.uuid[13], oi.uuid[14], oi.uuid[15]);
+      printf(" %lX", oi.addr);
+      if ( oi.size ) printf(" size %X\n", oi.size);
+      else printf("\n");
+    }
+  }
 }
 
 decuda *get_decuda(const char *fname) {
