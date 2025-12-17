@@ -1,6 +1,7 @@
 #include "decuda.h"
 #include "bm_search.h"
 #include <algorithm>
+#include "x64arch.h"
 
 extern int opt_d;
 
@@ -40,7 +41,7 @@ int decuda::read_syms(ELFIO::section *s) {
     elf_symbol sym;
     sym.idx = i;
     symbols.get_symbol( i, sym.name, sym.addr, sym.size, sym.bind, sym.type, sym.section, sym.other );
-    if ( sym.type == ELFIO::STT_SECTION ) continue;
+    if ( sym.type == ELFIO::STT_SECTION || sym.type == ELFIO::STT_FILE ) continue;
     if ( sym.section == ELFIO::SHN_UNDEF ) continue;
       m_syms[sym.name] = std::move(sym);
   }
@@ -172,6 +173,11 @@ void decuda::dump_res() const {
       printf(" %lX", oi.addr);
       if ( oi.size ) printf(" size %X\n", oi.size);
       else printf("\n");
+    }
+  }
+  if ( !m_forwards.empty() ) {
+    for ( auto &fi: m_forwards ) {
+      printf("%.*s: %lX %lX\n", fi.first.data(), fi.first.size(), fi.second.first, fi.second.second);
     }
   }
 }

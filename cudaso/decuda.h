@@ -66,6 +66,9 @@ class decuda {
    // output data
    uint64_t m_intf_tab = 0;
    std::vector<one_intf> m_intfs;
+   // key is name from m_syms so we can use string_view
+   // value is pair<ptr, original function>
+   std::map<std::string_view, std::pair<uint64_t, uint64_t> > m_forwards;
 };
 
 decuda *get_decuda(const char *);
