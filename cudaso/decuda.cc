@@ -176,8 +176,9 @@ void decuda::dump_res() const {
     }
   }
   if ( !m_forwards.empty() ) {
+    printf("%ld forwards:\n", m_forwards.size());
     for ( auto &fi: m_forwards ) {
-      printf("%.*s: %lX %lX\n", fi.first.data(), fi.first.size(), fi.second.first, fi.second.second);
+      printf("%.*s: %lX %lX\n", fi.first.size(), fi.first.data(), fi.second.first, fi.second.second);
     }
   }
 }
