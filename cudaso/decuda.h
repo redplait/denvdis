@@ -51,11 +51,14 @@ class decuda {
      if ( !s.has_value() ) return false;
      return addr >= (*s)->get_address() && addr < ((*s)->get_address() + (*s)->get_size());
    }
+   template <typename T>
+   bool read(ELFIO::section *, uint64_t off, T &);
    uint32_t read_size(uint64_t);
    uint32_t read_size(ELFIO::section *, uint64_t off);
    int read_syms(ELFIO::section *);
    int read_rels(std::unordered_set<ELFIO::Elf_Half> &, int);
    int find_intf_tab();
+   int resolve_indirects();
    bool is_32;
    ELFIO::elfio *m_rdr;
    std::vector<elf_reloc> m_relocs;

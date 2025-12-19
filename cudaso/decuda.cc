@@ -78,7 +78,72 @@ int decuda::read() {
   read_rels(s_rela, 1);
   std::sort(m_relocs.begin(), m_relocs.end(), [](const elf_reloc &a, elf_reloc &b) { return a.offset < b.offset; });
   find_intf_tab();
+  resolve_indirects();
   return 1;
+}
+
+template <typename T>
+bool decuda::read(ELFIO::section *s, uint64_t off, T &res) {
+  auto sa = s->get_address();
+  if ( off < sa || off + sizeof(T) >= sa + s->get_size() ) return false;
+  const T *ptr = (const T *)(s->get_data() + off - sa);
+  res = *ptr;
+  return true;
+}
+
+template <typename S>
+void try_indirect(diter *di, S &&s) {
+/* simple FSM: 0 - wait for cmp 0x321CBA00
+ * 1 - wait for jz/jnz
+ * 2 - wait for jmp/call [data] <- call clojure s for it
+ */
+  int state = 0;
+  while( 1 ) {
+    if ( !di->next() ) break;
+    di->dasm(state);
+    if ( !state ) {
+      if ( di->is_imm(UD_Icmp, 1) && di->ud_obj.operand[1].lval.sdword == 0x321CBA00 ) {
+        state = 1;
+        continue;
+      }
+    }
+    if ( 1 == state ) {
+      if ( di->is_jxx_jimm(UD_Ijz) ) {
+        state = 2;
+        continue;
+      }
+    }
+    if ( 2 == state ) {
+      if ( di->is_mrip(0, UD_Icall, UD_Ijmp) ) {
+        s(di->get_jmp(0));
+        return;
+      }
+    }
+    if ( di->is_end() ) break;
+  }
+}
+
+int decuda::resolve_indirects()
+{
+  if ( !s_text.has_value() ) return 0;
+  // addresses cache for weak symbols/synonyms
+  std::unordered_set<uint64_t> cache;
+  // enum symbols
+  diter di(*s_text);
+  for ( auto &s: m_syms ) {
+    auto ip = cache.find(s.second.addr);
+    if ( ip != cache.end() ) continue;
+    if ( !in_sec(s_text, s.second.addr) ) continue;
+    if ( s.second.type != ELFIO::STT_FUNC ) continue;
+    // put address in cache
+    cache.insert(s.second.addr);
+    if ( !di.setup(s.second.addr) ) continue;
+    try_indirect(&di, [&](uint64_t addr) {
+      uint64_t val = 0;
+      if ( in_sec(s_data, addr) && read(*s_data, addr, val) ) m_forwards[s.first] = { addr, val };
+    });
+  }
+  return !m_forwards.empty();
 }
 
 const unsigned char first_intf[16] = {
