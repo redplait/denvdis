@@ -565,11 +565,25 @@ struct diter
      ;
    }
    // predicate functions for 64bit
+   template <typename T, typename... Args>
+   int is_mrip(int idx, T op, Args... args) const
+   {
+     if ( ud_obj.operand[idx].type != UD_OP_MEM ||
+          ud_obj.operand[idx].base != UD_R_RIP )
+       return 0;
+     return is_jxx(op, args...);
+   }
    inline int is_mrip(ud_mnemonic_code op, int idx) const
    {
      return (ud_obj.mnemonic == op) && 
             (ud_obj.operand[idx].type == UD_OP_MEM) &&
             (ud_obj.operand[idx].base == UD_R_RIP)
+     ;
+   }
+   inline int is_imm(ud_mnemonic_code op, int idx) const
+   {
+     return (ud_obj.mnemonic == op) &&
+            (ud_obj.operand[idx].type == UD_OP_IMM)
      ;
    }
    inline int is_mrip(int idx) const
