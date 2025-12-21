@@ -1,8 +1,6 @@
 #include "types.h"
 #include <link.h>
 #include <string>
-#include <vector>
-#include <list>
 #include <algorithm>
 #include "rtmem.h"
 
@@ -41,4 +39,15 @@ const std::string *rtmem_storage::find(uint64_t addr) {
   if ( addr >= it->addr && addr < (it->addr + it->memsz) )
    return it->name_ref;
   return nullptr;
-};
+}
+
+const my_phdr *rtmem_storage::check(uint64_t addr) {
+  if ( m_mem.empty() ) return nullptr;
+  const auto it = std::lower_bound(m_mem.begin(), m_mem.end(), addr,
+   [](auto &what, uint64_t off) { return what.addr < off; });
+  if ( it == m_mem.end() ) return nullptr;
+  // check if addr really inside found region
+  if ( addr >= it->addr && addr < (it->addr + it->memsz) )
+   return &*it;
+  return nullptr;
+}
