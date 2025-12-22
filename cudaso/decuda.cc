@@ -2,6 +2,8 @@
 #include "bm_search.h"
 #include <algorithm>
 #include "x64arch.h"
+#include "rtmem.h"
+#include <dlfcn.h>
 
 extern int opt_d;
 
@@ -248,6 +250,58 @@ void decuda::dump_res() const {
   }
 }
 
+
+template <typename T>
+bool read_mem(const my_phdr *p, uint64_t addr, T &res ) {
+  if ( addr < p->addr || addr + sizeof(T) >= (p->addr + p->memsz) ) return false;
+  res = *(const T *)(addr);
+  return true;
+}
+
+void decuda::verify(FILE *out_fp) const {
+ auto first_sym = m_syms.cbegin();
+ // get delta
+ const char *fname = first_sym->first.c_str();
+ uint64_t real_addr = (uint64_t)dlsym(RTLD_DEFAULT, fname);
+ if ( !real_addr ) {
+   fprintf(out_fp, "cannot find address of %s\n", fname);
+   return;
+ }
+ auto delta = real_addr - first_sym->second.addr;
+ rtmem_storage rs;
+ if ( !rs.read() ) {
+   fprintf(out_fp, "cannot read addresses, delta %lX\n", delta);
+   return;
+ }
+ const my_phdr *curr = nullptr;
+ // enum and dump
+ for ( auto &fi: m_forwards ) {
+   auto addr = delta + fi.second.first;
+   if ( !curr ) curr = rs.check(addr);
+   if ( !curr ) {
+     fprintf(out_fp, "cannot resolve module for addr %lX\n", addr);
+     continue;
+   }
+   // read ptr at addr - must be fi.second.second + delta
+   uint64_t read_addr = 0;
+   if ( !read_mem(curr, addr, real_addr) ) {
+     fprintf(out_fp, "read %.*s at %lX failed\n", fi.first.size(), fi.first.data(), addr);
+     continue;
+   }
+   if ( delta + fi.second.second == real_addr ) continue;
+   // report
+   auto adr_name = rs.find(real_addr);
+   if ( adr_name ) {
+     fprintf(out_fp, "patched %.*s (%lX) - %s\n", fi.first.size(), fi.first.data(), real_addr, adr_name->c_str());
+   } else {
+     fprintf(out_fp, "patched %.*s (%lX)\n", fi.first.size(), fi.first.data(), real_addr);
+   }
+ }
+}
+
+/*
+ * simple API
+ */
 decuda *get_decuda(const char *fname) {
   ELFIO::elfio *rdr = new ELFIO::elfio;
   if ( !rdr->load(fname) ) {
@@ -256,4 +310,13 @@ decuda *get_decuda(const char *fname) {
     return nullptr;
   }
   return new decuda(rdr);
+}
+
+void check_cuda(const char *fname, FILE *fp) {
+  auto obj = get_decuda(fname);
+  if ( obj->read() )
+   obj->verify(fp);
+  else
+   fprintf(fp, "cannot read %s\n", fname);
+  delete obj;
 }

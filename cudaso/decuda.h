@@ -46,6 +46,7 @@ class decuda {
    int read();
    void dump_syms() const;
    void dump_res() const;
+   void verify(FILE *) const;
  protected:
    bool in_sec(std::optional<ELFIO::section *> &s, uint64_t addr) const {
      if ( !s.has_value() ) return false;
