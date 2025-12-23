@@ -8,6 +8,10 @@ struct my_phdr {
   uint64_t addr;
   uint64_t memsz;
   const std::string *name_ref;
+  // check if other is inside this item
+  bool inside(const my_phdr &other) const {
+    return (other.addr >= addr) && (other.addr + other.memsz) <= (addr + memsz);
+  }
 #if __cplusplus >= 202002L
   bool operator==(const my_phdr &other) = default;
 #else
