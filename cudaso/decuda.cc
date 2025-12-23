@@ -250,7 +250,7 @@ void decuda::dump_res() const {
   }
 }
 
-
+// verify methods
 template <typename T>
 bool read_mem(const my_phdr *p, uint64_t addr, T &res ) {
   if ( addr < p->addr || addr + sizeof(T) >= (p->addr + p->memsz) ) return false;
@@ -258,16 +258,31 @@ bool read_mem(const my_phdr *p, uint64_t addr, T &res ) {
   return true;
 }
 
+struct auto_dlclose {
+  explicit auto_dlclose(void *v) : handle(v) {}
+  ~auto_dlclose() {
+    if ( handle != NULL ) dlclose(handle);
+  }
+  void *handle;
+};
+
 void decuda::verify(FILE *out_fp) const {
  auto first_sym = m_syms.cbegin();
  // get delta
  const char *fname = first_sym->first.c_str();
- uint64_t real_addr = (uint64_t)dlsym(RTLD_DEFAULT, fname);
+ auto dh = dlopen("libcuda.so.1", 2);
+ if ( !dh ) {
+   fprintf(out_fp, "cannot load libcuda, %s\n", dlerror());
+   return;
+ }
+ auto_dlclose dummy(dh);
+ uint64_t real_addr = (uint64_t)dlsym(dh, fname);
  if ( !real_addr ) {
-   fprintf(out_fp, "cannot find address of %s\n", fname);
+   fprintf(out_fp, "cannot find address of %s, (%s)\n", fname, dlerror());
    return;
  }
  auto delta = real_addr - first_sym->second.addr;
+ fprintf(out_fp, "real_addr %lX, delta %lX\n", real_addr, delta);
  rtmem_storage rs;
  if ( !rs.read() ) {
    fprintf(out_fp, "cannot read addresses, delta %lX\n", delta);
@@ -279,24 +294,47 @@ void decuda::verify(FILE *out_fp) const {
    auto addr = delta + fi.second.first;
    if ( !curr ) curr = rs.check(addr);
    if ( !curr ) {
-     fprintf(out_fp, "cannot resolve module for addr %lX\n", addr);
+     fprintf(out_fp, "cannot resolve module for addr %lX (%lX)\n", addr, fi.second.first);
      continue;
    }
    // read ptr at addr - must be fi.second.second + delta
    uint64_t read_addr = 0;
-   if ( !read_mem(curr, addr, real_addr) ) {
+   if ( !read_mem(curr, addr, read_addr) ) {
      fprintf(out_fp, "read %.*s at %lX failed\n", fi.first.size(), fi.first.data(), addr);
      continue;
    }
-   if ( delta + fi.second.second == real_addr ) continue;
+   if ( opt_d )
+     fprintf(out_fp, "%.*s: %lX\n", fi.first.size(), fi.first.data(), read_addr);
+   if ( delta + fi.second.second == read_addr ) continue;
    // report
-   auto adr_name = rs.find(real_addr);
+   auto adr_name = rs.find(read_addr);
    if ( adr_name ) {
-     fprintf(out_fp, "patched %.*s (%lX) - %s\n", fi.first.size(), fi.first.data(), real_addr, adr_name->c_str());
+     fprintf(out_fp, "patched %.*s (%lX) - %s\n", fi.first.size(), fi.first.data(), read_addr, adr_name->c_str());
    } else {
-     fprintf(out_fp, "patched %.*s (%lX)\n", fi.first.size(), fi.first.data(), real_addr);
+     fprintf(out_fp, "patched %.*s (%lX)\n", fi.first.size(), fi.first.data(), read_addr);
    }
  }
+ /* some other interesting data (mostly from .bss):
+     cudbgUseExternalDebugger - 4 bytes
+     cudbgReportedDriverInternalErrorCode - 8 bytes
+     cudbgRpcEnabled - 4
+     cudbgResumeForAttachDetach - 4
+     cudbgDebuggerInitialized - 4
+     cudbgDebuggerCapabilities - 4
+     cudbgAttachHandlerAvailable - 4
+     cudbgApiClientRevision - 4
+     cudbgSessionId - 4
+     cudbgApiClientPid - 4
+     cudbgEnablePreemptionDebugging - 4
+     cudbgEnableLaunchBlocking - 4
+     cudbgReportedDriverApiErrorFuncNameAddr - 8
+     cudbgReportedDriverApiErrorFuncNameSize - 8
+     cudbgReportedDriverApiErrorCode - 8
+     cudbgReportDriverApiErrorFlags - 4
+     cudbgEnableIntegratedMemcheck - 4
+     cudbgDetachSuspendedDevicesMask - 4
+     cudbgInjectionPath - 0x1000
+  */
 }
 
 /*

@@ -21,9 +21,9 @@ int rtmem_storage::iterate_cb(struct dl_phdr_info *info, size_t size, void *data
   // from https://man7.org/linux/man-pages/man3/dl_iterate_phdr.3.html
   // there are 2 problems
   // 1) items from dlpi_phdr are unsorted
-  // 2) there are lots of intersecteed areas
+  // 2) there are lots of intersected areas
   // so first sort them in sorted array (using dirty hack to store only pointers)
-  // and then cache added areas in ord and check for overlapping
+  // and then cache added areas in ord list and check for overlapping
   std::list<my_phdr> ord;
   using T_sorted = std::remove_reference<decltype(info->dlpi_phdr[0])>::type;
   std::vector<T_sorted *> sorted;
@@ -39,8 +39,8 @@ int rtmem_storage::iterate_cb(struct dl_phdr_info *info, size_t size, void *data
     auto curr_addr = info->dlpi_addr + s->p_vaddr;
     my_phdr tmp{ s->p_type, curr_addr, s->p_memsz, mod_name };
     bool skip = false;
-    // check if we already have such start address
     for ( auto &ord_it: ord ) {
+     // check if we already have such start address
       if ( ord_it.addr == tmp.addr ) {
         if ( s->p_memsz > ord_it.memsz ) {
           ord_it.memsz = s->p_memsz;
@@ -49,6 +49,7 @@ int rtmem_storage::iterate_cb(struct dl_phdr_info *info, size_t size, void *data
           break;
         }
       }
+      // check for overlapping
       if ( ord_it.inside(tmp) ) {
         skip = true;
         break;
