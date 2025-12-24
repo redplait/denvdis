@@ -5,6 +5,7 @@ static dump_sm(idx, addr, size)
   auto fname = sprintf("sm%d.elf", idx);
   auto fp = fopen(fname, "w");
   savefile(fp, 0, addr, size);
+  fclose(fp);
 }
 
 // addresses for libcuda.so.590.44.01
