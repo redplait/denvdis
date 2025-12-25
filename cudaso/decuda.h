@@ -63,6 +63,7 @@ class decuda {
    // verifier methods
    template <typename T>
    bool dump_xxx(FILE *fp, const char *, int64_t delta) const;
+   bool dump_str_with_len(FILE *fp, const char *addr, const char *len, int64_t delta) const;
    void dump_bss_publics(FILE *fp, int64_t delta) const;
    bool is_32;
    ELFIO::elfio *m_rdr;

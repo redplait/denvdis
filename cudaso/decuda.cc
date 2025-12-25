@@ -330,6 +330,25 @@ void s_print(FILE *fp, uint64_t v) {
   fprintf(fp, "%lX", v);
 }
 
+template <>
+void s_print(FILE *fp, pid_t v) {
+  fprintf(fp, "%d", v);
+}
+
+bool decuda::dump_str_with_len(FILE *fp, const char *addr_name, const char *len_name, int64_t delta) const {
+  auto si_addr = m_syms.find(addr_name);
+  if ( si_addr == m_syms.end() ) return false;
+  auto si_len = m_syms.find(len_name);
+  if ( si_len == m_syms.end() ) return false;
+  // check length - 8 bytes
+  size_t len = *(size_t *)(delta + si_len->second.addr);
+  if ( !len ) return true;
+  const char *addr = *(char **)(delta + si_addr->second.addr);
+  if ( !addr ) return true;
+  fprintf(fp, "%s at %p len %X: %.*s\n", addr_name, addr, len, len, addr);
+  return true;
+}
+
 template <typename T>
 bool decuda::dump_xxx(FILE *fp, const char *pubname, int64_t delta) const {
   auto si = m_syms.find(pubname);
@@ -373,6 +392,25 @@ void decuda::dump_bss_publics(FILE *fp, int64_t delta) const {
   */
   dump_xxx<uint32_t>(fp, "cudbgUseExternalDebugger", delta);
   dump_xxx<uint64_t>(fp, "cudbgReportedDriverInternalErrorCode", delta);
+  dump_xxx<uint32_t>(fp, "cudbgRpcEnabled", delta);
+  dump_xxx<uint32_t>(fp, "cudbgResumeForAttachDetach", delta);
+  dump_xxx<uint32_t>(fp, "cudbgDebuggerInitialized", delta);
+  dump_xxx<uint32_t>(fp, "cudbgDebuggerCapabilities", delta);
+  dump_xxx<uint32_t>(fp, "cudbgAttachHandlerAvailable", delta);
+  dump_xxx<uint32_t>(fp, "cudbgApiClientRevision", delta);
+  dump_xxx<pid_t>(fp, "cudbgSessionId", delta);
+  dump_xxx<pid_t>(fp, "cudbgApiClientPid", delta);
+  dump_xxx<uint32_t>(fp, "cudbgEnablePreemptionDebugging", delta);
+  dump_xxx<uint32_t>(fp, "cudbgEnableLaunchBlocking", delta);
+  dump_xxx<uint64_t>(fp, "cudbgReportedDriverApiErrorCode", delta);
+  dump_xxx<uint32_t>(fp, "cudbgReportDriverApiErrorFlags", delta);
+  dump_xxx<uint32_t>(fp, "cudbgEnableIntegratedMemcheck", delta);
+  dump_xxx<uint32_t>(fp, "cudbgDetachSuspendedDevicesMask", delta);
+  dump_xxx<uint32_t>(fp, "cudbgIpcFlag", delta);
+  dump_xxx<uint64_t>(fp, "cudbgReportedDriverApiErrorSource", delta);
+  dump_str_with_len(fp, "cudbgReportedDriverApiErrorFuncNameAddr", "cudbgReportedDriverApiErrorFuncNameSize", delta);
+  dump_str_with_len(fp, "cudbgReportedDriverApiErrorStringAddr", "cudbgReportedDriverApiErrorStringSize", delta);
+  dump_str_with_len(fp, "cudbgReportedDriverApiErrorNameAddr", "cudbgReportedDriverApiErrorNameSize", delta);
 }
 
 /*
