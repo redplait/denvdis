@@ -60,6 +60,10 @@ class decuda {
    int read_rels(std::unordered_set<ELFIO::Elf_Half> &, int);
    int find_intf_tab();
    int resolve_indirects();
+   // verifier methods
+   template <typename T>
+   bool dump_xxx(FILE *fp, const char *, int64_t delta) const;
+   void dump_bss_publics(FILE *fp, int64_t delta) const;
    bool is_32;
    ELFIO::elfio *m_rdr;
    std::vector<elf_reloc> m_relocs;

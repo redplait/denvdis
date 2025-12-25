@@ -314,6 +314,35 @@ void decuda::verify(FILE *out_fp) const {
      fprintf(out_fp, "patched %.*s (%lX)\n", fi.first.size(), fi.first.data(), read_addr);
    }
  }
+ dump_bss_publics(out_fp, delta);
+}
+
+template <typename T>
+void s_print(FILE *, T);
+
+template <>
+void s_print(FILE *fp, uint32_t v) {
+  fprintf(fp, "%X", v);
+}
+
+template <>
+void s_print(FILE *fp, uint64_t v) {
+  fprintf(fp, "%lX", v);
+}
+
+template <typename T>
+bool decuda::dump_xxx(FILE *fp, const char *pubname, int64_t delta) const {
+  auto si = m_syms.find(pubname);
+  if ( si == m_syms.end() ) return false;
+  T *addr = (T*)(delta + si->second.addr);
+  fprintf(fp, "%s at %p: ", pubname, addr);
+  s_print(fp, *addr);
+  fprintf(fp, "\n");
+  return true;
+}
+
+void decuda::dump_bss_publics(FILE *fp, int64_t delta) const {
+ if ( !s_bss.has_value() ) return;
  /* some other interesting data (mostly from .bss):
      cudbgUseExternalDebugger - 4 bytes
      cudbgReportedDriverInternalErrorCode - 8 bytes
@@ -334,7 +363,16 @@ void decuda::verify(FILE *out_fp) const {
      cudbgEnableIntegratedMemcheck - 4
      cudbgDetachSuspendedDevicesMask - 4
      cudbgInjectionPath - 0x1000
+   from 13.1 sdk
+     cudbgIpcFlag - 4 bytes
+     cudbgReportedDriverApiErrorStringAddr - 8
+     cudbgReportedDriverApiErrorStringSize - 8
+     cudbgReportedDriverApiErrorNameAddr - 8
+     cudbgReportedDriverApiErrorNameSize - 8
+     cudbgReportedDriverApiErrorSource - 8
   */
+  dump_xxx<uint32_t>(fp, "cudbgUseExternalDebugger", delta);
+  dump_xxx<uint64_t>(fp, "cudbgReportedDriverInternalErrorCode", delta);
 }
 
 /*
