@@ -393,9 +393,10 @@ sub post_process_swaps
       next;
     }
     # patch ushed_info, new stall is curr stall - prev stall
-    my $dec_stall = stall_gain($sr->[1], $sr->[0]); # $sr->[1]->[7] - $sr->[0]->[7];
+    my $dec_stall = stall_gain($sr->[0], $sr->[1]); # $sr->[1]->[7] - $sr->[0]->[7];
     if ( $dec_stall ) {
       my $patched_stall = $sr->[1]->[7] - stall_gain($sr->[1], $sr->[0]);
+      printf("decrease %d at %X, patched %d\n", $dec_stall, $p_off, $patched_stall) if defined($opt_v);
       unless ( $g_ced->patch('usched_info', $patched_stall) ) {
         printf("post_process_swaps: patch stall(%X) failed, dec_stall %d, patched %d\n", $p_off, $dec_stall, $patched_stall);
         $gsp_bad++;
@@ -936,6 +937,7 @@ sub denied_swap
   return 1 if ( $what->[1] =~ /SHFL/ );
   # some instructions falls anyway
   return 1 if ( $what->[1] =~ /LEA/ );
+  return 1 if ( $what->[1] =~ /SHF/ );
   0;
 }
 
