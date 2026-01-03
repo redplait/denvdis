@@ -393,11 +393,14 @@ sub post_process_swaps
       next;
     }
     # patch ushed_info, new stall is curr stall - prev stall
-    my $patched_stall = $sr->[1]->[7] - $sr->[0]->[7];
-    unless ( $g_ced->patch('usched_info', $patched_stall) ) {
-      printf("post_process_swaps: patch stall(%X) failed\n", $p_off);
-      $gsp_bad++;
-      next;
+    my $dec_stall = stall_gain($sr->[1], $sr->[0]); # $sr->[1]->[7] - $sr->[0]->[7];
+    if ( $dec_stall ) {
+      my $patched_stall = $sr->[1]->[7] - stall_gain($sr->[1], $sr->[0]);
+      unless ( $g_ced->patch('usched_info', $patched_stall) ) {
+        printf("post_process_swaps: patch stall(%X) failed, dec_stall %d, patched %d\n", $p_off, $dec_stall, $patched_stall);
+        $gsp_bad++;
+        next;
+      }
     }
     $gsp_patched++;
     # we have some tail for post-patching?
@@ -915,6 +918,27 @@ sub store_s_idx($$$)
   1;
 }
 
+# check if current instruction is LD/ST
+sub is_ld_st
+{
+  my $what = shift;
+  return ( $what->[1] =~ /^U?(?:LD|ST)[LGS]/ );
+}
+
+# check if current instruction cannot be swapped
+sub denied_swap
+{
+  my $what = shift;
+  # intra-wrap instructions
+  return 1 if ( $what->[1] =~ /BAR/ );
+  return 1 if ( $what->[1] =~ /ELECT/ );
+  return 1 if ( $what->[1] =~ /VOTE/ );
+  return 1 if ( $what->[1] =~ /SHFL/ );
+  # some instructions falls anyway
+  return 1 if ( $what->[1] =~ /LEA/ );
+  0;
+}
+
 # check if two adjacent instructions can be swapped
 # Warning! this function should be called after checking that they are truly independent - it just estimate if they can be swapped
 # args: block ref
@@ -947,8 +971,9 @@ sub can_swap
   }
   # both instructions are ld/st of the same type
   # see details in paper https://arxiv.org/html/2501.08071v1 p3.5
-  return 0 if ( $curr->[1] =~ /^(?:LD|ST)[LGS]/ && $curr->[1] eq $prev->[1] );
-  # appy config
+  return 0 if ( is_ld_st($curr) && is_ld_st($prev) ); # && $curr->[1] eq $prev->[1] );
+  return 0 if ( denied_swap($curr) || denied_swap($prev) );
+  # apply config
   return 0 unless( $gcdf->($curr->[0]) );
   return 0 unless( $gcdf->($prev->[0]) );
   # check if we can get some gain from swapping
@@ -968,7 +993,10 @@ sub get_old_pair_stall
 sub stall_gain
 {
   my($p, $c) = @_;
-  $c->[7] - $p->[7];
+  my $res = $c->[7] - $p->[7];
+  # temporary hack
+  return 2 if ( $res > 2 );
+  $res;
 }
 
 =pod
