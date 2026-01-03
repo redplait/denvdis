@@ -962,8 +962,9 @@ sub can_swap
   # 3) has rela
   return 0 if ( $curr->[4] || $prev->[4] );
   # check cond
-  return 0 if ( !defined($curr->[6]) || !defined($prev->[6]) );
-  return 0 if ( $curr->[6] != $prev->[6] );
+  if ( defined($curr->[6]) && defined($prev->[6]) ) {
+   return 0 if ( $curr->[6] != $prev->[6] );
+  }
   # if they have cond - check that they are the same
   if ( $curr->[6] ) {
     return 0 if ( $curr->[2] !~ /^@(\!?\w+)/ );
@@ -1067,20 +1068,32 @@ sub greedy_add_swap
     $b->[15] = [ [ $b->[14], $b->[13] ] ];
     return 1;
   }
-  # check if curr is prev from previous pair, offset is at index 0
+  # check if curr $b->[13] is curr from previous pair $prev->[1], offset is at index 0
   my $prev = $b->[15]->[-1];
-  if ( $prev->[0] != $b->[13]->[0] ) {
+  if ( $prev->[1]->[0] != $b->[14]->[0] ) {
     push @{ $b->[15] }, [ $b->[14], $b->[13] ];
     return 1;
   }
-  # we have two adjacent pair of independent instructions - see note above
+  # we have two adjacent pairs of independent instructions - see note above
   # calc gain from previous pair
   my $p_gain = stall_gain( $prev->[0], $prev->[1] );
   my $c_gain = stall_gain( $b->[14], $b->[13] );
+printf("p_gain %d c_gain %d\n", $p_gain, $c_gain) if defined($opt_d);
   return 0 if ( $c_gain <= $p_gain ); # keep previous pair
   # replace with new pair
   $b->[15]->[-1] = [ $b->[14], $b->[13] ];
   2;
+}
+
+# for debugging
+# arg - block
+sub dump_swap_list
+{
+  my $b = shift;
+  return unless(defined $b->[15]);
+  foreach my $item ( @{ $b->[15] } ) {
+    printf("swap_list %X <-> %X\n", $item->[0]->[0], $item->[1]->[0]);
+  }
 }
 
 # args: offset, sched ctx, block
@@ -1764,6 +1777,7 @@ sub gdisasm
             my $gain = can_swap($block);
             if ( defined($gain) && $gain > 0 ) {
               if ( greedy_add_swap($block) ) {
+ dump_swap_list($block);
                 upd_swap_stat($gain, get_old_pair_stall($block));
                 printf("; Can swap to reduce %d\n", $gain);
               }
