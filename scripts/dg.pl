@@ -1282,6 +1282,11 @@ sub dump_ins
     if ( !$l ) { printf("LABEL_%X:\n", $off); }
     else { printf("LABEL_%X: ; %s\n", $off, $g_attrs->attr_name($l)); }
   }
+  # check for unconditional EXIT
+  if ( defined($block) && defined($opt_P) ) {
+    my $ar = $block->[13];
+    $block->[16] = 1 if ( !$ar->[6] && $i_text eq 'EXIT' );
+  }
   # process scheduling/find dual instr
   process_sched($off, $sctx, $block);
   my $dual = get_dual($sctx);
@@ -1714,6 +1719,13 @@ sub int_regs
   dep_regs($cur, $up) || dep_regs($up, $cur);
 }
 
+sub block_with_exit
+{
+  my $b = shift;
+  return 1 if ( defined($b->[16]) && $b->[16] );
+  0;
+}
+
 # curr instr snap in block->[8], prev in block->[9]
 # return 1 if 2 instrs are interleaved on some register/predicate
 sub is_interleaved
@@ -1777,7 +1789,7 @@ sub gdisasm
             my $gain = can_swap($block);
             if ( defined($gain) && $gain > 0 ) {
               if ( greedy_add_swap($block) ) {
- dump_swap_list($block);
+ dump_swap_list($block) if defined($opt_d);
                 upd_swap_stat($gain, get_old_pair_stall($block));
                 printf("; Can swap to reduce %d\n", $gain);
               }
@@ -1805,7 +1817,7 @@ sub gdisasm
     # do block post-processing of block here
     if ( defined $rt ) {
       $rt->finalize();
-      post_process_swaps($block) if ( defined $block->[15] );
+      post_process_swaps($block) if ( defined($block->[15]) && !block_with_exit($block) );
       dump_rt($rt);
     }
   }
@@ -2084,6 +2096,7 @@ sub dg
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
+  [16] - if this block contains unconditional EXIT
 =cut
   my @bbs;
   my $add_block = sub {
