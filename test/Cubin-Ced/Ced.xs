@@ -495,6 +495,21 @@ class Ced_perl: public CEd_base {
     }
     return newRV_noinc((SV*)hv);
   }
+  SV *ins_pred(const char *key) {
+    if ( !has_ins() ) return &PL_sv_undef;
+    if ( !ins()->predicated ) return &PL_sv_undef;
+    auto pi = *ins()->predicated->find(key);
+    if ( pi != *ins()->predicated->end() ) {
+      int res = pi.second(cex());
+      if ( m_vq && cmp(pi.first, "VQ") ) {
+        auto name = m_vq(res);
+        if ( name ) return newSVpv(name, strlen(name));
+      }
+      return newSViv(res);
+    }
+    // not found
+    return &PL_sv_undef;
+  }
   bool get_lxx(std::vector<SV *> &, int is_col) const;
   // return ref to hash where key is enum NVP_ops and value is ref to array where
   // [0] - type - enum NVP_type
@@ -1897,6 +1912,15 @@ ins_pred(SV *obj)
   RETVAL
 
 SV *
+grep_pred(SV *obj, const char *key)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_pred(key);
+ OUTPUT:
+  RETVAL
+
+SV *
 ins_reuse(SV *obj)
  ALIAS:
   Cubin::Ced::ins_reuse2 = 1
@@ -2593,6 +2617,23 @@ FETCH(self, key)
     ST(0) = get_ritem(d->at(key));
   }
   XSRETURN(1);
+
+SV *
+has_mem(self)
+  SV *self;
+INIT:
+  SV *res = &PL_sv_no;
+  auto *d = magic_tied<RItems>(self, 1, &ca_rend_magic_vt);
+ CODE:
+   for ( auto &r: *d ) {
+     if ( r.first->type > R_opcode ) {
+       res = &PL_sv_yes;
+       break;
+     }
+   }
+   RETVAL = res;
+ OUTPUT:
+  RETVAL
 
 void
 grep(self, key)
