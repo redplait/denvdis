@@ -938,6 +938,7 @@ sub denied_swap
   # some instructions falls anyway
   return 1 if ( $what->[1] =~ /LEA/ );
   return 1 if ( $what->[1] =~ /SHF/ );
+  return 1 if ( $what->[1] =~ /FADD/ || $what->[1] =~ /FMUL/ );
   0;
 }
 
@@ -1283,9 +1284,10 @@ sub dump_ins
     else { printf("LABEL_%X: ; %s\n", $off, $g_attrs->attr_name($l)); }
   }
   # check for unconditional EXIT
-  if ( defined($block) && defined($opt_P) ) {
+  if ( defined($block) && defined($block->[13] && defined($opt_P) ) {
     my $ar = $block->[13];
-    $block->[16] = 1 if ( !$ar->[6] && $i_text eq 'EXIT' );
+    # [6] is has_pred & [1] is ins_name
+    $block->[16] = 1 if ( !$ar->[6] && $ar->[1] eq 'EXIT' );
   }
   # process scheduling/find dual instr
   process_sched($off, $sctx, $block);
