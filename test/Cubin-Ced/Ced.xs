@@ -497,11 +497,12 @@ class Ced_perl: public CEd_base {
   }
   SV *ins_pred(const char *key) {
     if ( !has_ins() ) return &PL_sv_undef;
-    if ( !ins()->predicated ) return &PL_sv_undef;
-    auto pi = *ins()->predicated->find(key);
-    if ( pi != *ins()->predicated->end() ) {
-      int res = pi.second(cex());
-      if ( m_vq && cmp(pi.first, "VQ") ) {
+    const NV_Preds *preds = ins()->predicated;
+    if ( !preds ) return &PL_sv_undef;
+    auto pri = preds->find(key);
+    if ( pri != preds->end() ) {
+      int res = pri->second(cex());
+      if ( m_vq && cmp(pri->first, "VQ") ) {
         auto name = m_vq(res);
         if ( name ) return newSVpv(name, strlen(name));
       }

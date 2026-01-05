@@ -456,6 +456,8 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * ins_pred - returns ref to hash with predicates, see details L<https://redplait.blogspot.com/2025/04/nvidia-sass-disassembler-part-6.html>
 
+=item * grep_pred($key_name) - try to find predicate with $key_name
+
 =item * ins_prop - returns ref to hash with properties, see details L<https://redplait.blogspot.com/2025/07/sass-instructions-properties.html>
 
 =item * ins_cb - if instruction has Const Bank - returns ref to array where
