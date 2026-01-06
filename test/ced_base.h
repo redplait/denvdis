@@ -172,11 +172,8 @@ class CEd_base: public CElf<ParseSASS> {
    void hdump(const char *pfx, const unsigned char *, int len) const;
    // tab valudators methods
    bool cmp_tab_row(const unsigned short *, size_t f_idx, const std::vector<unsigned short> &, const std::optional<unsigned short> &) const;
-   template <typename S, typename T>
-   bool filter_tab_rows(S fn, int is_filter, T *out_res) const {
-     int f_idx = 0;
-     const NV_tab_fields *tab = is_tab_field(ins(), fn, f_idx);
-     if ( !tab ) return false;
+   template <typename T>
+   bool filter_tab_rows(const NV_tab_fields *tab, int f_idx, int is_filter, T &&cl) const {
      // fill current row
      std::vector<unsigned short> curr;
      std::optional<unsigned short> filter;
@@ -193,10 +190,43 @@ class CEd_base: public CElf<ParseSASS> {
      for ( auto &row: *tab->tab ) {
        const unsigned short *rs = row.second;
        if ( cmp_tab_row(rs, f_idx, curr, filter) )
-         out_res->insert( rs[f_idx] );
+         cl( rs[f_idx+1] );
      }
+     return true;
+   }
+   // and couple of variations
+   template <typename T>
+   bool filter_tab_rows(const char *fn, int is_filter, T *out_res) const {
+     int f_idx = 0;
+     if ( !ins()->tab_fields.size() ) {
+       Err("%s: no tabs, line %d", fn, ins()->line);
+       return false;
+     }
+     const NV_tab_fields *tab = is_tab_field(ins(), fn, f_idx);
+     if ( !tab ) {
+       Err("%s is not in tabs, line %d", fn, ins()->line);
+       return false;
+     }
+     if ( !filter_tab_rows(tab, f_idx, is_filter, [&out_res](unsigned short v) { out_res->insert( v ); }) ) return false;
      return !out_res->empty();
    }
+   // with string_view
+   template <typename T>
+   bool filter_tab_rows(const std::string_view &fn, int is_filter, T *out_res) const {
+     int f_idx = 0;
+     if ( !ins()->tab_fields.size() ) {
+       Err("%.*s: no tabs, line %d", fn.size(), fn.data(), ins()->line);
+       return false;
+     }
+     const NV_tab_fields *tab = is_tab_field(ins(), fn, f_idx);
+     if ( !tab ) {
+       Err("%.*s is not in tabs, line %d", fn.size(), fn.data(), ins()->line);
+       return false;
+     }
+     if ( !filter_tab_rows(tab, f_idx, is_filter, [&out_res](unsigned short v) { out_res->insert( v ); }) ) return false;
+     return !out_res->empty();
+   }
+
    // generate some ins from fresh values
    // used in noping and patch from r instruction text
    int generic_ins(const nv_instr *, NV_extracted &);
