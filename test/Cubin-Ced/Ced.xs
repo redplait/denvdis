@@ -558,6 +558,7 @@ class Ced_perl: public CEd_base {
   SV *extract_vfields(const nv_instr *) const;
   SV *make_enum(const char *);
   // tabs
+  SV *check_tab(const char *fname, int do_filter) const;
   SV *tab_count(const nv_instr *inst) const {
     return newSViv(inst->tab_fields.size());
   }
@@ -847,6 +848,18 @@ int Ced_perl::patch_field(const char *fname, SV *v)
   }
   Err("dont know how to patch %s, offset %lX\n", fname, m_dis->offset());
   return 0;
+}
+
+SV *Ced_perl::check_tab(const char *fname, int do_filter) const
+{
+  if ( !has_ins() ) return &PL_sv_undef;
+  std::unordered_set<unsigned short> res;
+  if ( !filter_tab_rows(fname, do_filter, &res) ) &PL_sv_undef;
+  HV *hv = newHV();
+  for ( auto ei: res ) {
+    hv_store_ent(hv, newSViv(ei), &PL_sv_yes, 0);
+  }
+  return newRV_noinc((SV*)hv);
 }
 
 int Ced_perl::patch_tab(int t_idx, int v)
@@ -1996,6 +2009,15 @@ has_tfield(SV *obj, const char *tfname)
    std::string_view tmp{tfname};
  CODE:
    RETVAL = e->has_tfield(tmp);
+ OUTPUT:
+  RETVAL
+
+SV *
+check_tab(SV *obj, const char *tfname, int do_filter = 0)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->check_tab(tfname, do_filter);
  OUTPUT:
   RETVAL
 

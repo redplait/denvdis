@@ -275,6 +275,20 @@ int CEd_base::parse_num(NV_Format fmt, std::string_view &tail)
   return 1;
 }
 
+bool CEd_base::cmp_tab_row(const unsigned short *row, size_t f_idx, const std::vector<unsigned short> &curr,
+ const std::optional<unsigned short> &filter) const
+{
+  if ( row[0] != curr.size() ) return false;
+  for ( size_t i = 0; i < row[0]; ++i ) {
+    if ( i == f_idx ) continue;
+    if ( curr[i] != row[i+1] ) return false;
+  }
+  if ( filter.has_value() ) {
+    if ( row[f_idx+1] > filter.value() ) return false;
+  }
+  return true;
+}
+
 int CEd_base::generic_ins(const nv_instr *ins, NV_extracted &kv)
 {
   m_inc_tabs.clear();

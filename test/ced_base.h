@@ -170,6 +170,32 @@ class CEd_base: public CElf<ParseSASS> {
    }
    int swap_with(unsigned long);
    void hdump(const char *pfx, const unsigned char *, int len) const;
+   // tab valudators methods
+   bool cmp_tab_row(const unsigned short *, size_t f_idx, const std::vector<unsigned short> &, const std::optional<unsigned short> &) const;
+   template <typename S, typename T>
+   bool filter_tab_rows(S fn, int is_filter, T *out_res) const {
+     int f_idx = 0;
+     const NV_tab_fields *tab = is_tab_field(ins(), fn, f_idx);
+     if ( !tab ) return false;
+     // fill current row
+     std::vector<unsigned short> curr;
+     std::optional<unsigned short> filter;
+     size_t idx = 0;
+     auto &kv = cex();
+     for ( auto &t: tab->fields ) {
+       auto vi = kv.find(t);
+       if ( vi == kv.end() ) return false;
+       curr.push_back((unsigned short)vi->second);
+       if ( is_filter && f_idx == idx ) filter.emplace((unsigned short)vi->second);
+     }
+     // enum tab map
+     for ( auto &row: *tab->tab ) {
+       const unsigned short *rs = row.second;
+       if ( cmp_tab_row(rs, f_idx, curr, filter) )
+         out_res->insert( rs[f_idx] );
+     }
+     return !out_res->empty();
+   }
    // generate some ins from fresh values
    // used in noping and patch from r instruction text
    int generic_ins(const nv_instr *, NV_extracted &);
