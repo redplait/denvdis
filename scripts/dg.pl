@@ -982,7 +982,10 @@ sub can_swap
   return 0 unless( $gcdf->($prev->[0]) );
   # check if we can get some gain from swapping
   return $prev->[7] if ( $curr->[7] > $prev->[7] );
-  0;
+  # check min_wait at ->[11]
+  my $res = stall_gain($prev, $curr);
+  return 0 if ( defined($prev->[11]) && ($prev->[7] - $res < $prev->[11]) );
+  $res;
 }
 
 # extract old stall count for pair of adjacent instructions
@@ -1086,6 +1089,13 @@ printf("p_gain %d c_gain %d\n", $p_gain, $c_gain) if defined($opt_d);
   2;
 }
 
+sub vq_name
+{
+  my $it = shift;
+  return '' unless defined($it->[10]);
+  $it->[10];
+}
+
 # for debugging
 # arg - block
 sub dump_swap_list
@@ -1093,7 +1103,7 @@ sub dump_swap_list
   my $b = shift;
   return unless(defined $b->[15]);
   foreach my $item ( @{ $b->[15] } ) {
-    printf("swap_list %X <-> %X\n", $item->[0]->[0], $item->[1]->[0]);
+    printf("swap_list %X (%s) <-> %X (%s)\n", $item->[0]->[0], vq_name($item->[0]), $item->[1]->[0], vq_name($item->[1]));
   }
 }
 
@@ -1250,6 +1260,8 @@ sub dump_ins
     $ar->[5] = $brt;
     $ar->[6] = $g_ced->has_pred();
     $ar->[9] = $brt ? 1 : $g_ced->ins_branch();
+    $ar->[10] = $g_ced->grep_pred("VQ");
+    $ar->[11] = $mw if ( $mw );
   }
   # is empty instruction - nop or with !@PT predicate
   my $skip = is_skip();
@@ -1284,7 +1296,7 @@ sub dump_ins
     else { printf("LABEL_%X: ; %s\n", $off, $g_attrs->attr_name($l)); }
   }
   # check for unconditional EXIT
-  if ( defined($block) && defined($block->[13] && defined($opt_P) ) {
+  if ( defined($block) && defined($block->[13]) && defined($opt_P) ) {
     my $ar = $block->[13];
     # [6] is has_pred & [1] is ins_name
     $block->[16] = 1 if ( !$ar->[6] && $ar->[1] eq 'EXIT' );
@@ -1791,7 +1803,7 @@ sub gdisasm
             my $gain = can_swap($block);
             if ( defined($gain) && $gain > 0 ) {
               if ( greedy_add_swap($block) ) {
- dump_swap_list($block) if defined($opt_d);
+ dump_swap_list($block); # if defined($opt_d);
                 upd_swap_stat($gain, get_old_pair_stall($block));
                 printf("; Can swap to reduce %d\n", $gain);
               }
@@ -2094,7 +2106,9 @@ sub dg
     * 7 - stall count - filled in process_sched
     * 8 - is dual - filled in process_sched
     * 9 - has branch like BSSY
-    * 10 - TBC
+    * 10 - VQ predicate, filled in dump_ins
+    * 11 - min_wait, filled in dump_ins too
+    * 12 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
