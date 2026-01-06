@@ -854,7 +854,7 @@ SV *Ced_perl::check_tab(const char *fname, int do_filter) const
 {
   if ( !has_ins() ) return &PL_sv_undef;
   std::unordered_set<unsigned short> res;
-  if ( !filter_tab_rows(fname, do_filter, &res) ) &PL_sv_undef;
+  if ( !filter_tab_rows(fname, do_filter, &res) ) return &PL_sv_undef;
   HV *hv = newHV();
   for ( auto ei: res ) {
     hv_store_ent(hv, newSViv(ei), &PL_sv_yes, 0);

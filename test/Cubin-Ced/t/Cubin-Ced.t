@@ -81,7 +81,7 @@ $t_num+=2;
 my $tc = $cub->tab_count();
 ok( !$tc, 'tab_count');
 my $tf = $cub->check_tab('usched_info', 1);
-ok( defined($tf), 'check_tab' );
+ok( !defined($tf), 'check_tab' );
 
 $t_num+=2;
 ok( $cub->next(), 'next');
