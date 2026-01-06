@@ -973,6 +973,12 @@ sub can_swap
     return 0 if ( $prev->[2] !~ /^@(\!?\w+)/ );
     return 0 unless ( $c_cond eq $1 );
   }
+  # if adjacent instructions belong to the same Virtual Queue (VQ stored at index 10)
+  # hopefully in this case ptxas already made optimization and we can skip them
+  # remove this check if this assumption is wrong
+  if ( defined($curr->[10]) and defined($prev->[10]) ) {
+    return 0 if ( $curr->[10] eq $prev->[10] );
+  }
   # both instructions are ld/st of the same type
   # see details in paper https://arxiv.org/html/2501.08071v1 p3.5
   return 0 if ( is_ld_st($curr) && is_ld_st($prev) ); # && $curr->[1] eq $prev->[1] );
@@ -2108,7 +2114,8 @@ sub dg
     * 9 - has branch like BSSY
     * 10 - VQ predicate, filled in dump_ins
     * 11 - min_wait, filled in dump_ins too
-    * 12 - TBC
+    * 12 - possible usched_info enum values from Ced::check_tab, must be extracted on instruction so also filled in dump_ins
+    * 13 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
