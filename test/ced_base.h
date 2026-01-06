@@ -187,6 +187,7 @@ class CEd_base: public CElf<ParseSASS> {
        if ( vi == kv.end() ) return false;
        curr.push_back((unsigned short)vi->second);
        if ( is_filter && f_idx == idx ) filter.emplace((unsigned short)vi->second);
+       ++idx;
      }
      // enum tab map
      for ( auto &row: *tab->tab ) {
