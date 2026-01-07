@@ -60,8 +60,10 @@ ok( 0 == $cub->start(), 'start of section in set_s should be 0' );
 $t_num++;
 ok( defined($cub->render()), 'render' );
 
-$t_num++;
+$t_num+=2;
 ok( 'MOV' eq $cub->ins_name(), 'ins_name' );
+my $itype = $cub->ins_itype();
+ok( 2 == $itype, 'itype'); # BCST
 
 my $ef = $cub->efields();
 $t_num++;

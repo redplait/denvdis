@@ -2435,6 +2435,7 @@ line(SV *obj)
   Cubin::Ced::Instr::tab_count = 12
   Cubin::Ced::Instr::has_comp = 13
   Cubin::Ced::Instr::pred_name = 14
+  Cubin::Ced::Instr::itype = 15
  INIT:
   one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
  CODE:
@@ -2468,6 +2469,8 @@ line(SV *obj)
      case 13: RETVAL = e->base->has_comp(e->rend);
       break;
      case 14: RETVAL = e->base->check_pred(e->rend);
+      break;
+     case 15: RETVAL = e->iv<&nv_instr::itype>();
       break;
      default: croak("unknown ix %d in Cubin::Ced::Instr", ix);
     }
