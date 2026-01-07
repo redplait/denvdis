@@ -1,9 +1,14 @@
 IFLAGS=-I ../scripts
 ELFIO=-I ../../../../../ELFIO/
+CC=gcc -mavx2
+# CLANG=gcc -mavx2
+CLANG=clang++-21 -mavx2
 # path to fp16 (https://github.com/Maratyszcza/FP16)
 FP16=-I ../../FP16/include
 # for release add -Os and remove -g
-SM_FLAGS=-Wall -shared -fpic -msse2avx -gdwarf-4 -pthread $(IFLAGS)
+CFLAGS=-Wall -Wno-missing-braces -std=c++20 -gdwarf-4
+# SM_FLAGS=-Wall -shared -fpic -msse2avx -gdwarf-4 -pthread $(IFLAGS)
+SM_FLAGS=-Wall -Wno-missing-braces -Wno-unused-const-variable -shared -fpic -gdwarf-4 -pthread $(IFLAGS)
 SM_LIBS=-lstdc++ -lpthread
 # ead.pl options
 PERL_OPTS=-d:Confess
@@ -18,79 +23,79 @@ libced.a: $(AR_OBJS)
 	ar rcs $@ $(AR_OBJS)
 
 ced_base.o: ced_base.cc
-	gcc -Wall -fpic -std=c++20 -gdwarf-4 $(ELFIO) $(IFLAGS) $(FP16) -c $^
+	$(CC) -fpic $(CFLAGS) $(ELFIO) $(IFLAGS) $(FP16) -c $^
 
 nv_rend.o: nv_rend.cc
-	gcc -Wall -fpic -std=c++20 -gdwarf-4 $(IFLAGS) $(FP16) -c $^
+	$(CC) -fpic $(CFLAGS) $(IFLAGS) $(FP16) -c $^
 
 sass_parser.o: sass_parser.cc
-	gcc -Wall -fpic -std=c++20 -gdwarf-4 $(IFLAGS) $(FP16) -c $^
+	$(CC) -fpic $(CFLAGS) $(IFLAGS) $(FP16) -c $^
 
 ina: ina.cc libced.a
-	gcc -Wall -std=c++20 -gdwarf-4 $(IFLAGS) $(FP16) -o $@ $^ -lreadline -lstdc++ -ldl
+	$(CC) $(CFLAGS) $(IFLAGS) $(FP16) -o $@ $^ -lreadline -lstdc++ -ldl
 
 nvd: nvd.cc libced.a
-	gcc -Wall -std=c++20 -gdwarf-4 $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
+	$(CC) $(CFLAGS) $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
 
 pa: pa.cc libced.a
-	gcc -Wall -std=c++20 -O -msse4 -mavx2 -gdwarf-4 $(IFLAGS) $(FP16) -o $@ $^ -lstdc++ -ldl
+	$(CC) $(CFLAGS) -O -msse4 -mavx2 $(IFLAGS) $(FP16) -o $@ $^ -lstdc++ -ldl
 
 ced: ced.cc libced.a
-	gcc -Wall -std=c++20 -gdwarf-4 $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
+	$(CC) $(CFLAGS) $(IFLAGS) $(ELFIO) $(FP16) -o $@ $^ -lstdc++ -ldl
 
 sm120.so: sm120.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm103.so: sm103.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm101.so: sm101.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm100.so: sm100.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm90.so: sm90.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm89.so: sm89.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm86.so: sm86.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm80.so: sm80.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm75.so: sm75.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm72.so: sm72.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm70.so: sm70.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm57.so: sm57.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm55.so: sm55.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm52.so: sm52.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm5.so: sm5.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm4.so: sm4.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm3.so: sm3.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm2.so: sm2.cc
-	gcc $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
 sm2.cc: $(EAD)
 	perl $(PERL_OPTS) $(EAD) -BFEmrizp -C sm2 ../data/sm2_1.txt
