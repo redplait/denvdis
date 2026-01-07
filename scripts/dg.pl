@@ -36,6 +36,7 @@ EOF
 
 ### constants
 use constant MAX_SWAP_DIST => 0x70;
+use constant USCHED => 'usched_info';
 
 ### globals
 my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
@@ -397,7 +398,7 @@ sub post_process_swaps
     if ( $dec_stall ) {
       my $patched_stall = $sr->[1]->[7] - stall_gain($sr->[1], $sr->[0]);
       printf("decrease %d at %X, patched %d\n", $dec_stall, $p_off, $patched_stall) if defined($opt_v);
-      unless ( $g_ced->patch('usched_info', $patched_stall) ) {
+      unless ( $g_ced->patch(USCHED, $patched_stall) ) {
         printf("post_process_swaps: patch stall(%X) failed, dec_stall %d, patched %d\n", $p_off, $dec_stall, $patched_stall);
         $gsp_bad++;
         next;
@@ -990,7 +991,14 @@ sub can_swap
   return $prev->[7] if ( $curr->[7] > $prev->[7] );
   # check min_wait at ->[11]
   my $res = stall_gain($prev, $curr);
-  return 0 if ( defined($prev->[11]) && ($prev->[7] - $res < $prev->[11]) );
+  return 0 if ( $res >= $curr->[7] );
+  my $new_usched = $curr->[7] - $res;
+  return 0 if ( defined($curr->[11]) && ($new_usched < $curr->[11]) );
+  # check if we really can patch
+  if ( defined $curr->[12] ) {
+# print 'US12:', $curr->[7], ' ', Dumper($curr->[12]);
+    return 0 unless( exists $curr->[12]->{$new_usched} );
+  }
   $res;
 }
 
@@ -1268,6 +1276,7 @@ sub dump_ins
     $ar->[9] = $brt ? 1 : $g_ced->ins_branch();
     $ar->[10] = $g_ced->grep_pred("VQ");
     $ar->[11] = $mw if ( $mw );
+    $ar->[12] = $g_ced->check_tab(USCHED, 1) if defined($opt_P);
   }
   # is empty instruction - nop or with !@PT predicate
   my $skip = is_skip();
