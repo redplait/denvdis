@@ -1219,7 +1219,7 @@ sub gen_inst_mask
          foreach ( @num_row) { $num_cnt++ if defined $_; }
          my $t_dim = tab_dim($tab_name);
          if ( defined($opt_z) && $num_cnt == $t_dim ) {
-      printf("CNT %s line %d %s: %d %d tab %s %s\n", $op->[1], $op->[4], $what->[0], $num_cnt, $t_dim, $tab_name, join(' ', @num_row));    
+      printf("CNT %s line %d %s: %d %d tab %s %s\n", $op->[1], $op->[4], $what->[0], $num_cnt, $t_dim, $tab_name, join(' ', @num_row));
            # try to find key
            my $key = (1 == $t_dim) ? rev_tab1($tab_name, $num_row[0]) : rev_tab_lookup($tab_name, \@num_row);
            if ( defined $key ) {
@@ -1460,12 +1460,10 @@ sub dump_tree
       } else {
         # for duplicates dump also line & encodings
         printf(" %d items:\n", $ops_size);
-        for( my $i = 0; $i < $ops_size; $i++ ) {
+        for my $i ( 0 .. $ops_size - 1 ) {
           printf("    %s %s line %d:\n", $id, $ops->[$i]->[1], $ops->[$i]->[4]);
           # dump encodings
-          foreach my $enc ( @{ $ops->[$i]->[5] } ) {
-            printf("      %s\n", $enc);
-          }
+          printf("      %s\n", $_) for ( @{ $ops->[$i]->[5] } );
         }
       }
     }
@@ -1564,10 +1562,11 @@ sub dump_values
           if ( 'ARRAY' eq ref $row ) {
             my @fa = split /\s*,\s*/, $3;
             my $te = $op->[13];
+            my $row_size = scalar @$row;
             if ( defined($te) && exists $te->{$1} ) {
               my $res = '';
               my $ae = $te->{$1};
-              for ( my $i = 0; $i < scalar @$row; $i++ ) {
+              for my $i ( 0 .. @$row_size - 1 ) {
                 if ( !defined $ae->[$i] ) { $res .= $row->[$i];
                   $kv->{ $fa[$i] } = $row->[$i] if ( $i < scalar @fa );
                 } else {
@@ -1581,9 +1580,7 @@ sub dump_values
               chop $res;
               printf("%s\n", $res);
             } else { printf("%s\n", join ",", @$row);
-              for ( my $i = 0; $i < scalar @$row; $i++ ) {
-                $kv->{ $fa[$i] } = $row->[$i];
-              }
+              $kv->{ $fa[$_] } = $row->[$_] for ( 0 .. $row_size - 1 );
             }
           } else { # table with single arg
             printf("%s\n", $row); $kv->{strip_t($3)} = $row; }
@@ -3420,13 +3417,14 @@ sub gen_instr
         printf($fh "%s,", $brt->[1] || '0'); # scbd
         printf($fh "%s,", $brt->[2] || '0'); # scbd_type
         printf($fh "%s,", $brt->[6] || '0'); # min_wait
+        printf($fh "%s,", $brt->[7] || '0'); # itype
         foreach my $bi ( 3 .. 5 ) {
           if ( defined $brt->[$bi]) { printf($fh "\"%s\",", $brt->[$bi]); }
           else { printf($fh "nullptr,"); }
         }
         printf($fh "\n");
       } else {
-        printf($fh "0, 0, 0, 0, nullptr, nullptr, nullptr,\n");
+        printf($fh "0, 0, 0, 0, 0, nullptr, nullptr, nullptr,\n");
       }
       # predicates
       $write->($pred_name);
@@ -5826,6 +5824,10 @@ while( $str = <$fh> ) {
     if ( $str =~ /MIN_WAIT_NEEDED\s*=\s*(\d+)/ ) {
       my $w = int($1);
       $b_props[6] = $w if $w;
+      next;
+    }
+    if ( $str =~ /\bITYPE\s*=\s*(\S+)\s*;/ ) {
+      $b_props[7] = $1;
       next;
     }
     # SIDL_NAME

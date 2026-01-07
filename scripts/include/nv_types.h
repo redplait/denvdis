@@ -82,6 +82,13 @@ enum NV_Format {
   NV_F32Imm,
 };
 
+enum NV_IType {
+ ITYPE_ABC_REG = 1,
+ ITYPE_ABC_BCST = 2,
+ ITYPE_ABC_CCST = 3,
+ ITYPE_ABC_B20I = 4,
+};
+
 enum NV_Brt {
  BRT_CALL = 1,
  BRT_RETURN = 2,
@@ -217,7 +224,8 @@ struct nv_instr {
  char brt,   // NV_Brt or 0
   scbd,      // NV_Scbd or 0
   scbd_type, // NV_Scbd_Type or 0
-  min_wait;  // MIN_WAIT_NEEDED
+  min_wait,  // MIN_WAIT_NEEDED
+  itype;     // NV_IType
  const char *target_index;
  const char *cc_index;
  const char *sidl_name;
