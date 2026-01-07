@@ -92,6 +92,20 @@ sub RType_name($)
   undef;
 }
 
+our %ITypes = (
+ 1 => 'ABC_REG',
+ 2 => 'ABC_BCST',
+ 3 => 'ABC_CCST',
+ 4 => 'ABC_B20I',
+);
+
+sub IType_name($)
+{
+  my $p = shift;
+  return $ITypes{$p} if exists($ITypes{$p});
+  undef;
+}
+
 our %PRs = (
  0 => 'IDEST',
  1 => 'IDEST2',
@@ -220,6 +234,7 @@ our @EXPORT = qw(
  brt_name
  exs
  l2map
+ IType_name
  PR_name
  PTypes
  PType_name

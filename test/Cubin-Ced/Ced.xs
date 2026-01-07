@@ -385,6 +385,9 @@ class Ced_perl: public CEd_base {
   SV *ins_scbd_type() const {
     return ins_intxxx<&nv_instr::scbd_type>();
   }
+  SV *ins_itype() const {
+    return ins_intxxx<&nv_instr::itype>();
+  }
   SV *ins_min_wait() const {
     return ins_intxxx<&nv_instr::min_wait>();
   }
@@ -1825,46 +1828,34 @@ ins_brt(SV *obj)
 
 SV *
 ins_scbd(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_scbd_type = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->ins_scbd();
- OUTPUT:
-  RETVAL
-
-SV *
-ins_scbd_type(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   RETVAL = e->ins_scbd_type();
+   RETVAL = ix == 1 ? e->ins_scbd_type() : e->ins_scbd();
  OUTPUT:
   RETVAL
 
 SV *
 ins_min_wait(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_itype = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->ins_min_wait();
+   RETVAL = ix == 1 ? e->ins_itype() : e->ins_min_wait();
  OUTPUT:
   RETVAL
 
 SV *
 ins_cc(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_sidl = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->ins_cc();
- OUTPUT:
-  RETVAL
-
-SV *
-ins_sidl(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   RETVAL = e->ins_sidl();
+   RETVAL = ix == 1 ? e->ins_sidl() : e->ins_cc();
  OUTPUT:
   RETVAL
 
@@ -3007,6 +2998,10 @@ BOOT:
  EXPORT_ENUM(NVP_ops, ISRC_E)
  EXPORT_ENUM(NVP_ops, ISRC_H)
  EXPORT_ENUM(NVP_ops, ISRC_I)
+ EXPORT_ENUM(NV_IType, ITYPE_ABC_REG)
+ EXPORT_ENUM(NV_IType, ITYPE_ABC_BCST)
+ EXPORT_ENUM(NV_IType, ITYPE_ABC_CCST)
+ EXPORT_ENUM(NV_IType, ITYPE_ABC_B20I)
  EXPORT_ENUM(NVP_type, INTEGER)
  EXPORT_ENUM(NVP_type, SIGNED_INTEGER)
  EXPORT_ENUM(NVP_type, UNSIGNED_INTEGER)
