@@ -932,7 +932,7 @@ sub is_ld_st
 sub denied_swap
 {
   my $what = shift;
-  # intra-wrap instructions
+  # intra-warp instructions
   return 1 if ( $what->[1] =~ /BAR/ );
   return 1 if ( $what->[1] =~ /ELECT/ );
   return 1 if ( $what->[1] =~ /VOTE/ );
@@ -941,6 +941,16 @@ sub denied_swap
   return 1 if ( $what->[1] =~ /LEA/ );
   return 1 if ( $what->[1] =~ /SHF/ );
   return 1 if ( $what->[1] =~ /FADD/ || $what->[1] =~ /FMUL/ );
+  0;
+}
+
+# args: curr prev
+sub inter_CC
+{
+  my($c, $p) = @_;
+  return 0 if ( !defined($c->[13]) && !defined($p->[13]) );
+  return 1 if ( defined($c->[13]) && ($c->[13] & 2));
+  return 1 if ( defined($p->[13]) && ($p->[13] & 2));
   0;
 }
 
@@ -964,6 +974,8 @@ sub can_swap
   return 0 if ( $curr->[9] || $prev->[9] );
   # 3) has rela
   return 0 if ( $curr->[4] || $prev->[4] );
+  # 4) share CC on old SMs
+  return 0 if ( inter_CC($curr, $prev) );
   # check cond
   if ( defined($curr->[6]) && defined($prev->[6]) ) {
    return 0 if ( $curr->[6] != $prev->[6] );
@@ -1257,6 +1269,9 @@ sub dump_ins
   my $mw = $g_ced->ins_min_wait();
   my $i_text = $g_ced->ins_text();
   my $i_type = $g_ced->ins_itype();
+  my $cc = 0;
+  $cc = 1 if ( $g_ced->get('TestCC') || $g_ced->grep_pred('DOES_READ_CC') );
+  $cc |= 2 if ( $g_ced->get('writeCC') );
   if ( defined $opt_v ) {
     my $cl = $g_ced->ins_class();
     my $ln = $g_ced->ins_line();
@@ -1265,6 +1280,7 @@ sub dump_ins
     printf(" Brt %d (%s)", $brt, brt_name($brt)) if $brt;
     printf(" Scbd %d (%s)", $scbd, scbd_name($scbd)) if $scbd;
     printf(" min_wait: %d", $mw) if $mw;
+    printf(" CC %d", $cc) if $cc;
     printf(" IType %d (%s)", $i_type, IType_name($i_type)) if ( $i_type );
     printf("\n");
   }
@@ -1279,7 +1295,8 @@ sub dump_ins
     $ar->[9] = $brt ? 1 : $g_ced->ins_branch();
     $ar->[10] = $g_ced->grep_pred("VQ");
     $ar->[11] = $mw if ( $mw );
-    $ar->[12] = $g_ced->check_tab(USCHED, 1) if defined($opt_P);
+    $ar->[12] = $g_ced->check_tab(USCHED, 1) if ( defined($opt_P) || defined($opt_p) );
+    $ar->[13] = $cc if $cc;
   }
   # is empty instruction - nop or with !@PT predicate
   my $skip = is_skip();
@@ -2127,7 +2144,8 @@ sub dg
     * 10 - VQ predicate, filled in dump_ins
     * 11 - min_wait, filled in dump_ins too
     * 12 - possible usched_info enum values from Ced::check_tab, must be extracted on instruction so also filled in dump_ins
-    * 13 - TBC
+    * 13 - mask of CC ops for old SM, 1 - read, 2 - write
+    * 14 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
