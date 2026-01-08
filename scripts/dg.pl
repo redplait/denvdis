@@ -38,6 +38,7 @@ EOF
 ### constants
 use constant MAX_SWAP_DIST => 0x70;
 use constant USCHED => 'usched_info';
+use constant GAIN_LIMIT => 2;
 
 ### globals
 my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
@@ -939,8 +940,8 @@ sub denied_swap
   return 1 if ( $what->[1] =~ /SHFL/ );
   # some instructions falls anyway
   return 1 if ( $what->[1] =~ /LEA/ );
-  return 1 if ( $what->[1] =~ /SHF/ );
-  return 1 if ( $what->[1] =~ /FADD/ || $what->[1] =~ /FMUL/ );
+  # return 1 if ( $what->[1] =~ /SHF/ );
+  # return 1 if ( $what->[1] =~ /FADD/ || $what->[1] =~ /FMUL/ );
   0;
 }
 
@@ -957,7 +958,7 @@ sub inter_CC
 # check if two adjacent instructions can be swapped
 # Warning! this function should be called after checking that they are truly independent - it just estimate if they can be swapped
 # args: block ref
-# returns still gains
+# returns stall gains
 sub can_swap
 {
   my $b = shift;
@@ -976,6 +977,8 @@ sub can_swap
   return 0 if ( $curr->[4] || $prev->[4] );
   # 4) share CC on old SMs
   return 0 if ( inter_CC($curr, $prev) );
+  # 5) one of instructions is ENDING_INST
+  return 0 if ( $curr->[14] || $prev->[14] );
   # check cond
   if ( defined($curr->[6]) && defined($prev->[6]) ) {
    return 0 if ( $curr->[6] != $prev->[6] );
@@ -989,7 +992,7 @@ sub can_swap
   }
   # if adjacent instructions belong to the same Virtual Queue (VQ stored at index 10)
   # hopefully in this case ptxas already made optimization and we can skip them
-  # remove this check if this assumption is wrong
+  # remove check below if this assumption is wrong
   if ( defined($curr->[10]) and defined($prev->[10]) ) {
     return 0 if ( $curr->[10] eq $prev->[10] );
   }
@@ -1001,11 +1004,11 @@ sub can_swap
   return 0 unless( $gcdf->($curr->[0]) );
   return 0 unless( $gcdf->($prev->[0]) );
   # check if we can get some gain from swapping
-  return $prev->[7] if ( $curr->[7] > $prev->[7] );
-  # check min_wait at ->[11]
   my $res = stall_gain($prev, $curr);
-  return 0 if ( $res >= $curr->[7] );
+printf("Gain %d\n", $res);
+  return 0 unless ( $res );
   my $new_usched = $curr->[7] - $res;
+  # check min_wait at ->[11]
   return 0 if ( defined($curr->[11]) && ($new_usched < $curr->[11]) );
   # check if we really can patch
   if ( defined $curr->[12] ) {
@@ -1028,8 +1031,12 @@ sub stall_gain
 {
   my($p, $c) = @_;
   my $res = $c->[7] - $p->[7];
+  if ( $res < 0 ) {
+    printf("neg stall: %d vs %d\n", $c->[7], $p->[7]) if defined($opt_v);
+    return 0;
+  }
   # temporary hack
-  return 2 if ( $res > 2 );
+  return GAIN_LIMIT if ( $res > GAIN_LIMIT );
   $res;
 }
 
@@ -1266,6 +1273,7 @@ sub dump_ins
   my($off, $sctx, $block, $rt) = @_;
   my $brt = $g_ced->ins_brt();
   my $scbd = $g_ced->ins_scbd();
+  my $scbd_type = $g_ced->ins_scbd_type();
   my $mw = $g_ced->ins_min_wait();
   my $i_text = $g_ced->ins_text();
   my $i_type = $g_ced->ins_itype();
@@ -1279,6 +1287,7 @@ sub dump_ins
     printf(" ALT") if ( $g_ced->ins_alt() );
     printf(" Brt %d (%s)", $brt, brt_name($brt)) if $brt;
     printf(" Scbd %d (%s)", $scbd, scbd_name($scbd)) if $scbd;
+    printf(" Scbd_type %s (%s)", $scbd_type, scbd_type_name($scbd_type)) if $scbd_type;
     printf(" min_wait: %d", $mw) if $mw;
     printf(" CC %d", $cc) if $cc;
     printf(" IType %d (%s)", $i_type, IType_name($i_type)) if ( $i_type );
@@ -1293,10 +1302,13 @@ sub dump_ins
     $ar->[5] = $brt;
     $ar->[6] = $g_ced->has_pred();
     $ar->[9] = $brt ? 1 : $g_ced->ins_branch();
-    $ar->[10] = $g_ced->grep_pred("VQ");
     $ar->[11] = $mw if ( $mw );
-    $ar->[12] = $g_ced->check_tab(USCHED, 1) if ( defined($opt_P) || defined($opt_p) );
-    $ar->[13] = $cc if $cc;
+    if ( defined($opt_P) || defined($opt_p) ) {
+      $ar->[10] = $g_ced->grep_pred("VQ");
+      $ar->[12] = $g_ced->check_tab(USCHED, 1);
+      $ar->[13] = $cc if $cc;
+      $ar->[14] = defined($scbd_type) && (3 == $scbd_type);
+    }
   }
   # is empty instruction - nop or with !@PT predicate
   my $skip = is_skip();
@@ -1866,7 +1878,7 @@ sub gdisasm
     # do block post-processing of block here
     if ( defined $rt ) {
       $rt->finalize();
-      post_process_swaps($block) if ( defined($block->[15]) && !block_with_exit($block) );
+      post_process_swaps($block) if ( defined($opt_P) && defined($block->[15]) && !block_with_exit($block) );
       dump_rt($rt);
     }
   }
@@ -2145,7 +2157,8 @@ sub dg
     * 11 - min_wait, filled in dump_ins too
     * 12 - possible usched_info enum values from Ced::check_tab, must be extracted on instruction so also filled in dump_ins
     * 13 - mask of CC ops for old SM, 1 - read, 2 - write
-    * 14 - TBC
+    * 14 - scbd_type is ENDING_INST
+    * 15 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
