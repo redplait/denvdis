@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_l $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v/;
+use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v/;
 
 sub usage()
 {
@@ -20,6 +20,7 @@ Usage: $0 [options] file.cubin
   -b - track read/write barriers
   -C config.file
   -d - debug mode
+  -G - generate intial config file and exit
   -g - build cfg
   -l - dump latency info
   -P - do real patch. Don't forget to backup your CUBIN files
@@ -996,7 +997,7 @@ sub can_swap
   return 0 if ( defined($curr->[11]) && ($new_usched < $curr->[11]) );
   # check if we really can patch
   if ( defined $curr->[12] ) {
-# print 'US12:', $curr->[7], ' ', Dumper($curr->[12]);
+#  print 'US12:', $curr->[7], ' ', Dumper($curr->[12]);
     return 0 unless( exists $curr->[12]->{$new_usched} );
   }
   $res;
@@ -1255,6 +1256,7 @@ sub dump_ins
   my $scbd = $g_ced->ins_scbd();
   my $mw = $g_ced->ins_min_wait();
   my $i_text = $g_ced->ins_text();
+  my $i_type = $g_ced->ins_itype();
   if ( defined $opt_v ) {
     my $cl = $g_ced->ins_class();
     my $ln = $g_ced->ins_line();
@@ -1263,6 +1265,7 @@ sub dump_ins
     printf(" Brt %d (%s)", $brt, brt_name($brt)) if $brt;
     printf(" Scbd %d (%s)", $scbd, scbd_name($scbd)) if $scbd;
     printf(" min_wait: %d", $mw) if $mw;
+    printf(" IType %d (%s)", $i_type, IType_name($i_type)) if ( $i_type );
     printf("\n");
   }
   # store data for -s
@@ -2244,7 +2247,7 @@ sub dg
 }
 
 ### main
-my $state = getopts("bdglPprstUuvC:");
+my $state = getopts("bdGglPprstUuvC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -2279,6 +2282,13 @@ if ( defined $opt_v ) {
 }
 my @es = exs($g_elf);
 die("Empty cubin $ARGV[0]") unless scalar(@es);
+if ( defined $opt_G ) {
+  foreach my $s ( @es ) {
+    printf("# size %X\n", $s->[9]);
+    printf("%s\n", $s->[1]);
+  }
+  exit(0);
+}
 $g_attrs = Cubin::Attrs->new($g_elf);
 dir("Attrs failed on $ARGV[0]") unless defined($g_attrs);
 printf("%d sections with code\n", scalar(@es)) if defined($opt_v);
