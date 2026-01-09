@@ -940,8 +940,8 @@ sub denied_swap
   return 1 if ( $what->[1] =~ /SHFL/ );
   # some instructions falls anyway
   return 1 if ( $what->[1] =~ /LEA/ );
-  # return 1 if ( $what->[1] =~ /SHF/ );
-  # return 1 if ( $what->[1] =~ /FADD/ || $what->[1] =~ /FMUL/ );
+  return 1 if ( $what->[1] =~ /MUFU/ || $what->[1] =~ /SHF/ );
+  return 1 if ( $what->[1] =~ /FADD/ || $what->[1] =~ /FMUL/ );
   0;
 }
 
@@ -2277,6 +2277,19 @@ sub dg
   \@bbs;
 }
 
+sub demangle
+{
+  my $s = shift;
+  my($fh);
+  $s =~ s/^\.text\.//;
+  return unless open($fh,'-|', 'c++filt ' . $s);
+  my $res = <$fh>;
+  close $fh;
+  return unless defined($res);
+  $res =~ s/\n//g;
+  printf("#> %s\n", $res);
+}
+
 ### main
 my $state = getopts("bdGglPprstUuvC:");
 usage() if ( !$state );
@@ -2315,6 +2328,7 @@ my @es = exs($g_elf);
 die("Empty cubin $ARGV[0]") unless scalar(@es);
 if ( defined $opt_G ) {
   foreach my $s ( @es ) {
+    demangle($s->[1]);
     printf("# size %X\n", $s->[9]);
     printf("%s\n", $s->[1]);
   }
