@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v/;
+use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v $opt_z/;
 
 sub usage()
 {
@@ -31,6 +31,7 @@ Usage: $0 [options] file.cubin
   -u - try detect register reuse cache
   -U - analyze possible registers reuse
   -v - verbose mode
+  -z - don't patch usched_info, for debugging only
 EOF
   exit(8);
 }
@@ -287,7 +288,8 @@ printf("need closure, size %d\n", scalar @$ar) if defined($opt_d);
   $check_off;
 }
 
-# process swap candidates list
+# process swap candidates list - swap instructions and patch usched_info (unless -z option was used)
+# arg - block ref, list of swapped instructions in block->[15]
 sub post_process_swaps
 {
   my $bl = shift;
@@ -400,10 +402,12 @@ sub post_process_swaps
     if ( $dec_stall ) {
       my $patched_stall = $sr->[1]->[7] - stall_gain($sr->[1], $sr->[0]);
       printf("decrease %d at %X, patched %d\n", $dec_stall, $p_off, $patched_stall) if defined($opt_v);
-      unless ( $g_ced->patch(USCHED, $patched_stall) ) {
-        printf("post_process_swaps: patch stall(%X) failed, dec_stall %d, patched %d\n", $p_off, $dec_stall, $patched_stall);
-        $gsp_bad++;
-        next;
+      unless ( defined $opt_z ) {
+        unless ( $g_ced->patch(USCHED, $patched_stall) ) {
+          printf("post_process_swaps: patch stall(%X) failed, dec_stall %d, patched %d\n", $p_off, $dec_stall, $patched_stall);
+          $gsp_bad++;
+          next;
+        }
       }
     }
     $gsp_patched++;
@@ -938,10 +942,11 @@ sub denied_swap
   return 1 if ( $what->[1] =~ /ELECT/ );
   return 1 if ( $what->[1] =~ /VOTE/ );
   return 1 if ( $what->[1] =~ /SHFL/ );
+  return 1 if ( $what->[1] =~ /SYNCS/ );
   # some instructions falls anyway
   return 1 if ( $what->[1] =~ /LEA/ );
   return 1 if ( $what->[1] =~ /MUFU/ || $what->[1] =~ /SHF/ );
-  return 1 if ( $what->[1] =~ /FADD/ || $what->[1] =~ /FMUL/ );
+  # return 1 if ( $what->[1] =~ /FADD/ || $what->[1] =~ /FMUL/ );
   0;
 }
 
@@ -979,6 +984,9 @@ sub can_swap
   return 0 if ( inter_CC($curr, $prev) );
   # 5) one of instructions is ENDING_INST
   return 0 if ( $curr->[14] || $prev->[14] );
+  # 5.1) one of instructions scbd is SINK
+  return 0 if ( (defined($curr->[15]) && 3 == $curr->[15]) ||
+                (defined($prev->[15]) && 3 == $prev->[15]) );
   # check cond
   if ( defined($curr->[6]) && defined($prev->[6]) ) {
    return 0 if ( $curr->[6] != $prev->[6] );
@@ -1005,7 +1013,7 @@ sub can_swap
   return 0 unless( $gcdf->($prev->[0]) );
   # check if we can get some gain from swapping
   my $res = stall_gain($prev, $curr);
-printf("Gain %d\n", $res);
+printf("Gain %d\n", $res) if defined($opt_v);
   return 0 unless ( $res );
   my $new_usched = $curr->[7] - $res;
   # check min_wait at ->[11]
@@ -1308,6 +1316,7 @@ sub dump_ins
       $ar->[12] = $g_ced->check_tab(USCHED, 1);
       $ar->[13] = $cc if $cc;
       $ar->[14] = defined($scbd_type) && (3 == $scbd_type);
+      $ar->[15] = $scbd if ( $scbd );
     }
   }
   # is empty instruction - nop or with !@PT predicate
@@ -2158,7 +2167,8 @@ sub dg
     * 12 - possible usched_info enum values from Ced::check_tab, must be extracted on instruction so also filled in dump_ins
     * 13 - mask of CC ops for old SM, 1 - read, 2 - write
     * 14 - scbd_type is ENDING_INST
-    * 15 - TBC
+    * 15 - scbd, should skip if it is SINK (3) - for strange instructions like UTMALDG
+    * 16 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
@@ -2291,7 +2301,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("bdGglPprstUuvC:");
+my $state = getopts("bdGglPprstUuvzC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
