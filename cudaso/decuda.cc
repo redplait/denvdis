@@ -5,6 +5,10 @@
 #include "rtmem.h"
 #include <dlfcn.h>
 #include <unistd.h>
+#include <queue>
+#include "interval_tree.hpp"
+
+using ITree = lib_interval_tree::interval_tree_t<ptrdiff_t, lib_interval_tree::right_open>;
 
 extern int opt_d;
 
@@ -126,6 +130,56 @@ void try_indirect(diter *di, S &&s) {
   }
 }
 
+int decuda::resolve_api_gate(ptrdiff_t off) {
+  std::queue<ptrdiff_t> addr_list;
+  ITree covered;
+  addr_list.push(off);
+  diter di(*s_text);
+  while( !addr_list.empty() ) {
+    auto addr = addr_list.front();
+    addr_list.pop();
+    // check if we already processed it
+    auto visited = covered.overlap_find( { addr, addr + 1 } );
+    if ( visited != covered.end() ) continue;
+    // setup
+    if ( !di.setup(addr) ) continue;
+    if ( opt_d ) printf("api_gate setup %p\n", addr);
+    // disasm
+    used_regs<ptrdiff_t> regs;
+    while( 1 ) {
+      if ( !di.next() ) break;
+      // check jz/jnz
+      if ( di.is_jxx_jimm(UD_Ijz, UD_Ijnz) ) {
+        // add to queue
+        auto jv = di.get_jmp(0);
+        addr_list.push(jv);
+      }
+      di.dasm();
+      // check mov reg64, [mrip]
+      if ( di.is_mov64() && di.is_r1() ) {
+        auto off = di.get_jmp(1);
+        if ( in_sec(s_data, off) || in_sec(s_bss, off) ) regs.add(di.ud_obj.operand[0].base, off);
+        continue;
+      }
+      // check call/jmp reg
+      if ( di.is_jxx(UD_Ijmp, UD_Icall) && (di.ud_obj.operand[0].type == UD_OP_REG) ) {
+        // check in regs register from op0
+        ptrdiff_t res = 0;
+        if ( regs.asgn(di.ud_obj.operand[0].base, res) ) {
+          m_api_gate = res;
+          return 1;
+        }
+        break;
+      }
+      if ( di.is_end() ) break;
+    }
+    // add covered area
+    if ( di.total )
+      covered.insert_overlap( { addr, addr + di.total } );
+  }
+  return (m_api_gate != 0);
+}
+
 int decuda::resolve_indirects()
 {
   if ( !s_text.has_value() ) return 0;
@@ -138,6 +192,10 @@ int decuda::resolve_indirects()
     if ( ip != cache.end() ) continue;
     if ( !in_sec(s_text, s.second.addr) ) continue;
     if ( s.second.type != ELFIO::STT_FUNC ) continue;
+    if ( s.first == "cudbgApiDetach" ) {
+      resolve_api_gate(s.second.addr);
+      continue;
+    }
     // put address in cache
     cache.insert(s.second.addr);
     if ( !di.setup(s.second.addr) ) continue;
@@ -304,9 +362,9 @@ void decuda::verify(FILE *out_fp) const {
      } else if ( real_addr ) {
        auto adr_name = rs.find(read_addr);
        if ( adr_name )
-         fprintf(out_fp, "api_gate (%lX) - %s\n", read_addr, adr_name->c_str());
+         fprintf(out_fp, "api_gate at %p (%lX) - %s\n", addr, read_addr, adr_name->c_str());
        else
-         fprintf(out_fp, "api_gate (%lX)\n", read_addr);
+         fprintf(out_fp, "api_gate at %p (%lX)\n", addr, read_addr);
      }
    }
  }

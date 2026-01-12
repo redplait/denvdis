@@ -647,6 +647,10 @@ struct diter
             (ud_obj.operand[1].type == UD_OP_IMM)
      ;
    }
+   inline int is_mov64() const {
+     return (ud_obj.mnemonic == UD_Imov) &&
+            (ud_obj.operand[1].size == 64);
+   }
    inline int is_movr(ud_type r) const
    {
      return (ud_obj.mnemonic == UD_Imov) &&

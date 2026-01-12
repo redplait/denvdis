@@ -60,6 +60,7 @@ class decuda {
    int read_rels(std::unordered_set<ELFIO::Elf_Half> &, int);
    int find_intf_tab();
    int resolve_indirects();
+   int resolve_api_gate(ptrdiff_t);
    // verifier methods
    template <typename T>
    bool dump_xxx(FILE *fp, const char *, int64_t delta) const;
@@ -74,6 +75,7 @@ class decuda {
    std::optional<ELFIO::section *> s_text, s_rodata, s_bss, s_data, s_data_rel;
    // output data
    uint64_t m_api_gate = 0;
+   uint64_t m_api_data = 0;
    uint64_t m_intf_tab = 0;
    std::vector<one_intf> m_intfs;
    // key is name from m_syms so we can use string_view
