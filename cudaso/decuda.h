@@ -73,6 +73,7 @@ class decuda {
    ELFIO::Elf_Half n_sec = 0;
    std::optional<ELFIO::section *> s_text, s_rodata, s_bss, s_data, s_data_rel;
    // output data
+   uint64_t m_api_gate = 0;
    uint64_t m_intf_tab = 0;
    std::vector<one_intf> m_intfs;
    // key is name from m_syms so we can use string_view

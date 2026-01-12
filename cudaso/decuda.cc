@@ -4,6 +4,7 @@
 #include "x64arch.h"
 #include "rtmem.h"
 #include <dlfcn.h>
+#include <unistd.h>
 
 extern int opt_d;
 
@@ -230,6 +231,7 @@ uint32_t decuda::read_size(uint64_t off) {
 }
 
 void decuda::dump_res() const {
+  if ( m_api_gate ) printf("api_gate: %lX\n", m_api_gate);
   if ( m_intf_tab ) {
     printf("intf_tab: %lX\n", m_intf_tab);
     for ( auto &oi: m_intfs ) {
@@ -283,12 +285,32 @@ void decuda::verify(FILE *out_fp) const {
  }
  auto delta = real_addr - first_sym->second.addr;
  fprintf(out_fp, "real_addr %lX, delta %lX\n", real_addr, delta);
+ fprintf(out_fp, "PID %d\n", getpid());
  rtmem_storage rs;
  if ( !rs.read() ) {
    fprintf(out_fp, "cannot read addresses, delta %lX\n", delta);
    return;
  }
  const my_phdr *curr = nullptr;
+ // check api gate
+ if ( m_api_gate ) {
+   auto addr = delta + m_api_gate;
+   curr = rs.check(addr);
+   if ( !curr ) fprintf(out_fp, "cannot resolve module for api_gate %lX (%lX)\n", addr, m_api_gate);
+   else {
+     uint64_t read_addr = 0;
+     if ( !read_mem(curr, addr, read_addr) ) {
+       fprintf(out_fp, "read api_gate at %lX failed\n", addr);
+     } else if ( real_addr ) {
+       auto adr_name = rs.find(read_addr);
+       if ( adr_name )
+         fprintf(out_fp, "api_gate (%lX) - %s\n", read_addr, adr_name->c_str());
+       else
+         fprintf(out_fp, "api_gate (%lX)\n", read_addr);
+     }
+   }
+ }
+ curr = nullptr;
  // enum and dump
  for ( auto &fi: m_forwards ) {
    auto addr = delta + fi.second.first;
