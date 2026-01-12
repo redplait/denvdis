@@ -167,6 +167,8 @@ int decuda::resolve_api_gate(ptrdiff_t off) {
         ptrdiff_t res = 0;
         if ( regs.asgn(di.ud_obj.operand[0].base, res) ) {
           m_api_gate = res;
+          res = 0;
+          if ( regs.asgn(UD_R_RDI, res) ) m_api_data = res;
           return 1;
         }
         break;
@@ -290,6 +292,7 @@ uint32_t decuda::read_size(uint64_t off) {
 
 void decuda::dump_res() const {
   if ( m_api_gate ) printf("api_gate: %lX\n", m_api_gate);
+  if ( m_api_data ) printf("api_data: %lX\n", m_api_data);
   if ( m_intf_tab ) {
     printf("intf_tab: %lX\n", m_intf_tab);
     for ( auto &oi: m_intfs ) {
@@ -326,6 +329,27 @@ struct auto_dlclose {
   void *handle;
 };
 
+void decuda::check_addr(FILE *out_fp, uint64_t off, int64_t delta, const char *pfx, rtmem_storage &rs) const
+{
+  if ( !off ) return;
+  auto addr = delta + off;
+  auto curr = rs.check(addr);
+  if ( !curr ) {
+    fprintf(out_fp, "cannot resolve module for %s %lX (%lX)\n", addr, pfx, off);
+    return;
+  }
+  uint64_t read_addr = 0;
+  if ( !read_mem(curr, addr, read_addr) ) {
+    fprintf(out_fp, "read %s at %lX failed\n", pfx, addr);
+  } else if ( read_addr ) {
+    auto adr_name = rs.find(read_addr);
+    if ( adr_name )
+      fprintf(out_fp, "%s at %p (%lX) - %s\n", pfx, addr, read_addr, adr_name->c_str());
+    else
+      fprintf(out_fp, "%s at %p (%lX)\n", pfx, addr, read_addr);
+  }
+}
+
 void decuda::verify(FILE *out_fp) const {
  auto first_sym = m_syms.cbegin();
  // get delta
@@ -349,26 +373,10 @@ void decuda::verify(FILE *out_fp) const {
    fprintf(out_fp, "cannot read addresses, delta %lX\n", delta);
    return;
  }
- const my_phdr *curr = nullptr;
  // check api gate
- if ( m_api_gate ) {
-   auto addr = delta + m_api_gate;
-   curr = rs.check(addr);
-   if ( !curr ) fprintf(out_fp, "cannot resolve module for api_gate %lX (%lX)\n", addr, m_api_gate);
-   else {
-     uint64_t read_addr = 0;
-     if ( !read_mem(curr, addr, read_addr) ) {
-       fprintf(out_fp, "read api_gate at %lX failed\n", addr);
-     } else if ( real_addr ) {
-       auto adr_name = rs.find(read_addr);
-       if ( adr_name )
-         fprintf(out_fp, "api_gate at %p (%lX) - %s\n", addr, read_addr, adr_name->c_str());
-       else
-         fprintf(out_fp, "api_gate at %p (%lX)\n", addr, read_addr);
-     }
-   }
- }
- curr = nullptr;
+ check_addr(out_fp, m_api_gate, delta, "api_gate", rs);
+ check_addr(out_fp, m_api_data, delta, "api_data", rs);
+ const my_phdr *curr = nullptr;
  // enum and dump
  for ( auto &fi: m_forwards ) {
    auto addr = delta + fi.second.first;
