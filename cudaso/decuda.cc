@@ -52,7 +52,7 @@ int decuda::read_syms(ELFIO::section *s) {
     if ( sym.section == ELFIO::SHN_UNDEF ) continue;
       m_syms[sym.name] = std::move(sym);
   }
-   return 1;
+  return 1;
 }
 
 int decuda::read() {
@@ -85,6 +85,7 @@ int decuda::read() {
   read_rels(s_rela, 1);
   std::sort(m_relocs.begin(), m_relocs.end(), [](const elf_reloc &a, elf_reloc &b) { return a.offset < b.offset; });
   find_intf_tab();
+  resolve_flag_sztab();
   resolve_indirects();
   return 1;
 }
@@ -156,6 +157,41 @@ void try_indirect(diter *di, S &&s) {
     }
     if ( di->is_end() ) break;
   }
+}
+
+int decuda::try_sizetab(uint64_t off) {
+  diter di(*s_text);
+  if ( !di.setup(off) ) return 0;
+  /* we looking for something like
+    cmp     edx, 1Eh               ; state 1
+    ja xxx (or jae - then size - 1 ; state 2
+    lea rax [mrip + rodata]        ; the end
+   So our FSM has 3 state + 1 temporary for size from cmp 32bit
+   */
+  int state = 0;
+  int tmp_size = 0;
+  for ( int i = 0; i < 20; ++i ) {
+    if ( !di.next() ) break;
+    di.dasm(state);
+    if ( !state && di.is_cmp_rimm() && di.ud_obj.operand[0].size == 32 ) {
+       tmp_size = di.ud_obj.operand[1].lval.sdword;
+       state++;
+       continue;
+    }
+    if ( 1 == state && di.is_jxx_jimm(UD_Ija, UD_Ijae) ) {
+      m_flag_sztab_size = di.ud_obj.mnemonic == UD_Ija ? tmp_size + 1: tmp_size;
+      state++;
+      continue;
+    }
+    if ( 2 == state && di.is_r1() && di.ud_obj.mnemonic == UD_Ilea ) {
+      auto addr = di.get_jmp(1);
+      if ( in_sec(s_rodata, addr) ) {
+        m_flag_sztab_addr = addr;
+      }
+      break;
+    }
+  }
+  return has_flag_sztab();
 }
 
 int decuda::resolve_api_gate(ptrdiff_t off) {
@@ -248,6 +284,27 @@ int decuda::resolve_indirects()
 const unsigned char first_intf[16] = {
  0x2C, 0x8E, 0x0A, 0xD8, 0x07, 0x10, 0xAB, 0x4E, 0x90, 0xDD, 0x54, 0x71, 0x9F, 0xE5, 0xF7, 0x4B };
 
+int decuda::resolve_flag_sztab() {
+  auto intf = find(first_intf);
+  if ( !intf ) return 0;
+  ELFIO::section *s = nullptr;
+  if ( in_sec(s_data, intf->addr) ) s = s_data.value();
+  else if ( in_sec(s_data_rel, intf->addr) ) s =s_data_rel.value();
+  else return 0;
+  // read methods
+  int state = 0;
+  for ( int i = 2; i < intf->size / sizeof(uint64_t); ++i ) {
+    uint64_t intf_addr = 0;
+    if ( !read(s, intf->addr + i * sizeof(uint64_t), intf_addr) ) continue;
+    int res = try_sizetab(intf_addr);
+    if ( res ) {
+      fill_sztab();
+      break;
+    }
+  }
+  return has_flag_sztab();
+}
+
 int decuda::find_intf_tab() {
  // try to find first_intf in .rodata section
  if ( !s_rodata.has_value() ) return 0;
@@ -326,6 +383,13 @@ uint32_t decuda::read_size(uint64_t off) {
   return 0;
 }
 
+void decuda::fill_sztab() {
+  // read from rodata
+  for ( int i = 0; i < m_flag_sztab_size; ++i ) {
+    m_flag_sztab.push_back( read_size(s_rodata.value(), m_flag_sztab_addr + sizeof(int32_t) * i) );
+  }
+}
+
 void decuda::dump_res() const {
   if ( m_api_gate ) printf("api_gate: %lX\n", m_api_gate);
   if ( m_api_data ) printf("api_data: %lX\n", m_api_data);
@@ -339,6 +403,15 @@ void decuda::dump_res() const {
       printf(" %lX", oi.addr);
       if ( oi.size ) printf(" size %X\n", oi.size);
       else printf("\n");
+    }
+  }
+  // flag_sztab
+  if ( has_flag_sztab() ) {
+    printf("flags_sztab %lX size %d\n", m_flag_sztab_addr, m_flag_sztab_size);
+    for ( size_t idx = 0; idx < m_flag_sztab.size(); idx++ ) {
+      auto v = m_flag_sztab.at(idx);
+      if ( !v ) continue;
+      printf(" [%d] %X\n", idx, v);
     }
   }
   if ( !m_forwards.empty() ) {

@@ -61,7 +61,10 @@ class decuda {
    int read_syms(ELFIO::section *);
    int read_rels(std::unordered_set<ELFIO::Elf_Half> &, int);
    int find_intf_tab();
+   int resolve_flag_sztab();
    int resolve_indirects();
+   int try_sizetab(uint64_t);
+   void fill_sztab();
    int resolve_api_gate(ptrdiff_t);
    // verifier methods
    template <typename T>
@@ -81,6 +84,19 @@ class decuda {
    uint64_t m_api_data = 0;
    uint64_t m_intf_tab = 0;
    std::vector<one_intf> m_intfs;
+   const one_intf *find(const unsigned char *key) const {
+     for ( auto &i: m_intfs ) {
+       if ( !memcmp(i.uuid, key, 16) ) return &i;
+     }
+     return nullptr;
+   }
+   // dbg flags
+   uint64_t m_flag_sztab_addr = 0;
+   int m_flag_sztab_size = 0;
+   std::vector<uint32_t> m_flag_sztab;
+   inline bool has_flag_sztab() const {
+     return (m_flag_sztab_addr != 0) && (m_flag_sztab_size != 0);
+   }
    // key is name from m_syms so we can use string_view
    // value is pair<ptr, original function>
    struct one_forward {
