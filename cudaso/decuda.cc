@@ -190,6 +190,7 @@ int decuda::try_sizetab(uint64_t off) {
       }
       break;
     }
+    if ( di.is_end() ) break;
   }
   return has_flag_sztab();
 }
