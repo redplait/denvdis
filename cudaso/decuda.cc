@@ -99,6 +99,34 @@ bool decuda::read(ELFIO::section *s, uint64_t off, T &res) {
 }
 
 template <typename S>
+void try_dbg_flag(diter *di, uint64_t &res, S&& s) {
+  /* typical stub looks like
+     standard prolog
+     mov reg32, [rip + bss]
+     ...
+     test reg32, reg32
+   So our simple FSM has 2 state + reg_pad
+   */
+  used_regs<uint64_t> regs;
+  int state = 0; // 0 - we have some non-empty regs
+  for ( int i = 0; i < 30; i++ ) {
+    if ( !di->next() ) break;
+    di->dasm(state);
+    if ( di->is_mov32() && di->is_r1() ) {
+      auto off = di->get_jmp(1);
+      if ( s(off) ) { state |= 1; regs.add(di->ud_obj.operand[0].base, off); }
+      continue;
+    }
+    if ( state ) {
+      if ( di->is_test_rr() && di->ud_obj.operand[0].base == di->ud_obj.operand[1].base ) {
+        if ( regs.asgn(di->ud_obj.operand[0].base, res) )
+         return;
+      }
+    }
+  }
+}
+
+template <typename S>
 void try_indirect(diter *di, S &&s) {
 /* simple FSM: 0 - wait for cmp 0x321CBA00
  * 1 - wait for jz/jnz
@@ -187,6 +215,10 @@ int decuda::resolve_indirects()
   if ( !s_text.has_value() ) return 0;
   // addresses cache for weak symbols/synonyms
   std::unordered_set<uint64_t> cache;
+  // dbg_flags closure
+  auto check_bss = [&](uint64_t addr) {
+    return in_sec(s_bss, addr);
+  };
   // enum symbols
   diter di(*s_text);
   for ( auto &s: m_syms ) {
@@ -203,7 +235,11 @@ int decuda::resolve_indirects()
     if ( !di.setup(s.second.addr) ) continue;
     try_indirect(&di, [&](uint64_t addr) {
       uint64_t val = 0;
-      if ( in_sec(s_data, addr) && read(*s_data, addr, val) ) m_forwards[s.first] = { addr, val };
+      if ( in_sec(s_data, addr) && read(*s_data, addr, val) ) {
+        one_forward of{ addr, val };
+        if ( di.setup(val) ) try_dbg_flag(&di, of.flag_addr, check_bss);
+        m_forwards[s.first] = of;
+      }
     });
   }
   return !m_forwards.empty();
@@ -308,7 +344,9 @@ void decuda::dump_res() const {
   if ( !m_forwards.empty() ) {
     printf("%ld forwards:\n", m_forwards.size());
     for ( auto &fi: m_forwards ) {
-      printf("%.*s: %lX %lX\n", fi.first.size(), fi.first.data(), fi.second.first, fi.second.second);
+      printf("%.*s: %lX %lX", fi.first.size(), fi.first.data(), fi.second.off, fi.second.cb);
+      if ( fi.second.flag_addr ) printf(" dbg_flag at %lX\n", fi.second.flag_addr);
+      else fputc('\n', stdout);
     }
   }
 }
@@ -379,10 +417,10 @@ void decuda::verify(FILE *out_fp) const {
  const my_phdr *curr = nullptr;
  // enum and dump
  for ( auto &fi: m_forwards ) {
-   auto addr = delta + fi.second.first;
+   auto addr = delta + fi.second.off;
    if ( !curr ) curr = rs.check(addr);
    if ( !curr ) {
-     fprintf(out_fp, "cannot resolve module for addr %lX (%lX)\n", addr, fi.second.first);
+     fprintf(out_fp, "cannot resolve module for addr %lX (%lX)\n", addr, fi.second.off);
      continue;
    }
    // read ptr at addr - must be fi.second.second + delta
@@ -393,7 +431,15 @@ void decuda::verify(FILE *out_fp) const {
    }
    if ( opt_d )
      fprintf(out_fp, "%.*s: %lX\n", fi.first.size(), fi.first.data(), read_addr);
-   if ( delta + fi.second.second == read_addr ) continue;
+   // read dbg_flag
+   if ( fi.second.flag_addr ) {
+     auto dbg_addr = delta + fi.second.flag_addr;
+     auto bss = rs.check(dbg_addr);
+     int32_t dbg_v = 0;
+     if ( bss && read_mem(bss, dbg_addr, dbg_v) && dbg_v )
+       fprintf(out_fp, "%.*s dbg_flag %d at %lX\n", fi.first.size(), fi.first.data(), dbg_v, dbg_addr);
+   }
+   if ( delta + fi.second.cb == read_addr ) continue;
    // report
    auto adr_name = rs.find(read_addr);
    if ( adr_name ) {

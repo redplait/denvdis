@@ -514,6 +514,13 @@ struct diter
             (ud_obj.operand[1].type == UD_OP_REG)
      ;
    }
+   inline int is_test_rr() const
+   {
+     return (ud_obj.mnemonic == UD_Itest) &&
+            (ud_obj.operand[0].type == UD_OP_REG) &&
+            (ud_obj.operand[1].type == UD_OP_REG)
+     ;
+   }
    // predicate methods for 32bit
    inline int is_rmem() const
    {
@@ -650,6 +657,10 @@ struct diter
    inline int is_mov64() const {
      return (ud_obj.mnemonic == UD_Imov) &&
             (ud_obj.operand[1].size == 64);
+   }
+   inline int is_mov32() const {
+     return (ud_obj.mnemonic == UD_Imov) &&
+            (ud_obj.operand[1].size == 32);
    }
    inline int is_movr(ud_type r) const
    {

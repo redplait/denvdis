@@ -83,7 +83,12 @@ class decuda {
    std::vector<one_intf> m_intfs;
    // key is name from m_syms so we can use string_view
    // value is pair<ptr, original function>
-   std::map<std::string_view, std::pair<uint64_t, uint64_t> > m_forwards;
+   struct one_forward {
+     uint64_t off;
+     uint64_t cb;
+     uint64_t flag_addr = 0;
+   };
+   std::map<std::string_view, one_forward > m_forwards;
 };
 
 decuda *get_decuda(const char *);
