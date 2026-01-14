@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <queue>
 #include "interval_tree.hpp"
+#include "simple_api.h"
 
 using ITree = lib_interval_tree::interval_tree_t<ptrdiff_t, lib_interval_tree::right_open>;
 
@@ -425,7 +426,7 @@ void decuda::dump_res() const {
   if ( m_api_gate ) printf("api_gate: %lX\n", m_api_gate);
   if ( m_api_data ) printf("api_data: %lX\n", m_api_data);
   if ( m_intf_tab ) {
-    printf("intf_tab: %lX\n", m_intf_tab);
+    printf("intf_tab: %lX size %ld\n", m_intf_tab, m_intfs.size());
     for ( auto &oi: m_intfs ) {
       // dump UUID
       printf("%8.8X-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X",
@@ -494,7 +495,34 @@ void decuda::check_addr(FILE *out_fp, uint64_t off, int64_t delta, const char *p
   }
 }
 
-void decuda::verify(FILE *out_fp) const {
+int decuda::patch_dbg(FILE *fp, uint64_t delta, const struct dbg_patch *tab, int tab_size) const
+{
+  int res = 0;
+  for ( int i = 0; i < tab_size; ++i ) {
+    auto fi = m_forwards.find(tab->name);
+    if ( fi == m_forwards.end() ) {
+      fprintf(fp, "patch_dbg: cannot find %s\n", tab[i].name);
+      continue;
+    }
+    if ( !fi->second.flag_addr ) {
+      fprintf(fp, "patch_dbg: no flag for %s\n", tab[i].name);
+      continue;
+    }
+    int32_t *addr = (int32_t *)(fi->second.flag_addr + delta);
+    *addr = tab[i].what;
+    res++;
+  }
+  return res;
+}
+
+void decuda::verify_patch(FILE *fp, const struct dbg_patch *tab, int tab_size) const {
+   std::function<void(uint64_t, rtmem_storage &)> tmp = [&](uint64_t delta, rtmem_storage &) {
+       patch_dbg(fp, delta, tab, tab_size);
+   };
+  _verify(fp, &tmp);
+}
+
+void decuda::_verify(FILE *out_fp, std::function<void(uint64_t, rtmem_storage &)> *post) const {
  auto first_sym = m_syms.cbegin();
  // get delta
  const char *fname = first_sym->first.c_str();
@@ -517,6 +545,7 @@ void decuda::verify(FILE *out_fp) const {
    fprintf(out_fp, "cannot read addresses, delta %lX\n", delta);
    return;
  }
+ if ( post ) (*post)(delta, rs);
  // check api gate
  check_addr(out_fp, m_api_gate, delta, "api_gate", rs);
  check_addr(out_fp, m_api_data, delta, "api_data", rs);
@@ -668,9 +697,23 @@ decuda *get_decuda(const char *fname) {
 
 void check_cuda(const char *fname, FILE *fp) {
   auto obj = get_decuda(fname);
+  if ( !obj ) return;
   if ( obj->read() )
    obj->verify(fp);
   else
-   fprintf(fp, "cannot read %s\n", fname);
+   fprintf(fp, "check_cuda: cannot read %s\n", fname);
   delete obj;
+}
+
+void check_patch(const char *fname, FILE *fp, const struct dbg_patch *tab, int tab_size) {
+  if ( !tab || !tab_size ) check_cuda(fname, fp);
+  else {
+    auto obj = get_decuda(fname);
+    if ( !obj ) return;
+    if ( obj->read() ) {
+      obj->verify_patch(fp, tab, tab_size);
+    } else
+      fprintf(fp, "check_patch: cannot read %s\n", fname);
+    delete obj;
+  }
 }

@@ -6,6 +6,7 @@
 #include <memory>
 #include <map>
 #include <unordered_set>
+#include <functional>
 
 class rtmem_storage;
 
@@ -48,8 +49,13 @@ class decuda {
    int read();
    void dump_syms() const;
    void dump_res() const;
-   void verify(FILE *) const;
+   void verify(FILE *fp) const {
+     _verify(fp, nullptr);
+   }
+   void verify_patch(FILE *fp, const struct dbg_patch *, int) const;
  protected:
+   int patch_dbg(FILE *fp, uint64_t, const struct dbg_patch *, int) const;
+   void _verify(FILE *, std::function<void(uint64_t, rtmem_storage &)> *) const;
    bool in_sec(std::optional<ELFIO::section *> &s, uint64_t addr) const {
      if ( !s.has_value() ) return false;
      return addr >= (*s)->get_address() && addr < ((*s)->get_address() + (*s)->get_size());
