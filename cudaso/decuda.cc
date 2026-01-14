@@ -321,7 +321,7 @@ int decuda::resolve_flag_sztab() {
   if ( in_sec(s_data, intf->addr) ) s = s_data.value();
   else if ( in_sec(s_data_rel, intf->addr) ) s =s_data_rel.value();
   else return 0;
-  // read methods
+  // iterate methods - first find size tab, then dbgtab, so we need state
   int state = 0;
   for ( int i = 2; i < intf->size / sizeof(uint64_t); ++i ) {
     uint64_t intf_addr = 0;
@@ -331,8 +331,10 @@ int decuda::resolve_flag_sztab() {
     if ( !state ) {
       fill_sztab();
       state++;
-    } else
+    } else {
+      fill_dbgtab();
       break;
+    }
   }
   return has_flag_sztab();
 }
@@ -409,10 +411,22 @@ uint32_t decuda::read_size(ELFIO::section *s, uint64_t off) {
   return *(uint32_t *)rs;
 }
 
+uint64_t decuda::read_ptr(ELFIO::section *s, uint64_t off) {
+  auto rs = s->get_data() + (off - s->get_address());
+  return *(uint64_t *)rs;
+}
+
 uint32_t decuda::read_size(uint64_t off) {
   if ( in_sec(s_data, off) ) return read_size(*s_data, off);
   if ( in_sec(s_data_rel, off) ) return read_size(*s_data_rel, off);
   return 0;
+}
+
+void decuda::fill_dbgtab() {
+  // read from .data.rel.ro
+  for ( int i = 0; i < m_flag_sztab_size; ++i ) {
+    m_dbgtab.push_back( read_ptr(s_data_rel.value(), m_dbgtab_addr + sizeof(int64_t) * i) );
+  }
 }
 
 void decuda::fill_sztab() {
@@ -443,11 +457,13 @@ void decuda::dump_res() const {
     for ( size_t idx = 0; idx < m_flag_sztab.size(); idx++ ) {
       auto v = m_flag_sztab.at(idx);
       if ( !v ) continue;
-      printf(" [%d] %X\n", idx, v);
+      printf(" [%d] %X", idx, v);
+      if ( idx < m_dbgtab.size() && m_dbgtab[idx] ) printf(" %lX\n", m_dbgtab[idx]);
+      else printf("\n");
     }
   }
   if ( m_dbgtab_addr )
-    printf("dbgtab %lX\n", m_dbgtab_addr);
+    printf("dbgtab %lX size %d\n", m_dbgtab_addr, m_dbgtab.size());
   if ( !m_forwards.empty() ) {
     printf("%ld forwards:\n", m_forwards.size());
     for ( auto &fi: m_forwards ) {

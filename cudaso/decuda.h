@@ -64,6 +64,7 @@ class decuda {
    bool read(ELFIO::section *, uint64_t off, T &);
    uint32_t read_size(uint64_t);
    uint32_t read_size(ELFIO::section *, uint64_t off);
+   uint64_t read_ptr(ELFIO::section *, uint64_t off);
    int read_syms(ELFIO::section *);
    int read_rels(std::unordered_set<ELFIO::Elf_Half> &, int);
    int find_intf_tab();
@@ -72,6 +73,7 @@ class decuda {
    int try_sizetab(uint64_t);
    int try_dbgtab(uint64_t);
    void fill_sztab();
+   void fill_dbgtab();
    int resolve_api_gate(ptrdiff_t);
    // verifier methods
    template <typename T>
@@ -102,6 +104,7 @@ class decuda {
      m_dbgtab_addr = 0;
    int m_flag_sztab_size = 0;
    std::vector<uint32_t> m_flag_sztab;
+   std::vector<uint64_t> m_dbgtab; // hopefully size is the same as of m_flag_sztab
    inline bool has_flag_sztab() const {
      return (m_flag_sztab_addr != 0) && (m_flag_sztab_size != 0);
    }
