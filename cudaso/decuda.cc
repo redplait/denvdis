@@ -515,7 +515,7 @@ int decuda::patch_dbg(FILE *fp, uint64_t delta, const struct dbg_patch *tab, int
 {
   int res = 0;
   for ( int i = 0; i < tab_size; ++i ) {
-    auto fi = m_forwards.find(tab[i]name);
+    auto fi = m_forwards.find(tab[i].name);
     if ( fi == m_forwards.end() ) {
       fprintf(fp, "patch_dbg: cannot find %s\n", tab[i].name);
       continue;
