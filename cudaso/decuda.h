@@ -64,6 +64,7 @@ class decuda {
    int resolve_flag_sztab();
    int resolve_indirects();
    int try_sizetab(uint64_t);
+   int try_dbgtab(uint64_t);
    void fill_sztab();
    int resolve_api_gate(ptrdiff_t);
    // verifier methods
@@ -91,7 +92,8 @@ class decuda {
      return nullptr;
    }
    // dbg flags
-   uint64_t m_flag_sztab_addr = 0;
+   uint64_t m_flag_sztab_addr = 0,
+     m_dbgtab_addr = 0;
    int m_flag_sztab_size = 0;
    std::vector<uint32_t> m_flag_sztab;
    inline bool has_flag_sztab() const {

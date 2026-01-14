@@ -159,6 +159,34 @@ void try_indirect(diter *di, S &&s) {
   }
 }
 
+int decuda::try_dbgtab(uint64_t off) {
+  diter di(*s_text);
+  if ( !di.setup(off) ) return 0;
+  /* we looking for something like
+      lea flag_sztab_addr ; state 1
+      lea [rip + data.rel.ro]
+   */
+  int state = 0;
+  for ( int i = 0; i < 30; ++i ) {
+    if ( !di.next() ) break;
+    di.dasm(state);
+    if ( di.is_r1() && di.ud_obj.mnemonic == UD_Ilea ) {
+      auto addr = di.get_jmp(1);
+      if ( addr == m_flag_sztab_addr ) {
+        state = 1;
+        continue;
+      }
+      if ( state ) {
+        if ( in_sec(s_data_rel, addr) )
+          m_dbgtab_addr = addr;
+        break;
+      }
+    }
+    if ( di.is_end() ) break;
+  }
+  return (m_dbgtab_addr != 0);
+}
+
 int decuda::try_sizetab(uint64_t off) {
   diter di(*s_text);
   if ( !di.setup(off) ) return 0;
@@ -173,7 +201,7 @@ int decuda::try_sizetab(uint64_t off) {
   for ( int i = 0; i < 20; ++i ) {
     if ( !di.next() ) break;
     di.dasm(state);
-    if ( !state && di.is_cmp_rimm() && di.ud_obj.operand[0].size == 32 ) {
+    if ( state < 2 && di.is_cmp_rimm() && di.ud_obj.operand[0].size == 32 ) {
        tmp_size = di.ud_obj.operand[1].lval.sdword;
        state++;
        continue;
@@ -297,11 +325,13 @@ int decuda::resolve_flag_sztab() {
   for ( int i = 2; i < intf->size / sizeof(uint64_t); ++i ) {
     uint64_t intf_addr = 0;
     if ( !read(s, intf->addr + i * sizeof(uint64_t), intf_addr) ) continue;
-    int res = try_sizetab(intf_addr);
-    if ( res ) {
+    int res = state ? try_dbgtab(intf_addr) : try_sizetab(intf_addr);
+    if ( !res ) continue;
+    if ( !state ) {
       fill_sztab();
+      state++;
+    } else
       break;
-    }
   }
   return has_flag_sztab();
 }
@@ -415,6 +445,8 @@ void decuda::dump_res() const {
       printf(" [%d] %X\n", idx, v);
     }
   }
+  if ( m_dbgtab_addr )
+    printf("dbgtab %lX\n", m_dbgtab_addr);
   if ( !m_forwards.empty() ) {
     printf("%ld forwards:\n", m_forwards.size());
     for ( auto &fi: m_forwards ) {
