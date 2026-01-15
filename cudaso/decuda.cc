@@ -141,8 +141,9 @@ void try_dbg_flag(diter *di, uint64_t &res, uint64_t &trace_fn, S&& s) {
       continue;
     }
     if ( state ) {
+      if ( di->is_mrip(UD_Itest, 0) ) return;
       if ( di->is_test_rr() && di->ud_obj.operand[0].base == di->ud_obj.operand[1].base ) {
-        if ( regs.asgn(di->ud_obj.operand[0].base, res) ) {
+        if ( !res && regs.asgn(di->ud_obj.operand[0].base, res) ) {
           if ( trace_fn ) return;
           state = 2;
         }
@@ -526,6 +527,22 @@ struct auto_dlclose {
   void *handle;
 };
 
+void decuda::check_dword(FILE *out_fp, uint64_t off, int64_t delta, const char *pfx, rtmem_storage &rs) const
+{
+  if ( !off ) return;
+  auto addr = delta + off;
+  auto curr = rs.check(addr);
+  if ( !curr ) {
+    fprintf(out_fp, "cannot resolve module for %s %lX (%lX)\n", addr, pfx, off);
+    return;
+  }
+  uint32_t v = 0;
+  if ( !read_mem(curr, addr, v) )
+    fprintf(out_fp, "read %s at %lX failed\n", pfx, addr);
+  else
+    fprintf(out_fp, "%s at %p %X\n", pfx, addr, v);
+}
+
 void decuda::check_addr(FILE *out_fp, uint64_t off, int64_t delta, const char *pfx, rtmem_storage &rs) const
 {
   if ( !off ) return;
@@ -601,6 +618,11 @@ void decuda::_verify(FILE *out_fp, std::function<void(uint64_t, rtmem_storage &)
  // check api gate
  check_addr(out_fp, m_api_gate, delta, "api_gate", rs);
  check_addr(out_fp, m_api_data, delta, "api_data", rs);
+ // check dbg keys
+ if ( m_trace_flag )
+   check_dword(out_fp, m_trace_flag, delta, "trace_flag", rs);
+ if ( m_trace_key )
+   check_dword(out_fp, m_trace_key, delta, "trace_key", rs);
  const my_phdr *curr = nullptr;
  // enum and dump
  for ( auto &fi: m_forwards ) {

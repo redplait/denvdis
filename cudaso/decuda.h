@@ -81,6 +81,7 @@ class decuda {
    bool dump_str_with_len(FILE *fp, const char *addr, const char *len, int64_t delta) const;
    void dump_bss_publics(FILE *fp, int64_t delta) const;
    void check_addr(FILE *fp, uint64_t, int64_t delta, const char *pfx, rtmem_storage &) const;
+   void check_dword(FILE *fp, uint64_t, int64_t delta, const char *pfx, rtmem_storage &) const;
    bool is_32;
    ELFIO::elfio *m_rdr;
    std::vector<elf_reloc> m_relocs;
