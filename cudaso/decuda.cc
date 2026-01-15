@@ -101,7 +101,28 @@ bool decuda::read(ELFIO::section *s, uint64_t off, T &res) {
 }
 
 template <typename S>
-void try_dbg_flag(diter *di, uint64_t &res, S&& s) {
+void try_dbg_key(diter *di, uint64_t &res, uint64_t &key, S&& s) {
+  int state = 0;
+  for ( int i = 0; i < 30; i++ ) {
+    if ( !di->next() ) break;
+    di->dasm(state);
+    if ( di->is_mov32() && di->is_r1() ) {
+      auto off = di->get_jmp(1);
+      if ( s(off) ) {
+        if ( state ) {
+          key = off;
+          return;
+        } else {
+          res = off;
+          state++;
+        }
+      }
+    }
+  }
+}
+
+template <typename S>
+void try_dbg_flag(diter *di, uint64_t &res, uint64_t &trace_fn, S&& s) {
   /* typical stub looks like
      standard prolog
      mov reg32, [rip + bss]
@@ -121,8 +142,15 @@ void try_dbg_flag(diter *di, uint64_t &res, S&& s) {
     }
     if ( state ) {
       if ( di->is_test_rr() && di->ud_obj.operand[0].base == di->ud_obj.operand[1].base ) {
-        if ( regs.asgn(di->ud_obj.operand[0].base, res) )
-         return;
+        if ( regs.asgn(di->ud_obj.operand[0].base, res) ) {
+          if ( trace_fn ) return;
+          state = 2;
+        }
+        continue;
+      }
+      if ( 2 == state && di->is_call_jimm() ) {
+        trace_fn = di->get_jmp(0);
+        return;
       }
     }
   }
@@ -303,10 +331,13 @@ int decuda::resolve_indirects()
       uint64_t val = 0;
       if ( in_sec(s_data, addr) && read(*s_data, addr, val) ) {
         one_forward of{ addr, val };
-        if ( di.setup(val) ) try_dbg_flag(&di, of.flag_addr, check_bss);
+        if ( di.setup(val) ) try_dbg_flag(&di, of.flag_addr, m_trace_fn, check_bss);
         m_forwards[s.first] = of;
       }
     });
+  }
+  if ( m_trace_fn && di.setup(m_trace_fn) ) {
+    try_dbg_key(&di, m_trace_flag, m_trace_key, check_bss);
   }
   return !m_forwards.empty();
 }
@@ -461,6 +492,11 @@ void decuda::dump_res() const {
       if ( idx < m_dbgtab.size() && m_dbgtab[idx] ) printf(" %lX\n", m_dbgtab[idx]);
       else printf("\n");
     }
+  }
+  if ( m_trace_fn ) {
+    printf("trace_get_fn: %lX\n", m_trace_fn);
+    if ( m_trace_flag ) printf("trace_flag: %lX\n", m_trace_flag);
+    if ( m_trace_key )  printf("trace_key: %lX\n", m_trace_key);
   }
   if ( m_dbgtab_addr )
     printf("dbgtab %lX size %d\n", m_dbgtab_addr, m_dbgtab.size());

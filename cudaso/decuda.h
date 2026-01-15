@@ -99,6 +99,10 @@ class decuda {
      }
      return nullptr;
    }
+   // dbg trace data
+   uint64_t m_trace_fn = 0;
+   uint64_t m_trace_flag = 0;
+   uint64_t m_trace_key = 0;
    // dbg flags
    uint64_t m_flag_sztab_addr = 0,
      m_dbgtab_addr = 0;
