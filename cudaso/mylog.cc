@@ -3,6 +3,7 @@
 #include <mutex>
 #include <time.h>
 #include <string.h>
+#include <unistd.h>
 #include "trace_fmt.h"
 
 static dbg_trace old_handler = nullptr;
@@ -12,7 +13,7 @@ static void **logger_data = nullptr;
 #define STORED_MASKS   0x60
 
 static unsigned char hex_masks[STORED_MASKS];
-static std::mutex mtx;
+static std::mutex s_mtx;
 static FILE *s_fp = nullptr;
 
 static const char hexes[] = "0123456789ABCDEF";
@@ -61,6 +62,18 @@ static void HexDump(const unsigned char *From, int Len)
 
 // my logger
 static void my_logger(void *user_data, int packet_type, int func_num, void *packet, void *ud2) {
+  time_t t = time(NULL);
+  struct tm ltm;
+  localtime_r(&t, &ltm);
+  char stime[200];
+  strftime(stime, sizeof(stime), "%d/%m/%Y %H:%M:%S", &ltm);
+  int need_hex = hex_masks[packet_type];
+  {
+    std::lock_guard tmp(s_mtx);
+    fprintf(s_fp, "%s PID %d packet %d func %d\n", stime, getpid(), packet_type, func_num);
+    // type 2 can pass null as packet
+    if ( need_hex && packet ) HexDump((const unsigned char*)packet, *(uint32_t *)packet);
+  }
   if ( old_handler )
     old_handler(*logger_data, packet_type, func_num, packet, *logger_data);
 }
@@ -82,11 +95,13 @@ int patch_dbg(uint64_t addr, uint64_t data_addr, FILE *fp, const unsigned char *
 
 extern "C" int reset_logger() {
   if ( !logger_addr ) return 0;
+  auto f_copy = s_fp;
   {
-    std::lock_guard tmp(mtx);
+    std::lock_guard tmp(s_mtx);
     *(dbg_trace *)logger_addr = old_handler;
     if ( s_fp != stdout ) fclose(s_fp);
     s_fp = nullptr;
   }
+  if ( f_copy != stdout ) fclose(f_copy);
   return 1;
 }

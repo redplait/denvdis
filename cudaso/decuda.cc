@@ -636,7 +636,7 @@ int decuda::patch_logger(FILE *out_fp, const unsigned char *mask, size_t mask_si
  }
  auto delta = real_addr - first_sym->second.addr;
  fprintf(out_fp, "real_addr %lX, delta %lX\n", real_addr, delta);
- fprintf(out_fp, "PID %d\n", getpid());
+//  fprintf(out_fp, "PID %d\n", getpid());
  rtmem_storage rs;
  if ( !rs.read() ) {
    fprintf(out_fp, "cannot read addresses, delta %lX\n", delta);
