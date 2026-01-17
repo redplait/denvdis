@@ -67,12 +67,18 @@ static void my_logger(void *user_data, int packet_type, int func_num, void *pack
   localtime_r(&t, &ltm);
   char stime[200];
   strftime(stime, sizeof(stime), "%d/%m/%Y %H:%M:%S", &ltm);
+  const unsigned char *body = (const unsigned char *)packet;
   int need_hex = hex_masks[packet_type];
   {
     std::lock_guard tmp(s_mtx);
-    fprintf(s_fp, "%s PID %d packet %d func %d\n", stime, getpid(), packet_type, func_num);
-    // type 2 can pass null as packet
-    if ( need_hex && packet ) HexDump((const unsigned char*)packet, *(uint32_t *)packet);
+    if ( s_fp ) {
+      fprintf(s_fp, "%s PID %d packet %d func %d\n", stime, getpid(), packet_type, func_num);
+      // type 6 at 0x30 is function name
+      if ( 6 == packet_type && packet )
+        fprintf(s_fp, "%s\n", *(char **)(body + 0x30));
+      // type 2 can pass null as packet
+      if ( need_hex && packet ) HexDump(body, *(uint32_t *)packet);
+    }
   }
   if ( old_handler )
     old_handler(*logger_data, packet_type, func_num, packet, *logger_data);
@@ -99,7 +105,6 @@ extern "C" int reset_logger() {
   {
     std::lock_guard tmp(s_mtx);
     *(dbg_trace *)logger_addr = old_handler;
-    if ( s_fp != stdout ) fclose(s_fp);
     s_fp = nullptr;
   }
   if ( f_copy != stdout ) fclose(f_copy);
