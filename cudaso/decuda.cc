@@ -592,7 +592,7 @@ void decuda::verify_patch(FILE *fp, const struct dbg_patch *tab, int tab_size) c
 }
 
 // from mylog.cc
-extern int patch_dbg(uint64_t, FILE *, const unsigned char *, size_t);
+extern int patch_dbg(uint64_t, uint64_t, FILE *, const unsigned char *, size_t);
 
 int decuda::patch_tracepoints(uint64_t delta, const unsigned char *mask, size_t size) const {
   int res = 0;
@@ -608,6 +608,10 @@ int decuda::patch_tracepoints(uint64_t delta, const unsigned char *mask, size_t 
 int decuda::patch_logger(FILE *out_fp, const unsigned char *mask, size_t mask_size) const {
  if ( !m_api_gate ) {
    fprintf(out_fp, "cannot find dbg_apu_gate\n");
+   return 0;
+ }
+ if ( !m_api_data ) {
+   fprintf(out_fp, "cannot find dbg_data\n");
    return 0;
  }
  if ( !has_flag_sztab() ) {
@@ -639,7 +643,7 @@ int decuda::patch_logger(FILE *out_fp, const unsigned char *mask, size_t mask_si
    return 0;
  }
  // patch dbg logger
- int res = ::patch_dbg(m_api_gate + delta, out_fp, mask, real_mask_size);
+ int res = ::patch_dbg(m_api_gate + delta, m_api_data + delta, out_fp, mask, real_mask_size);
  if ( !res ) return res;
  // patch tab
  patch_tracepoints(delta, mask, real_mask_size);

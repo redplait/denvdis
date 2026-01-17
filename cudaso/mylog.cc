@@ -1,10 +1,13 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <mutex>
+#include <time.h>
+#include <string.h>
 #include "trace_fmt.h"
 
 static dbg_trace old_handler = nullptr;
 static uint64_t logger_addr;
+static void **logger_data = nullptr;
 
 #define STORED_MASKS   0x60
 
@@ -12,15 +15,78 @@ static unsigned char hex_masks[STORED_MASKS];
 static std::mutex mtx;
 static FILE *s_fp = nullptr;
 
-// void 
+static const char hexes[] = "0123456789ABCDEF";
+
+static void HexDump(const unsigned char *From, int Len)
+{
+ int i;
+ int j,k;
+ char buffer[256];
+ char *ptr;
+
+ for(i=0;i<Len;)
+     {
+          ptr = buffer;
+          sprintf(ptr, "%08X ",i);
+          ptr += 9;
+          for(j=0;j<16 && i<Len;j++,i++)
+          {
+             *ptr++ = j && !(j%4)?(!(j%8)?'|':'-'):' ';
+             *ptr++ = hexes[From[i] >> 4];
+             *ptr++ = hexes[From[i] & 0xF];
+          }
+          for(k=16-j;k!=0;k--)
+          {
+            ptr[0] = ptr[1] = ptr[2] = ' ';
+            ptr += 3;
+
+          }
+          ptr[0] = ptr[1] = ' ';
+          ptr += 2;
+          for(;j!=0;j--)
+          {
+               if(From[i-j]>=0x20 && From[i-j]<0x80)
+                   *ptr = From[i-j];
+
+               else
+                    *ptr = '.';
+               ptr++;
+          }
+          *ptr = 0;
+          fprintf(s_fp, "%s\n", buffer);
+     }
+     fprintf(s_fp, "\n");
+}
+
+
+// my logger
+static void my_logger(void *user_data, int packet_type, int func_num, void *packet, void *ud2) {
+  if ( old_handler )
+    old_handler(*logger_data, packet_type, func_num, packet, *logger_data);
+}
+
 
 // patcher
-int patch_dbg(uint64_t addr, FILE *fp, const unsigned char *mask, size_t mask_size) {
+int patch_dbg(uint64_t addr, uint64_t data_addr, FILE *fp, const unsigned char *mask, size_t mask_size) {
+  memset(hex_masks, 0, sizeof(hex_masks));
   for ( int i = 0; i < std::min(mask_size, sizeof(hex_masks)); i++ ) {
     hex_masks[i] = ( mask[i] & 2 ) ? 1 : 0;
   }
   logger_addr = addr;
+  logger_data = (void **)data_addr;
   old_handler = *(dbg_trace *)addr;
+  *(dbg_trace *)addr = my_logger;
   s_fp = fp;
   return 1;
 };
+
+extern "C" int reset_logger() {
+  if ( !logger_addr ) return 0;
+  {
+    std::lock_guard tmp(mtx);
+    *(dbg_trace *)logger_addr = old_handler;
+    if ( s_fp != stdout ) fclose(s_fp);
+    s_fp = nullptr;
+  }
+  return 1;
+}
