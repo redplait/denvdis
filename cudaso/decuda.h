@@ -53,7 +53,9 @@ class decuda {
      _verify(fp, nullptr);
    }
    void verify_patch(FILE *fp, const struct dbg_patch *, int) const;
+   int patch_logger(FILE *fp, const unsigned char *, size_t) const;
  protected:
+   int patch_tracepoints(uint64_t, const unsigned char *, size_t) const;
    int patch_dbg(FILE *fp, uint64_t, const struct dbg_patch *, int) const;
    void _verify(FILE *, std::function<void(uint64_t, rtmem_storage &)> *) const;
    bool in_sec(std::optional<ELFIO::section *> &s, uint64_t addr) const {

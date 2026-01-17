@@ -591,6 +591,61 @@ void decuda::verify_patch(FILE *fp, const struct dbg_patch *tab, int tab_size) c
   _verify(fp, &tmp);
 }
 
+// from mylog.cc
+extern int patch_dbg(uint64_t, FILE *, const unsigned char *, size_t);
+
+int decuda::patch_tracepoints(uint64_t delta, const unsigned char *mask, size_t size) const {
+  int res = 0;
+  for ( size_t i = 0; i < size; ++i ) {
+    if ( !mask[i] || !m_flag_sztab[i] || !m_dbgtab[i] ) continue;
+    int32_t *tab = (int32_t *)(delta + m_dbgtab[i]);
+    for ( uint32_t idx = 0; idx < m_flag_sztab[i]; ++idx ) tab[idx] = 1;
+    res++;
+  }
+  return res;
+}
+
+int decuda::patch_logger(FILE *out_fp, const unsigned char *mask, size_t mask_size) const {
+ if ( !m_api_gate ) {
+   fprintf(out_fp, "cannot find dbg_apu_gate\n");
+   return 0;
+ }
+ if ( !has_flag_sztab() ) {
+   fprintf(out_fp, "cannot find dbg_tab\n");
+   return 0;
+ }
+ size_t real_mask_size = std::min(mask_size, m_dbgtab.size());
+ if ( !real_mask_size ) return 0;
+ auto first_sym = m_syms.cbegin();
+ // get delta
+ const char *fname = first_sym->first.c_str();
+ auto dh = dlopen("libcuda.so.1", 2);
+ if ( !dh ) {
+   fprintf(out_fp, "cannot load libcuda, %s\n", dlerror());
+   return 0;
+ }
+ auto_dlclose dummy(dh);
+ uint64_t real_addr = (uint64_t)dlsym(dh, fname);
+ if ( !real_addr ) {
+   fprintf(out_fp, "cannot find address of %s, (%s)\n", fname, dlerror());
+   return 0;
+ }
+ auto delta = real_addr - first_sym->second.addr;
+ fprintf(out_fp, "real_addr %lX, delta %lX\n", real_addr, delta);
+ fprintf(out_fp, "PID %d\n", getpid());
+ rtmem_storage rs;
+ if ( !rs.read() ) {
+   fprintf(out_fp, "cannot read addresses, delta %lX\n", delta);
+   return 0;
+ }
+ // patch dbg logger
+ int res = ::patch_dbg(m_api_gate + delta, out_fp, mask, real_mask_size);
+ if ( !res ) return res;
+ // patch tab
+ patch_tracepoints(delta, mask, real_mask_size);
+ return res;
+}
+
 void decuda::_verify(FILE *out_fp, std::function<void(uint64_t, rtmem_storage &)> *post) const {
  auto first_sym = m_syms.cbegin();
  // get delta
@@ -777,6 +832,19 @@ void check_cuda(const char *fname, FILE *fp) {
   else
    fprintf(fp, "check_cuda: cannot read %s\n", fname);
   delete obj;
+}
+
+int set_logger(const char *fname, FILE *fp, const unsigned char *mask, size_t mask_size) {
+  auto obj = get_decuda(fname);
+  if ( !obj ) return 0;
+  int res = 0;
+  if ( !obj->read() ) {
+    fprintf(fp, "check_patch: cannot read %s\n", fname);
+  } else {
+    res = obj->patch_logger(fp, mask, mask_size);
+  }
+  delete obj;
+  return res;
 }
 
 void check_patch(const char *fname, FILE *fp, const struct dbg_patch *tab, int tab_size) {
