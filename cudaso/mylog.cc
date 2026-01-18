@@ -81,7 +81,7 @@ static void my_logger(void *user_data, int packet_type, int func_num, void *pack
     }
   }
   if ( old_handler )
-    old_handler(*logger_data, packet_type, func_num, packet, *logger_data);
+    old_handler(user_data, packet_type, func_num, packet, ud2);
 }
 
 
