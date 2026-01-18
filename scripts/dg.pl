@@ -1356,6 +1356,7 @@ sub dump_ins
     my $ar = $block->[13];
     # [6] is has_pred & [1] is ins_name
     $block->[16] = 1 if ( !$ar->[6] && $ar->[1] eq 'EXIT' );
+    $block->[16] = 1 if ( 2 == $brt );
   }
   # process scheduling/find dual instr
   process_sched($off, $sctx, $block);
