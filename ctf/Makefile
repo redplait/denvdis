@@ -1,6 +1,6 @@
 # replace strange shift right of r0 with ced - see script in 1.ced
 a.out: cft.cu
-	nvcc -no-compress -arch sm_75 $^
+	nvcc -no-compress -arch sm_75 $^ ../cudaso/libdis.so /usr/local/lib64/libstdc++.so
 	-../fb/fb -i 1 -o 12 ./a.out
 	-perl md.pl 12
 	-../fb/fb -i 1 -r 12 ./a.out

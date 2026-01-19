@@ -1,5 +1,6 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
+#include "../cudaso/simple_api.h"
 
 #define WARP_SIZE (1<<5)
 // from https://github.com/abdimoallim/cuda-utils/blob/main/cutils.cuh
@@ -141,13 +142,33 @@ char *try_get_addr(const char *name) {
   return (char *)res;
 }
 
+void check_cuda(const char *fname, FILE *fp);
+int opt_d = 0;
+
 // main
-__host__ int main()
+__host__ int main(int argc, char **argv)
 {
   std::string s; // = "abcdefghijklmnoprstuvwxyz0123456";
   uint32_t *card_id;
   // read card id - 4 * 4 = 16 bytes + 4 for test
   auto err = cudaMalloc(&card_id, 20); checkCudaErrors(err);
+  FILE *out_fp = stdout;
+  if ( argc > 1 ) {
+    s = argv[1];
+    out_fp = fopen("/tmp/cuda.log", "w");
+    if ( !out_fp ) {
+      fprintf(stderr, "cannot create tmp cuda.log, error %d (%s)\n", errno, strerror(errno));
+      out_fp = stdout;
+    }
+  }
+/*  struct dbg_patch ar[3] = {
+   { "cuMemAlloc", 2 },
+   { "cuMemAlloc_v2", 3 },
+   { "cuMemCreate", 4 },
+  };
+ check_patch("/usr/lib/x86_64-linux-gnu/libcuda.so", out_fp, ar, 3); */
+  unsigned char mask[31] = { 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
+  set_logger("/usr/lib/x86_64-linux-gnu/libcuda.so", out_fp, mask, sizeof(mask));
   machine_ids<<<1,1>>>(card_id);
   err = cudaDeviceSynchronize(); checkCudaErrors(err);
   uint32_t host_card_id[5];
@@ -160,10 +181,12 @@ __host__ int main()
   // play with symbols
   try_get_addr<func_t>("cf1");
   // rest
-  std::cin >> s;
-  if ( s.size() != 32 ) {
-    printf("bad len of string\n");
-    return 1;
+  if ( argc < 2 ) {
+    std::cin >> s;
+    if ( s.size() != 32 ) {
+      printf("bad len of string\n");
+      return 1;
+    }
   }
   char *d_c;
   int *d_i;
