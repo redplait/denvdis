@@ -58,6 +58,23 @@ sub grep_sec
   return scalar(@res) ? \@res: undef;
 }
 
+# args: section type, dev idx, ctx idx
+sub grep_sec_ctx
+{
+  my($st, $didx, $cidx) = @_;
+  my @res;
+  foreach my $s ( @$g_s ) {
+    next if ( $s->[2] != $st );
+    # check section name at [1]
+    next if ( $s->[1] !~ /dev(\d+)/ );
+    next if ( int($1) != $didx );
+    next if ( $s->[1] !~ /ctx(\d+)/ );
+    next if ( int($1) != $cidx );
+    push @res, $s->[0];
+  }
+  return scalar(@res) ? \@res: undef;
+}
+
 # read sections and find g_strtab, storing list of section into $g_s
 # returns dev list section
 sub read_sections
@@ -172,15 +189,14 @@ sub analyse_mods
     printf("Cannot get ctas for dev %d\n", $d_id);
     return;
   }
-  my @tmp;
-  foreach my $si ( @$cts_s ) {
-    my $ctxs = $g_elf->ncd_ctx($si);
+  my $ctx_len = scalar @$cts_s;
+  foreach my $si ( 0 .. $ctx_len - 1 ) {
+    my $ctxs = $g_elf->ncd_ctx($cts_s->[$si]);
     next unless(defined $ctxs);
     my $c_len = scalar @$ctxs;
     foreach my $m ( 0 .. $c_len - 1 ) {
       printf(" ctx %d:\n", $m);
       my $c = $ctxs->[$m];
-      push @tmp, $c;
       if ( defined $opt_v ) {
         printf("   ctx ID: %X\n", $c->[0]);
         printf("   shared %X\n", $c->[1]);
@@ -189,20 +205,20 @@ sub analyse_mods
         printf("   dev_id %d tid %X\n", $c->[4], $c->[5]);
       }
     }
-  }
-  # read mods
-  my $mod_s = grep_sec(Elf::Reader::CUDBG_SHT_MOD_TABLE, $d_id);
-  unless( defined $mod_s ) {
-    printf("Cannot get modules for dev %d\n", $d_id);
-    return;
-  }
-  foreach my $ms ( @$mod_s ) {
-    my $mt = $g_elf->ncd_mods($ms);
-    next unless(defined $mt);
-    my $m_len = scalar @$mt;
-    foreach my $m ( 0 .. $m_len - 1 ) {
-      my $mod = $mt->[$m];
-      printf(" [%d] mod %X\n", $m, $mod);
+    # read mods
+    my $mod_s = grep_sec_ctx(Elf::Reader::CUDBG_SHT_MOD_TABLE, $d_id, $si);
+    unless( defined $mod_s ) {
+      printf("Cannot get modules for dev %d ctx %d\n", $d_id, $si);
+      return;
+    }
+    foreach my $ms ( @$mod_s ) {
+      my $mt = $g_elf->ncd_mods($ms);
+      next unless(defined $mt);
+      my $m_len = scalar @$mt;
+      foreach my $m ( 0 .. $m_len - 1 ) {
+        my $mod = $mt->[$m];
+        printf(" [%d] mod %X\n", $m, $mod);
+      }
     }
   }
 }
