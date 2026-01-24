@@ -9,7 +9,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_D $opt_v $opt_k/;
+use vars qw/$opt_D $opt_g $opt_t $opt_v $opt_k/;
 
 sub usage()
 {
@@ -17,7 +17,9 @@ sub usage()
 Usage: $0 [options] file.nvcudmp
  Options:
   -D drv-version
+  -g - dump grids
   -k - keep extracted file(s)
+  -t - dump threads
   -v - verbose mode
 EOF
   exit(8);
@@ -75,6 +77,23 @@ sub grep_sec_ctx
   return scalar(@res) ? \@res: undef;
 }
 
+# args: section type, dev idx, cta idx
+sub grep_sec_cta
+{
+  my($st, $didx, $cidx) = @_;
+  my @res;
+  foreach my $s ( @$g_s ) {
+    next if ( $s->[2] != $st );
+    # check section name at [1]
+    next if ( $s->[1] !~ /dev(\d+)/ );
+    next if ( int($1) != $didx );
+    next if ( $s->[1] !~ /cta(\d+)/ );
+    next if ( int($1) != $cidx );
+    push @res, $s->[0];
+  }
+  return scalar(@res) ? \@res: undef;
+}
+
 # read sections and find g_strtab, storing list of section into $g_s
 # returns dev list section
 sub read_sections
@@ -116,6 +135,38 @@ sub parse_dev_tab
     }
   }
   $ar_size;
+}
+
+# args: dev id, list of grid sections
+sub dump_grids
+{
+  my($d_id, $glist) = @_;
+  my $g_size = scalar(@$glist);
+  return unless($g_size);
+  for( my $i = 0; $i < $g_size; $i++ ) {
+    my $grid = $g_elf->ncd_grid($glist->[$i], $opt_D);
+    next unless defined($grid);
+    printf("Dev %d: %d grids:\n", $d_id, scalar @$grid);
+    foreach my $cg ( @$grid ) {
+      printf(" GridID %X\n", $cg->[0]);
+      printf(" context ID %X\n", $cg->[1]);
+      printf(" function %X\n", $cg->[2]);
+      printf(" functionEntry %X\n", $cg->[3]);
+      printf(" module %X\n", $cg->[4]);
+      printf(" parend GridID %X\n", $cg->[5]) if ( $cg->[5] );
+      printf(" params off %X\n", $cg->[6]);
+      printf(" kernel type %X\n", $cg->[7]);
+      printf(" origin %X\n", $cg->[8]) if ( $cg->[8] );
+      printf(" grid status %X\n", $cg->[9]) if ( $cg->[9] );
+      printf(" num regs: %X\n", $cg->[10]);
+      printf(" gridDim: X %X Y %X Z %X\n", $cg->[11], $cg->[12], $cg->[13]);
+      printf(" blockDim: X %X Y %X Z %X\n", $cg->[14], $cg->[15], $cg->[16]);
+      printf(" attrLaunchBlocking %X\n", $cg->[17]);
+      printf(" attrHostId %X\n", $cg->[18]);
+      next unless( defined $cg->[19]);
+      printf(" clusterDim: X %X Y %X Z %X\n", $cg->[19], $cg->[20], $cg->[21]);
+    }
+  }
 }
 
 # args: list of SM_Tab sections indexes
@@ -287,7 +338,7 @@ sub analyse_mods
 }
 
 # main
-my $state = getopts("vkD:");
+my $state = getopts("gtvkD:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -303,6 +354,10 @@ my $devs = parse_dev_tab($dev_idx);
 # try to find SMs for each device
 my($fault_addr, $fault_dev_idx);
 for my $i ( 0 .. $devs - 1 ) {
+  if ( defined $opt_g ) {
+    my $glist = grep_sec(Elf::Reader::CUDBG_SHT_GRID_TABLE, $i);
+    dump_grids($i, $glist) if ( defined $glist );
+  }
   my $slist = grep_sec(Elf::Reader::CUDBG_SHT_SM_TABLE, $i);
   next unless defined($slist);
   $fault_addr = check_sm($slist);
