@@ -120,6 +120,7 @@ sub parse_dev_tab
 
 # args: list of SM_Tab sections indexes
 # return errorPC from SMTableEntries if presents
+# problem with this dirty hack is that SM is not bound with context so we need to make full scan in analyse_mods
 sub check_sm
 {
   my $sl = shift;
@@ -179,6 +180,66 @@ sub check_warp
   $res;
 }
 
+# check if extracted ELF contains $e_pc
+sub check_elf
+{
+  my($fname, $e_pc) = @_;
+  my $elf = Elf::Reader->new($fname);
+  unless( defined $elf ) {
+    carp("check_elf: cannot read $fname");
+    return 0;
+  }
+  # quick check
+  return 0 unless( $elf->in_elf($e_pc) );
+  # yep, it's our precious-s-s
+  my $slist = $elf->secs();
+  unless ( defined $slist ) {
+    carp("check_elf: cannot read sections from $fname");
+    return 0;
+  }
+  printf("in %s\n", $fname);
+  my $res_s;
+  # enum sections
+  foreach my $s ( @$slist ) {
+    next unless($s->[8]); # no address
+    next unless($s->[9]); # no size
+    next if ($s->[2] != SHT_PROGBITS); # section type
+    printf("[%d] %s addr %X size %X\n", $s->[0], $s->[1], $s->[8], $s->[9]) if ( defined $opt_v );
+    # finally check if address inside this section
+    next if ( $e_pc < $s->[8] );
+    next if ( $e_pc >= ($s->[8] + $s->[9]) );
+    $res_s = $s;
+  }
+  unless( defined $res_s ) {
+    carp("cannot find target section in $fname");
+    return 0;
+  }
+  printf("Addr %X: section %s off %X\n", $e_pc, $res_s->[1], $e_pc - $res_s->[8]);
+  return 1;
+}
+
+# args: dev_id, context_id, error pc
+sub dump_mods
+{
+  my($d_id, $ctx_id, $e_pc) = @_;
+  my $mlist = grep_sec_ctx(Elf::Reader::CUDBG_SHT_RELF_IMG, $d_id, $ctx_id);
+  unless( defined $mlist ) {
+    carp("cannot extract rel elf images for dev $d_id ctx $ctx_id");
+    return;
+  }
+  my $m_len = scalar @$mlist;
+  foreach my $i ( 0 .. $m_len - 1 ) {
+    my $fname = sprintf("eld%d.dev%d.ctx%d", $i, $d_id, $ctx_id);
+    my $fh;
+    open($fh, '>', $fname) or die("cannot create $fname");
+    binmode($fh);
+    $g_elf->save2fd($mlist->[$i], $fh);
+    close $fh;
+    my $res = check_elf($fname, $e_pc);
+    unlink($fname) if ( !$res && !defined($opt_k) );
+  }
+}
+
 # args: dev index, error PC
 sub analyse_mods
 {
@@ -205,11 +266,11 @@ sub analyse_mods
         printf("   dev_id %d tid %X\n", $c->[4], $c->[5]);
       }
     }
-    # read mods
+    # read mods table
     my $mod_s = grep_sec_ctx(Elf::Reader::CUDBG_SHT_MOD_TABLE, $d_id, $si);
     unless( defined $mod_s ) {
       printf("Cannot get modules for dev %d ctx %d\n", $d_id, $si);
-      return;
+      next;
     }
     foreach my $ms ( @$mod_s ) {
       my $mt = $g_elf->ncd_mods($ms);
@@ -220,6 +281,8 @@ sub analyse_mods
         printf(" [%d] mod %X\n", $m, $mod);
       }
     }
+    # dump elf mods
+    dump_mods($d_id, $si, $e_pc);
   }
 }
 
