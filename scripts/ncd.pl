@@ -9,7 +9,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_D $opt_g $opt_t $opt_v $opt_k/;
+use vars qw/$opt_D $opt_e $opt_g $opt_t $opt_v $opt_k/;
 
 sub usage()
 {
@@ -17,6 +17,7 @@ sub usage()
 Usage: $0 [options] file.nvcudmp
  Options:
   -D drv-version
+  -e - dump pnly threads with exception
   -g - dump grids
   -k - keep extracted file(s)
   -t - dump threads
@@ -77,21 +78,78 @@ sub grep_sec_ctx
   return scalar(@res) ? \@res: undef;
 }
 
-# args: section type, dev idx, cta idx
-sub grep_sec_cta
+# boring sections selection logic. Hierarchy is
+# 0 - device
+# 1 - sm
+# 2 - cta
+# 3 - warp
+# 4 - lane
+# args: function/clojure to grep, section type
+sub grep_sec_list
 {
-  my($st, $didx, $cidx) = @_;
+  my($cl, $st) = @_;
   my @res;
   foreach my $s ( @$g_s ) {
     next if ( $s->[2] != $st );
-    # check section name at [1]
-    next if ( $s->[1] !~ /dev(\d+)/ );
-    next if ( int($1) != $didx );
-    next if ( $s->[1] !~ /cta(\d+)/ );
-    next if ( int($1) != $cidx );
-    push @res, $s->[0];
+    # skip empty
+    next unless ( $s->[9] );
+    next unless ( $cl->($s) );
+    if ( $s->[1] =~ /wp(\d+)/ ) {
+      push @res, [ $s, int($1) ];
+    } else {
+      push @res, $s;
+    }
   }
   return scalar(@res) ? \@res: undef;
+}
+
+# clojure factory for grep_sec_list
+sub sm_filter
+{
+  my $ar = shift;
+  my $res = sub {
+    my $s = shift;
+    # 0 - dev
+    return 0 if ( $s->[1] !~ /dev(\d+)/ );
+    return 0 if ( int($1) != $ar->[0] );
+    # 1 - sm
+    return 0 if ( $s->[1] !~ /sm(\d+)/ );
+    return ( int($1) == $ar->[1] );
+  };
+  $res;
+}
+
+sub cta_filter
+{
+  my $ar = shift;
+  my $res = sub {
+    my $s = shift;
+    # 0 - dev
+    return 0 if ( $s->[1] !~ /dev(\d+)/ );
+    return 0 if ( int($1) != $ar->[0] );
+    # 1 - sm
+    return 0 if ( $s->[1] !~ /sm(\d+)/ );
+    return 0 if ( int($1) != $ar->[1] );
+    # 2 - cta
+    return 0 if ( $s->[1] !~ /cta(\d+)/ );
+    return int($1) == $ar->[2];
+  };
+  $res;
+}
+
+# and for lane - reuse cta_filter to avoid copy-pasting
+sub lane_filter
+{
+  my $ar = shift;
+  my $cl = cta_filter($ar);
+  my $res = sub {
+    my $s = shift;
+    return 0 unless ( $cl->($s) );
+    # 4 - lane
+    return 0 if ( $s->[1] !~ /ln(\d+)/ );
+    return int($1) == $ar->[4];
+  };
+  $res;
 }
 
 # read sections and find g_strtab, storing list of section into $g_s
@@ -169,12 +227,72 @@ sub dump_grids
   }
 }
 
+# dump lanes
+# called only when -t option
+sub dump_threads
+{
+  my $ar = shift;
+  my $f = cta_filter($ar);
+  my $tlist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_LN_TABLE);
+  return unless( defined $tlist );
+  my $latch = 0;
+  foreach my $l ( @$tlist ) {
+    # here l is pair [ section, warp ID ]
+    my $t = $g_elf->ncd_lanes($l->[0]->[0], $opt_D);
+    next unless( defined $t );
+    # store warp
+    $ar->[3] = $l->[1];
+    foreach my $ct ( @$t ) {
+      # store lane id
+      $ar->[4] = $ct->[2];
+      next if ( defined($opt_e) && !$ct->[6] );
+      if ( !$latch ) {
+        $latch++;
+        printf("   Lanes for warp %d:\n", $l->[1]);
+      }
+      printf("    Ln %d\n", $ct->[2]);
+      # dump remained fields
+      printf("     virtualPC: %X\n", $ct->[0]);
+      printf("     physPC: %X\n", $ct->[1]);
+      printf("     threadIdx: X %X Y %X Z %X\n", $ct->[3], $ct->[4], $ct->[5]);
+      printf("     exception %X\n", $ct->[6]) if ( $ct->[6] );
+      printf("     callDepth: %d\n", $ct->[7]) if ( $ct->[7] );
+      printf("     syscallDepth: %d\n", $ct->[8]) if ( $ct->[8] );
+      printf("     ccRegister: %X\n", $ct->[9]) if ( $ct->[9] );
+      printf("     threadState: %X\n", $ct->[10]) if ( defined $ct->[10] );
+    }
+  }
+}
+
+# args: list of cta sections, filter
+# called only when -t option
+sub dump_cta
+{
+  my($clist, $ar) = @_;
+  my $c_size = scalar(@$clist);
+  return unless($c_size);
+  for ( my $i = 0; $i < $c_size; $i++ ) {
+    my $ctas = $g_elf->ncd_cta($clist->[$i]->[0], $opt_D);
+    next unless defined($ctas);
+    my $cta_size = scalar @$ctas;
+    for ( my $j = 0; $j < $cta_size; $j++ ) {
+      $ar->[2] = $j; # store cta num in filter
+      printf(" CTA %d:\n", $j);
+      my $c = $ctas->[$j];
+      printf("  grid ID: %X\n", $c->[0]);
+      printf("  blockIdx   X %X Y %X Z %X\n", $c->[1], $c->[2], $c->[3]);
+      printf("  clusterIdx X %X Y %X Z %X\n", $c->[4], $c->[5], $c->[6]) if defined($c->[4]);
+      dump_threads($ar);
+    }
+  }
+}
+
 # args: list of SM_Tab sections indexes
 # return errorPC from SMTableEntries if presents
 # problem with this dirty hack is that SM is not bound with context so we need to make full scan in analyse_mods
 sub check_sm
 {
-  my $sl = shift;
+  my($d_id, $sl) = @_;
   my $sl_size = scalar(@$sl);
   my $res;
   return unless($sl_size);
@@ -198,6 +316,17 @@ sub check_sm
       # old useless SM format with id only
       if ( defined $opt_v ) {
         printf(" %d\n", $_) for @$sm;
+      }
+    }
+    if ( defined $opt_t ) {
+      # dump cta for each SM in $sm list
+      for ( my $j = 0; $j < scalar(@$sm); $j++ ) {
+        my @ar = ( $d_id, $j );
+        my $f = sm_filter(\@ar);
+        my $clist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_CTA_TABLE);
+        next unless( defined $clist );
+# printf("CTA found %d size %d\n", $i, scalar(@$clist));
+        dump_cta($clist, \@ar);
       }
     }
   }
@@ -298,7 +427,7 @@ sub analyse_mods
   # read contexts
   my $cts_s = grep_sec(Elf::Reader::CUDBG_SHT_CTX_TABLE, $d_id);
   unless( defined $cts_s ) {
-    printf("Cannot get ctas for dev %d\n", $d_id);
+    printf("Cannot get ctx for dev %d\n", $d_id);
     return;
   }
   my $ctx_len = scalar @$cts_s;
@@ -338,7 +467,7 @@ sub analyse_mods
 }
 
 # main
-my $state = getopts("gtvkD:");
+my $state = getopts("egtvkD:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -360,7 +489,7 @@ for my $i ( 0 .. $devs - 1 ) {
   }
   my $slist = grep_sec(Elf::Reader::CUDBG_SHT_SM_TABLE, $i);
   next unless defined($slist);
-  $fault_addr = check_sm($slist);
+  $fault_addr = check_sm($i, $slist);
   if ( defined($fault_addr) ) { $fault_dev_idx = $i; last; }
 }
 unless( defined $fault_addr ) {
