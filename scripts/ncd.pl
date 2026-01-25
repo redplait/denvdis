@@ -9,7 +9,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_D $opt_e $opt_g $opt_t $opt_v $opt_k/;
+use vars qw/$opt_D $opt_e $opt_g $opt_r $opt_t $opt_v $opt_k/;
 
 sub usage()
 {
@@ -17,9 +17,10 @@ sub usage()
 Usage: $0 [options] file.nvcudmp
  Options:
   -D drv-version
-  -e - dump pnly threads with exception
+  -e - dump only threads with exception
   -g - dump grids
   -k - keep extracted file(s)
+  -r - dump registers
   -t - dump threads
   -v - verbose mode
 EOF
@@ -145,6 +146,9 @@ sub lane_filter
   my $res = sub {
     my $s = shift;
     return 0 unless ( $cl->($s) );
+    # 3 - warp
+    return 0 if ( $s->[1] !~ /wp(\d+)/ );
+    return 0 if ( int($1) != $ar->[3] );
     # 4 - lane
     return 0 if ( $s->[1] !~ /ln(\d+)/ );
     return int($1) == $ar->[4];
@@ -227,12 +231,70 @@ sub dump_grids
   }
 }
 
+sub dump_ar
+{
+  my($pfx, $regs) = @_;
+  return unless defined($regs);
+  my $r_size = scalar(@$regs);
+  return unless($r_size);
+  printf("       %d %s:\n", $r_size, $pfx );
+  printf("        [%d] %X\n", $_, $regs->[$_]) for( 0 .. $r_size - 1 );
+}
+
+# dump (u)regs/(u)preds for specific thread
+# args: list of thread coordinates for lane_filter
+sub dump_regs
+{
+  my $ar = shift;
+  my $f = lane_filter($ar);
+  # regs
+  my $rlist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_DEV_REGS);
+  if ( defined($rlist) && 1 == scalar(@$rlist) ) {
+    dump_ar("Regs", $g_elf->ncd_regs($rlist->[0]->[0]->[0]));
+  }
+  # preds
+  my $plist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_DEV_PRED);
+  if ( defined($plist) && 1 == scalar(@$plist) ) {
+    dump_ar("Preds", $g_elf->ncd_pred($plist->[0]->[0]->[0]));
+  }
+  my $urlist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_DEV_UREGS);
+  if ( defined($urlist) && 1 == scalar(@$urlist) ) {
+    dump_ar("URegs", $g_elf->ncd_uregs($urlist->[0]->[0]->[0]));
+  }
+  my $uplist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_DEV_UPRED);
+  if ( defined($uplist) && 1 == scalar(@$uplist) ) {
+    dump_ar("UPreds", $g_elf->ncd_upred($uplist->[0]->[0]->[0]));
+  }
+}
+
+sub dump_uregs
+{
+  my $ar = shift;
+  my $f = cta_filter($ar);
+  my $urlist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_DEV_UREGS);
+  if ( defined $urlist ) {
+    foreach my $r ( @$urlist ) {
+      printf("    Warp %d:\n", $r->[1]);
+      dump_ar("URegs", $g_elf->ncd_uregs($r->[0]->[0]));
+    }
+  }
+  my $uplist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_DEV_UPRED);
+  if ( defined $uplist ) {
+    foreach my $r ( @$uplist ) {
+      printf("    Warp %d:\n", $r->[1]);
+      dump_ar("UPreds", $g_elf->ncd_upred($r->[0]->[0]));
+    }
+  }
+}
+
 # dump lanes
 # called only when -t option
+# return fault PC if presents
 sub dump_threads
 {
   my $ar = shift;
   my $f = cta_filter($ar);
+  my $res;
   my $tlist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_LN_TABLE);
   return unless( defined $tlist );
   my $latch = 0;
@@ -252,7 +314,7 @@ sub dump_threads
       }
       printf("    Ln %d\n", $ct->[2]);
       # dump remained fields
-      printf("     virtualPC: %X\n", $ct->[0]);
+      printf("     virtualPC: %X\n", $ct->[0]); $res = $ct->[0];
       printf("     physPC: %X\n", $ct->[1]);
       printf("     threadIdx: X %X Y %X Z %X\n", $ct->[3], $ct->[4], $ct->[5]);
       printf("     exception %X\n", $ct->[6]) if ( $ct->[6] );
@@ -260,8 +322,11 @@ sub dump_threads
       printf("     syscallDepth: %d\n", $ct->[8]) if ( $ct->[8] );
       printf("     ccRegister: %X\n", $ct->[9]) if ( $ct->[9] );
       printf("     threadState: %X\n", $ct->[10]) if ( defined $ct->[10] );
+      next unless( defined $opt_r );
+      dump_regs($ar);
     }
   }
+  $res;
 }
 
 # args: list of cta sections, filter
@@ -282,7 +347,8 @@ sub dump_cta
       printf("  grid ID: %X\n", $c->[0]);
       printf("  blockIdx   X %X Y %X Z %X\n", $c->[1], $c->[2], $c->[3]);
       printf("  clusterIdx X %X Y %X Z %X\n", $c->[4], $c->[5], $c->[6]) if defined($c->[4]);
-      dump_threads($ar);
+      my $res = dump_threads($ar);
+      dump_uregs($ar) if ( defined($res) && defined($opt_r) );
     }
   }
 }
@@ -467,7 +533,7 @@ sub analyse_mods
 }
 
 # main
-my $state = getopts("egtvkD:");
+my $state = getopts("egrtvkD:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
