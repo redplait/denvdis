@@ -1,9 +1,12 @@
 #!perl -w
 # script to dump nvidia code dumps
+# to get -D value you can run nvidia-smi -q | head:
+#> Driver Version : 535.183.01
+# so you should use -D 535
 use strict;
 use warnings;
 use Elf::Reader;
-use Cubin::Ced;
+# use Cubin::Ced;
 use Getopt::Std;
 use Carp;
 use Data::Dumper;
@@ -27,7 +30,7 @@ EOF
   exit(8);
 }
 
-# globals
+# globals - strtab section index, elf::reader object, list of sections
 my ($g_strtab, $g_elf, $g_s);
 $opt_D = Elf::Reader::DRV_VERSION;
 
@@ -85,7 +88,8 @@ sub grep_sec_ctx
 # 2 - cta
 # 3 - warp
 # 4 - lane
-# args: function/clojure to grep, section type
+# Bcs you can want to apply different filters on this chain it's better to wrap custom filter to code - like closure
+# args: function/closure to grep, section type
 sub grep_sec_list
 {
   my($cl, $st) = @_;
@@ -104,7 +108,7 @@ sub grep_sec_list
   return scalar(@res) ? \@res: undef;
 }
 
-# clojure factory for grep_sec_list
+# closure factories for grep_sec_list
 sub sm_filter
 {
   my $ar = shift;
@@ -200,6 +204,7 @@ sub parse_dev_tab
 }
 
 # args: dev id, list of grid sections
+# called only when -g option
 sub dump_grids
 {
   my($d_id, $glist) = @_;
@@ -293,9 +298,8 @@ sub dump_uregs
 sub dump_threads
 {
   my $ar = shift;
-  my $f = cta_filter($ar);
   my $res;
-  my $tlist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_LN_TABLE);
+  my $tlist = grep_sec_list(cta_filter($ar), Elf::Reader::CUDBG_SHT_LN_TABLE);
   return unless( defined $tlist );
   my $latch = 0;
   foreach my $l ( @$tlist ) {
@@ -314,7 +318,9 @@ sub dump_threads
       }
       printf("    Ln %d\n", $ct->[2]);
       # dump remained fields
-      printf("     virtualPC: %X\n", $ct->[0]); $res = $ct->[0];
+      printf("     virtualPC: %X\n", $ct->[0]);
+      # store PC if we also have exception in [6]
+      $res = $ct->[0] if ( $ct->[6] );
       printf("     physPC: %X\n", $ct->[1]);
       printf("     threadIdx: X %X Y %X Z %X\n", $ct->[3], $ct->[4], $ct->[5]);
       printf("     exception %X\n", $ct->[6]) if ( $ct->[6] );
@@ -388,8 +394,7 @@ sub check_sm
       # dump cta for each SM in $sm list
       for ( my $j = 0; $j < scalar(@$sm); $j++ ) {
         my @ar = ( $d_id, $j );
-        my $f = sm_filter(\@ar);
-        my $clist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_CTA_TABLE);
+        my $clist = grep_sec_list(sm_filter(\@ar), Elf::Reader::CUDBG_SHT_CTA_TABLE);
         next unless( defined $clist );
 # printf("CTA found %d size %d\n", $i, scalar(@$clist));
         dump_cta($clist, \@ar);
