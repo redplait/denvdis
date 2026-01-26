@@ -12,7 +12,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_D $opt_e $opt_g $opt_r $opt_t $opt_v $opt_k/;
+use vars qw/$opt_D $opt_b $opt_e $opt_g $opt_r $opt_t $opt_v $opt_k/;
 
 sub usage()
 {
@@ -20,6 +20,7 @@ sub usage()
 Usage: $0 [options] file.nvcudmp
  Options:
   -D drv-version
+  -b - dump backtraces
   -e - dump only threads with exception
   -g - dump grids
   -k - keep extracted file(s)
@@ -32,7 +33,20 @@ EOF
 
 # globals - strtab section index, elf::reader object, list of sections
 my ($g_strtab, $g_elf, $g_s);
+# global mem list - [ addr, size, section_name]
+my @g_mem;
 $opt_D = Elf::Reader::DRV_VERSION;
+
+sub check_gmem
+{
+ my $addr = shift;
+ foreach my $m ( @g_mem ) {
+   if ( $addr >= $m->[0] && $addr < ($m->[0] + $m->[1]) ) {
+     printf(" %s + %X", $m->[2], $addr - $m->[0]);
+     return;
+   }
+ }
+}
 
 # read string from strtab
 sub get_str
@@ -169,6 +183,7 @@ sub read_sections
   my $res;
   foreach my $s ( @$g_s ) {
     $g_strtab = $s->[0] if ( $s->[2] == SHT_STRTAB );
+    push @g_mem, [ $s->[8], $s->[9], $s->[1] ] if ( $s->[8] && $s->[2] == Elf::Reader::CUDBG_SHT_GLOBAL_MEM );
     $res = $s->[0] if ( $s->[2] == Elf::Reader::CUDBG_SHT_DEV_TABLE );
     last if ( defined($res) && defined($g_strtab) );
   }
@@ -238,24 +253,27 @@ sub dump_grids
 
 sub dump_ar
 {
-  my($pfx, $regs) = @_;
+  my($pfx, $regs, $m) = @_;
   return unless defined($regs);
   my $r_size = scalar(@$regs);
   return unless($r_size);
   printf("       %d %s:\n", $r_size, $pfx );
-  printf("        [%d] %X\n", $_, $regs->[$_]) for( 0 .. $r_size - 1 );
+  for( 0 .. $r_size - 1 ) {
+    printf("        [%d] %X", $_, $regs->[$_]);
+    $m->($regs->[$_]) if ( defined $m );
+    printf("\n");
+  }
 }
 
 # dump (u)regs/(u)preds for specific thread
-# args: list of thread coordinates for lane_filter
+# args: lane_filter
 sub dump_regs
 {
-  my $ar = shift;
-  my $f = lane_filter($ar);
+  my $f = shift;
   # regs
   my $rlist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_DEV_REGS);
   if ( defined($rlist) && 1 == scalar(@$rlist) ) {
-    dump_ar("Regs", $g_elf->ncd_regs($rlist->[0]->[0]->[0]));
+    dump_ar("Regs", $g_elf->ncd_regs($rlist->[0]->[0]->[0]), \&check_gmem);
   }
   # preds
   my $plist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_DEV_PRED);
@@ -264,11 +282,26 @@ sub dump_regs
   }
   my $urlist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_DEV_UREGS);
   if ( defined($urlist) && 1 == scalar(@$urlist) ) {
-    dump_ar("URegs", $g_elf->ncd_uregs($urlist->[0]->[0]->[0]));
+    dump_ar("URegs", $g_elf->ncd_uregs($urlist->[0]->[0]->[0]), \&check_gmem);
   }
   my $uplist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_DEV_UPRED);
   if ( defined($uplist) && 1 == scalar(@$uplist) ) {
     dump_ar("UPreds", $g_elf->ncd_upred($uplist->[0]->[0]->[0]));
+  }
+}
+
+# args: lane_filter
+sub dump_bt
+{
+  my $f = shift;
+  my $blist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_BT);
+  return unless( defined $blist );
+  my $idx = -1;
+  foreach $b ( @$blist ) {
+    $idx++;
+    printf("     bt[%d] level %d:\n", $idx, $b->[0]);
+    printf("      returnAddress %X\n", $b->[1]);
+    printf("      virtualReturnAddress %X\n", $b->[2]);
   }
 }
 
@@ -280,7 +313,7 @@ sub dump_uregs
   if ( defined $urlist ) {
     foreach my $r ( @$urlist ) {
       printf("    Warp %d:\n", $r->[1]);
-      dump_ar("URegs", $g_elf->ncd_uregs($r->[0]->[0]));
+      dump_ar("URegs", $g_elf->ncd_uregs($r->[0]->[0]), \&check_gmem);
     }
   }
   my $uplist = grep_sec_list($f, Elf::Reader::CUDBG_SHT_DEV_UPRED);
@@ -328,8 +361,11 @@ sub dump_threads
       printf("     syscallDepth: %d\n", $ct->[8]) if ( $ct->[8] );
       printf("     ccRegister: %X\n", $ct->[9]) if ( $ct->[9] );
       printf("     threadState: %X\n", $ct->[10]) if ( defined $ct->[10] );
-      next unless( defined $opt_r );
-      dump_regs($ar);
+      if ( defined($opt_r) || defined($opt_b) ) {
+        my $lf = lane_filter($ar);
+        dump_bt($lf) if ( defined($opt_b) );
+        dump_regs($lf) if defined($opt_r);
+      }
     }
   }
   $res;
@@ -538,7 +574,7 @@ sub analyse_mods
 }
 
 # main
-my $state = getopts("egrtvkD:");
+my $state = getopts("begrtvkD:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
