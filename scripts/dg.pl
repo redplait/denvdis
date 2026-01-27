@@ -939,7 +939,7 @@ sub denied_swap
   my $what = shift;
   # intra-warp instructions
   return 1 if ( $what->[1] =~ /BAR/ );
-  return 1 if ( $what->[1] =~ /ELECT/ );
+  return 1 if ( $what->[1] =~ /ELECT/ || $what->[1] =~ /UTCATOMSWS/ );
   return 1 if ( $what->[1] =~ /VOTE/ );
   return 1 if ( $what->[1] =~ /SHFL/ );
   return 1 if ( $what->[1] =~ /SYNCS/ );
@@ -978,13 +978,15 @@ sub can_swap
   return 0 if ( $curr->[5] || $prev->[5] );
   # 2.1) has branch like BSSY
   return 0 if ( $curr->[9] || $prev->[9] );
+  # 2.2) atomic CAS
+  return 0 if ( $curr->[16] || $prev->[16] );
+  # 2,4) one of instructions is ENDING_INST
+  return 0 if ( $curr->[14] || $prev->[14] );
   # 3) has rela
   return 0 if ( $curr->[4] || $prev->[4] );
   # 4) share CC on old SMs
   return 0 if ( inter_CC($curr, $prev) );
-  # 5) one of instructions is ENDING_INST
-  return 0 if ( $curr->[14] || $prev->[14] );
-  # 5.1) one of instructions scbd is SINK
+  # 5) one of instructions scbd is SINK
   return 0 if ( (defined($curr->[15]) && 3 == $curr->[15]) ||
                 (defined($prev->[15]) && 3 == $prev->[15]) );
   # check cond
@@ -1285,6 +1287,7 @@ sub dump_ins
   my $mw = $g_ced->ins_min_wait();
   my $i_text = $g_ced->ins_text();
   my $i_type = $g_ced->ins_itype();
+  my $sidl = $g_ced->ins_sidl();
   my $cc = 0;
   $cc = 1 if ( $g_ced->get('TestCC') || $g_ced->grep_pred('DOES_READ_CC') );
   $cc |= 2 if ( $g_ced->get('writeCC') );
@@ -1294,6 +1297,7 @@ sub dump_ins
     printf("; %s line %d", $cl, $ln);
     printf(" ALT") if ( $g_ced->ins_alt() );
     printf(" Brt %d (%s)", $brt, brt_name($brt)) if $brt;
+    printf(" Sidl %s", $sidl) if $sidl;
     printf(" Scbd %d (%s)", $scbd, scbd_name($scbd)) if $scbd;
     printf(" Scbd_type %s (%s)", $scbd_type, scbd_type_name($scbd_type)) if $scbd_type;
     printf(" min_wait: %d", $mw) if $mw;
@@ -1317,6 +1321,7 @@ sub dump_ins
       $ar->[13] = $cc if $cc;
       $ar->[14] = defined($scbd_type) && (3 == $scbd_type);
       $ar->[15] = $scbd if ( $scbd );
+      $ar->[16] = $sidl =~ /_CAS$/ if ( $sidl );
     }
   }
   # is empty instruction - nop or with !@PT predicate
@@ -2169,7 +2174,8 @@ sub dg
     * 13 - mask of CC ops for old SM, 1 - read, 2 - write
     * 14 - scbd_type is ENDING_INST
     * 15 - scbd, should skip if it is SINK (3) - for strange instructions like UTMALDG
-    * 16 - TBC
+    * 16 - sidl has _CAS suffix
+    * 17 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
