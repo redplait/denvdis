@@ -2736,11 +2736,12 @@ sub bank_extract
 sub parse_conv_float
 {
   my($op, $fname, $format, $fc, $args) = @_;
+  # split on ||
   my @spl = split(/\s*\|\|\s*/, $args->[0]);
   my $prev;
   my %vhash;
   foreach my $s ( @spl ) {
-    if ( $s !~ /([\w\.]+)\s*==\s*`([\w\.]+)@([\w\.]+)/ ) {
+    if ( $s !~ /([\w\.]+)\s*==\s*`([\w\.]+)@([\w\.]+)/ ) { # == `format
       printf("bad conv_float %s for %s, line %d\n", $s, $op->[1], $op->[4]);
       next;
     }
@@ -3118,6 +3119,27 @@ sub rend_C_list
   }
   printf($fh "}\n");
 }
+
+# extract first non-/ enum after instruction
+sub extract_efirst
+{
+  my $op = shift;
+  my $state = 0;
+  foreach my $f ( @{ $op->[15] } ) {
+    if ( $f->[0] eq '$') {
+      $state = 1;
+      next;
+    } elsif ( $f->[0] eq 'P' ) { next; }
+    if ( $state ) {
+      return undef unless($f->[0] eq 'E' );
+      # check if it optional
+      next if ( $f->[4]->[1] );
+      return $f->[4];
+    }
+  }
+  undef;
+}
+
 sub gen_render
 {
   my($op, $fh) = @_;
@@ -3233,7 +3255,7 @@ sub gen_pred_func
     # int value with name $k
     printf($fh " int %s = (int)%s->second;\n", $k, $iter_name);
   }
-  $copy =~ s/`(\w+)\@\"?([\w\.]+)\"?/pred_conv($1, $2)/eg;
+  $copy =~ s/`(\w+)\@\"?([\w\.]+)\"?/pred_conv($1, $2)/eg; # `
   printf($fh " return %s;\n", $copy);
   printf($fh "}\n");
   # store processed function in cache
@@ -3324,8 +3346,8 @@ my %s_setp = (
  'R2P' => 3,
  'UR2UP' => 3,
  'AL2P' => 1,
- 'ATOM' => 1,
- 'SUATOM' => 1,
+# 'ATOM' => 1,
+# 'SUATOM' => 1,
  'PIXLD' => 1,
  'SULD' => 1,
  'LEA' => 1,
@@ -3339,8 +3361,8 @@ my %s_setp = (
  'DSETP' => 2,
  'ISETP' => 2,
  'VSETP' => 2,
- 'UISETP' => 1,
- 'UPSETP' => 1,
+# 'UISETP' => 1,
+# 'UPSETP' => 1,
 );
 sub is_setp
 {
@@ -3348,6 +3370,19 @@ sub is_setp
   my $name = $op->[1];
   my $res = 1;
   $res = 2 if ( $name =~ /2$/ );
+  # check if we need to extract first enum operand
+  my $need_ex = 0;
+  $need_ex = 1 if ( $name =~ /ATOM/ );
+  if ( !$need_ex && defined($op->[20]) ) {
+    # check sidl_name for _CAS suffix
+    $need_ex = $op->[20]->[5] =~ /_CAS$/ if ( $op->[20]->[5] );
+  }
+  if ( $need_ex ) {
+    my $first = extract_efirst($op);
+    if ( defined $first ) {
+      return 1 if ( $first->[0] eq 'Predicate' || $first->[0] eq 'UniformPredicate' );
+    }
+  }
   return $s_setp{$name} if ( exists $s_setp{$name} );
   # rest like hsetp2 etc
   return $res if ( $name =~ /SETP/ );
@@ -3422,6 +3457,7 @@ sub gen_instr
         printf($fh "%s,", $brt->[2] || '0'); # scbd_type
         printf($fh "%s,", $brt->[6] || '0'); # min_wait
         printf($fh "%s,", $brt->[7] || '0'); # itype
+        # 3 - target_index, 4 - cc_index, 5 - sidl_name
         foreach my $bi ( 3 .. 5 ) {
           if ( defined $brt->[$bi]) { printf($fh "\"%s\",", $brt->[$bi]); }
           else { printf($fh "nullptr,"); }
@@ -5140,7 +5176,7 @@ $state = $line = 0;
 # [12] - map with enums for table-based encoders, key is encoder name
 # [13] - count of meaningful bits
 # [14] - list of formats
-# [15] - href to renaindned enums from [10]
+# [15] - href to remaining enums from [10]
 # [16] - original ae hash
 # [17] - value names -> type hash
 # [18] - idx
