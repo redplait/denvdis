@@ -3319,6 +3319,8 @@ my %s_setp = (
  'ULOP3' => 1,
  'UPLOP3' => 1,
  'SHFL' => 1,
+ 'ELECT' => 1, # see details https://patricktoulme.substack.com/p/cutile-on-blackwell-nvidias-compiler
+ 'UTCATOMSWS' => 1,
  'R2P' => 3,
  'UR2UP' => 3,
  'AL2P' => 1,
@@ -3337,6 +3339,8 @@ my %s_setp = (
  'DSETP' => 2,
  'ISETP' => 2,
  'VSETP' => 2,
+ 'UISETP' => 1,
+ 'UPSETP' => 1,
 );
 sub is_setp
 {
