@@ -11,6 +11,7 @@
 
 #include "ced_base.h"
 #include "elf.inc"
+#include "bf16.h"
 
 typedef std::pair<const render_base*, std::list<const render_named *> > RItem;
 typedef std::vector<RItem> RItems;
@@ -774,12 +775,15 @@ int Ced_perl::patch_field(const char *fname, SV *v)
      m_v = SvIV(v);
     else {
       int skip = 1;
-      if ( !ctr && SvNOK(v) && (va->kind == NV_F64Imm || va->kind == NV_F32Imm || va->kind == NV_F16Imm) ) {
+      if ( !ctr && SvNOK(v) && (va->kind == NV_F64Imm || va->kind == NV_F32Imm || va->kind == NV_F16Imm || va->kind == NV_E8M7Imm) )
+      {
         double d = SvNV(v);
         if ( va->kind == NV_F64Imm ) m_v = *(uint64_t *)&d;
         else if ( va->kind == NV_F32Imm ) {
           float fl = (float)d;
           *(float *)&m_v = fl;
+        } else if ( va->kind == NV_E8M7Imm ) {
+          m_v = e8m7_f(float(d));
         } else if ( va->kind == NV_F16Imm ) {
           *(float *)&m_v = fp16_ieee_from_fp32_value(float(d));
         }
@@ -1179,6 +1183,10 @@ SV *Ced_perl::special_kv(NV_extracted::const_iterator &ei)
   if ( va->kind == NV_F32Imm ) {
     auto v = ei->second;
     return newSVnv(*(float *)&v);
+  }
+  if ( va->kind == NV_E8M7Imm ) {
+    float f32 = e8m7_f((uint16_t)ei->second);
+    return newSVnv(f32);
   }
   if ( va->kind == NV_F16Imm ) {
     float f32 = fp16_ieee_to_fp32_bits((uint16_t)ei->second);
@@ -3090,6 +3098,7 @@ BOOT:
  EXPORT_ENUM(NV_Format, NV_F64Imm)
  EXPORT_ENUM(NV_Format, NV_F16Imm)
  EXPORT_ENUM(NV_Format, NV_F32Imm)
+ EXPORT_ENUM(NV_Format, NV_E8M7Imm)
  EXPORT_ENUM(NV_Brt, BRT_CALL)
  EXPORT_ENUM(NV_Brt, BRT_RETURN)
  EXPORT_ENUM(NV_Brt, BRT_BRANCH)
