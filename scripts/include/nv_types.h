@@ -80,6 +80,7 @@ enum NV_Format {
   NV_F64Imm,
   NV_F16Imm,
   NV_F32Imm,
+  NV_E8M7Imm,
 };
 
 enum NV_IType {
@@ -135,7 +136,7 @@ struct nv_named_eattr {
 struct nv_float_conv {
  std::string_view name;
  std::string_view fmt_var;
- short format; // NV_Format
+ short f_t, f_f; // NV_Format
  short v1, v2; // -1 means no value for fmt_var
 };
 

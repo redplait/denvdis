@@ -2735,13 +2735,13 @@ sub bank_extract
 # args: op, field name, format for field, ref to float conv ref, array wirh convertFloatType args
 sub parse_conv_float
 {
-  my($op, $fname, $format, $fc, $args) = @_;
+  my($op, $fname, $fc, $args) = @_;
   # split on ||
   my @spl = split(/\s*\|\|\s*/, $args->[0]);
   my $prev;
   my %vhash;
   foreach my $s ( @spl ) {
-    if ( $s !~ /([\w\.]+)\s*==\s*`([\w\.]+)@([\w\.]+)/ ) { # == `format
+    if ( $s !~ /([\w\.]+)\s*==\s*`([\w\.]+)@([\w\.]+)/ ) { # (1 - field) == `format (2 - enum) @ (3 - value)
       printf("bad conv_float %s for %s, line %d\n", $s, $op->[1], $op->[4]);
       next;
     }
@@ -2777,12 +2777,8 @@ sub parse_conv_float
       return 0;
   }
   # fill array for $fc
-  my @res = ( $prev, $format, $vkeys[0] );
-  if ( $format eq 'F16Imm') {
-    push @res, 0;
-  } else {
-    push @res, scalar(@vkeys) > 1 ? $vkeys[1]: -1;
-  }
+  my @res = ( $prev, $args->[1], $args->[2], $vkeys[0] );
+  push @res, scalar(@vkeys) > 1 ? $vkeys[1]: -1;
   $fc->{$fname} = \@res;
   1;
 }
@@ -2916,14 +2912,16 @@ sub gen_extr
           printf("bad args for convertFloatType(%s) for %s, line %d\n", $3, $op->[1], $op->[4]);
         } else {
           splice @fc_args, 0, $fc_len - 3 if ( $fc_len > 3 );
-          if ( $fc_args[2] eq 'F16Imm' || $fc_args[2] eq 'F32Imm' ) {
+          if ( $fc_args[2] eq 'F16Imm' || $fc_args[2] eq 'F32Imm' || $fc_args[2] eq 'E8M7Imm' ) {
             if ( $fc_args[0] =~ /1\s*==\s*1/ ) {
               # it's much simpler just to replace vas field
               my $vas = $op->[18];
-              if ( exists $vas->{$field} ) { $vas->{$field}->[0] = $fc_args[2]; }
-              else { printf("no vas for %s, instr %s line %d\n", $field, $op->[1], $op->[4]); }
+              if ( exists $vas->{$field} ) {
+                 $vas->{$field}->[0] = $fc_args[2];
+            #     print Dumper($vas) if $fc_args[2] eq 'E8M7Imm';
+              } else { printf("no vas for %s, instr %s line %d\n", $field, $op->[1], $op->[4]); }
             } else {
-              parse_conv_float($op, $field, $fc_args[2], $fc, \@fc_args);
+              parse_conv_float($op, $field, $fc, \@fc_args);
             }
           }
         }
@@ -3345,7 +3343,7 @@ my %s_setp = (
  'UTCATOMSWS' => 1,
  'R2P' => 3,
  'UR2UP' => 3,
- 'AL2P' => 1,
+# 'AL2P' => 1,
 # 'ATOM' => 1,
 # 'SUATOM' => 1,
  'PIXLD' => 1,
@@ -3372,7 +3370,7 @@ sub is_setp
   $res = 2 if ( $name =~ /2$/ );
   # check if we need to extract first enum operand
   my $need_ex = 0;
-  $need_ex = 1 if ( $name =~ /ATOM/ );
+  $need_ex = 1 if ( $name =~ /ATOM/ || $name eq 'AL2P' || $name eq 'IMNMX' );
   if ( !$need_ex && defined($op->[20]) ) {
     # check sidl_name for _CAS suffix
     $need_ex = $op->[20]->[5] =~ /_CAS$/ if ( $op->[20]->[5] );
@@ -3380,7 +3378,10 @@ sub is_setp
   if ( $need_ex ) {
     my $first = extract_efirst($op);
     if ( defined $first ) {
-      return 1 if ( $first->[0] eq 'Predicate' || $first->[0] eq 'UniformPredicate' );
+      if ( $first->[0] eq 'Predicate' || $first->[0] eq 'UniformPredicate' ) {
+        return 2 if ( $name eq 'IMNMX' ); # sm120 has 2 predicates
+        return 1;
+      }
     }
   }
   return $s_setp{$name} if ( exists $s_setp{$name} );
@@ -3414,8 +3415,6 @@ sub gen_instr
       } else {
         $res{$op->[1]} = [ $iname ];
       }
-      # vas
-      my $vas = form_vas($fh, $op);
       # predicates
       my $pred_name = gen_preds($fh, $op);
       my $prop_name = gen_prop($fh, $op->[22], $op->[19]);
@@ -3424,6 +3423,8 @@ sub gen_instr
       # extractor
       my(%vw, %fc, %fields, @tab_fields, $cb_name);
       my $op_extr = gen_extr($op, $fh, \%vw, \%fc, \%fields, \@tab_fields, \$cb_name);
+      # vas - must be after extractor bcs parse_conv_float can change type of vas
+      my $vas = form_vas($fh, $op);
       # rows & cols
       my $rname = check_tab_rows($fh, $op);
       my $cname = check_tab_cols($fh, $op);
@@ -3440,7 +3441,7 @@ sub gen_instr
         foreach my $c1 ( sort @fconv ) {
           printf($fh " { \"%s\", ", $c1);
           my $ca = $fc{$c1};
-          printf($fh "\"%s\", NV_%s, %d, %d },\n", $ca->[0], $ca->[1], $ca->[2], $ca->[3]);
+          printf($fh "\"%s\", NV_%s, NV_%s, %d, %d },\n", $ca->[0], $ca->[1], $ca->[2], $ca->[3], $ca->[4]);
         }
         printf($fh "};\n");
       }
