@@ -1,6 +1,7 @@
 #include <dlfcn.h>
 #include <stdarg.h>
 #include <fp16.h>
+#include "bf16.h"
 #include "nv_rend.h"
 
 extern int opt_m;
@@ -608,6 +609,9 @@ void NV_renderer::dump_value(const nv_vattr &a, uint64_t v, NV_Format kind, std:
     case NV_F64Imm:
       snprintf(buf, buf_size, "%f", *(double *)&v);
      break;
+    case NV_E8M7Imm:
+      snprintf(buf, buf_size, "%f", e8m7_f((uint16_t)v));
+     break;
     case NV_F16Imm:
       f32 = fp16_ieee_to_fp32_bits((uint16_t)v);
       snprintf(buf, buf_size, "%f", *(float *)&f32);
@@ -632,10 +636,13 @@ void NV_renderer::dump_value(const struct nv_instr *ins, const NV_extracted &kv,
     if ( convi ) {
       auto vi = kv.find(convi->fmt_var);
 // printf("ins %s line %d  value fmt_var %d\n", ins->name, ins->line, (int)vi->second);
-      if ( vi != kv.end() && ((short)vi->second == convi->v1 || (short)vi->second == convi->v2) )
+      if ( vi != kv.end() )
       {
 // printf("ins %s line %d: change kind to %d bcs value fmt_var %d\n", ins->name, ins->line, convi->second.format, (int)vi->second);
-        kind = (NV_Format)convi->format;
+        if ( (short)vi->second == convi->v1 || (short)vi->second == convi->v2 )
+          kind = (NV_Format)convi->f_t;
+        else
+          kind = (NV_Format)convi->f_f;
       }
     }
   }

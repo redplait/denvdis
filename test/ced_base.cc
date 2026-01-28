@@ -1,4 +1,5 @@
 #include "ced_base.h"
+#include "bf16.h"
 
 std::regex CEd_base::rs_digits("^\\d+");
 
@@ -240,6 +241,9 @@ int CEd_base::parse_num(NV_Format fmt, std::string_view &tail)
    if ( fmt == NV_F32Imm ) {
      *(float *)&m_v = fl;
      return 1;
+   } else if ( fmt == NV_E8M7Imm ) {
+     m_v = conv_e8m7(fl);
+     return 1;
    } else if ( fmt == NV_F16Imm ) {
      m_v = fp16_ieee_from_fp32_value(fl);
      return 1;
@@ -254,6 +258,9 @@ int CEd_base::parse_num(NV_Format fmt, std::string_view &tail)
    fl = *(float *)( m_minus ? &negative_nan_f32 : &positive_nan_f32 );
    if ( fmt == NV_F32Imm ) {
      *(float *)&m_v = fl;
+     return 1;
+   } else if ( fmt == NV_E8M7Imm ) {
+     m_v = conv_e8m7(fl);
      return 1;
    } else if ( fmt == NV_F16Imm ) {
      m_v = fp16_ieee_from_fp32_value(fl);
@@ -271,6 +278,8 @@ int CEd_base::parse_num(NV_Format fmt, std::string_view &tail)
     *(float *)&m_v = fl;
   } else if ( fmt == NV_F16Imm ) {
     m_v = fp16_ieee_from_fp32_value(float(m_d));
+  } else if ( fmt == NV_E8M7Imm ) {
+    m_v = conv_e8m7((float)m_d);
   } else return 0;
   return 1;
 }

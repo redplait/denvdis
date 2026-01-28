@@ -3,6 +3,7 @@
 #include "nv_rend.h"
 #include <numeric>
 #include <fp16.h>
+#include "bf16.h"
 // for stat & getopt
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -850,6 +851,15 @@ int INA::patch_internal(Fields_Iter *what, const char *s, uint64_t &v)
        d = (float)atof(s);
      v = *(uint64_t *)&d;
      return 1;
+    case NV_E8M7Imm:
+      if ( !strcmp(s, "nan") )
+       fd = NVf_nan;
+      else if ( !strcmp(s, "inf") )
+       fd = NVf_inf;
+      else
+       fd = atof(s);
+      v = conv_e8m7(fd);
+      return 1;
     case NV_F16Imm:
       if ( !strcmp(s, "nan") )
        fd = NVf_nan;
