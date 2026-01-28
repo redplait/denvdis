@@ -132,6 +132,29 @@ static SV *get_ritem(const RItem &ri)
     return newRV_noinc((SV*)res);
 }
 
+static SV *
+form_float_conv(const NV_conv *fc) {
+  if ( !fc ) return &PL_sv_undef;
+  HV *hv = newHV();
+  for ( auto &oc: *fc ) {
+    // form array
+    AV *curr = newAV();
+    // 0 - fmt_var
+    av_push(curr, newSVpv( oc.fmt_var.data(), oc.fmt_var.size() ));
+    // 1 - f_t
+    av_push(curr, newSVuv(oc.f_t));
+    // 2 - f_f
+    av_push(curr, newSVuv(oc.f_f));
+    // 3 - v1
+    av_push(curr, newSVuv(oc.v1));
+    // 4 - v2
+    if ( oc.v2 != -1 ) av_push(curr, newSVuv(oc.v2));
+    // insert to hash, key oc.name
+    hv_store(hv, oc.name.data(), oc.name.size(), newRV_noinc((SV*)curr), 0);
+  }
+  return newRV_noinc((SV*)hv);
+}
+
 int opt_d = 0,
   opt_h = 0,
   opt_m = 0,
@@ -307,6 +330,10 @@ class Ced_perl: public CEd_base {
     auto bstart = off & ~m_block_mask;
     if ( bstart < m_block_mask ) return &PL_sv_undef;
     return newSVuv(bstart - 8);
+  }
+  SV *ins_conv() {
+    if ( !ins() ) return &PL_sv_undef;
+    return form_float_conv( ins()->vf_conv );
   }
   SV *get_ctrl() {
     if ( !ins() ) return &PL_sv_undef;
@@ -1391,6 +1418,7 @@ SV *fill_reg(const std::vector<T> &vt, unsigned long from) {
   return newRV_noinc((SV*)av);
 }
 
+
 static SV *
 make_one_cb(const cbank_history &cbh) {
   AV *curr = newAV();
@@ -1586,7 +1614,7 @@ start(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = ix == 1 ? e->get_end() : e->get_start();
+   RETVAL = (ix == 1) ? e->get_end() : e->get_start();
  OUTPUT:
   RETVAL
 
@@ -1778,7 +1806,7 @@ ins_name(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = ix == 1 ? e->ins_class() : e->ins_name();
+   RETVAL = (ix == 1) ? e->ins_class() : e->ins_name();
  OUTPUT:
   RETVAL
 
@@ -1796,6 +1824,18 @@ ins_clabs(SV *obj)
    else
     RETVAL = &PL_sv_undef;
   }
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_conv(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+  if ( !e->has_ins() )
+   RETVAL = &PL_sv_undef;
+  else
+   RETVAL = e->ins_conv();
  OUTPUT:
   RETVAL
 
@@ -1833,7 +1873,7 @@ ins_scbd(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = ix == 1 ? e->ins_scbd_type() : e->ins_scbd();
+   RETVAL = (ix == 1) ? e->ins_scbd_type() : e->ins_scbd();
  OUTPUT:
   RETVAL
 
@@ -1844,7 +1884,7 @@ ins_min_wait(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = ix == 1 ? e->ins_itype() : e->ins_min_wait();
+   RETVAL = (ix == 1) ? e->ins_itype() : e->ins_min_wait();
  OUTPUT:
   RETVAL
 
@@ -1855,7 +1895,7 @@ ins_cc(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = ix == 1 ? e->ins_sidl() : e->ins_cc();
+   RETVAL = (ix == 1) ? e->ins_sidl() : e->ins_cc();
  OUTPUT:
   RETVAL
 
@@ -1935,7 +1975,7 @@ ins_reuse(SV *obj)
   if ( !e->has_ins() )
    RETVAL = &PL_sv_undef;
   else
-   RETVAL = newSVuv(ix == 1 ? e->reus.mask2 : e->reus.mask);
+   RETVAL = newSVuv((ix == 1) ? e->reus.mask2 : e->reus.mask);
  OUTPUT:
   RETVAL
 
@@ -1949,7 +1989,7 @@ ins_keep(SV *obj)
   if ( !e->has_ins() )
    RETVAL = &PL_sv_undef;
   else
-   RETVAL = newSVuv(ix == 1 ? e->reus.keep2 : e->reus.keep);
+   RETVAL = newSVuv((ix == 1) ? e->reus.keep2 : e->reus.keep);
  OUTPUT:
   RETVAL
 
@@ -1978,7 +2018,7 @@ efield(SV *obj, const char *fname)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = ix == 1 ? e->extract_vfield(fname) : e->extract_efield(fname);
+   RETVAL = (ix == 1) ? e->extract_vfield(fname) : e->extract_efield(fname);
  OUTPUT:
   RETVAL
 
@@ -1989,7 +2029,7 @@ efields(SV *obj)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = ix == 1 ? e->extract_vfields() : e->extract_efields();
+   RETVAL = (ix == 1) ? e->extract_vfields() : e->extract_efields();
  OUTPUT:
   RETVAL
 
@@ -2478,6 +2518,15 @@ line(SV *obj)
   RETVAL
 
 SV *
+ins_conv(SV *obj)
+ INIT:
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ CODE:
+   RETVAL = form_float_conv(e->ins->vf_conv);
+ OUTPUT:
+  RETVAL
+
+SV *
 ins_cb(SV *obj)
  INIT:
   one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
@@ -2493,7 +2542,7 @@ efield(SV *obj, const char *fname)
  INIT:
   one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
  CODE:
-   RETVAL = ix == 1 ? e->base->extract_vfield(e->ins, fname) : e->base->extract_efield(e->ins, fname);
+   RETVAL = (ix == 1) ? e->base->extract_vfield(e->ins, fname) : e->base->extract_efield(e->ins, fname);
  OUTPUT:
   RETVAL
 
@@ -2504,7 +2553,7 @@ efields(SV *obj)
  INIT:
   one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
  CODE:
-   RETVAL = ix == 1 ? e->base->extract_vfields(e->ins) : e->base->extract_efields(e->ins);
+   RETVAL = (ix == 1) ? e->base->extract_vfields(e->ins) : e->base->extract_efields(e->ins);
  OUTPUT:
   RETVAL
 
@@ -2852,7 +2901,7 @@ mask(SV *obj)
  INIT:
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
  CODE:
-   RETVAL = ix == 1 ? r->m_reuse.mask2 : r->m_reuse.mask;
+   RETVAL = (ix == 1) ? r->m_reuse.mask2 : r->m_reuse.mask;
  OUTPUT:
   RETVAL
 
@@ -2862,7 +2911,7 @@ IV keep(SV *obj)
  INIT:
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
  CODE:
-   RETVAL = ix == 1 ? r->m_reuse.keep2 : r->m_reuse.keep;
+   RETVAL = (ix == 1) ? r->m_reuse.keep2 : r->m_reuse.keep;
  OUTPUT:
   RETVAL
 

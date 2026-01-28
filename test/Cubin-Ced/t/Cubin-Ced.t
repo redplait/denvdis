@@ -114,7 +114,13 @@ $t_num+=2;
 my $add_ar = $cub->instrs( qr/^ISC/ );
 ok( scalar(@$add_ar), 'instrs with regex' );
 ok( grep { $_ eq 'ISCADD' } @$add_ar, 'ISCADD instrs' );
-$t_num+=2;
+my @bni = $cub->by_name('ISCADD');
+ok( scalar(@bni), 'by_name');
+$t_num+=3;
+foreach my $ig ( @bni ) {
+  ok( !defined($ig->ins_conv()), 'no ins_conv for ISCADD');
+  $t_num++;
+}
 
 # latency
 my @lcs = $cub->lcols();
