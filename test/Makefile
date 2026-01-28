@@ -23,7 +23,7 @@ libced.a: $(AR_OBJS)
 	ar rcs $@ $(AR_OBJS)
 
 bf16.o: bf16.cc
-	$(CC) -fpic -fpic $(CFLAGS) -c $^
+	$(CC) -fpic $(CFLAGS) -c $^
 
 ced_base.o: ced_base.cc
 	$(CC) -fpic $(CFLAGS) $(ELFIO) $(IFLAGS) $(FP16) -c $^
