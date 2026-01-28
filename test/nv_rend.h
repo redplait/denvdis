@@ -476,8 +476,9 @@ class NV_renderer {
      return nullptr;
    }
    int copy_tail_values(const struct nv_instr *, const NV_rlist *, const NV_extracted &, NV_extracted &out_res) const;
-   int make_tab_row(int optv, const struct nv_instr *ins, const NV_tab_fields *,
-     const NV_extracted &, std::vector<unsigned short> &res, int ignore) const;
+   // return count of bad/missed in KV values for tf
+   int make_tab_row(int optv, const struct nv_instr *ins, const NV_tab_fields *tf,
+     const NV_extracted &kv, std::vector<unsigned short> &res, int ignore) const;
 
    int collect_labels(const NV_rlist *, const struct nv_instr *, const NV_extracted &, NV_labels *, long *out_addr) const;
    bool check_dual(const NV_extracted &) const;
@@ -645,6 +646,7 @@ class NV_renderer {
    int check_mod(char c, const NV_extracted &, const char* name, std::string &r) const;
    int check_abs(const NV_extracted &, const char* name) const;
    int check_abs(const NV_extracted &, const char* name, std::string &r) const;
+   bool check_fconv(const struct nv_instr *, const NV_extracted &kv, const nv_vattr &, int &kind) const;
    void dump_value(const nv_vattr &, uint64_t v, NV_Format, std::string &res) const;
    void dump_value(const struct nv_instr *, const NV_extracted &kv, const std::string_view &,
      std::string &res, const nv_vattr &, uint64_t v) const;

@@ -627,6 +627,19 @@ void NV_renderer::dump_value(const nv_vattr &a, uint64_t v, NV_Format kind, std:
   res += buf;
 }
 
+bool NV_renderer::check_fconv(const struct nv_instr *ins, const NV_extracted &kv, const nv_vattr &va, int &kind) const
+{
+  if ( !ins->vf_conv ) return false;
+  auto convi = find(*ins->vf_conv, va.name);
+  if ( !convi ) return false;
+  auto vi = kv.find(convi->fmt_var);
+  if ( vi == kv.end() ) return false;
+  if ( (short)vi->second == convi->v1 || (short)vi->second == convi->v2 ) {
+    kind = (NV_Format)convi->f_t;
+  } else kind = (NV_Format)convi->f_f;
+  return true;
+}
+
 void NV_renderer::dump_value(const struct nv_instr *ins, const NV_extracted &kv, const std::string_view &var_name,
   std::string &res, const nv_vattr &a, uint64_t v) const
 {
