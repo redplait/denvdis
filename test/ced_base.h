@@ -128,6 +128,7 @@ class CEd_base: public CElf<ParseSASS> {
    int _verify_off_nodis(unsigned long &);
    int _verify_off_cmn(unsigned long &);
    int parse_num(NV_Format, std::string_view &);
+   int parse_num(const nv_vattr *, std::string_view &);
    // patcher
    virtual void patch_error(const char *what) = 0;
    virtual void patch_error(const std::string_view &what) = 0;

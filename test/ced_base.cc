@@ -207,8 +207,7 @@ int CEd_base::setup_s(int s_idx)
 
 // try to reuse as much code from base ParseSASS as possible
 // actual value in m_v
-int CEd_base::parse_num(NV_Format fmt, std::string_view &tail)
-{
+int CEd_base::parse_num(NV_Format fmt, std::string_view &tail) {
   if ( fmt == NV_BITSET && tail.at(0) == '{' ) {
     parse_bitset(1, tail);
     return 1;
@@ -282,6 +281,14 @@ int CEd_base::parse_num(NV_Format fmt, std::string_view &tail)
     m_v = conv_e8m7((float)m_d);
   } else return 0;
   return 1;
+}
+
+int CEd_base::parse_num(const nv_vattr *va, std::string_view &tail)
+{
+  int fmt = va->kind;
+  if ( fmt >= NV_F64Imm )
+    check_fconv(ins(), cex(), *va, fmt);
+  return parse_num((NV_Format)fmt, tail);
 }
 
 bool CEd_base::cmp_tab_row(const unsigned short *row, size_t f_idx, const std::vector<unsigned short> &curr,
