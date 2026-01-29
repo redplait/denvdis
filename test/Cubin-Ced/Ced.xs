@@ -618,6 +618,34 @@ class Ced_perl: public CEd_base {
     tab_fields(ins(), key, res);
   }
  protected:
+  template <typename T>
+  int patch_int(const nv_vattr *va, T value) {
+    int fmt = va ? va->kind : (std::is_signed_v<T> ? NV_SImm : NV_UImm);
+    if ( fmt < NV_F64Imm ) {
+      m_v = value;
+      return 1;
+    }
+    if ( !va ) return 0;
+    check_fconv(ins(), cex(), *va, fmt);
+    if ( fmt == NV_F64Imm ) {
+      *(double *)m_v = double(value);
+      return 1;
+    }
+    if ( fmt == NV_F32Imm ) {
+      float fl = (float)value;
+      *(float *)&m_v = fl;
+      return 1;
+    }
+    if ( fmt == NV_E8M7Imm ) {
+      m_v = e8m7_f(float(value));
+      return 1;
+    }
+    if ( fmt == NV_F16Imm ) {
+      *(float *)&m_v = fp16_ieee_from_fp32_value(float(value));
+      return 1;
+    }
+    return 0;
+  }
   SV *make_prop(const NV_Prop *prop) const;
   SV *make_enum_arr(const nv_eattr *ea) const;
   HV *make_enum(const std::unordered_map<int, const char *> *);
@@ -765,15 +793,21 @@ int Ced_perl::patch_field(const char *fname, SV *v)
       STRLEN len;
       auto pv = SvPVbyte(v, len);
       std::string_view sv{ pv, len };
-      if ( !parse_num(va->kind, sv) ) {
+      if ( !parse_num(va, sv) ) {
         Err("cannot parse num %.*s, offset %lX\n", len, sv.data(), m_dis->offset());
         return 0;
       }
-    } else if ( va && SvUOK(v) && (va->kind == NV_BITSET || va->kind == NV_UImm) )
-     m_v = SvUV(v);
-    else if ( SvIOK(v) )
-     m_v = SvIV(v);
-    else {
+    } else if ( SvUOK(v) ) {
+     if ( !patch_int(va, SvUV(v)) ) {
+       Err("Cannot patch field %s from unsigned int value", fname);
+       return 0;
+     }
+    } else if ( SvIOK(v) ) {
+     if ( !patch_int(va, SvIV(v)) ) {
+       Err("Cannot patch field %s from int value", fname);
+       return 0;
+     }
+    } else {
       int skip = 1;
       if ( !ctr && SvNOK(v) && (va->kind == NV_F64Imm || va->kind == NV_F32Imm || va->kind == NV_F16Imm || va->kind == NV_E8M7Imm) )
       {
@@ -1175,20 +1209,23 @@ SV *Ced_perl::special_kv(NV_extracted::const_iterator &ei)
   if ( !ins()->vas ) return nullptr;
   auto va = find(ins()->vas, ei->first);
   if ( !va ) return nullptr;
+  int fmt = va->kind;
+  if ( fmt >= NV_F64Imm )
+    check_fconv(ins(), cex(), *va, fmt);
   // fill value with according format
-  if ( va->kind == NV_F64Imm ) {
+  if ( fmt == NV_F64Imm ) {
     auto v = ei->second;
     return newSVnv(*(double *)&v);
   }
-  if ( va->kind == NV_F32Imm ) {
+  if ( fmt == NV_F32Imm ) {
     auto v = ei->second;
     return newSVnv(*(float *)&v);
   }
-  if ( va->kind == NV_E8M7Imm ) {
+  if ( fmt == NV_E8M7Imm ) {
     float f32 = e8m7_f((uint16_t)ei->second);
     return newSVnv(f32);
   }
-  if ( va->kind == NV_F16Imm ) {
+  if ( fmt == NV_F16Imm ) {
     float f32 = fp16_ieee_to_fp32_bits((uint16_t)ei->second);
     return newSVnv(f32);
   }
