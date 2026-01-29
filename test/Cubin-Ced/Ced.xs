@@ -809,22 +809,38 @@ int Ced_perl::patch_field(const char *fname, SV *v)
      }
     } else {
       int skip = 1;
-      if ( !ctr && SvNOK(v) && (va->kind == NV_F64Imm || va->kind == NV_F32Imm || va->kind == NV_F16Imm || va->kind == NV_E8M7Imm) )
-      {
+      if ( SvNOK(v) ) {
+        // we have some floating point value - we able to assign it to ctrl or NV_SImm only
         double d = SvNV(v);
-        if ( va->kind == NV_F64Imm ) m_v = *(uint64_t *)&d;
-        else if ( va->kind == NV_F32Imm ) {
-          float fl = (float)d;
-          *(float *)&m_v = fl;
-        } else if ( va->kind == NV_E8M7Imm ) {
-          m_v = e8m7_f(float(d));
-        } else if ( va->kind == NV_F16Imm ) {
-          *(float *)&m_v = fp16_ieee_from_fp32_value(float(d));
+        if ( !va ) {
+          Err("round float value for %s", fname);
+          m_v = round(d);
+          skip = 0;
+        } else { // this is value field
+          int fmt = va->kind;
+          if ( fmt >= NV_F64Imm )
+            check_fconv(ins(), cex(), *va, fmt);
+          if ( (fmt == NV_F64Imm || fmt == NV_F32Imm || fmt == NV_F16Imm || fmt == NV_E8M7Imm) )
+          {
+            if ( fmt == NV_F64Imm ) m_v = *(uint64_t *)&d;
+            else if ( fmt == NV_F32Imm ) {
+              float fl = (float)d;
+              *(float *)&m_v = fl;
+            } else if ( fmt == NV_E8M7Imm ) {
+              m_v = e8m7_f(float(d));
+            } else if ( fmt == NV_F16Imm ) {
+              *(float *)&m_v = fp16_ieee_from_fp32_value(float(d));
+            }
+            skip = 0;
+          } else if ( fmt == NV_SImm ) {
+            Err("round float value for SImm %s", fname);
+            m_v = round(d);
+            skip = 0;
+          }
         }
-        skip = 0;
       }
       if ( skip ) {
-        Err("Unknown SV type %d in patch, offset %lX", SvTYPE(v), m_dis->offset());
+        Err("Unknown SV type %d in patch %s, offset %lX", SvTYPE(v), fname, m_dis->offset());
         return 0;
       }
     }
