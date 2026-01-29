@@ -3,6 +3,9 @@
 /* trace packet formats
   packet_type 2 - init/finit
   packet_type 6 - API call, function name at 0x30
+  packet_type 7 - called from A094798C-2E74-2E74-93F2-0800200C0A66 callback hooks interface
+  packet_type 0xC - cudart
+  packet_type 0x14 - ctx manipulation
 */
 
 //                              rdi            rsi              edx             rcx           r8
