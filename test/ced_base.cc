@@ -428,6 +428,7 @@ int CEd_base::generic_cb(const nv_instr *ins, unsigned long c1, unsigned long c2
     m_dis->put(ins->cb_field->mask1, ins->cb_field->mask1_size, c1);
     m_dis->put(ins->cb_field->mask2, ins->cb_field->mask2_size, c2);
   }
+  block_dirty = true;
   return 1;
 }
 
