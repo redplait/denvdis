@@ -5,7 +5,29 @@
 #include <optional>
 #include <memory>
 #include <map>
+#include <dlfcn.h>
+#include "rtmem.h"
 #include <unordered_set>
+#include "interval_tree.hpp"
+
+using ITree = lib_interval_tree::interval_tree_t<ptrdiff_t, lib_interval_tree::right_open>;
+
+extern int opt_d;
+
+template <typename T>
+bool read_mem(const my_phdr *p, uint64_t addr, T &res ) {
+  if ( addr < p->addr || addr + sizeof(T) >= (p->addr + p->memsz) ) return false;
+  res = *(const T *)(addr);
+  return true;
+}
+
+struct auto_dlclose {
+  explicit auto_dlclose(void *v) : handle(v) {}
+  ~auto_dlclose() {
+    if ( handle != NULL ) dlclose(handle);
+  }
+  void *handle;
+};
 
 // symbols
 struct elf_symbol {
@@ -41,9 +63,18 @@ class decuda_base {
    void dump_syms() const;
  protected:
    virtual int _read() = 0;
-   bool in_sec(std::optional<ELFIO::section *> &s, uint64_t addr) const {
+   bool in_sec(const std::optional<ELFIO::section *> &s, uint64_t addr) const {
      if ( !s.has_value() ) return false;
      return addr >= (*s)->get_address() && addr < ((*s)->get_address() + (*s)->get_size());
+   }
+   uint64_t send(const ELFIO::section *s) const {
+     auto sa = s->get_address();
+     return sa + s->get_size();
+   }
+   const char *sdata(const ELFIO::section *s, uint64_t off) const {
+     auto sa = s->get_address();
+     if ( off < sa || off >= sa + s->get_size() ) return nullptr;
+     return (const char *)(s->get_data() + off - sa);
    }
    template <typename T>
    bool read(ELFIO::section *s, uint64_t off, T &res) {

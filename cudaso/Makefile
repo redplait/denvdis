@@ -1,6 +1,6 @@
 ELFIO_PATH=../../../../../ELFIO/
 UDIS_PATH=/home/redp/disc/udis86
-AR_OBJS = bm_search.o decuda_base.o decuda.o x64arch.o rtmem.o mylog.o
+AR_OBJS = bm_search.o decuda_base.o de_bg.o decuda.o x64arch.o rtmem.o mylog.o
 LIBS=-L $(UDIS_PATH)/libudis86 -ludis86 -lstdc++ -ldl
 
 .cc.o:

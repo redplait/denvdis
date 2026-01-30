@@ -6,13 +6,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <queue>
-#include "interval_tree.hpp"
 #include "simple_api.h"
-
-using ITree = lib_interval_tree::interval_tree_t<ptrdiff_t, lib_interval_tree::right_open>;
-
-extern int opt_d;
-
 
 int decuda::_read() {
   find_intf_tab();
@@ -423,21 +417,6 @@ void decuda::dump_res() const {
 }
 
 // verify methods
-template <typename T>
-bool read_mem(const my_phdr *p, uint64_t addr, T &res ) {
-  if ( addr < p->addr || addr + sizeof(T) >= (p->addr + p->memsz) ) return false;
-  res = *(const T *)(addr);
-  return true;
-}
-
-struct auto_dlclose {
-  explicit auto_dlclose(void *v) : handle(v) {}
-  ~auto_dlclose() {
-    if ( handle != NULL ) dlclose(handle);
-  }
-  void *handle;
-};
-
 void decuda::check_dword(FILE *out_fp, uint64_t off, int64_t delta, const char *pfx, rtmem_storage &rs) const
 {
   if ( !off ) return;
