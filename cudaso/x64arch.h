@@ -289,6 +289,11 @@ struct diter
             (ud_obj.operand[0].base == UD_R_RIP)
      ;
    }
+   inline int is_lea() const {
+     return (ud_obj.mnemonic == UD_Ilea) &&
+            (ud_obj.operand[0].type == UD_OP_REG)
+     ;
+   }
    inline int is_lea(ud_type r) const
    {
      return (ud_obj.mnemonic == UD_Ilea) &&
