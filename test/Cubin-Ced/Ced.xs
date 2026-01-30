@@ -960,6 +960,7 @@ int Ced_perl::patch_tab(int t_idx, int v)
   }
   std::string tmp = "tab ";
   tmp += std::to_string(t_idx);
+  // set block_dirty if ok
   if ( !patch(f, v, tmp.c_str()) ) return 0;
   // first remove pending tabs
   m_inc_tabs.erase(f);
@@ -2265,6 +2266,17 @@ lcols(SV *obj)
       XSRETURN(1);
     }
   }
+
+SV *dirty(SV *obj)
+ INIT:
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() )
+    RETVAL = &PL_sv_undef;
+   else
+    RETVAL = e->is_dirty() ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
 
 void
 stat(SV *obj)

@@ -521,6 +521,25 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =back
 
+=head4 float conversion
+
+Describe construction from convertFloatType in hash where key is field name and value is ref to array where elements
+
+=over
+
+=item [0] - name of format field
+
+=item [1] - type for true condition
+
+=item [2] - type for false condition
+
+=item [3] - first value for format field
+
+=item [4] - second value for format field (if presents)
+
+=back
+
+
 =head4 render method
 
 returns tied array of rendering items - you can fetch them with simple $r->[index], format is array where indexes
@@ -560,6 +579,8 @@ left & right are ref to array where indexes
 =back
 
 To extract only rendering item(s) of specific type you can use 'grep' method - it supports wantarray
+
+Float conversion can be extracted with method 'ins_conv'
 
 =head4 Methods to extract fields grouped in tables
 
@@ -675,6 +696,8 @@ You can also extract only snapshot data for currently processed instruction with
 =item * sm_name
 
 =item * lut(index) - decoded string of LUT operation, see details L<https://redplait.blogspot.com/2025/07/sass-instructions-lut-operations.html>
+
+=item * dirty - if current instruction was patched
 
 =item * stat - return statistics of IO operations in form [flush_count, read_count, is_dirty]. Supports wantarray
 
