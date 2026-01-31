@@ -16,6 +16,11 @@ class de_bg: public decuda_base {
    {
    }
    void dump_res() const;
+   inline uint64_t dbg_root() const {
+     if ( m_log_root ) return m_log_root;
+     if ( m_bg_log ) return (m_bg_log - 0x68);
+     return 0;
+   }
  protected:
    virtual int _read() override;
    int looks_name(uint64_t, std::string &) const;
@@ -27,5 +32,6 @@ class de_bg: public decuda_base {
    uint64_t m_api = 0;
    uint64_t m_state = 0;
    uint64_t m_bg_log = 0;
+   uint64_t m_log_root = 0;
    std::vector<bg_api> m_apis;
 };

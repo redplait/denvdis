@@ -2,7 +2,7 @@
 #include "x64arch.h"
 #include <queue>
 
-extern int opt_v;
+extern int opt_d;
 
 using AddrIdent = std::pair<uint64_t, int>;
 using Q2 = std::queue<AddrIdent>;
@@ -14,6 +14,8 @@ void de_bg::dump_res() const {
     printf("state %lX\n", m_state);
   if ( m_bg_log )
     printf("bg_log %lX\n", m_bg_log);
+  if ( m_log_root )
+    printf("log_root %lX\n", m_log_root);
   int idx = -1;
   for ( auto &api: m_apis ) {
     idx++;
@@ -79,7 +81,7 @@ int de_bg::try_hack_api(std::vector<elf_reloc>::iterator &ri)
     if ( !in_sec(s_text, val) ) break;
     std::string name;
     try_one_api(di, val, name);
-printf("val %lX\n", val);
+    if ( opt_d ) printf("val %lX\n", val);
     m_apis.push_back({ri->offset, val, name});
     res++;
     ri++;
@@ -156,6 +158,9 @@ int de_bg::extract_name(diter &di, uint64_t off, std::string &res) {
   // mov reg_log, [rip + data] - state 2
   // test reg_log, reg_log - state 3
   // call reg_log - state 4
+  // -- 13.1 has log_root and checking of log function looks like
+  // lea base_reg, [rip + data] - state 5
+  // mov reg, [base_reg + off] - back to state 3
   if ( !di.setup(off) ) return 0;
   used_regs<uint64_t> regs;
   int state = 0;
@@ -170,12 +175,26 @@ int de_bg::extract_name(diter &di, uint64_t off, std::string &res) {
       }
     }
     // 1: lea from ro_data
-    if ( 1 == state ) {
+    if ( !state || 1 == state ) {
       if ( di.is_lea() && di.is_r1() ) {
         if ( looks_name(di.get_jmp(1), res) ) {
           state = 2;
           if ( m_bg_log ) return 1;
           continue;
+        }
+      }
+    }
+    // 5: mov reg, [reg + off]
+    if ( 5 == state ) {
+      if ( di.is_movr() && !di.is_r1() ) {
+        uint64_t base = 0;
+        if ( regs.asgn(di.ud_obj.operand[1].base, base) ) {
+          auto log_off = base + di.ud_obj.operand[1].lval.sdword;
+          if ( in_sec(s_data, log_off) ) {
+            regs.add(di.ud_obj.operand[0].base, log_off);
+            state = 3;
+            continue;
+          }
         }
       }
     }
@@ -188,6 +207,15 @@ int de_bg::extract_name(diter &di, uint64_t off, std::string &res) {
           state = 3;
           continue;
         }
+      }
+      // check 13.1
+      if ( di.is_lea() && di.is_r1() ) {
+        auto off = di.get_jmp(1);
+        if ( !in_sec(s_data, off) ) continue;
+        if ( !m_log_root ) m_log_root = off;
+        regs.add(di.ud_obj.operand[0].base, off);
+        state = 5;
+        continue;
       }
     }
     // 3: test reg, reg

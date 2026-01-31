@@ -667,6 +667,10 @@ struct diter
      return (ud_obj.mnemonic == UD_Imov) &&
             (ud_obj.operand[1].size == 32);
    }
+   inline int is_movr() const {
+     return (ud_obj.mnemonic == UD_Imov) &&
+            (ud_obj.operand[0].type == UD_OP_REG);
+   }
    inline int is_movr(ud_type r) const
    {
      return (ud_obj.mnemonic == UD_Imov) &&
