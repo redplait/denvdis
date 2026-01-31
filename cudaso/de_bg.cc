@@ -1,6 +1,7 @@
 #include "de_bg.h"
 #include "x64arch.h"
 #include <queue>
+#include "simple_api.h"
 
 extern int opt_d;
 
@@ -279,4 +280,58 @@ int de_bg::try_api(uint64_t addr, std::vector<elf_reloc>::iterator &ri) {
   }
 out:
   return (m_api != 0);
+}
+
+int de_bg::verify(FILE *fp, rtmem_storage &rs) {
+  // extract delta
+  auto si = m_syms.find(s_api);
+  if ( si == m_syms.end() ) {
+    fprintf(fp, "cannot get entry %s\n", s_api);
+    return 0;
+  }
+  auto dh = dlopen("libcudadebugger.so.1", 2);
+  if ( !dh ) {
+    fprintf(fp, "cannot load libcudadebugger, %s\n", dlerror());
+    return 0;
+  }
+  auto_dlclose dummy(dh);
+  uint64_t real_addr = (uint64_t)dlsym(dh, s_api);
+  if ( !real_addr ) {
+    fprintf(fp, "cannot find address of %s, (%s)\n", s_api, dlerror());
+    return 0;
+  }
+  auto delta = real_addr - si->second.addr;
+  fprintf(fp, "delta %lX\n", delta);
+  return 1;
+}
+
+// simple api
+int check_dbg(const char *fname, FILE *fp, int hook) {
+  if ( !fp ) fp = stdout;
+  // read modules
+  rtmem_storage rs;
+  if ( !rs.read() ) {
+    fprintf(fp, "cannot enum modules\n");
+    return 0;
+  }
+  // check if we under debugger
+  std::regex test_rx("libcudadebugger\\.so");
+  if ( !rs.check_re(test_rx) ) {
+    fprintf(fp, "libcudadebugger not detected\n");
+    return 0;
+  }
+  // hack de_bg
+  ELFIO::elfio *rdr = new ELFIO::elfio();
+  if ( !rdr->load(fname) ) {
+    fprintf(fp, "cannot load %s\n", fname);
+    delete rdr;
+    return 0;
+  }
+  de_bg mod(rdr);
+  if ( !mod.read() ) {
+    fprintf(fp, "cannot hack %s\n", fname);
+    return 0;
+  }
+  mod.verify(fp, rs);
+  if ( !hook ) return 1;
 }

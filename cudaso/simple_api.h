@@ -16,6 +16,9 @@ void check_patch(const char *fname, FILE *fp, const struct dbg_patch *, int);
 int set_logger(const char *fname, FILE *fp, const unsigned char *mask, size_t mask_size);
 int reset_logger();
 
+// debugger logging
+int check_dbg(const char *fname, FILE *fp, int hook);
+
 #if __cplusplus
 };
 #endif

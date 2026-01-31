@@ -560,7 +560,7 @@ void decuda::_verify(FILE *out_fp, std::function<void(uint64_t, rtmem_storage &)
  fprintf(out_fp, "PID %d\n", getpid());
  rtmem_storage rs;
  if ( !rs.read() ) {
-   fprintf(out_fp, "cannot read addresses, delta %lX\n", delta);
+   fprintf(out_fp, "cannot enum modules, delta %lX\n", delta);
    return;
  }
  if ( post ) (*post)(delta, rs);

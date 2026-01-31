@@ -110,3 +110,20 @@ extern "C" int reset_logger() {
   if ( f_copy != stdout ) fclose(f_copy);
   return 1;
 }
+
+// debugger logging
+typedef void (*debugger_trace)(const char *);
+static debugger_trace s_dbg_68 = nullptr;
+
+void my_dbg_trace(const char *packet) {
+  time_t t = time(NULL);
+  struct tm ltm;
+  localtime_r(&t, &ltm);
+  char stime[200];
+  strftime(stime, sizeof(stime), "%d/%m/%Y %H:%M:%S", &ltm);
+  const char **name = (const char **)(packet + 0x28);
+  fprintf(s_fp, "%s %s\n", stime, *name);
+  // hexdump
+  HexDump((const unsigned char *)packet, 0x30);
+  if ( s_dbg_68 ) s_dbg_68(packet);
+}

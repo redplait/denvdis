@@ -2,6 +2,7 @@
 
 #include <list>
 #include <vector>
+#include <regex>
 
 struct my_phdr {
   uint32_t type;
@@ -27,6 +28,7 @@ class rtmem_storage {
   int read();
   const std::string *find(uint64_t addr);
   const my_phdr *check(uint64_t addr);
+  bool check_re(std::regex &) const;
  protected:
   static int iterate_cb(struct dl_phdr_info *info, size_t size, void *data);
   std::list<std::string> m_names;

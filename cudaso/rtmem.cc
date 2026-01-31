@@ -111,3 +111,10 @@ printf("check found base %lX - %lX\n", it->addr, it->addr + it->memsz);
    return &*it;
   return nullptr;
 }
+
+bool rtmem_storage::check_re(std::regex &re) const {
+  for ( auto const &mod: m_names ) {
+    if ( std::regex_search(mod, re) ) return true;
+  }
+  return false;
+}

@@ -21,6 +21,8 @@ class de_bg: public decuda_base {
      if ( m_bg_log ) return (m_bg_log - 0x68);
      return 0;
    }
+   inline uint64_t bg_log() const { return m_bg_log; }
+   int verify(FILE *, rtmem_storage &);
  protected:
    virtual int _read() override;
    int looks_name(uint64_t, std::string &) const;
