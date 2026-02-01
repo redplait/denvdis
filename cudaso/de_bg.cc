@@ -374,6 +374,8 @@ int de_bg::vrf_api(FILE *fp, uint64_t delta, rtmem_storage &rs) {
 //                     rdi  rsi  rdx  rcx
 typedef int (*und_api)(int, int, int, CUDBGAPI *api);
 
+int patch_dbg_trace(FILE *fp, uint64_t addr);
+
 int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook) {
   // extract delta
   auto si = m_syms.find(s_api);
@@ -394,16 +396,24 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook) {
   }
   auto delta = real_addr - si->second.addr;
   fprintf(fp, "delta %lX\n", delta);
+  CUDBGAPI api = nullptr;
   if ( hook ) {
-    CUDBGAPI api = nullptr;
     und_api hack = (und_api)real_addr;
     hack(0, 0, 0, &api);
-    api->initialize();
+    auto res = api->initialize();
+    fprintf(fp, "init res: %X\n", res);
   }
   vrf_api(fp, delta, rs);
   vrf_log(fp, delta, rs);
-  return 1;
+  if ( !hook ) return 1;
+  auto addr_log = bg_log();
+  if ( !addr_log ) return 0;
+  int res = patch_dbg_trace(fp, addr_log + delta);
+  // test logger
+  if ( hook > 1 ) api->acknowledgeEvents42();
+  return res;
 }
+
 
 // simple api
 int check_dbg(const char *fname, FILE *fp, int hook) {
@@ -432,8 +442,5 @@ int check_dbg(const char *fname, FILE *fp, int hook) {
     fprintf(fp, "cannot hack %s\n", fname);
     return 0;
   }
-  mod.verify(fp, rs, hook);
-  if ( !hook ) return 1;
-  auto bg_log = mod.bg_log();
-  if ( !bg_log ) return 0;
+  return mod.verify(fp, rs, hook);
 }
