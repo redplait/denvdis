@@ -94,8 +94,8 @@ int patch_dbg(uint64_t addr, uint64_t data_addr, FILE *fp, const unsigned char *
   logger_addr = addr;
   logger_data = (void **)data_addr;
   old_handler = *(dbg_trace *)addr;
-  *(dbg_trace *)addr = my_logger;
   s_fp = fp;
+  *(dbg_trace *)addr = my_logger;
   return 1;
 };
 
@@ -113,17 +113,33 @@ extern "C" int reset_logger() {
 
 // debugger logging
 typedef void (*debugger_trace)(const char *);
+// old handler
 static debugger_trace s_dbg_68 = nullptr;
+// it's address
+static uint64_t dbg_logger_addr;
 
-void my_dbg_trace(const char *packet) {
+static void my_dbg_trace(const char *packet) {
   time_t t = time(NULL);
   struct tm ltm;
   localtime_r(&t, &ltm);
   char stime[200];
   strftime(stime, sizeof(stime), "%d/%m/%Y %H:%M:%S", &ltm);
   const char **name = (const char **)(packet + 0x28);
-  fprintf(s_fp, "%s %s\n", stime, *name);
-  // hexdump
-  HexDump((const unsigned char *)packet, 0x30);
+  {
+    std::lock_guard tmp(s_mtx);
+    if ( s_fp ) {
+      fprintf(s_fp, "%s %s\n", stime, *name);
+      // hexdump
+      HexDump((const unsigned char *)packet, 0x30);
+    }
+  }
   if ( s_dbg_68 ) s_dbg_68(packet);
+}
+
+int patch_dbg_trace(FILE *fp, uint64_t addr) {
+  dbg_logger_addr = addr;
+  s_dbg_68 = *(debugger_trace *)addr;
+  s_fp = fp;
+  *(debugger_trace *)addr = my_dbg_trace;
+  return 1;
 }

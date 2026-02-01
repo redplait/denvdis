@@ -2,6 +2,7 @@
 #include "x64arch.h"
 #include <queue>
 #include "simple_api.h"
+#include <cuda-gdb/cudadebugger.h>
 
 extern int opt_d;
 
@@ -282,7 +283,98 @@ out:
   return (m_api != 0);
 }
 
-int de_bg::verify(FILE *fp, rtmem_storage &rs) {
+void de_bg::dump_logh(FILE *fp, const my_phdr *curr, int idx, uint64_t addr, rtmem_storage &rs) {
+  uint64_t val = 0;
+  if ( !read_mem(curr, addr, val) ) {
+    fprintf(fp, "cannot read log_root+%X at %lX\n", idx, addr);
+    return;
+  }
+  if ( !val ) {
+    fprintf(fp, "log_root+%X at %lX: %lX\n", idx, addr, val);
+    return;
+  }
+  auto who = rs.check(val);
+  if ( who ) {
+    fprintf(fp, "log_root+%X at %lX patched by %s: %lX\n", idx, addr, who->name_ref->c_str(), val);
+  } else {
+    fprintf(fp, "log_root+%X at %lX patched: %lX\n", idx, addr, val);
+  }
+}
+
+int de_bg::vrf_log(FILE *fp, uint64_t delta, rtmem_storage &rs) {
+  auto root = dbg_root();
+  if ( !root ) return 0;
+/* layout under 10 looks like
+  0 - dword
+  8 - dword
+ 10 - func ptr
+ 18 - dword
+ 28 till 230 - func ptrs
+ */
+  auto curr = rs.check(root + delta);
+  if ( !curr ) {
+    fprintf(fp, "dbg_root in unknown section, %lX\n", root);
+    return 0;
+  }
+  // dump flags
+  const static int flags_off[] = { 0, 8, 0x18, 0x20 };
+  for ( auto i: flags_off ) {
+    int flag = 0;
+    auto addr = root + delta + i;
+    if ( read_mem(curr, addr, flag) ) {
+      fprintf(fp, "flag at %X: %X\n", i, flag);
+    }
+  }
+  // dump handlers
+  dump_logh(fp, curr, 0x10, root + delta + 0x10, rs);
+  for ( int i = 0x28; i < 0x230; i += 8 ) {
+    dump_logh(fp, curr, i, root + delta + i, rs);
+  }
+  return 1;
+}
+
+int de_bg::vrf_api(FILE *fp, uint64_t delta, rtmem_storage &rs) {
+  if ( !m_api ) return 0;
+  if ( m_state ) {
+    auto addr = delta + m_state;
+    auto curr = rs.check(addr);
+    if ( curr ) {
+      uint64_t state = 0;
+      if ( read_mem(curr, addr, state) )
+        fprintf(fp, "state at %lX: %lX\n", addr, state);
+    }
+  }
+  int idx = -1;
+  auto curr = rs.check(m_api + delta);
+  if ( !curr ) {
+    fprintf(fp, "api in unknown section, %lX\n", m_api);
+    return 0;
+  }
+  for ( auto const &a: m_apis ) {
+    ++idx;
+    auto addr = delta + a.addr;
+    uint64_t cb = 0;
+    if ( !read_mem(curr, addr, cb) ) {
+      fprintf(fp, "cannot read cb[%d] at %lX\n", idx, addr);
+    } else {
+      if ( cb == a.sub + delta ) continue;
+      // something patched
+      auto who = rs.check(cb);
+      if ( who ) {
+        fprintf(fp, "[%d] at %lX %s patched by %s\n", idx, addr, a.name.c_str(), who->name_ref->c_str());
+      } else {
+        fprintf(fp, "[%d] at %lX %s patched: %lX\n", idx, addr, a.name.c_str(), cb);
+      }
+    }
+  }
+  return 1;
+}
+
+// GetCUDADebuggerAPI store ptr to CUDBGAPI into [rcx], so prototype like
+//                     rdi  rsi  rdx  rcx
+typedef int (*und_api)(int, int, int, CUDBGAPI *api);
+
+int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook) {
   // extract delta
   auto si = m_syms.find(s_api);
   if ( si == m_syms.end() ) {
@@ -302,6 +394,14 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs) {
   }
   auto delta = real_addr - si->second.addr;
   fprintf(fp, "delta %lX\n", delta);
+  if ( hook ) {
+    CUDBGAPI api = nullptr;
+    und_api hack = (und_api)real_addr;
+    hack(0, 0, 0, &api);
+    api->initialize();
+  }
+  vrf_api(fp, delta, rs);
+  vrf_log(fp, delta, rs);
   return 1;
 }
 
@@ -332,6 +432,8 @@ int check_dbg(const char *fname, FILE *fp, int hook) {
     fprintf(fp, "cannot hack %s\n", fname);
     return 0;
   }
-  mod.verify(fp, rs);
+  mod.verify(fp, rs, hook);
   if ( !hook ) return 1;
+  auto bg_log = mod.bg_log();
+  if ( !bg_log ) return 0;
 }
