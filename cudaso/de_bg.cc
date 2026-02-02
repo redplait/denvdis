@@ -380,18 +380,18 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook) {
   // extract delta
   auto si = m_syms.find(s_api);
   if ( si == m_syms.end() ) {
-    fprintf(fp, "cannot get entry %s\n", s_api);
+    fprintf(fp, "cannot get entry %s\n", s_api); fflush(fp);
     return 0;
   }
   auto dh = dlopen("libcudadebugger.so.1", 2);
   if ( !dh ) {
-    fprintf(fp, "cannot load libcudadebugger, %s\n", dlerror());
+    fprintf(fp, "cannot load libcudadebugger, %s\n", dlerror()); fflush(fp);
     return 0;
   }
   auto_dlclose dummy(dh);
   uint64_t real_addr = (uint64_t)dlsym(dh, s_api);
   if ( !real_addr ) {
-    fprintf(fp, "cannot find address of %s, (%s)\n", s_api, dlerror());
+    fprintf(fp, "cannot find address of %s, (%s)\n", s_api, dlerror()); fflush(fp);
     return 0;
   }
   auto delta = real_addr - si->second.addr;
@@ -405,6 +405,7 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook) {
   }
   vrf_api(fp, delta, rs);
   vrf_log(fp, delta, rs);
+  fflush(fp);
   if ( !hook ) return 1;
   auto addr_log = bg_log();
   if ( !addr_log ) return 0;
@@ -421,25 +422,25 @@ int check_dbg(const char *fname, FILE *fp, int hook) {
   // read modules
   rtmem_storage rs;
   if ( !rs.read() ) {
-    fprintf(fp, "cannot enum modules\n");
+    fprintf(fp, "cannot enum modules\n"); fflush(fp);
     return 0;
   }
   // check if we under debugger
   std::regex test_rx("libcudadebugger\\.so");
   if ( !rs.check_re(test_rx) ) {
-    fprintf(fp, "libcudadebugger not detected\n");
+    fprintf(fp, "libcudadebugger not detected\n"); fflush(fp);
     return 0;
   }
   // hack de_bg
   ELFIO::elfio *rdr = new ELFIO::elfio();
   if ( !rdr->load(fname) ) {
-    fprintf(fp, "cannot load %s\n", fname);
+    fprintf(fp, "cannot load %s\n", fname); fflush(fp);
     delete rdr;
     return 0;
   }
   de_bg mod(rdr);
   if ( !mod.read() ) {
-    fprintf(fp, "cannot hack %s\n", fname);
+    fprintf(fp, "cannot hack %s\n", fname); fflush(fp);
     return 0;
   }
   return mod.verify(fp, rs, hook);
