@@ -7,7 +7,7 @@
 #include "trace_fmt.h"
 
 static dbg_trace old_handler = nullptr;
-static uint64_t logger_addr;
+static uint64_t logger_addr = 0;
 static void **logger_data = nullptr;
 
 #define STORED_MASKS   0x60
@@ -99,24 +99,12 @@ int patch_dbg(uint64_t addr, uint64_t data_addr, FILE *fp, const unsigned char *
   return 1;
 };
 
-extern "C" int reset_logger() {
-  if ( !logger_addr ) return 0;
-  auto f_copy = s_fp;
-  {
-    std::lock_guard tmp(s_mtx);
-    *(dbg_trace *)logger_addr = old_handler;
-    s_fp = nullptr;
-  }
-  if ( f_copy != stdout ) fclose(f_copy);
-  return 1;
-}
-
 // debugger logging
 typedef void (*debugger_trace)(const char *);
 // old handler
 static debugger_trace s_dbg_68 = nullptr;
 // it's address
-static uint64_t dbg_logger_addr;
+static uint64_t dbg_logger_addr = 0;
 
 static void my_dbg_trace(const char *packet) {
   time_t t = time(NULL);
@@ -141,5 +129,21 @@ int patch_dbg_trace(FILE *fp, uint64_t addr) {
   s_dbg_68 = *(debugger_trace *)addr;
   s_fp = fp;
   *(debugger_trace *)addr = my_dbg_trace;
+  return 1;
+}
+
+extern "C" int reset_logger() {
+  auto f_copy = s_fp;
+  {
+    std::lock_guard tmp(s_mtx);
+    s_fp = nullptr;
+    if ( dbg_logger_addr ) {
+      *(debugger_trace *)dbg_logger_addr = s_dbg_68;
+    }
+    if ( logger_addr ) {
+      *(dbg_trace *)logger_addr = old_handler;
+    }
+  }
+  if ( f_copy != stdout ) fclose(f_copy);
   return 1;
 }
