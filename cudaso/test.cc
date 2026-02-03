@@ -1,5 +1,6 @@
 #include "decuda.h"
 #include "de_bg.h"
+#include "de_cupti.h"
 #include <unistd.h>
 
 int opt_v = 0,
@@ -26,11 +27,13 @@ void process(T *dc) {
 int main(int argc, char **argv) {
   int c;
   int do_dbg = 0;
+  int do_cupti = 0;
   while(1) {
-    c = getopt(argc, argv, "Ddtv");
+    c = getopt(argc, argv, "CDdtv");
     if ( c == -1 ) break;
     switch(c) {
       case 'd': opt_d = 1; break;
+      case 'C': do_cupti = 1; break;
       case 'D': do_dbg = 1; break;
       case 't': opt_t = 1; break;
       case 'v': opt_v = 1; break;
@@ -41,15 +44,20 @@ int main(int argc, char **argv) {
     usage(argv[0]);
     return 6;
   }
-  if ( do_dbg ) {
+  if ( do_dbg || do_cupti ) {
     ELFIO::elfio *rdr = new ELFIO::elfio;
     if ( !rdr->load(argv[optind]) ) {
       delete rdr;
       fprintf(stderr, "cannot load ELF %s\n", argv[optind]);
       return 2;
     }
-    de_bg dg(rdr);
-    process(&dg);
+    if ( do_cupti ) {
+      de_cupti dg(rdr);
+      process(&dg);
+    } else {
+      de_bg dg(rdr);
+      process(&dg);
+    }
   } else {
     decuda *dc = get_decuda(argv[optind]);
     if ( !dc ) return 2;

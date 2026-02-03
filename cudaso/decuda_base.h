@@ -86,6 +86,7 @@ class decuda_base {
    }
    uint32_t read_size(ELFIO::section *, uint64_t off);
    uint64_t read_ptr(ELFIO::section *, uint64_t off);
+   int cmp_str(ELFIO::section *, uint64_t off, const char *);
    int read_syms(ELFIO::section *);
    int read_rels(std::unordered_set<ELFIO::Elf_Half> &, int);
    // data

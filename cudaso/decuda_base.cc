@@ -53,6 +53,14 @@ uint64_t decuda_base::read_ptr(ELFIO::section *s, uint64_t off) {
   return *(uint64_t *)rs;
 }
 
+int decuda_base::cmp_str(ELFIO::section *s, uint64_t off, const char *what) {
+  auto rs = s->get_data() + (off - s->get_address());
+  auto len = strlen(what);
+  // check if string fit into section
+  if ( rs + len >= s->get_data() + s->get_size() ) return 0;
+  return !strcmp(rs, what);
+}
+
 int decuda_base::read() {
   is_32 = m_rdr->get_class() == ELFIO::ELFCLASS32;
   // enum sections
