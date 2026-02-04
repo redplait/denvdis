@@ -6,6 +6,10 @@
 extern int opt_d;
 
 void de_cupti::dump_res() const {
+  if ( curr_func )
+    printf("curr_func: %lX\n", curr_func);
+  if ( curr_data )
+    printf("curr_data: %lX\n", curr_data);
   if ( m_cupti_root )
     printf("cupti_root: %lX\n", m_cupti_root);
   if ( m_dbg_root )
@@ -18,6 +22,7 @@ void de_cupti::dump_res() const {
 }
 
 static const char *s_ext = "InitializeInjectionNvtxExtension";
+static const char *s_subscribe = "cuptiSubscribe";
 static const char *s_marker = "Cupti_Public";
 
 int de_cupti::try_ext(uint64_t off) {
@@ -104,12 +109,65 @@ int de_cupti::fsm_log(diter &di, uint64_t off, uint64_t &res) {
   return 0;
 }
 
+int de_cupti::try_subscribe() {
+  auto si = m_syms.find(s_subscribe);
+  if ( si == m_syms.end() ) {
+    fprintf(stderr, "cannot get entry %s\n", s_subscribe);
+    return 0;
+  }
+  auto addr = si->second.addr;
+  if ( !in_sec(s_text, addr) ) {
+    fprintf(stderr, "entry %s not in text section\n", s_subscribe);
+    return 0;
+  }
+  diter di(s_text.value());
+  using Edge = std::pair<uint64_t, int>;
+  using Q2 = std::queue<Edge>;
+  Q2 q;
+  q.push({ addr, 0 });
+  ud_type r_func = UD_NONE,
+          r_data = UD_NONE;
+  while( !q.empty() ) {
+    auto curr = q.front();
+    q.pop();
+    if ( !di.setup(curr.first) ) break;
+    for ( int i = 0; i < 40; ++i ) {
+      if ( !di.next() ) break;
+      di.dasm();
+      if ( !curr.second ) {
+        // rsi - func
+        // rdx - data
+        if ( di.is_mov_rr() ) {
+          if ( r_func == UD_NONE && di.ud_obj.operand[1].base == UD_R_RSI ) r_func = di.ud_obj.operand[0].base;
+          if ( r_data == UD_NONE && di.ud_obj.operand[1].base == UD_R_RDX ) r_data = di.ud_obj.operand[0].base;
+        }
+      } else {
+        if ( di.is_mov64() && di.is_r0() ) {
+          addr = di.get_jmp(0);
+          if ( in_sec(s_bss, addr) ) {
+            if ( r_func == di.ud_obj.operand[1].base ) curr_func = addr;
+            if ( r_data == di.ud_obj.operand[1].base ) curr_data = addr;
+            if ( curr_func != 0 && curr_data != 0 ) return 1;
+          }
+        }
+      }
+      // collect jz
+      if ( di.is_jxx_jimm(UD_Ijz) ) {
+        addr = di.get_jmp(0);
+        q.push( { addr, 1 } );
+      }
+      if ( di.is_end() ) break;
+    }
+  }
+  return (curr_func != 0);
+}
+
 int de_cupti::_read() {
   // 1) find cupti_root from InitializeInjectionNvtxExtension
   auto si = m_syms.find(s_ext);
   if ( si == m_syms.end() ) {
     fprintf(stderr, "cannot get entry %s\n", s_ext);
-    return 0;
+    return try_subscribe();
   }
   auto api_addr = si->second.addr;
   if ( !in_sec(s_text, api_addr) ) {
