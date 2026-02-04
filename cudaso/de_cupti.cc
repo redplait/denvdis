@@ -10,6 +10,11 @@ void de_cupti::dump_res() const {
     printf("cupti_root: %lX\n", m_cupti_root);
   if ( m_dbg_root )
     printf("dbg_root: %lX\n", m_dbg_root);
+  for ( const auto &r: m_items ) {
+    printf(" %lX - %lX", r.addr, r.value);
+    if ( r.ind ) printf(" %lX\n", r.ind);
+    else printf("\n");
+  }
 }
 
 static const char *s_ext = "InitializeInjectionNvtxExtension";
@@ -50,5 +55,19 @@ int de_cupti::_read() {
     fprintf(stderr, "entry %s not in text section\n", s_ext);
     return 0;
   }
-  return try_ext(api_addr);
+  if ( !try_ext(api_addr) ) return 0;
+  // read function pointers
+  auto ri = std::lower_bound(m_relocs.begin(), m_relocs.end(), (ptrdiff_t)m_cupti_root,
+             [](auto &what, ptrdiff_t off) { return what.offset < off; });
+  if ( ri == m_relocs.end() ) return 0;
+  auto dend = send(s_data.value());
+  for ( ; ri != m_relocs.end() && ri->offset < dend; ++ri ) {
+    uint64_t val = 0;
+    val = read_ptr(s_data.value(), ri->offset);
+    // check if what we read inside data section - then stop
+    if ( in_sec(s_data, val) ) break;
+    if ( !in_sec(s_text, val) ) continue;
+    m_items.push_back( { ri->offset, val } );
+  }
+  return !m_items.empty();
 }
