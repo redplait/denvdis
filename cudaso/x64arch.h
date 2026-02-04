@@ -282,6 +282,11 @@ struct diter
             (ud_obj.operand[0].type == UD_OP_JIMM)
      ;
    }
+   inline int js_jmp_reg() const {
+     return (ud_obj.mnemonic == UD_Icall) &&
+            (ud_obj.operand[0].type == UD_OP_REG)
+     ;
+   }
    inline int is_call_mrip() const
    {
      return (ud_obj.mnemonic == UD_Icall) &&
@@ -663,9 +668,19 @@ struct diter
      return (ud_obj.mnemonic == UD_Imov) &&
             (ud_obj.operand[1].size == 64);
    }
+   inline int is_mov64r() const {
+     return (ud_obj.mnemonic == UD_Imov) &&
+            (ud_obj.operand[1].size == 64) &&
+            (ud_obj.operand[0].type == UD_OP_REG);
+   }
    inline int is_mov32() const {
      return (ud_obj.mnemonic == UD_Imov) &&
             (ud_obj.operand[1].size == 32);
+   }
+   inline int is_mov32r() const {
+     return (ud_obj.mnemonic == UD_Imov) &&
+            (ud_obj.operand[1].size == 32) &&
+            (ud_obj.operand[0].type == UD_OP_REG);
    }
    inline int is_movr() const {
      return (ud_obj.mnemonic == UD_Imov) &&

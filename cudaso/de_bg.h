@@ -7,8 +7,6 @@ struct bg_api {
   std::string name;
 };
 
-struct diter;
-
 class de_bg: public decuda_base {
  public:
   de_bg(ELFIO::elfio *rdr):

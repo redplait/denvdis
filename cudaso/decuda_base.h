@@ -50,6 +50,8 @@ struct elf_reloc
   int is_rela;
 };
 
+struct diter;
+
 class decuda_base {
  public:
    decuda_base(ELFIO::elfio *rdr):
