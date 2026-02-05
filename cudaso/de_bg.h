@@ -38,4 +38,5 @@ class de_bg: public decuda_base {
    uint64_t m_bg_log = 0;
    uint64_t m_log_root = 0;
    std::vector<bg_api> m_apis;
+   Tlg m_tlg;
 };

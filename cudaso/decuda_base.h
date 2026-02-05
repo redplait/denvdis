@@ -52,6 +52,14 @@ struct elf_reloc
 
 struct diter;
 
+// log tlg
+struct tlg_item {
+  const char *name = nullptr;
+  uint64_t addr = 0;
+};
+
+using Tlg = std::vector<tlg_item>;
+
 class decuda_base {
  public:
    decuda_base(ELFIO::elfio *rdr):
@@ -91,6 +99,9 @@ class decuda_base {
    int cmp_str(ELFIO::section *, uint64_t off, const char *);
    int read_syms(ELFIO::section *);
    int read_rels(std::unordered_set<ELFIO::Elf_Half> &, int);
+   // tlg methods
+   int process_tlg(const char **, size_t, Tlg &res);
+   void dump_tlg(const Tlg &res) const;
    // data
    bool is_32;
    ELFIO::elfio *m_rdr;

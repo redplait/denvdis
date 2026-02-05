@@ -10,6 +10,7 @@ using AddrIdent = std::pair<uint64_t, int>;
 using Q2 = std::queue<AddrIdent>;
 
 void de_bg::dump_res() const {
+  dump_tlg(m_tlg);
   if ( m_api )
     printf("api %lX\n", m_api);
   if ( m_state )
@@ -27,9 +28,39 @@ void de_bg::dump_res() const {
   }
 }
 
+static const char *s_tlg[] = {
+"dbg_cudbg_api",
+"dbg_da_workload",
+"dbg_da_thd",
+"dbg_da_tgt",
+"dbg_da_step",
+"dbg_da_stack",
+"dbg_da_suspend",
+"dbg_da_spatcher",
+"dbg_da_runctl",
+"dbg_da_reg",
+"dbg_profile",
+"dbg_da_mod",
+"dbg_da_mem",
+"dbg_da_hal",
+"dbg_da_gpu",
+"dbg_da_init",
+"dbg_da_func",
+"dbg_da_etbl",
+"dbg_da_evt",
+"dbg_da_elf",
+"dbg_da_dev",
+"dbg_da_ctx",
+"dbg_da_coredump",
+"dbg_da_cache",
+"dbg_da_bp",
+"dbg_da",
+};
+
 static const char *s_api = "GetCUDADebuggerAPI";
 
 int de_bg::_read() {
+  process_tlg(s_tlg, sizeof(s_tlg) / sizeof(s_tlg[0]), m_tlg);
   auto si = m_syms.find(s_api);
   if ( si == m_syms.end() ) {
     fprintf(stderr, "cannot get entry %s\n", s_api);

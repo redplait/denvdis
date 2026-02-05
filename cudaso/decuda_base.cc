@@ -1,4 +1,5 @@
 #include "decuda.h"
+#include "ahocor.h"
 
 void decuda_base::dump_syms() const {
   for ( auto &s: m_syms )
@@ -91,4 +92,60 @@ int decuda_base::read() {
   read_rels(s_rela, 1);
   std::sort(m_relocs.begin(), m_relocs.end(), [](const elf_reloc &a, elf_reloc &b) { return a.offset < b.offset; });
   return _read();
+}
+
+int decuda_base::process_tlg(const char **names, size_t n_size, Tlg &res) {
+  if ( !n_size || !s_rodata.has_value() || !s_data.has_value() ) return 0;
+  std::vector<uint64_t> s_offs(n_size);
+  // make string trie from names
+  trie s_trie;
+  for ( size_t i = 0; i < n_size; ++i ) {
+    auto len = strlen(names[i]);
+    s_trie.insert_iter(names[i], names[i] + 1 + len);
+  }
+  // try to search strings
+  auto sro = s_rodata.value();
+  auto start = sro->get_data();
+  auto ro_off = sro->get_address();
+  auto sres = s_trie.parse_text(start, start + sro->get_size());
+  int added = 0;
+  for ( auto citer = sres.cbegin(); citer != sres.end(); ++citer ) {
+    auto off = citer->get_start();
+    auto idx = citer->get_index();
+    s_offs[idx] = ro_off + off;
+    added |= 1;
+  }
+  if ( !added ) return 0;
+  // second lookup - in data section
+  res.resize(n_size);
+  auto dat = s_data.value();
+  auto dstart = dat->get_data();
+  auto d_off = dat->get_address();
+  trie d_trie;
+  for ( size_t i = 0; i < n_size; i++ )
+  {
+    if ( !s_offs[i] ) continue;
+    char buf[8];
+    *(uint64_t *)buf = s_offs[i];
+    d_trie.insert_iter(buf, buf + 8, i);
+  }
+  sres = d_trie.parse_text(dstart, dstart + dat->get_size());
+  added = 0;
+  for ( auto citer = sres.cbegin(); citer != sres.end(); ++citer ) {
+    auto off = citer->get_start();
+    auto idx = citer->get_index();
+    res[idx] = { names[idx], d_off + off };
+    added++;
+  }
+  return added;
+}
+
+void decuda_base::dump_tlg(const Tlg &res) const {
+  if ( res.empty() ) return;
+  printf("Tlg: %d\n", res.size());
+  for ( size_t i = 0; i < res.size(); ++i ) {
+    auto &curr = res.at(i);
+    if ( !curr.name || !curr.addr ) continue;
+    printf(" [%d] %s - %lX\n", i, curr.name, curr.addr);
+  }
 }
