@@ -24,4 +24,6 @@ class de_cupti: public decuda_base {
   // from old cuptiSubscribe
   uint64_t curr_func = 0;
   uint64_t curr_data = 0;
+  // tlg
+  Tlg m_tlg;
 };

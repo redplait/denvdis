@@ -116,7 +116,7 @@ int decuda_base::process_tlg(const char **names, size_t n_size, Tlg &res) {
     added |= 1;
   }
   if ( !added ) return 0;
-  // second lookup - in data section
+  // second lookup - addresses in data section
   res.resize(n_size);
   auto dat = s_data.value();
   auto dstart = dat->get_data();
@@ -137,6 +137,7 @@ int decuda_base::process_tlg(const char **names, size_t n_size, Tlg &res) {
     res[idx] = { names[idx], d_off + off };
     added++;
   }
+  if ( !added ) res.clear();
   return added;
 }
 

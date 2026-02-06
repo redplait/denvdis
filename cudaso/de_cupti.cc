@@ -6,6 +6,7 @@
 extern int opt_d;
 
 void de_cupti::dump_res() const {
+  dump_tlg(m_tlg);
   if ( curr_func )
     printf("curr_func: %lX\n", curr_func);
   if ( curr_data )
@@ -162,7 +163,19 @@ int de_cupti::try_subscribe() {
   return (curr_func != 0);
 }
 
+static const char *s_tlg[] = {
+"dbg_sym",
+"cuda_sym",
+"rmeventbuffer",
+"NVIDIA internal",
+"cuda_utils",
+"dbg_sym_elf",
+"drvacc",
+"Cupti_Public",
+};
+
 int de_cupti::_read() {
+  process_tlg(s_tlg, sizeof(s_tlg) / sizeof(s_tlg[0]), m_tlg);
   // 1) find cupti_root from InitializeInjectionNvtxExtension
   auto si = m_syms.find(s_ext);
   if ( si == m_syms.end() ) {
