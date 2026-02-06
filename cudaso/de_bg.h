@@ -20,7 +20,7 @@ class de_bg: public decuda_base {
      return 0;
    }
    inline uint64_t bg_log() const { return m_bg_log; }
-   int verify(FILE *, rtmem_storage &, int hook);
+   int verify(FILE *, rtmem_storage &, int hook, char);
  protected:
    virtual int _read() override;
    int looks_name(uint64_t, std::string &) const;
@@ -31,6 +31,7 @@ class de_bg: public decuda_base {
    // verify methods
    int vrf_api(FILE *, uint64_t delta, rtmem_storage &);
    int vrf_log(FILE *, uint64_t delta, rtmem_storage &);
+   int patch_tlg(uint64_t delta, char);
    void dump_logh(FILE *, const my_phdr *, int idx, uint64_t addr, rtmem_storage &);
    // output data
    uint64_t m_api = 0;

@@ -17,7 +17,7 @@ int set_logger(const char *fname, FILE *fp, const unsigned char *mask, size_t ma
 int reset_logger();
 
 // debugger logging
-int check_dbg(const char *fname, FILE *fp, int hook);
+int check_dbg(const char *fname, FILE *fp, int hook, char tlg_value);
 
 #if __cplusplus
 };
