@@ -407,7 +407,7 @@ typedef int (*und_api)(int, int, int, CUDBGAPI *api);
 
 int patch_dbg_trace(FILE *fp, uint64_t addr);
 
-int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg) {
+int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg, int in_gdb) {
   // extract delta
   auto si = m_syms.find(s_api);
   if ( si == m_syms.end() ) {
@@ -428,7 +428,7 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg) {
   auto delta = real_addr - si->second.addr;
   fprintf(fp, "delta %lX\n", delta);
   CUDBGAPI api = nullptr;
-  if ( hook ) {
+  if ( hook && !in_gdb ) {
     und_api hack = (und_api)real_addr;
     hack(0, 0, 0, &api);
     auto res = api->initialize();
@@ -443,7 +443,7 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg) {
   if ( !addr_log ) return 0;
   int res = patch_dbg_trace(fp, addr_log + delta);
   // test logger
-  if ( hook > 1 ) api->acknowledgeEvents42();
+  if ( !in_gdb && hook > 1 ) api->acknowledgeEvents42();
   return res;
 }
 
@@ -462,7 +462,7 @@ int de_bg::patch_tlg(uint64_t delta, char value) {
 }
 
 // simple api
-int check_dbg(const char *fname, FILE *fp, int hook, char tlg_value) {
+static int _check_dbg(const char *fname, FILE *fp, int hook, char tlg_value, int in_gdb) {
   if ( !fp ) fp = stdout;
   // read modules
   rtmem_storage rs;
@@ -488,5 +488,15 @@ int check_dbg(const char *fname, FILE *fp, int hook, char tlg_value) {
     fprintf(fp, "cannot hack %s\n", fname); fflush(fp);
     return 0;
   }
-  return mod.verify(fp, rs, hook, tlg_value);
+  return mod.verify(fp, rs, hook, tlg_value, in_gdb);
+}
+
+int check_dbg(const char *fname, FILE *fp, int hook, char tlg_value) {
+  if ( !fp ) fp = stdout;
+  return _check_dbg(fname, fp, hook, tlg_value, 0);
+}
+
+int check_cudbg(const char *fname, FILE *fp, char tlg_value) {
+  FILE *tmp = fp ? fp : stdout;
+  return _check_dbg(fname, tmp, fp != nullptr, tlg_value, 1);
 }

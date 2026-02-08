@@ -18,6 +18,9 @@ int reset_logger();
 
 // debugger logging
 int check_dbg(const char *fname, FILE *fp, int hook, char tlg_value);
+// must be called from cuda-gdb from method cuda_debugapi::initialize
+// if fp == null - no hooking
+int check_cudbg(const char *fname, FILE *fp, char tlg_value);
 
 #if __cplusplus
 };

@@ -20,7 +20,7 @@ class de_bg: public decuda_base {
      return 0;
    }
    inline uint64_t bg_log() const { return m_bg_log; }
-   int verify(FILE *, rtmem_storage &, int hook, char);
+   int verify(FILE *, rtmem_storage &, int hook, char, int in_gdb);
  protected:
    virtual int _read() override;
    int looks_name(uint64_t, std::string &) const;
