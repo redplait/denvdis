@@ -144,6 +144,6 @@ extern "C" int reset_logger() {
       *(dbg_trace *)logger_addr = old_handler;
     }
   }
-  if ( f_copy != stdout ) fclose(f_copy);
+  if ( f_copy && (f_copy != stdout && f_copy != stderr) ) fclose(f_copy);
   return 1;
 }
