@@ -1,0 +1,37 @@
+--- cuda-api.c.orig	2026-02-10 15:40:15.807658684 +0300
++++ cuda-api.c	2026-02-10 16:11:43.595472117 +0300
+@@ -143,6 +143,25 @@ cuda_api_mask_string (const cuda_api_war
+   return buf;
+ }
+ 
++// de_bg hack
++int opt_d = 0;
++extern std::string de_log_filename;
++extern "C" int check_cudbg(const char *fname, FILE *fp, char tlg_value);
++
++int de_bg_hack() {
++  // gdb_printf (gdb_stderr, "de_bg_hack: %s\n", de_log_filename.c_str());
++  if ( de_log_filename.empty() && !info_verbose ) return 0;
++  FILE *fp = nullptr;
++  if ( !de_log_filename.empty() ) {
++    fp = fopen(de_log_filename.c_str(), "a");
++    if ( !fp ) {
++      gdb_printf (gdb_stderr, "cannot open log %s, error %d (%s)\n", de_log_filename.c_str(), errno, strerror(errno));
++      if ( !info_verbose ) return 0;
++    }
++  }
++  return check_cudbg("/usr/lib/x86_64-linux-gnu/libcudadebugger.so.1", fp, info_verbose ? 'z' : 0);
++}
++
+ int
+ cuda_debugapi::initialize ()
+ {
+@@ -160,6 +179,8 @@ cuda_debugapi::initialize ()
+   cuda_api_print_api_call_result (__FUNCTION__, res);
+   handle_initialization_error (res);
+ 
++  de_bg_hack();
++
+   if (res == CUDBG_SUCCESS)
+     {
+       // For coredumps, default to the API version info in the
