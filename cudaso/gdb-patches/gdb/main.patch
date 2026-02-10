@@ -1,0 +1,32 @@
+--- main.c.orig	2026-02-09 16:19:22.834498151 +0300
++++ main.c	2026-02-10 15:00:41.647503022 +0300
+@@ -92,6 +92,9 @@ static int gdb_datadir_provided = 0;
+    the possibly relocated path to python's lib directory.  */
+ std::string python_libdir;
+ 
++/* log filename for de_bg */
++std::string de_log_filename;
++
+ /* Target IO streams.  */
+ struct ui_file *gdb_stdtargin;
+ struct ui_file *gdb_stdtarg;
+@@ -845,6 +848,8 @@ captured_main_1 (struct captured_main_ar
+       {"p", required_argument, 0, 'p'},
+       {"command", required_argument, 0, 'x'},
+       {"eval-command", required_argument, 0, 'X'},
++      {"verbose", no_argument, 0, 'v'},
++      {"log", required_argument, 0, 'L'},
+       {"version", no_argument, &print_version, 1},
+       {"configuration", no_argument, &print_configuration, 1},
+       {"x", required_argument, 0, 'x'},
+@@ -991,6 +996,10 @@ captured_main_1 (struct captured_main_ar
+ 		       gdb_program_name, optarg);
+ 	      break;
+ 	    }
++	  case 'L': de_log_filename = optarg;
++	    break;
++	  case 'v': info_verbose = true;
++	    break;
+ 	  case 'y':
+ 	    /* Backwards compatibility only.  */
+ 	    break;
