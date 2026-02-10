@@ -933,7 +933,44 @@ sub is_ld_st
   return ( $what->[1] =~ /^U?(?:LD|ST)[LGS]/ );
 }
 
+# ripped from cuda-gdb/gdb/cuda/cuda-asm.c function cuda_instruction::eval_is_control_flow
+my %s_cf = (
+ 'BRA' => 0,
+ 'BRX' => 0,
+ 'JMP' => 0,
+ 'JMX' => 0,
+ 'RET' => 0,
+ 'BRK' => 0,
+ 'CONT' => 0,
+ 'SSY' => 0,
+ 'BPT' => 0,
+ 'EXIT' => 0,
+ 'SYNC' => 0,
+ 'BREAK' => 0,
+ 'KILL' => 0,
+ 'NANOSLEEP' => 0,
+ 'RTT' => 0,
+ 'WARPSYNC' => 0,
+ 'YIELD' => 0,
+ 'BMOV' => 0,
+ 'RPCMOV' => 0,
+ 'ACQBULK' => 0,
+ 'ENDCOLLECTIVE' => 0,
+);
+
+# arg - properties of instruction, verbose flag
+sub is_cf
+{
+  my($what, $verb) = @_;
+  return 0 unless exists( $s_cf{$what->[1]} );
+  return 1 unless($verb);
+  printf("CF: %s\n", $what->[1]) unless( $s_cf{$what->[1]} );
+  $s_cf{$what->[1]}++;
+  1;
+}
+
 # check if current instruction cannot be swapped
+# arg - properties of instruction
 sub denied_swap
 {
   my $what = shift;
@@ -1010,6 +1047,7 @@ sub can_swap
   # see details in paper https://arxiv.org/html/2501.08071v1 p3.5
   return 0 if ( is_ld_st($curr) && is_ld_st($prev) ); # && $curr->[1] eq $prev->[1] );
   return 0 if ( denied_swap($curr) || denied_swap($prev) );
+  return 0 if ( is_cf($curr, $opt_v) || is_cf($prev, $opt_v) );
   # apply config
   return 0 unless( $gcdf->($curr->[0]) );
   return 0 unless( $gcdf->($prev->[0]) );
