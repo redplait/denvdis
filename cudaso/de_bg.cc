@@ -29,6 +29,15 @@ void de_bg::dump_res() const {
 }
 
 static const char *s_tlg[] = {
+"dbg_msg",
+"dbg_dwarf",
+"dbg_dwarf_cuda",
+"dbg_sym",
+"dbg_symbolics",
+"dbg_core",
+"dbg_symdbg",
+"dbg_cudbg_pipe",
+"dbg_cudbg_rpcd",
 "dbg_cudbg_api",
 "dbg_da_workload",
 "dbg_da_thd",
@@ -454,8 +463,9 @@ int de_bg::patch_tlg(uint64_t delta, char value) {
     char *addr = (char *)(t.addr + delta);
     // +0x8 - 1
     // +0xa - value
+    // +0xc - value
     *(addr + 8) = 1;
-    *(addr + 0xa) = value;
+    *(addr + 0xa) = *(addr + 0xc) = value;
     res++;
   }
   return res;
