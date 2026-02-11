@@ -9,7 +9,7 @@
 +extern std::string de_log_filename;
 +extern "C" int check_cudbg(const char *fname, FILE *fp, char tlg_value);
 +
-+int de_bg_hack() {
++static int de_bg_hack() {
 +  // gdb_printf (gdb_stderr, "de_bg_hack: %s\n", de_log_filename.c_str());
 +  if ( de_log_filename.empty() && !info_verbose ) return 0;
 +  FILE *fp = nullptr;
