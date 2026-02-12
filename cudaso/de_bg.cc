@@ -29,6 +29,9 @@ void de_bg::dump_res() const {
 }
 
 static const char *s_tlg[] = {
+"dbg_toolsapi",
+"processUtils",
+"cuda_mp",
 "dbg_msg",
 "dbg_dwarf",
 "dbg_dwarf_cuda",
