@@ -45,9 +45,19 @@ __global__ void gpu_sin_tla_whileloop(float *sums,int steps,int terms,float step
 	res += sinsum(x,terms);  // save sum
 	step += stride; //  large stride to next step.
     }
+    // __syncwarp();
     __syncthreads();
     sums[res_idx] = warp_reduce_sum(res);
 }
+
+int opt_d = 0;
+extern "C" {
+
+void check_cuda(const char *fname, FILE *fp);
+int check_dbg(const char *fname, FILE *fp, int);
+
+};
+
 
 int main(int argc,char *argv[])
 {
@@ -55,7 +65,7 @@ int main(int argc,char *argv[])
 	printf("usage gpusum_tla steps|1000000 trems|1000 threads|256 blcoks|256\n");
 	return 0;
     }
-    int steps   = (argc > 1) ? atoi(argv[1])  : 1000000;
+    int steps   = (argc > 1) ? atoi(argv[1])  : 1024 * 1024;
     int terms   = (argc > 2) ? atoi(argv[2])  : 1000;
     int threads = (argc > 3) ? atoi(argv[3])  : 256;
     // int blocks  = (argc > 4) ? atoi(argv[4])  : (steps+threads-1)/(4 * threads);  // ensure threads*blocks >= steps
@@ -63,14 +73,31 @@ int main(int argc,char *argv[])
     double pi = 3.14159265358979323;
     double step_size = pi / (steps-1); // NB n-1 steps between n points
 
+    cudaDeviceProp prop;
+    memset(&prop, 0, sizeof(prop));
+    cudaGetDeviceProperties(&prop, 0);
+    printf("max per block %X, per SM %X\n", prop.maxThreadsPerBlock, prop.maxThreadsPerMultiProcessor);
+
+    std::atexit( []{cudaDeviceReset();} );
+
+#if 0
+   // debugger hook
+    FILE *out_fp = fopen("/tmp/cuda-tla.log", "w");
+    if ( !out_fp ) {
+      fprintf(stderr, "cannot create tmp cuda-tla.log, error %d (%s)\n", errno, strerror(errno));
+      out_fp = stdout;
+    }
+    check_dbg("/usr/lib/x86_64-linux-gnu/libcudadebugger.so.1", out_fp, 2);
+#endif
+
     auto cl = [=](int scale) {
       int blocks = (steps+threads-1)/(scale * threads);
       int sw = scale * WARP_SIZE;
       int dsize = steps / sw;
       if ( steps & (sw - 1) ) dsize++;
   printf("scale %d dsums size %d\n", scale, dsize);
-      thrust::device_vector<float> dsums(dsize);         // GPU buffer    
-      float *dptr = thrust::raw_pointer_cast(&dsums[0]); // get pointer    
+      thrust::device_vector<float> dsums(dsize);         // GPU buffer
+      float *dptr = thrust::raw_pointer_cast(&dsums[0]); // get pointer
 
       cx::timer tim;                  // declare and start timer
       gpu_sin_tla_whileloop<<<blocks,threads>>>(dptr,steps,terms,(float)step_size);  // tla using while loop
@@ -83,7 +110,7 @@ int main(int argc,char *argv[])
       printf("gpu_sum while loop sum = %.10f, steps %d terms %d time %.3f ms config %7d %4d rate %f \n",
         gpu_sum,steps,terms,gpu_time,blocks,threads,rate);
     };
-    for ( int scale = 1; scale < 4096; scale <<= 1 ) {
+    for ( int scale = 1; scale < prop.maxThreadsPerBlock; scale <<=1 ) {
       cl(scale);
     }
     return 0;
