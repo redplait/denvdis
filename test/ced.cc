@@ -400,7 +400,7 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
   int sv_len = int(sv.size());
   // try to parse
   if ( va ) {
-    if ( !parse_num(va->kind, sv) ) {
+    if ( !parse_num(va, sv) ) {
      Err("cannot parse num %.*s, line %d\n", sv_len, sv.data(), m_ln);
      return 0;
     }

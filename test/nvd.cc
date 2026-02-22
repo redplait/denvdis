@@ -704,6 +704,29 @@ void nv_dis::dump_crelocs(section *sec)
   }
 }
 
+unsigned char s_shrels[] = {
+#include "shrel.inc"
+};
+
+static int cmp_srels(FILE *m_out, section *sec) {
+  auto s_size = sec->get_size();
+  if ( s_size != sizeof(s_shrels) ) {
+    fprintf(m_out, "unknown SHT_CUDA_RELOCINFO size %lX\n", s_size);
+    return 0;
+  }
+  auto sd = sec->get_data();
+  if ( memcmp(sd, s_shrels, sizeof(s_shrels)) ) {
+    fprintf(m_out, "unknown SHT_CUDA_RELOCINFO content\n");
+    // dump details
+    for ( size_t i = 0; i < sizeof(s_shrels); ++i ) {
+      if ( sd[i] == s_shrels[i] ) continue;
+      fprintf(m_out, " [%lX]: %X vs %X\n", i, sd[i], s_shrels[i]);
+    }
+    return 0;
+  }
+  return 1;
+}
+
 void nv_dis::process()
 {
   n_sec = m_reader->sections.size();
@@ -726,6 +749,8 @@ void nv_dis::process()
       fprintf(m_out, "[%d] %s type %X [%s] flags %lX\n", i, sname.c_str(), st, st_i->second, sf);
       if ( st == 0x70000000 ) parse_attrs(i, sec);
       else if ( st > 0x70000000 ) hdump_section(sec);
+      if ( opt_r && st == 0x7000000B ) // SHT_CUDA_RELOCINFO
+        cmp_srels(m_out, sec);
     } else {
       if ( st == SHT_REL || st == SHT_RELA ) {
         fprintf(m_out, "[%d] %s type %X flags %lX\n", i, sec->get_name().c_str(), st, sf);
