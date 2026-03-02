@@ -1,6 +1,7 @@
 #include "decuda.h"
 #include "de_bg.h"
 #include "de_cupti.h"
+#include "de_ptx.h"
 #include <unistd.h>
 
 int opt_v = 0,
@@ -26,15 +27,17 @@ void process(T *dc) {
 
 int main(int argc, char **argv) {
   int c;
-  int do_dbg = 0;
-  int do_cupti = 0;
+  int do_dbg = 0,
+      do_cupti = 0,
+      hack_ptx = 0;
   while(1) {
-    c = getopt(argc, argv, "CDdtv");
+    c = getopt(argc, argv, "CDdtpv");
     if ( c == -1 ) break;
     switch(c) {
       case 'd': opt_d = 1; break;
       case 'C': do_cupti = 1; break;
       case 'D': do_dbg = 1; break;
+      case 'p': hack_ptx = 1; break;
       case 't': opt_t = 1; break;
       case 'v': opt_v = 1; break;
       default: usage(argv[0]);
@@ -44,14 +47,17 @@ int main(int argc, char **argv) {
     usage(argv[0]);
     return 6;
   }
-  if ( do_dbg || do_cupti ) {
+  if ( do_dbg || do_cupti || hack_ptx ) {
     ELFIO::elfio *rdr = new ELFIO::elfio;
     if ( !rdr->load(argv[optind]) ) {
       delete rdr;
       fprintf(stderr, "cannot load ELF %s\n", argv[optind]);
       return 2;
     }
-    if ( do_cupti ) {
+    if ( hack_ptx ) {
+      de_ptx p(rdr);
+      process(&p);
+    } else if ( do_cupti ) {
       de_cupti dg(rdr);
       process(&dg);
     } else {

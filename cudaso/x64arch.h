@@ -224,6 +224,9 @@ struct diter
   {
     return ud_obj.pc - curr_len;
   }
+  ptrdiff_t get_addr(int idx) const {
+    return ud_obj.pc + ud_obj.operand[idx].lval.sdword;
+  }
   ptrdiff_t get_jval(int idx) const
   {
     if (ud_obj.operand[idx].size == 8)
