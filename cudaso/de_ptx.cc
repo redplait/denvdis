@@ -6,7 +6,7 @@ extern int opt_d;
 int de_ptx::dump_deres(const char *fname, const res_map &rm) {
   FILE *fp = fopen(fname, "w");
   if ( !fp ) {
-    fprintf(stderr, "cannot open %s, errpr %d (%s)\n", fname, errno, strerror(errno));
+    fprintf(stderr, "cannot open %s, error %d (%s)\n", fname, errno, strerror(errno));
     return 0;
   }
   auto first = rm.cbegin();
@@ -30,7 +30,7 @@ void de_ptx::hack_ctor(uint64_t off, const char *fname) {
   if ( hack(di, res) ) dump_deres(fname, res);
 }
 
-int de_ptx::check(de_res &r, uint64_t off) {
+int de_ptx::check(lat_res &r, uint64_t off) {
   if ( !in_sec(s_rodata, off) ) return 0;
   auto s = sdata(s_rodata.value(), off);
   if ( !s ) return 0;
@@ -84,7 +84,7 @@ int de_ptx::hack(diter &di, res_map &rm) {
       auto res = di.get_addr(0);
       if ( !in_sec(s_bss, res) ) { report(di, "not in bss"); return 0; }
       if ( di.ud_obj.operand[1].type == UD_OP_IMM ) {
-        de_res what{ 0, di.ud_obj.operand[1].lval.sdword };
+        lat_res what{ 0, di.ud_obj.operand[1].lval.sdword };
         rm[res] = what;
         continue;
       }
@@ -95,7 +95,7 @@ int de_ptx::hack(diter &di, res_map &rm) {
           report(di, "bad asgn");
           return 0;
         }
-        de_res what{ 0};
+        lat_res what{ 0};
         if ( check(what, val) ) rm[res] = what;
         continue;
       }
