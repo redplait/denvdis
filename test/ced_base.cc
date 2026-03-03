@@ -230,41 +230,9 @@ int CEd_base::parse_num(NV_Format fmt, std::string_view &tail) {
   if ( tail.at(idx) == '+' ) tidx++;;
   float fl;
   if ( !strcasecmp(tail.data() + tidx, "inf") ) {
-   if ( fmt == NV_F64Imm ) {
-     *(double *)&m_v = m_minus ? -INFINITY: INFINITY;
-     return 1;
-   }
-   const uint32_t positive_infinity_f32 = uint32_t(0x7F800000);
-   const uint32_t negative_infinity_f32 = uint32_t(0xFF800000);
-   fl = *(float *)( m_minus ? &negative_infinity_f32 : &positive_infinity_f32 );
-   if ( fmt == NV_F32Imm ) {
-     *(float *)&m_v = fl;
-     return 1;
-   } else if ( fmt == NV_E8M7Imm ) {
-     m_v = conv_e8m7(fl);
-     return 1;
-   } else if ( fmt == NV_F16Imm ) {
-     m_v = fp16_ieee_from_fp32_value(fl);
-     return 1;
-   }
+   return s_inf2val(m_minus, fmt, m_v);
   } else if ( !strcasecmp(tail.data() + tidx, "nan") || !strcasecmp(tail.data() + tidx, "qnan") ) {
-   if ( fmt == NV_F64Imm ) {
-     *(double *)&m_v = m_minus ? -NAN: NAN;
-     return 1;
-   }
-    const uint32_t positive_nan_f32 = uint32_t(0x7FFFFFFF);
-    const uint32_t negative_nan_f32 = uint32_t(0xFFFFFFFF);
-   fl = *(float *)( m_minus ? &negative_nan_f32 : &positive_nan_f32 );
-   if ( fmt == NV_F32Imm ) {
-     *(float *)&m_v = fl;
-     return 1;
-   } else if ( fmt == NV_E8M7Imm ) {
-     m_v = conv_e8m7(fl);
-     return 1;
-   } else if ( fmt == NV_F16Imm ) {
-     m_v = fp16_ieee_from_fp32_value(fl);
-     return 1;
-   }
+   return s_nan2val(fmt, m_v);
   }
   // this is floating value
   parse_float_tail(idx, tail);
