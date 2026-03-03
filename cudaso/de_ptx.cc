@@ -84,7 +84,15 @@ int de_ptx::hack(diter &di, res_map &rm) {
       auto res = di.get_addr(0);
       if ( !in_sec(s_bss, res) ) { report(di, "not in bss"); return 0; }
       if ( di.ud_obj.operand[1].type == UD_OP_IMM ) {
-        lat_res what{ 0, di.ud_obj.operand[1].lval.sdword };
+        auto val = di.ud_obj.operand[1].lval.sdword;
+        if ( in_sec(s_rodata, val) ) {
+          lat_res what{ 0};
+          if ( check(what, val) ) {
+            rm[res] = what;
+            continue;
+          }
+        }
+        lat_res what{ 0, val };
         rm[res] = what;
         continue;
       }
@@ -109,6 +117,9 @@ int de_ptx::hack(diter &di, res_map &rm) {
 
 int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
+  // for 12.8 md5 14dc7bbb0bafae1313489c389e9486eb
+//  hack_ctor(0x407FB0, "c4.txt");
+//  hack_ctor(0x41A8E0, "c5.txt");
   // offsets from V13.1.80
   // md5: f38e5732c94163b96cf797eef252b4cb
   hack_ctor(0x1BAC80, "c4.txt");
