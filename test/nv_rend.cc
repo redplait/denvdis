@@ -331,13 +331,53 @@ double longlong_as_double(long long a)
 }
 
 // ripped from math_constants.h
-const float NVf_inf = int_as_float(0x7f800000),
+static float NVf_inf = int_as_float(0x7f800000),
  NVf_nan = int_as_float(0x7fffffff);
 ;
 
-const double NVd_inf = longlong_as_double(0x7ff0000000000000ULL),
+static double NVd_inf = longlong_as_double(0x7ff0000000000000ULL),
  NVd_nan = longlong_as_double(0xfff8000000000000ULL)
 ;
+
+bool NV_renderer::s_inf2val(bool minus, NV_Format f, uint64_t &res) {
+  switch(f) {
+    case NV_F64Imm:
+      res = minus ? -NVd_nan : NVd_nan;
+      return true;
+    case NV_F16Imm:
+      res = minus ? 0xFC00 : 0x7C00;
+      return true;
+    case NV_F32Imm:
+      res = minus ? -NVf_nan : NVf_nan;
+      return true;
+    case NV_E8M7Imm: // from https://github.com/peeterjoot/floatexplorer/commit/4760403f1824fb183a8dbb6f832e3c47ca7613b2
+      res = minus ? 0xFF80 : 0x7F80;
+      return true;
+    default:
+      return false;
+  }
+  return false;
+}
+
+bool NV_renderer::s_nan2val(NV_Format f, uint64_t &res) {
+  switch(f) {
+    case NV_F64Imm:
+      res = NVd_nan;
+      return true;
+    case NV_F16Imm:
+      res = 0x7E00;
+      return true;
+    case NV_F32Imm:
+      res = NVf_nan;
+      return true;
+    case NV_E8M7Imm: // from https://github.com/peeterjoot/floatexplorer/commit/4760403f1824fb183a8dbb6f832e3c47ca7613b2
+      res = 0x7FC0;
+      return true;
+    default:
+      return false;
+  }
+  return false;
+}
 
 static const char s_digits[] = "0123456789";
 

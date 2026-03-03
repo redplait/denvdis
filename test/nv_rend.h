@@ -299,9 +299,6 @@ const char* get_cuda_reloc_name(unsigned t);
 float int_as_float(int);
 double longlong_as_double(long long);
 
-extern const float NVf_inf, NVf_nan;
-extern const double NVd_inf, NVd_nan;
-
 const char *get_prop_type_name(int i);
 const char *get_prop_op_name(int i);
 const char *get_lut(int i);
@@ -369,6 +366,17 @@ class NV_renderer {
           __attribute__ (( format( printf, 2, 3 ) ))
 #endif
     void Err(const char *, ...) const;
+    // methods for float to nan/inf
+    static bool s_nan2val(NV_Format, uint64_t &);
+    static bool s_nan2val(const nv_vattr *va, uint64_t &res) {
+      if ( !va ) return false;
+      return s_nan2val(va->kind, res);
+    }
+    static bool s_inf2val(bool minus, NV_Format, uint64_t &);
+    static bool s_inf2val(bool minus, const nv_vattr *va, uint64_t &res) {
+      if ( !va ) return false;
+      return s_inf2val(minus, va->kind, res);
+    }
   protected:
    template <typename T, typename I>
    const T& get_it(const std::initializer_list<T>& list, I index) const {

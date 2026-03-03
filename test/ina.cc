@@ -828,45 +828,34 @@ int INA::patch_internal(Fields_Iter *what, const char *s, uint64_t &v)
   // input depends from format in va
   double d;
   float fd;
+  bool is_special = false;
+  if ( !strcmp(s, "nan") ) {
+    is_special = s_nan2val(f->va, v);
+  } else if ( !strcmp(s, "inf") ) {
+    is_special = s_inf2val(false, f->va, v);
+  } else if ( !strcmp(s, "-inf") ) {
+    is_special = s_inf2val(true, f->va, v);
+  }
+  if ( is_special ) return 1;
   switch(f->va->kind) {
     case NV_BITSET:
     case NV_UImm:
      if ( !parse_arg(s, v) ) return 0;
      return 1;
     case NV_F64Imm:
-     if ( !strcmp(s, "nan") )
-       d = NVd_nan;
-     else if ( !strcmp(s, "inf") )
-       d = NVd_inf;
-     else
-       d = atof(s);
-     v = *(uint64_t *)&d;
+      d = atof(s);
+      v = *(uint64_t *)&d;
      return 1;
     case NV_F32Imm:
-      if ( !strcmp(s, "nan") )
-       d = (float)NVf_nan;
-     else if ( !strcmp(s, "inf") )
-       d = (float)NVf_inf;
-     else
-       d = (float)atof(s);
-     v = *(uint64_t *)&d;
+      d = (float)atof(s);
+      v = *(uint64_t *)&d;
      return 1;
     case NV_E8M7Imm:
-      if ( !strcmp(s, "nan") )
-       fd = NVf_nan;
-      else if ( !strcmp(s, "inf") )
-       fd = NVf_inf;
-      else
-       fd = atof(s);
+      fd = atof(s);
       v = conv_e8m7(fd);
       return 1;
     case NV_F16Imm:
-      if ( !strcmp(s, "nan") )
-       fd = NVf_nan;
-      else if ( !strcmp(s, "inf") )
-       fd = NVf_inf;
-      else
-       fd = atof(s);
+      fd = atof(s);
       v = fp16_ieee_from_fp32_value(fd);
      return 1;
     // signed int
