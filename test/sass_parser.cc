@@ -272,6 +272,20 @@ int ParseSASS::reduce(int kind)
 int ParseSASS::set_num_value(const nv_vattr *vas, const char *name, one_form &of)
 {
   if ( !vas ) return 0;
+  if ( m_numv == NumV::nan ) {
+    uint64_t val = 0;
+    if ( s_nan2val(vas, val) ) {
+      of.l_kv[name] = val;
+      return 1;
+    }
+  }
+  if ( m_numv == NumV::inf ) {
+    uint64_t val = 0;
+    if ( s_inf2val(m_minus, vas, val) ) {
+      of.l_kv[name] = val;
+      return 1;
+    }
+  }
   if ( vas->kind == NV_SImm || vas->kind == NV_SSImm || vas->kind == NV_RSImm ) {
     long l = (long)m_v;
     if ( m_minus ) l = -l;
@@ -302,7 +316,7 @@ int ParseSASS::set_num_value(const nv_vattr *vas, const char *name, one_form &of
 
 int ParseSASS::reduce_value()
 {
-  if ( m_numv == NumV::num ) {
+  if ( m_numv == NumV::num || m_numv == NumV::inf || m_numv == NumV::nan ) {
     return apply_kind(m_forms, [&](const render_base *rb, one_form &f) {
       if ( rb->type != R_value ) return 0;
       if ( f.instr->vas ) {
@@ -830,7 +844,7 @@ int ParseSASS::classify_op(int op_idx, const std::string_view &os)
   else if ( c == '~' ) { m_tilda = 1; c = s.at(++idx); };
   std::string_view tmp{ s.c_str() + idx, s.size() - idx};
   if ( tmp == "INF"sv || tmp == "inf"sv ) { m_numv = NumV::inf; return reduce(R_value); }
-  if ( tmp == "QNAN"sv || tmp == "nan"sv ) { m_numv = NumV::nan; return reduce(R_value); }
+  if ( tmp == "QNAN"sv || tmp == "nan"sv || tmp == "NaN"sv  ) { m_numv = NumV::nan; return reduce(R_value); }
   auto cl = [](const render_base *rb) { return rb->type == R_C || rb->type == R_CX; };
   if ( tmp.starts_with("desc["sv) ) {
     auto dcl = [](const render_base *rb) { return rb->type == R_desc; };

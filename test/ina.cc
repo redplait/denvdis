@@ -829,11 +829,11 @@ int INA::patch_internal(Fields_Iter *what, const char *s, uint64_t &v)
   double d;
   float fd;
   bool is_special = false;
-  if ( !strcmp(s, "nan") ) {
+  if ( !strcasecmp(s, "nan") ) {
     is_special = s_nan2val(f->va, v);
-  } else if ( !strcmp(s, "inf") ) {
+  } else if ( !strcasecmp(s, "inf") ) {
     is_special = s_inf2val(false, f->va, v);
-  } else if ( !strcmp(s, "-inf") ) {
+  } else if ( !strcasecmp(s, "-inf") ) {
     is_special = s_inf2val(true, f->va, v);
   }
   if ( is_special ) return 1;
