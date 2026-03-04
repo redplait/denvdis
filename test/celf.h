@@ -115,15 +115,7 @@ class CElf: public T {
      return res;
    }
    template <typename F>
-   int _read_symbols(int opt, F &&f) {
-     section *sym_sec = nullptr;
-     for ( Elf_Half i = 0; i < n_sec; ++i )
-     {
-       section* sec = m_reader->sections[i];
-       if ( sec->get_type() == SHT_SYMTAB ) { sym_sec = sec; break; }
-     }
-     if ( !sym_sec ) return 0;
-     // read symtab
+   int _read_symbols(section *sym_sec, int opt, F &&f) {
      symbol_section_accessor symbols( *m_reader, sym_sec );
      Elf_Xword sym_no = symbols.get_symbols_num();
      if ( !sym_no )
@@ -147,6 +139,18 @@ class CElf: public T {
         f(sym);
      }
      return 1;
+   }
+   template <typename F>
+   int _read_symbols(int opt, F &&f) {
+     section *sym_sec = nullptr;
+     for ( Elf_Half i = 0; i < n_sec; ++i )
+     {
+       section* sec = m_reader->sections[i];
+       if ( sec->get_type() == SHT_SYMTAB ) { sym_sec = sec; break; }
+     }
+     if ( !sym_sec ) return 0;
+     // read symtab
+     return _read_symbols(sym_sec, opt, f);
    }
    int fill_rels() {
      for ( Elf_Half i = 0; i < n_sec; ++i ) {

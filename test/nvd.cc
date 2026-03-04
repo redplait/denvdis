@@ -33,12 +33,15 @@ static std::map<unsigned int, const char *> s_sht = {
  { 0x70000009, "SHT_CUDA_LOCAL" },
  { 0x7000000A, "SHT_CUDA_SHARED" },
  { 0x7000000B, "SHT_CUDA_RELOCINFO" },
+ { 0x7000000C, "SHT_CUDA_MERCURY" },
+ { 0x7000000D, "SHT_CUDA_MERCURY_SASS_MAP" },
  { 0x7000000E, "SHT_CUDA_UFT" },
  { 0x70000010, "SHT_CUDA_UFT_INDEX" },
  { 0x70000011, "SHT_CUDA_UFT_ENTRY" },
  { 0x70000012, "SHT_CUDA_UDT" },
  { 0x70000014, "SHT_CUDA_UDT_ENTRY" },
  { 0x70000015, "SHT_CUDA_RESERVED_SHARED" },
+ { 0x70000016, "SHT_CUDA_CAPMERC" },
  { 0x70000064, "SHT_CUDA_CONSTANT_B0" },
  { 0x70000065, "SHT_CUDA_CONSTANT_B1" },
  { 0x70000066, "SHT_CUDA_CONSTANT_B2" },
@@ -57,6 +60,16 @@ static std::map<unsigned int, const char *> s_sht = {
  { 0x70000073, "SHT_CUDA_CONSTANT_B15" },
  { 0x70000074, "SHT_CUDA_CONSTANT_B16" },
  { 0x70000075, "SHT_CUDA_CONSTANT_B17" },
+ { 0x70000078, "SHT_CUDA_MERCURY_CONSTANT_PARAMS" },
+ { 0x70000079, "SHT_CUDA_MERCURY_CONSTANT_IMGHDR" },
+ { 0x7000007A, "SHT_CUDA_MERCURY_CONSTANT_DRIVER" },
+ { 0x7000007B, "SHT_CUDA_MERCURY_CONSTANT_OPT" },
+ { 0x7000007C, "SHT_CUDA_MERCURY_CONSTANT_USER" },
+ { 0x7000007D, "SHT_CUDA_MERCURY_CONSTANT_PIC" },
+ { 0x7000007E, "SHT_CUDA_MERCURY_CONSTANT_TOOLS" },
+ { 0x70000086, "SHT_CUDA_COMPAT_INFO" },
+ { 0x70000087, "SHT_CUDA_EMBEDDED_HOST" },
+ { 0x70000088, "SHT_CUDA_MERCURY_RESOLVED_RELA" },
 };
 
 // extracted from EIATTR_INDIRECT_BRANCH_TARGETS
@@ -151,6 +164,7 @@ class nv_dis: public CElf<NV_renderer>
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
    // boring ELF related stuff
    void hdump_section(section *);
+   void dump_merc_syms(section *);
    void dump_mrelocs(section *);
    void dump_crelocs(section *);
    void parse_attrs(Elf_Half idx, section *);
@@ -275,6 +289,12 @@ int nv_dis::read_symbols()
   }
   next_csym(0);
   return res;
+}
+
+void nv_dis::dump_merc_syms(section *sec) {
+  _read_symbols(sec, opt_t, [&](asymbol &sym) {
+     dump_csym(&sym);
+   });
 }
 
 int nv_dis::next_csym(unsigned long off)
@@ -769,6 +789,7 @@ void nv_dis::process()
       } else {
        fprintf(m_out, "[%d] %s type %X flags %lX\n", i, sec->get_name().c_str(), st, sf);
        if ( st == 0x70000083 ) parse_attrs(i, sec);
+       if ( st == 0x70000085 && opt_t ) dump_merc_syms(sec);
        else if ( st == 0x70000082 && opt_r ) dump_mrelocs(sec);
        else if ( st > 0x70000000 ) hdump_section(sec);
       }
