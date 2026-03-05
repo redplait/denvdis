@@ -293,7 +293,7 @@ int nv_dis::read_symbols()
 
 void nv_dis::dump_merc_syms(section *sec) {
   _read_symbols(sec, opt_t, [&](asymbol &sym) {
-     dump_csym(&sym);
+//     dump_csym(&sym);
    });
 }
 
@@ -672,7 +672,7 @@ void nv_dis::dump_mrelocs(section *sec)
 {
   const_relocation_section_accessor rsa(*m_reader, sec);
   auto n = rsa.get_entries_num();
-  fprintf(m_out, "%ld relocs:\n", n);
+  fprintf(m_out, "%ld mercury relocs:\n", n);
   if ( !n ) return;
   auto old_type = sec->get_type();
   sec->set_type(SHT_RELA);
@@ -789,7 +789,7 @@ void nv_dis::process()
       } else {
        fprintf(m_out, "[%d] %s type %X flags %lX\n", i, sec->get_name().c_str(), st, sf);
        if ( st == 0x70000083 ) parse_attrs(i, sec);
-       if ( st == 0x70000085 && opt_t ) dump_merc_syms(sec);
+       else if ( st == 0x70000085 && opt_t ) dump_merc_syms(sec);
        else if ( st == 0x70000082 && opt_r ) dump_mrelocs(sec);
        else if ( st > 0x70000000 ) hdump_section(sec);
       }
