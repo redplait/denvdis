@@ -57,8 +57,13 @@ sub arrange
     place($name, $name, $v);
     return;
   }
-  $g_bad{$name}++;
-  place($1, $name, $v) if ( $name =~ /^(\w+)\b/ )  # extract first word
+  if ( $name =~ /^(\w+)\b/ ) { # extract first word
+    if ( exists $g_ops{$1} ) {
+      place($1, $name, $v);
+      return;
+    }
+  }
+  $g_bad{$name} = $v;
 }
 
 sub dump_states
@@ -85,6 +90,7 @@ sub insert_comp
 
 sub min_states
 {
+  # process good with > 1 element
   foreach my $n ( keys %g_ops ) {
     my $v = $g_ops{$n};
     next if ( $v->[0] == 1 );
@@ -93,9 +99,32 @@ sub min_states
     my $len = length($n);
     for ( my $i = 0; $i < $v->[0] - 1; $i++ ) {
        my $cn = substr($v->[2 + 2 * $i], $len);
+       $cn =~ s/^\s+//;
        push @res, [ $cn, $v->[3 + 2 * $i] ];
     }
     my @sorted = sort { $a->[0] cmp $b->[0] } @res;
+    insert_comp($n, \@sorted);
+  }
+  # now process bad - first group by instr name
+  my %tmp; # key - instr name, value array of [ tail, value ]
+  foreach my $n ( keys %g_bad ) {
+    if ( $n !~ /^(\w+)(.*)$/ ) {
+      carp("bad name $n");
+      next;
+    }
+    my $iname = $1;
+    my $rest = $2;
+    $rest =~ s/^\s+//;
+    if ( exists $tmp{$iname} ) {
+      my $ar = $tmp{$iname};
+      push @$ar, [ $rest, $g_bad{$n} ];
+    } else {
+      $tmp{$iname} = [ [ $rest, $g_bad{$n} ] ];
+    }
+  }
+  foreach my $n ( keys %tmp ) {
+    my $ar = $tmp{$n};
+    my @sorted = sort { $a->[0] cmp $b->[0] } @$ar;
     insert_comp($n, \@sorted);
   }
   dump_states();
