@@ -4,8 +4,22 @@ use strict;
 use warnings;
 use Carp;
 use Data::Dumper;
+use Getopt::Std;
 
-# key is instruction name, value is [ count, value, (name, value)* ]
+# options
+use vars qw/$opt_C/;
+
+sub usage()
+{
+  print STDERR<<EOF;
+Usage: $0 [options] latency.file
+ Options:
+  -C generate C++ code
+EOF
+  exit(8);
+}
+
+# key is instruction name, value is [ count, value, special, (name, value)* ]
 my %g_ops;
 my $g_merc = 0;
 my $g_total = 0;
@@ -15,12 +29,21 @@ my %g_bad;
 # key is compound string joined with @
 # value is map name -> value
 my %g_states;
+# array of states sorted by name
+my @g_sstates;
+
+sub state_name
+{
+  my $idx = shift;
+  $idx = -$idx if ( $idx < 0 );
+  $g_sstates[$idx-1];
+}
 
 sub place
 {
   my($name, $full, $v) = @_;
   if ( !exists $g_ops{$name} ) {
-    $g_ops{$name} = [ 1, $v ];
+    $g_ops{$name} = [ 1, 0, $v ];
   } else {
     my $ar = $g_ops{$name};
     $ar->[0]++;
@@ -36,7 +59,7 @@ sub dump_good
     my $v = $g_ops{$n};
     next if ( $v->[0] != 1 );
     $res++;
-    printf("%s: %d\n", $n, $v->[1]);
+    printf("%s: %d\n", $n, $v->[2]);
   }
   printf("--- total good %d\n", $res);
   $res;
@@ -131,9 +154,9 @@ sub min_states
     my @res;
     my $len = length($n);
     for ( my $i = 0; $i < $v->[0] - 1; $i++ ) {
-       my $cn = substr($v->[2 + 2 * $i], $len);
+       my $cn = substr($v->[3 + 2 * $i], $len);
        $cn =~ s/^\s+//;
-       push @res, [ $cn, $v->[3 + 2 * $i] ];
+       push @res, [ $cn, $v->[4 + 2 * $i] ];
     }
     my @sorted = sort { $a->[0] cmp $b->[0] } @res;
     insert_comp($n, \@sorted);
@@ -160,7 +183,57 @@ sub min_states
     my @sorted = sort { $a->[0] cmp $b->[0] } @$ar;
     insert_comp($n, \@sorted);
   }
-  dump_states();
+  if ( defined $opt_C ) {
+    @g_sstates = sort keys %g_states;
+    # dump enum
+    print<<EOF;
+ enum LatSpecial {
+EOF
+    my $num = 0;
+    foreach my $n ( sort keys %g_states ) {
+      $num++;
+      my $hr = $g_states{$n};
+      if ( 1 == $num ) { printf(" Spec%d = 1,", $num); }
+      else { printf(" Spec%d,", $num); }
+      printf(" // %s\n", $g_sstates[$num-1]);
+      foreach my $k ( sort keys %$hr ) {
+        printf(" // %s:", $k);
+        my $kr = $hr->{$k};
+        printf(" %d", $_) for @$kr;
+        printf("\n");
+        # mark this instruction
+        if ( exists $g_ops{$k} ) {
+          $g_ops{$k}->[1] = $num;
+        } else { # from bad - no actial value
+          $g_ops{$k} = $num;
+        }
+      }
+    }
+    printf("};\n");
+  } else {
+    dump_states();
+  }
+}
+
+# like dump_good but produce c++ unordered_map
+sub dump_ops
+{
+      print<<EOF;
+ static const std::unordered_map<std::string_view, std::pair<unsigned char, unsigned char> > s_lats = {
+EOF
+  foreach my $n ( sort keys %g_ops ) {
+    my $v = $g_ops{$n};
+    if ( 'ARRAY' ne ref $v ) {
+      printf(" { \"%s\"sv, { 0, %d } }, // %s\n", $n, $v, state_name($v));
+    } else {
+      if ( $v->[1] ) {
+        printf(" { \"%s\"sv, { %d, %d } }, // %s\n", $n, $v->[2], $v->[1], state_name($v->[1]));
+      } else {
+        printf(" { \"%s\"sv, { %d, 0 } },\n", $n, $v->[2]);
+      }
+    }
+  }
+  printf("};\n");
 }
 
 sub process
@@ -192,10 +265,18 @@ sub process
 
 # main
 my $flat = '../ops/c8.txt'; # default file name
+my $state = getopts("C");
+usage() if ( !$state );
 $flat = $ARGV[0] if ( @ARGV );
 process($flat);
-printf("total %d\n", $g_total);
-printf("skipped %d mercury\n", $g_merc) if ( $g_merc );
+unless( defined $opt_C ) {
+ printf("total %d\n", $g_total);
+ printf("skipped %d mercury\n", $g_merc) if ( $g_merc );
+}
 min_states();
-dump_good();
-dump_bad();
+if ( defined $opt_C ) {
+ dump_ops();
+} else {
+ dump_good();
+ dump_bad();
+}
