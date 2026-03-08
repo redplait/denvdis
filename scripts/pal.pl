@@ -74,6 +74,13 @@ sub dump_states
     printf("%s: %d\n", $n, scalar keys %$hr );
     printf(" %s\n", $_) for keys %$hr;
   }
+  my %dups;
+  if ( check_states_dup(\%dups) ) {
+    printf("--- %d dups\n", scalar keys %dups);
+    foreach my $n ( keys %dups ) {
+      printf(" %s - %d\n", $n, $dups{$n});
+    }
+  }
 }
 
 sub insert_comp
@@ -86,6 +93,27 @@ sub insert_comp
   } else {
     $g_states{$comp} = { $name => \@values };
   }
+}
+
+# traverse g_states and check if some instructions occured in several states
+# return max dup count
+sub check_states_dup
+{
+  my $oh = shift; # output hash ref
+  my %tmp;
+  foreach my $n ( keys %g_states ) {
+    my $hr = $g_states{$n};
+    $tmp{$_}++ for keys %$hr;
+  }
+  my $res = 0;
+  foreach my $n ( keys %tmp ) {
+    my $cnt = $tmp{$n};
+# printf("D %s: %d\n", $n, $cnt);
+    next if ( $cnt == 1 );
+    $res = $cnt if ( $cnt > $res );
+    $oh->{$n} = $cnt;
+  }
+  $res;
 }
 
 sub min_states
