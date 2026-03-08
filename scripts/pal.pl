@@ -69,10 +69,15 @@ sub arrange
 sub dump_states
 {
   printf("--- states %d\n", scalar keys %g_states);
-  foreach my $n ( keys %g_states ) {
+  foreach my $n ( sort keys %g_states ) {
     my $hr = $g_states{$n};
-    printf("%s: %d\n", $n, scalar keys %$hr );
-    printf(" %s\n", $_) for keys %$hr;
+    printf("%s - %d\n", $n, scalar keys %$hr );
+    foreach my $k ( keys %$hr ) {
+      printf(" %s:", $k);
+      my $kr = $hr->{$k};
+      printf(" %d", $_) for @$kr;
+      printf("\n");
+    }
   }
   my %dups;
   if ( check_states_dup(\%dups) ) {
