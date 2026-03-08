@@ -32,11 +32,9 @@
  Spec11, // .32@.64
  // CS2R: 7 7
  Spec12, // .64
- // UIADD3: 9
  // UIMNMX: 9
  // UISETP: 9
  // UMEMSETS: 11
- // UMOV: 7
  // USEL: 7
  Spec13, // .64@.64.HI@.64.LO
  // IADD2: 8 11 11
@@ -362,7 +360,8 @@
  { "UI2I"sv, { 4, 0 } },
  { "UI2IP"sv, { 5, 0 } },
  { "UIABS"sv, { 5, 0 } },
- { "UIADD3"sv, { 6, 12 } }, // .64
+ { "UIADD3"sv, { 6, 0 } },
+ { "UIADD3.64"sv, { 9, 0 } },
  { "UIMAD"sv, { 5, 0 } },
  { "UIMNMX"sv, { 6, 12 } }, // .64
  { "UISETP"sv, { 6, 12 } }, // .64
@@ -373,7 +372,8 @@
  { "ULOP3"sv, { 5, 0 } },
  { "ULOP32I"sv, { 7, 0 } },
  { "UMEMSETS"sv, { 0, 12 } }, // .64
- { "UMOV"sv, { 4, 12 } }, // .64
+ { "UMOV"sv, { 4, 0 } },
+ { "UMOV.64"sv, { 7, 0 } },
  { "UP2UR"sv, { 5, 0 } },
  { "UPLOP3"sv, { 6, 0 } },
  { "UPOPC"sv, { 5, 0 } },

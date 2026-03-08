@@ -80,6 +80,11 @@ sub arrange
     place($name, $name, $v);
     return;
   }
+  # some instruction has .64 in their name
+  if ( $name eq 'UIADD3.64' || $name eq 'UMOV.64' ) {
+    place($name, $name, $v);
+    return;
+  }
   if ( $name =~ /^(\w+)\b/ ) { # extract first word
     if ( exists $g_ops{$1} ) {
       place($1, $name, $v);
