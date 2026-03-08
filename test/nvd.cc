@@ -5,6 +5,7 @@ int opt_c = 0,
     opt_e = 0,
     opt_g = 0,
     opt_h = 0,
+    opt_l = 0,
     opt_m = 0,
     opt_M = 0,
     opt_t = 0,
@@ -121,6 +122,9 @@ class nv_dis: public CElf<NV_renderer>
      if ( m_rtdb ) delete m_rtdb;
    }
    void process();
+   void test_latency() const {
+     check_lat_set( m_dis->get_instrs() );
+   }
    int single_section(int idx);
    void dump_total() const
    {
@@ -815,6 +819,7 @@ void usage(const char *prog)
   printf("-c - dump instruction in form similar to original nvdisasm\n");
   printf("-e - dump attributes\n");
   printf("-h - hex dump\n");
+  printf("-l - dump latency from ptxas\n");
   printf("-m - dump missed fields\n");
   printf("-M - dump cword mask\n");
   printf("-N - dump not found masks\n");
@@ -836,13 +841,14 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "ceghmMrtTNOpPSs:o:");
+    c = getopt(argc, argv, "ceghlmMrtTNOpPSs:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'c': opt_c = 1; break;
       case 'e': opt_e = 1; break;
       case 'g': opt_g = 1; break;
       case 'h': opt_h = 1; break;
+      case 'l': opt_l = 1; break;
       case 'm': opt_m = 1; break;
       case 'M': opt_M = 1; break;
       case 't': opt_t = 1; break;
@@ -870,6 +876,7 @@ int main(int argc, char **argv)
     if ( o_fname ) dis.open_log(o_fname);
     if ( dis.open(&er, argv[i], opt_c) )
     {
+      if ( opt_l ) dis.test_latency();
       if ( s != -1 )
         dis.single_section(s);
       else
