@@ -17,7 +17,7 @@ EAD_OPTS=-BFEmgarizp
 
 all: ina nvd pa ced libced.a
 
-AR_OBJS = bf16.o ced_base.o nv_rend.o sass_parser.o
+AR_OBJS = bf16.o ced_base.o nv_lat.o nv_rend.o sass_parser.o
 
 libced.a: $(AR_OBJS)
 	ar rcs $@ $(AR_OBJS)
@@ -27,6 +27,9 @@ bf16.o: bf16.cc
 
 ced_base.o: ced_base.cc
 	$(CC) -fpic $(CFLAGS) $(ELFIO) $(IFLAGS) $(FP16) -c $^
+
+nv_lat.o: nv_lat.cc lat.inc
+	$(CC) -fpic $(CFLAGS) $(IFLAGS) -c nv_lat.cc
 
 nv_rend.o: nv_rend.cc
 	$(CC) -fpic $(CFLAGS) $(IFLAGS) $(FP16) -c $^

@@ -377,6 +377,19 @@ class NV_renderer {
       if ( !va ) return false;
       return s_inf2val(minus, va->kind, res);
     }
+    // and to check agains nan/inf
+    static bool is_nan(NV_Format, uint64_t);
+    static bool is_nan(const nv_vattr *va, uint64_t res) {
+      if ( !va ) return false;
+      return is_nan(va->kind, res);
+    }
+    static bool is_inf(NV_Format, uint64_t, bool &minus);
+    static bool is_inf(const nv_vattr *va, uint64_t res, bool &minus) {
+      if ( !va ) return false;
+      return is_inf(va->kind, res, minus);
+    }
+    // latency methods
+    int check_lat_set(const NV_sorted *) const;
   protected:
    template <typename T, typename I>
    const T& get_it(const std::initializer_list<T>& list, I index) const {
