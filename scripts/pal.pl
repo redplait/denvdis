@@ -76,7 +76,18 @@ sub dump_bad
 sub arrange
 {
   my ($name, $v) = @_;
-  if ( $name =~ /^\w+$/ ) { # just instruction name without '.' and spaces
+  # _GSB & _IMM are suffixes
+  if ( $name =~ /^(\w+)_GSB/ ) {
+    if ( exists $g_ops{$1} ) {
+      place($1, $1 . '.GSB', $v);
+      return;
+    }
+  } elsif ( $name =~ /^(\w+)_IMM/ ) {
+    if ( exists $g_ops{$1} ) {
+      place($1, $1 . '.IMM', $v);
+      return;
+    }
+  } elsif ( $name =~ /^\w+$/ ) { # just instruction name without '.' and spaces
     place($name, $name, $v);
     return;
   }
