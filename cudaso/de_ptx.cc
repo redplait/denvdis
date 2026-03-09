@@ -30,6 +30,14 @@ void de_ptx::hack_ctor(uint64_t off, const char *fname) {
   if ( hack(di, res) ) dump_deres(fname, res);
 }
 
+void de_ptx::hack_sp(uint64_t off, const char *fname) {
+  diter di(*s_text);
+  if ( !di.setup(off) ) return;
+  res_map res;
+  hack_sp(di, res);
+  if ( !res.empty() ) dump_deres(fname, res);
+}
+
 int de_ptx::check(lat_res &r, uint64_t off) {
   if ( !in_sec(s_rodata, off) ) return 0;
   auto s = sdata(s_rodata.value(), off);
@@ -115,11 +123,61 @@ int de_ptx::hack(diter &di, res_map &rm) {
   return 0;
 }
 
+int de_ptx::hack_sp(diter &di, res_map &rm) {
+  used_regs<uint64_t> regs;
+  while(1) {
+    if ( !di.next() ) break;
+    di.dasm();
+    // lea
+    if ( di.is_lea() && di.is_r1() ) {
+      auto res = di.get_addr(1);
+      if ( !in_sec(s_rodata, res) ) { report(di, "not in rodata"); return 0; }
+      regs.add(di.ud_obj.operand[0].base, res);
+      continue;
+    }
+    // mov [rsp + off], imm
+    if ( di.is_rsp() && di.ud_obj.mnemonic == UD_Imov ) {
+      auto res = di.ud_obj.operand[0].lval.sdword;
+      if ( di.ud_obj.operand[1].type == UD_OP_IMM ) {
+        auto val = di.ud_obj.operand[1].lval.sdword;
+        if ( in_sec(s_rodata, val) ) {
+          lat_res what{ 0};
+          if ( check(what, val) ) {
+            rm[res] = what;
+            continue;
+          }
+        }
+        lat_res what{ 0, val };
+        rm[res] = what;
+        continue;
+      }
+      // mov [rsp + off], reg
+      if ( di.ud_obj.operand[1].type == UD_OP_REG ) {
+        uint64_t val = 0;
+        if ( !regs.asgn(di.ud_obj.operand[1].base, val) ) {
+          report(di, "bad asgn");
+          return 0;
+        }
+        lat_res what{ 0};
+        if ( check(what, val) ) rm[res] = what;
+        continue;
+      }
+    }
+    if ( di.is_end() ) return 1;
+    report(di, "unknown instr");
+//    printf("base %X\n", di.ud_obj.operand[0].base);
+    if ( di.is_jxx(UD_Ijz) ) break;
+  }
+  return 0;
+}
+
 int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
-  // for 12.8 md5 14dc7bbb0bafae1313489c389e9486eb
+  // for 12.8 md5 14dc7bbb0bafae1313489c389e9486eb - NPDOHYX
 //  hack_ctor(0x407FB0, "c4.txt");
 //  hack_ctor(0x41A8E0, "c5.txt");
+//  hack_sp(0x11BCB51, "c1.txt");
+//  hack_sp(0xA6C239, "c2.txt");
   // offsets from V13.1.80
   // md5: f38e5732c94163b96cf797eef252b4cb
   hack_ctor(0x1BAC80, "c4.txt");

@@ -18,6 +18,8 @@ class de_ptx: public decuda_base {
  protected:
    virtual int _read();
    void hack_ctor(uint64_t, const char *fname);
+   void hack_sp(uint64_t, const char *fname);
+   int hack_sp(diter &, res_map &);
    int hack(diter &, res_map &);
    int check(lat_res &, uint64_t off);
    int dump_deres(const char *fname, const res_map &);

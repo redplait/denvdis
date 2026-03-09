@@ -703,6 +703,10 @@ struct diter
             (ud_obj.operand[0].base == r)
      ;
    }
+   inline int is_rsp() const {
+     return (ud_obj.operand[0].type == UD_OP_MEM) &&
+      (ud_obj.operand[0].base == UD_R_RSP);
+   }
    // debugging dump
    void dasm();
    void dasm(int state);
