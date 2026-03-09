@@ -92,7 +92,7 @@ sub arrange
     return;
   }
   # some instruction has .64 in their name
-  if ( $name eq 'UIADD3.64' || $name eq 'UMOV.64' ) {
+  if ( $name eq 'UIADD3.64' || $name eq 'UMOV.64' || $name eq 'HFMA2.MMA' ) {
     place($name, $name, $v);
     return;
   }

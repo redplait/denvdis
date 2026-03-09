@@ -76,22 +76,20 @@
  Spec28, // .IMM
  // BRA: 7
  // JMP: 7
- Spec29, // .MMA
- // HFMA2: 9
- Spec30, // .RELEASE
+ Spec29, // .RELEASE
  // USETMAXREG: 18
- Spec31, // .SFB
+ Spec30, // .SFB
  // TEX: 7
  // TLD: 7
  // TLD4: 8
  // TXD: 7
- Spec32, // .SP
+ Spec31, // .SP
  // OMMA: 7
- Spec33, // .SP.{168128.*|16864.*8.*8}@.SP.{16832.*|16864.*4.*4}@.SP.{8832.*|8864.*}@.{16816.*|16832.*4.*4}@.{16832.*8.*8|16864.*}@.{8816.*|8832.*}
+ Spec32, // .SP.{168128.*|16864.*8.*8}@.SP.{16832.*|16864.*4.*4}@.SP.{8832.*|8864.*}@.{16816.*|16832.*4.*4}@.{16832.*8.*8|16864.*}@.{8816.*|8832.*}
  // IMMA: 30 29 23 26 26 20
- Spec34, // .SYNC.DEFER_BLOCKING
+ Spec33, // .SYNC.DEFER_BLOCKING
  // BAR: 23
- Spec35, // .WIDE
+ Spec34, // .WIDE
  // IMUL: 9
  // IMUL32I: 12
 };
@@ -107,7 +105,7 @@
  { "ATOMG"sv, { 5, 0 } },
  { "ATOMS"sv, { 5, 0 } },
  { "B2R"sv, { 3, 0 } },
- { "BAR"sv, { 3, 34 } }, // .SYNC.DEFER_BLOCKING
+ { "BAR"sv, { 3, 33 } }, // .SYNC.DEFER_BLOCKING
  { "BGMMA"sv, { 5, 26 } }, // .GSB
  { "BITEXTRACT"sv, { 10, 0 } },
  { "BMMA"sv, { 4, 4 } }, // .168128@.168256@.88128
@@ -177,7 +175,8 @@
  { "GETLMEMBASE"sv, { 11, 0 } },
  { "HADD2"sv, { 5, 22 } }, // .F32
  { "HADD2_32I"sv, { 9, 0 } },
- { "HFMA2"sv, { 5, 29 } }, // .MMA
+ { "HFMA2"sv, { 5, 0 } },
+ { "HFMA2.MMA"sv, { 9, 0 } },
  { "HFMA2_32I"sv, { 9, 0 } },
  { "HGMMA"sv, { 5, 26 } }, // .GSB
  { "HMMA"sv, { 4, 5 } }, // .16816.F16.*@.1688.F16.*@.F32.{16816.F16|16816.E8M7|1688.E8M10}@.F32.{1684.E8M10|1688.F16|1688.E8M7}@.SP.16816.F16.*@.SP.16832.F16.*@.SP.F32.{16816.E8M10|16832.F16|16832.E8M7}@.SP.F32.{16816.F16|16816.E8M7|1688.E8M10}
@@ -200,10 +199,10 @@
  { "IDP4A"sv, { 5, 0 } },
  { "IGMMA"sv, { 5, 26 } }, // .GSB
  { "IMAD"sv, { 4, 27 } }, // .HI@.WIDE@.WIDE.READ.AB@.WIDE.READ.CH@.WIDE.READ.CL@.WIDE.WRITE.DH@.WIDE.WRITE.DL
- { "IMMA"sv, { 4, 33 } }, // .SP.{168128.*|16864.*8.*8}@.SP.{16832.*|16864.*4.*4}@.SP.{8832.*|8864.*}@.{16816.*|16832.*4.*4}@.{16832.*8.*8|16864.*}@.{8816.*|8832.*}
+ { "IMMA"sv, { 4, 32 } }, // .SP.{168128.*|16864.*8.*8}@.SP.{16832.*|16864.*4.*4}@.SP.{8832.*|8864.*}@.{16816.*|16832.*4.*4}@.{16832.*8.*8|16864.*}@.{8816.*|8832.*}
  { "IMNMX"sv, { 5, 13 } }, // .64@.64.HI@.64.LO
- { "IMUL"sv, { 4, 35 } }, // .WIDE
- { "IMUL32I"sv, { 7, 35 } }, // .WIDE
+ { "IMUL"sv, { 4, 34 } }, // .WIDE
+ { "IMUL32I"sv, { 7, 34 } }, // .WIDE
  { "IPA"sv, { 3, 0 } },
  { "ISBERD"sv, { 6, 0 } },
  { "ISBEWR"sv, { 6, 0 } },
@@ -244,7 +243,7 @@
  { "NANOTRAP"sv, { 8, 3 } }, // (with Rb)
  { "NONE"sv, { 4, 0 } },
  { "NOP"sv, { 3, 0 } },
- { "OMMA"sv, { 4, 32 } }, // .SP
+ { "OMMA"sv, { 4, 31 } }, // .SP
  { "OUT"sv, { 3, 23 } }, // .FINAL
  { "P2R"sv, { 3, 0 } },
  { "PIXLD"sv, { 5, 0 } },
@@ -299,9 +298,9 @@
  { "SYNCS"sv, { 0, 15 } }, // .ARRIVE.A1T0.A0T1@.ARRIVE.A1TR.ART0.A0TR.A0TX@.CAS.EXCH@.CCTL@.FLUSH@.LD.NON_UNIFORM@.LD.UNIFORM@.PHASECHK
  { "SYNCSU"sv, { 0, 16 } }, // .ARRIVE.A1T0@.ARRIVE.MULTICAST.A1T0
  { "TATOMG"sv, { 6, 0 } },
- { "TEX"sv, { 3, 31 } }, // .SFB
- { "TLD"sv, { 3, 31 } }, // .SFB
- { "TLD4"sv, { 4, 31 } }, // .SFB
+ { "TEX"sv, { 3, 30 } }, // .SFB
+ { "TLD"sv, { 3, 30 } }, // .SFB
+ { "TLD4"sv, { 4, 30 } }, // .SFB
  { "TMML"sv, { 4, 0 } },
  { "TTUCCTL"sv, { 7, 0 } },
  { "TTUCLOSE"sv, { 8, 0 } },
@@ -311,7 +310,7 @@
  { "TTUMACROFUSE"sv, { 12, 0 } },
  { "TTUOPEN"sv, { 7, 0 } },
  { "TTUST"sv, { 5, 0 } },
- { "TXD"sv, { 3, 31 } }, // .SFB
+ { "TXD"sv, { 3, 30 } }, // .SFB
  { "TXQ"sv, { 3, 0 } },
  { "UACCELCMD"sv, { 9, 0 } },
  { "UBLKCP"sv, { 6, 0 } },
@@ -385,7 +384,7 @@
  { "UREDGR"sv, { 6, 0 } },
  { "UREGPRERELEASE"sv, { 14, 0 } },
  { "USEL"sv, { 4, 12 } }, // .64
- { "USETMAXREG"sv, { 10, 30 } }, // .RELEASE
+ { "USETMAXREG"sv, { 10, 29 } }, // .RELEASE
  { "USETSHMSZ"sv, { 9, 24 } }, // .FLUSH
  { "USGXT"sv, { 5, 0 } },
  { "USHF"sv, { 4, 0 } },
