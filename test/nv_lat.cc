@@ -26,3 +26,64 @@ int NV_renderer::check_lat_set(const NV_sorted *ns) const {
   }
   return res;
 }
+
+static bool check_nonzero_kv(const NV_extracted &kv, const char *what) {
+  auto ki = kv.find(what);
+  if ( ki == kv.cend() ) return false;
+  return ki->second;
+}
+
+inline static bool has_key(const NV_extracted &kv, const char *what) {
+  auto ki = kv.find(what);
+  return ki != kv.end();
+}
+
+std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const NV_extracted &kv) const {
+  std::string_view iname = ins->name;
+  std::string_view iclas = ins->cname;
+  std::optional<int> res;
+  // pre-classify - rename some opcodes
+  switch( ins->name[0] ) {
+    case 'A': if ( iname == "AL2P"sv ) {
+ /* AL2P has only 2 form:
+     - NonZeroRegister:Ra ',' SImm(11)*:Ra_offset - class al2p__RaNonRZ
+     - ZeroRegister("RZ"):Ra ',' UImm(10)*:Ra_offset - class al2p__RaRZ
+    so I guessed that _INDEXED is first one
+  */
+        if ( iclas != "al2p__RaRZ"sv ) iname = "AL2P_INDEXED"sv;
+      }
+     break;
+    case 'V': if ( iname == "VOTE_VTG"sv ) iname = "VOTE"sv; // bcs VOTE_VTG is just alt alias
+     break;
+  }
+  // check in s_lats
+  auto li = s_lats.find(iname);
+  if ( li == s_lats.end() ) return res;
+  // check that we have value (can be missed for bad states
+  if ( li->second.first ) {
+    res.emplace(li->second.first);
+    if ( !li->second.second ) // if no state for post-processing - we are done
+      return res;
+  }
+  // post-processing
+  switch(li->second.second) {
+    case LatSpecial::Spec3: // with Rb (and I guess with URb too)
+      if ( has_key(kv, "Rb") || has_key(kv, "URb") ) {
+ // NANOSLEEP: 19
+ // NANOTRAP: 18
+ // WARPSYNC: 18
+        if ( iname == "NANOSLEEP"sv ) res.emplace(19);
+        else res.emplace(18);
+      }
+     break;
+    case LatSpecial::Spec34: // .WIDE
+      if ( check_nonzero_kv(kv, "wide") ) {
+ // IMUL: 9
+ // IMUL32I: 12
+        if ( iname == "IMUL"sv ) res.emplace(9);
+        else if ( iname == "IMUL32I"sv ) res.emplace(12);
+      }
+     break;
+  }
+  return res;
+}
