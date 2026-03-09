@@ -307,6 +307,12 @@ class Ced_perl: public CEd_base {
     else reus.apply(ins(), cex());
     return res;
   }
+  SV *ins_latency() const {
+    if ( !ins() ) return &PL_sv_undef;
+    auto res = calc_latency(ins(), cex());
+    if ( !res.has_value() ) return &PL_sv_undef;
+    return newSViv(res.value());
+  }
   SV *get_off() {
     if ( !ins() ) return &PL_sv_undef;
     return newSVuv(m_dis->offset());
@@ -2024,6 +2030,20 @@ grep_pred(SV *obj, const char *key)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->ins_pred(key);
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_lat(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_latency = 1
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+  if ( !e->has_ins() )
+   RETVAL = &PL_sv_undef;
+  else
+   RETVAL = e->ins_latency();
  OUTPUT:
   RETVAL
 
