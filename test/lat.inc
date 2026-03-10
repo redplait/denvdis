@@ -429,5 +429,6 @@
  { "WARPGROUP"sv, { 0, 18 } }, // .ARRIVE@.DEPBAR@.WAIT
  { "WARPGROUPSET"sv, { 12, 0 } },
  { "WARPSYNC"sv, { 8, 3 } }, // (with Rb)
+ { "XMAD"sv, { 4, 0 } },
  { "YIELD"sv, { 5, 0 } },
 };

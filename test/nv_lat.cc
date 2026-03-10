@@ -27,6 +27,12 @@ int NV_renderer::check_lat_set(const NV_sorted *ns) const {
   return res;
 }
 
+static bool check_zero_kv(const NV_extracted &kv, const char *what) {
+  auto ki = kv.find(what);
+  if ( ki == kv.cend() ) return false;
+  return !ki->second;
+}
+
 static bool check_nonzero_kv(const NV_extracted &kv, const char *what) {
   auto ki = kv.find(what);
   if ( ki == kv.cend() ) return false;
@@ -37,6 +43,16 @@ inline static bool has_key(const NV_extracted &kv, const char *what) {
   auto ki = kv.find(what);
   return ki != kv.end();
 }
+
+static const std::unordered_map<std::string_view, int> s_spec9 = {
+ { "UTCCP"sv, 10 },
+ { "UTCHMMA"sv, 12 },
+ { "UTCIMMA"sv, 12 },
+ { "UTCMXQMMA"sv, 14 },
+ { "UTCOMMA"sv, 12 },
+ { "UTCQMMA"sv, 12 },
+ { "UTCSHIFT"sv, 13 },
+};
 
 std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const NV_extracted &kv) const {
   std::string_view iname = ins->name;
@@ -65,7 +81,7 @@ std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const N
     if ( !li->second.second ) // if no state for post-processing - we are done
       return res;
   }
-  // post-processing
+  // post-processing - keep them in sorted order for better navigation
   switch(li->second.second) {
     case LatSpecial::Spec3: // with Rb (and I guess with URb too)
       if ( has_key(kv, "Rb") || has_key(kv, "URb") ) {
@@ -75,6 +91,37 @@ std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const N
         if ( iname == "NANOSLEEP"sv ) res.emplace(19);
         else res.emplace(18);
       }
+     break;
+    case LatSpecial::Spec9: {
+       auto i9 = s_spec9.find(iname);
+       if ( i9 != s_spec9.cend() ) {
+         res.emplace(i9->second);
+       }
+     }
+     break;
+    case LatSpecial::Spec25:
+    case LatSpecial::Spec11: res.emplace(7);
+     break;
+    case LatSpecial::Spec23: // .FINAL
+      if ( iclas == "out__FINAL"sv ) res.emplace(9);
+     break;
+    case LatSpecial::Spec24: // .FLUSH
+      if ( check_nonzero_kv(kv, "flush") ) res.emplace(15);
+     break;
+    case LatSpecial::Spec26: // .GSB - sm90 only?
+      if ( check_zero_kv(kv, "gsb") ) res.emplace(9);
+      break;
+    case LatSpecial::Spec28: // .IMM
+      if ( has_key(kv, "sImm") ) res.emplace(7);
+      break;
+    case LatSpecial::Spec29: // .RELEASE - I guess stands for dealloc
+      if ( iclas.ends_with("dealloc") ) res.emplace(18);
+      break;
+    case LatSpecial::Spec31: // .SP
+      if ( iclas.starts_with("qmma_sp"sv) ) res.emplace(7);
+      break;
+    case LatSpecial::Spec33: // .SYNC.DEFER_BLOCKING
+      if ( check_nonzero_kv(kv, "defer_blocking") ) res.emplace(23);
      break;
     case LatSpecial::Spec34: // .WIDE
       if ( check_nonzero_kv(kv, "wide") ) {
