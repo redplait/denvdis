@@ -92,6 +92,10 @@ std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const N
         else res.emplace(18);
       }
      break;
+    case LatSpecial::Spec8:
+      if ( iclas.starts_with("utcbar_flush") ) res.emplace(17);
+      else res.emplace(11); // both 1cta & 2cta have the same value
+     break;
     case LatSpecial::Spec9: {
        auto i9 = s_spec9.find(iname);
        if ( i9 != s_spec9.cend() ) {
@@ -99,8 +103,15 @@ std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const N
        }
      }
      break;
+    case LatSpecial::Spec10: // rpcmov
+      if ( iclas.starts_with("rpcmov_src") ) res.emplace(14);
+      else if ( has_key(kv, "sz") ) res.emplace(9); // both 32 & 64 have the same value
+     break;
     case LatSpecial::Spec25:
     case LatSpecial::Spec11: res.emplace(7);
+     break;
+    case LatSpecial::Spec22: // .F32
+      if ( iclas.starts_with("hadd2_F32") ) res.emplace(9);
      break;
     case LatSpecial::Spec23: // .FINAL
       if ( iclas == "out__FINAL"sv ) res.emplace(9);
