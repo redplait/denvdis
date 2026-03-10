@@ -76,6 +76,8 @@ sub dump_bad
 sub arrange
 {
   my ($name, $v) = @_;
+  return if ( $name =~ /^SM\d+_(?:LAST|FIRST)/ );
+  return if ( $name eq 'LAST' );
   # _GSB & _IMM are suffixes
   if ( $name =~ /^(\w+)_GSB/ ) {
     if ( exists $g_ops{$1} ) {
@@ -279,12 +281,52 @@ sub process
   close $fh;
 }
 
+sub process_many
+{
+  my(@arr, %cache, $fh, $str, $ln, $name, $val);
+  for my $fname ( @ARGV ) {
+    $ln = 0;
+    open($fh, '<', $fname) or die("cannot open $fname, error $!");
+    while( $str = <$fh> ) {
+      $ln++;
+      chomp $str;
+      if ( $str !~ /^[0-9a-f]+: (.*)$/i ) {
+        printf("%s: bad line %d: %s\n", $fname, $ln, $str);
+        last;
+      }
+      if ( $ln & 1 ) {
+        $name = $1;
+        next;
+      }
+      $val = int($1);
+      if ( $name =~ /^MERCURY/ ) {
+        $g_merc++;
+        next;
+      }
+      # check cache
+      next if ( exists $cache{$name} );
+      $cache{$name} = $val;
+      push @arr, [ $name, $val ];
+    }
+    close $fh;
+  }
+  for my $l ( @arr ) {
+    $g_total++;
+    arrange($l->[0], $l->[1]);
+  }
+}
+
 # main
 my $flat = '../ops/c8.txt'; # default file name
 my $state = getopts("C");
 usage() if ( !$state );
-$flat = $ARGV[0] if ( @ARGV );
-process($flat);
+my $asize = scalar @ARGV;
+if ( $asize > 1 ) {
+  process_many();
+} else {
+  $flat = $ARGV[0] if ( $asize );
+  process($flat);
+}
 unless( defined $opt_C ) {
  printf("total %d\n", $g_total);
  printf("skipped %d mercury\n", $g_merc) if ( $g_merc );
