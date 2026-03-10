@@ -164,6 +164,23 @@ std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const N
       if ( iclas == "bpt__onlyDRAIN"sv ) res.emplace(9);
       else if ( iclas == "bpt__WAIT"sv ) res.emplace(9); // there is no PAUSE
      break;
+    case LatSpecial::Spec21: { // MUFU
+// EX2@.EX2.{F16x2, BF16x2}@.RCP@.RSQ@.TANH
+//   8     24                 8    8    9
+       auto ki = kv.find("mufuop");
+       if ( ki == kv.cend() ) ki = kv.find("mufu");
+       if ( ki == kv.cend() ) break;
+       if ( 4 == ki->second || 5 == ki->second ) // 4 - RCP. 5 - RSQ
+         res.emplace(8);
+       else if ( 9 == ki->second ) // 9 - TANH
+         res.emplace(9);
+       else if ( 2 == ki->second ) { // 2 - EX2
+         if ( iclas.starts_with("mufu_fp16"sv ) ) // I have zero ideas where else extract F16/BF16
+           res.emplace(24);
+         else res.emplace(8);
+       }
+     }
+     break;
     case LatSpecial::Spec22: // .F32
       if ( iclas.starts_with("hadd2_F32") ) res.emplace(9);
      break;
