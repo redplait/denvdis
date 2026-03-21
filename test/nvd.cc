@@ -174,6 +174,9 @@ class nv_dis: public CElf<NV_renderer>
    void parse_attrs(Elf_Half idx, section *);
    void _parse_attrs(Elf_Half idx, section *);
    int read_symbols();
+   // debug info
+   void dump_sass_regs(section *);
+   void dump_sass_reg_types(section *);
    // branches
    bt_per_section *get_branch(Elf_Word i) {
      auto bi = m_branches.find(i);
@@ -253,6 +256,52 @@ void nv_dis::add_cbank(Elf_Word idx, Elf_Word s, unsigned short off, unsigned sh
     cps->offset = off;
     cps->size = size;
     m_cbanks[idx] = cps;
+  }
+}
+
+// ripped from gdb/cuda/cuda-regmap.c, function regmap_parse_ondisc_func
+void nv_dis::dump_sass_reg_types(section *sec) {
+  auto data = sec->get_data();
+  auto end = data + sec->get_size();
+  while( data < end ) {
+    fprintf(m_out, " %s ", data);
+    data += 1 + strlen(data);
+    // uint32 - num entries
+    uint32_t num = *(uint32_t *)data;
+    data += sizeof(uint32_t);
+    fprintf(m_out, "%X:\n", num);
+    for ( uint32_t idx = 0; idx < num && data < end; ++idx ) {
+      auto c = *data++;
+      fprintf(m_out, "   [%X] %2.2X\n", idx, c);
+    }
+  }
+}
+
+void nv_dis::dump_sass_regs(section *sec) {
+  auto data = sec->get_data();
+  auto end = data + sec->get_size();
+  while( data < end ) {
+    fprintf(m_out, " %s ", data);
+    data += 1 + strlen(data);
+    // uint32 - num entries
+    uint32_t num = *(uint32_t *)data;
+    data += sizeof(uint32_t);
+    fprintf(m_out, "%X:\n", num);
+    for ( uint32_t i = 0; i < num && data < end; ++i ) {
+      // index uint32
+      uint32_t idx = *(uint32_t *)data;
+      data += sizeof(uint32_t);
+      fprintf(m_out, "  [%X] %s ", idx, data);
+      data += 1 + strlen(data);
+      // value start end - all uint32_t
+      uint32_t value = *(uint32_t *)data;
+      data += sizeof(uint32_t);
+      uint32_t start = *(uint32_t *)data;
+      data += sizeof(uint32_t);
+      uint32_t end = *(uint32_t *)data;
+      data += sizeof(uint32_t);
+      fprintf(m_out, "%X %X - %X\n", value, start, end);
+    }
   }
 }
 
@@ -802,7 +851,12 @@ void nv_dis::process()
     if ( !sec->get_size() ) continue;
     // dump addr, size & info
     fprintf(m_out, "  addr %lX size %lX info %d link %d\n", sec->get_address(), sec->get_size(), sec->get_info(), sec->get_link());
-    if ( !strncmp(sname.c_str(), ".text.", 6) )
+    // dump debug_regs
+    if ( sname == ".nv_debug_info_reg_sass" || sname == ".nv.merc.nv_debug_info_reg_sass" ) {
+      dump_sass_regs(sec);
+    } else if ( sname == ".nv_debug_info_reg_type" || sname == ".nv.merc.nv_debug_info_reg_type" ) {
+      dump_sass_reg_types(sec);
+    } else if ( !strncmp(sname.c_str(), ".text.", 6) )
     {
       m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size(), 0 );
       if ( opt_c )
