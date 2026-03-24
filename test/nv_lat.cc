@@ -127,6 +127,22 @@ std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const N
          else res.emplace(11);
        }
      break;
+    case LatSpecial::Spec6: // .16816 - 10 .16832 - 10 .SF - 7 .SF.SP 10 .SP.16832 - 13 .SP.16864 - 13
+      { bool sfonly = false;
+        bool sponly = false;
+        auto ki = kv.find("sf");
+        if ( ki != kv.cend() ) sfonly = true;
+        ki = kv.find("sp");
+        if ( ki != kv.cend() ) sponly = true;
+        if ( sfonly && sponly ) { res.emplace(10); break; } // .SF.SP
+        if ( sfonly ) { res.emplace(7); break; } // .SF
+        ki = kv.find("size"); // SIZE_16816_16832
+        if ( ki == kv.cend() ) break;
+        if ( 0 == ki->second ) res.emplace(10); // 16816
+        else if ( 1 == ki->second ) res.emplace(sponly ? 13 : 10); // 16832
+        else if ( 2 == ki->second ) res.emplace(13); // 16864
+      }
+     break;
     case LatSpecial::Spec7: // .16816 - 10 .1684 - 9 .1688 - 9
        { auto ki = kv.find("size"); // DMMA_SIZE
          if ( ki == kv.cend() ) break;
