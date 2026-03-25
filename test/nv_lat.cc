@@ -218,6 +218,26 @@ std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const N
     case LatSpecial::Spec31: // .SP
       if ( iclas.starts_with("qmma_sp"sv) ) res.emplace(7);
       break;
+    case LatSpecial::Spec32: // .SP.{168128.*|16864.*8.*8} - 30
+      // .SP.{16832.*|16864.*4.*4} - 29
+      // .SP.{8832.*|8864.*} - 23 - wtf?
+      // .{16816.*|16832.*4.*4} - 26
+      // .{16832.*8.*8|16864.*} - 26
+      // .{8816.*|8832.*} - 20
+     {
+       bool has_sp = false;
+       auto ki = kv.find("sp");
+       if ( ki != kv.cend() ) has_sp = true;
+       ki = kv.find("size");
+       if ( ki == kv.cend() ) break;
+       // 4 - 16816, 5 - 16832, 6 - 16864
+       if ( ki->second == 6 ) { res.emplace( has_sp ? 30 : 26 ); break; }
+       else if ( ki->second == 5 ) { res.emplace( has_sp ? 29 : 26); break; }
+       else if ( ki->second == 4 ) { res.emplace(26); break; }
+       else if ( ki->second == 3 ) { res.emplace( has_sp ? 29 : 26); break; } // 3 - 16832
+       else if ( !ki->second ) { res.emplace(20); break; } // 0 - 1688
+     }
+     break;
     case LatSpecial::Spec33: // .SYNC.DEFER_BLOCKING
       if ( check_nonzero_kv(kv, "defer_blocking") ) res.emplace(23);
      break;
