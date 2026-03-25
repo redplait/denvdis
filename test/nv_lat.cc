@@ -127,6 +127,39 @@ std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const N
          else res.emplace(11);
        }
      break;
+    case LatSpecial::Spec5:
+ // .16816.F16.* - 16
+ // .1688.F16.* - 15
+ // .F32.{16816.F16|16816.E8M7|1688.E8M10} - 42
+ // .F32.{1684.E8M10|1688.F16|1688.E8M7} - 40
+ // .SP.16816.F16.* - 19
+ // .SP.16832.F16.* - 19
+ // .SP.F32.{16816.E8M10|16832.F16|16832.E8M7} - 46
+ // .SP.F32.{16816.F16|16816.E8M7|1688.E8M10} - 45
+     {
+       bool has_sp = false;
+       auto ki = kv.find("sp");
+       if ( ki != kv.cend() ) has_sp = true;
+       // first 'size', second 'dstfmt'
+       bool f32 = false;
+       ki = kv.find("dstfmt");
+       if ( ki != kv.cend() && ki->second ) f32 = true;
+       ki = kv.find("size");
+       if ( ki == kv.cend() ) break;
+       if ( !f32 ) {
+         // 16816 - 1
+         if ( 1 == ki->second ) { res.emplace(has_sp ? 19: 16); break; }
+         // 1688 - 0
+         if ( !ki->second ) { res.emplace(15); break; }
+         // 16832 - 3
+         if ( has_sp && 3 == ki->second ) { res.emplace(19); break; }
+       } else {
+         // 1684 - 2
+         if ( ki->second == 2 || !ki->second ) { res.emplace(has_sp ? 45: 40); break; }
+         else { res.emplace(has_sp ? 46: 42); break; }
+       }
+     }
+     break;
     case LatSpecial::Spec6: // .16816 - 10 .16832 - 10 .SF - 7 .SF.SP 10 .SP.16832 - 13 .SP.16864 - 13
       { bool sfonly = false;
         bool sponly = false;
