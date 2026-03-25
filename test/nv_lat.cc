@@ -209,6 +209,10 @@ std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const N
       if ( i12 != s_spec12.cend() ) res.emplace(i12->second);
      }
      break;
+    case LatSpecial::Spec18: // WARPGROUP: 16 16 14
+       if ( iclas.starts_with("warpgroup_wait"sv ) ) res.emplace(14);
+       else res.emplace(16);
+      break;
     case LatSpecial::Spec20: // bpt
       if ( iclas == "bpt__onlyDRAIN"sv ) res.emplace(9);
       else if ( iclas == "bpt__WAIT"sv ) res.emplace(9); // there is no PAUSE
