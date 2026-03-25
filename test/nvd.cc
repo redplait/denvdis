@@ -394,6 +394,16 @@ void nv_dis::dump_ins(const NV_pair &p, uint32_t label, NV_labels *l)
       }
     }
     fputc('\n', m_out);
+    // dump latency
+    if ( opt_l ) {
+      auto ki = p.second.find("usched_info");
+      if ( ki != p.second.end() ) fprintf(m_out, "; ushed %ld ", ki->second);
+      else fprintf(m_out, "; ");
+      auto ol = calc_latency(p.first, p.second);
+      if ( !ol.has_value() ) fprintf(m_out, "unknown_latency");
+      else fprintf(m_out, "latency %d", ol.value());
+      fputc('\n', m_out);
+    }
     // body of instruction
     if ( opt_c ) {
       fprintf(m_out, " /*%lX*/ ", m_dis->offset());
