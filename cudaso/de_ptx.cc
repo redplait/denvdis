@@ -80,6 +80,9 @@ int de_ptx::hack(diter &di, res_map &rm) {
     if ( !di.next() ) break;
     di.dasm();
     // luckily there is only limited set of instructions
+    if ( di.ud_obj.mnemonic == UD_Ipush || di.ud_obj.mnemonic == UD_Ipop )
+      continue;
+    if ( di.is_movrr() && (di.ud_obj.operand[0].base == UD_R_RBP) ) continue;
     // lea
     if ( di.is_lea() && di.is_r1() ) {
       auto res = di.get_addr(1);
@@ -174,14 +177,16 @@ int de_ptx::hack_sp(diter &di, res_map &rm) {
 int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
   // for 12.8 md5 14dc7bbb0bafae1313489c389e9486eb - NPDOHYX
-//  hack_ctor(0x407FB0, "c4.txt");
+  hack_ctor(0x582500, "c15.txt");
+  hack_ctor(0x598620, "c17.txt");
+  hack_ctor(0x59D4A0, "c18.txt");
 //  hack_ctor(0x41A8E0, "c5.txt");
 //  hack_sp(0x11BCB51, "c1.txt");
 //  hack_sp(0xA6C239, "c2.txt");
   // offsets from V13.1.80
   // md5: f38e5732c94163b96cf797eef252b4cb
-  hack_ctor(0x1BAC80, "c4.txt");
-  hack_ctor(0x1D0D70, "c5.txt");
-  hack_ctor(0x1D3250, "c8.txt");
+//  hack_ctor(0x1BAC80, "c4.txt");
+//  hack_ctor(0x1D0D70, "c5.txt");
+//  hack_ctor(0x1D3250, "c8.txt");
   return 1;
 }
