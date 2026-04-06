@@ -94,6 +94,7 @@ class decuda_base {
      res = *ptr;
      return true;
    }
+   int read_str(ELFIO::section *, uint64_t off, std::string &);
    uint32_t read_size(ELFIO::section *, uint64_t off);
    uint64_t read_ptr(ELFIO::section *, uint64_t off);
    int cmp_str(ELFIO::section *, uint64_t off, const char *);
