@@ -1,0 +1,448 @@
+0	align
+ (ct)
+ c+
+1	base_check
+ 
+ c+
+2	carries_dependency
+ 
+ c+
+3	deprecated
+ ?(sx)
+ c+(201402-|M(1910-))
+4	final
+ 
+ c+
+5	hiding
+ 
+ c+
+6	known_semantics
+ 
+ c+[msvc](|M(1927-))
+7	noreturn
+ 
+ c+
+8	override
+ 
+ c+
+9	nodiscard
+ ?(sx)
+ c+(201703-|M(1910-))
+A	noop_dtor
+ 
+ c+[msvc](|M(1928-))
+B	maybe_unused
+ 
+ c+(201703-|M(1910-)|G(70100-)|C(30900-))
+C	fallthrough
+ 
+ c+(201703-|M(1910-))
+D	likely
+ 
+ c+
+E	unlikely
+ 
+ c+
+F	no_unique_address
+ 
+ c+(202002-|G(80300-)|C(90000-))
+10	deprecated
+ ?(sx)
+ c
+11	fallthrough
+ 
+ c
+12	nodiscard
+ ?(sx)
+ c
+13	noreturn
+ 
+ c
+14	_Noreturn
+ 
+ c
+15	maybe_unused
+ 
+ c
+16	enable_if
+ (X,sn)
+ lx(30500-)
+17	overloadable
+ 
+ lx
+18	pass_object_size
+ (ci)
+ lx
+19	diagnose_if
+ (X,sn,sn)
+ lx
+1A	alias
+ (sn)
+ gx
+1B	aligned
+ ?(ci)
+ gx
+1C	alloc_size
+ (ci?,ci)
+ gx(40200-)
+1D	always_inline
+ 
+ gx
+1E	artificial
+ 
+ gx(40000-)
+1F	cdecl
+ 
+ gx
+20	cleanup
+ (n)
+ gc
+21	cold
+ 
+ gx(40300-)
+22	common
+ 
+ gx
+23	const
+ 
+ gx
+24	constructor
+ ?(ci)
+ gx
+25	deprecated
+ ?(sx)
+ gx(30100-)
+26	deprecated
+ ?(sx)
+ lx[gnu](60000-)
+27	destructor
+ ?(ci)
+ gx
+28	error
+ (sn)
+ gx(40000-)
+29	ext_vector_type
+ (ci)
+ lx
+2A	externally_visible
+ 
+ gx(40000-)
+2B	fallthrough
+ 
+ gx(70000-)
+2C	fallthrough
+ 
+ lx{clang}(30900-)
+2D	fallthrough
+ 
+ lx{gnu}(30900-)
+2E	fastcall
+ 
+ gx(30400-)
+2F	flatten
+ 
+ gx(40000-)
+30	format
+ (n,ci,ci)
+ gx
+31	format_arg
+ (ci)
+ gx
+32	gnu_inline
+ 
+ gx
+33	hot
+ 
+ gx(40300-)
+34	ifunc
+ (sn)
+ gx
+35	init_priority
+ (ci)
+ g+
+36	internal_linkage
+ 
+ lx{clang}(40000-)
+37	malloc
+ ?(X?,ci)
+ gx
+38	may_alias
+ 
+ gx(30300-)
+39	mode
+ (n)
+ gx
+3A	no_instrument_function
+ 
+ gx
+3B	no_check_memory_usage
+ 
+ gx
+3C	nocommon
+ 
+ gx
+3D	noinline
+ 
+ gx
+3E	nonnull
+ ?(?ci+)
+ gx
+3F	noplt
+ 
+ gx
+40	noreturn
+ 
+ gx
+41	noreturn
+ 
+ lx{gnu}
+42	nothrow
+ 
+ gx
+43	packed
+ 
+ gx
+44	pure
+ 
+ gx
+45	section
+ (sn)
+ gx
+46	sentinel
+ ?(ci)
+ gx
+47	stdcall
+ 
+ gx
+48	strong
+ 
+ gx
+49	target
+ (*)
+ gx(40400-)
+4A	tls_model
+ (sn)
+ gx(30300-)
+4B	transparent_union
+ 
+ gc
+4C	unavailable
+ ?(sn)
+ gx(120000-)
+4D	unused
+ 
+ gx
+4E	used
+ 
+ gx
+4F	vector_size
+ (ci)
+ gx
+50	neon_vector_type
+ (ci)
+ lx
+51	neon_polyvector_type
+ (ci)
+ lx
+52	__arm_in
+ (sn)
+ lx(180000-)
+53	__arm_inout
+ (sn)
+ lx(180000-)
+54	__arm_out
+ (sn)
+ lx(180000-)
+55	__arm_preserves
+ (sn)
+ lx(180000-)
+56	__arm_streaming
+ 
+ lx(180000-)
+57	__arm_streaming_compatible
+ 
+ lx(180000-)
+58	visibility
+ (sn)
+ gx
+59	volatile
+ 
+ gx
+5A	warn_unused_result
+ 
+ gx
+5B	warning
+ (sn)
+ gx(40000-)
+5C	weak
+ 
+ gx
+5D	weakref
+ ?(sn)
+ gx(40100-)
+5E	abi_tag
+ ?(sn+)
+ gx(40800-)
+5F	align
+ (ci)
+ mx
+60	intrin_type
+ 
+ mx
+61	availability
+ (*)
+ lx{clang}
+62	unavailable
+ ?(sn)
+ lx(30500-)
+63	using_if_exists
+ 
+ l+{clang}
+64	host
+ 
+ gx
+65	__host__
+ 
+ mx
+66	device
+ 
+ gx
+67	__device__
+ 
+ mx
+68	global
+ 
+ gx
+69	__global__
+ 
+ mx
+6A	shared
+ 
+ gx
+6B	__shared__
+ 
+ mx
+6C	constant
+ 
+ gx
+6D	__constant__
+ 
+ mx
+6E	launch_bounds
+ (ci?,ci?,ci)
+ gx
+6F	launch_bounds
+ (ci?,ci?,ci)
+ mx
+70	maxnreg
+ (ci)
+ gx
+71	maxnreg
+ (ci)
+ mx
+72	local_maxnreg
+ (ci)
+ gx
+73	local_maxnreg
+ (ci)
+ mx
+74	device_builtin
+ 
+ gx
+75	__device_builtin__
+ 
+ mx
+76	device_builtin_texture_type
+ 
+ gx
+77	__device_builtin_texture_type__
+ 
+ mx
+78	device_builtin_surface_type
+ 
+ gx
+79	__device_builtin_surface_type__
+ 
+ mx
+7A	cudart_builtin
+ 
+ gx
+7B	__cudart_builtin__
+ 
+ mx
+7C	nv_linkonce_odr
+ 
+ gx
+7D	nv_linkonce_odr
+ 
+ mx
+7E	nv_weak_odr
+ 
+ gx
+7F	nv_weak_odr
+ 
+ mx
+80	managed
+ 
+ gx
+81	__managed__
+ 
+ mx
+82	nv_register_params
+ 
+ gx
+83	__nv_register_params__
+ 
+ mx
+84	attribute
+ (*)
+ gx
+85	grid_constant
+ 
+ gx
+86	__grid_constant__
+ 
+ mx
+87	nv_inline_hint
+ 
+ gx
+88	nv_inline_hint
+ 
+ mx
+89	cluster_dims
+ (?ci?,ci?,ci)
+ gx
+8A	__cluster_dims__
+ (?ci?,ci?,ci)
+ mx
+8B	block_size
+ ((ci,ci,ci)?,(ci,ci,ci))
+ gx
+8C	__block_size__
+ ((ci,ci,ci)?,(ci,ci,ci))
+ mx
+8D	forceinline
+ 
+ c+[msvc](|M(1927-))
+8E	__texture__
+ 
+ gx
+8F	__surface__
+ 
+ gx
+90	nv_weak
+ 
+ gx
+91	nv_weak
+ 
+ mx
+92	exclude_from_explicit_instantiation
+ 
+ lx
+93	nv_pure
+ 
+ gx
+94	__nv_pure__
+ 
+ mx
+95	
