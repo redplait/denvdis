@@ -15,7 +15,7 @@ class de_ptx: public decuda_base {
     std::string dec;
    };
    typedef std::map<uint64_t, lat_res> res_map;
-   typedef std::map<std::string, int> cicc_names;
+   typedef std::map<std::string_view, int> cicc_names;
  protected:
    virtual int _read();
    void hack_ctor(uint64_t, const char *fname);
@@ -23,7 +23,8 @@ class de_ptx: public decuda_base {
    void hack_sp(uint64_t, const char *fname);
    int hack_sp(diter &, res_map &);
    int hack(diter &, res_map &);
-   int hack_cicc(diter &, cicc_names &);
+   template <typename T>
+   int hack_cicc(diter &, T &);
    int check(lat_res &, uint64_t off);
    int dump_deres(const char *fname, const res_map &);
    int dump_cicc(const char *fname, const cicc_names &);

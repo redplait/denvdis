@@ -10,7 +10,7 @@ int de_ptx::dump_cicc(const char *fname, const cicc_names &cn) {
     return 0;
   }
   for ( const auto ci: cn ) {
-    fprintf(fp,"%d %s\n", ci.second, ci.first.c_str());
+    fprintf(fp,"%d %.*s\n", ci.second, ci.first.size(), ci.first.data());
   }
   fclose(fp);
   return 1;
@@ -94,13 +94,15 @@ static void report(diter &di, const char *pfx) {
   printf("%s at %lX\n", pfx, ud_insn_off(&di.ud_obj));
 }
 
-int de_ptx::hack_cicc(diter &di, cicc_names &cn) {
+template <typename T>
+int de_ptx::hack_cicc(diter &di, T &cn) {
  // states:
  // 0 - initial
  // 1 - rsi got string
  // 2 - call
  // 3 - mov [rax+8], const, reset to 0
- std::string name, prev;
+ using KT = typename T::key_type;
+ KT name, prev;
  int state = 0;
  while(1) {
     if ( !di.next() ) break;
@@ -109,12 +111,12 @@ int de_ptx::hack_cicc(diter &di, cicc_names &cn) {
     if ( di.is_lea() && di.is_r1() && di.ud_obj.operand[0].base == UD_R_RSI ) {
       auto res = di.get_addr(1);
       if ( !in_sec(s_rodata, res) ) continue;
-      name.clear();
+      name = {};
       if ( read_str(s_rodata.value(), res, name) ) state = 1;
     } else if ( di.ud_obj.mnemonic == UD_Imov && di.ud_obj.operand[1].type == UD_OP_IMM &&
              di.ud_obj.operand[0].type == UD_OP_MEM && di.ud_obj.operand[0].lval.sdword == 8 ) {
       cn[prev] = di.ud_obj.operand[1].lval.sdword;
-      prev.clear();
+      prev = {};
     }
     if ( di.is_end() ) break;
  }
