@@ -56,6 +56,16 @@ int decuda_base::read_str(ELFIO::section *s, uint64_t off, std::string &res) {
   return !res.empty();
 }
 
+int decuda_base::read_str(ELFIO::section *s, uint64_t off, std::string_view &res) {
+  auto rs = s->get_data() + (off - s->get_address());
+  auto end = s->get_data() + s->get_size();
+  auto start = rs;
+  size_t len = 0;
+  for ( ; *rs && rs < end; ++rs ) ++len;
+  res = { start, len };
+  return len != 0;
+}
+
 uint64_t decuda_base::read_ptr(ELFIO::section *s, uint64_t off) {
   auto rs = s->get_data() + (off - s->get_address());
   return *(uint64_t *)rs;
