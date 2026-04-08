@@ -926,6 +926,23 @@ sub store_s_idx($$$)
   1;
 }
 
+# args: block, current stall, current latency, is_dual
+sub store_lat($$$$)
+{
+  my($block, $stall, $lat, $is_d) = @_;
+  my $ld = $block->[16]; # latency data
+  # dump
+  printf("; %d ", $ld->[0]);
+  if ( defined $lat ) {
+    printf("latency %d next %d\n", $lat, $ld->[0] + $lat);
+    $ld->[1] = $lat;
+  } else {
+    printf("UNKNOWN_LAT\n");
+    $ld->[2] |= 1;
+  }
+  $ld->[0] += $stall unless($is_d);
+}
+
 # check if current instruction is LD/ST
 sub is_ld_st
 {
@@ -1196,6 +1213,7 @@ sub process_sched
   my $ctrl;
   my $is_dual = 0;
   my $stall = 0;
+  my $lat = $g_ced->ins_lat();
   if ( $g_w == 64 ) {
     $ctrl = $g_ced->ctrl();
     # from Understanding the GPU Microarchitecture to Achieve Bare-Metal Performance Tuning:
@@ -1207,6 +1225,7 @@ sub process_sched
     $stall &= 0xf; # bit 0..3
     store_s_idx($b, 7, $stall);
     store_s_idx($b, 8, $is_dual);
+    store_lat($b, $stall, $lat, $is_dual);
     if ( defined $opt_b ) {
       # previous & current stall
       $sctx->{'prev'} = $sctx->{'curr'};
@@ -1230,6 +1249,7 @@ sub process_sched
       my $s = $g_ced->render_cword($ctrl);
       $stall = ($ctrl & 0x0000f) >> 0;
       store_s_idx($b, 7, $stall);
+      store_lat($b, $stall, $lat, $is_dual);
       # previous & current stall
       $sctx->{'prev'} = $sctx->{'curr'};
       $sctx->{'curr'} = $stall;
@@ -1398,8 +1418,8 @@ sub dump_ins
   if ( defined($block) && defined($block->[13]) && defined($opt_P) ) {
     my $ar = $block->[13];
     # [6] is has_pred & [1] is ins_name
-    $block->[16] = 1 if ( !$ar->[6] && $ar->[1] eq 'EXIT' );
-    $block->[16] = 1 if ( 2 == $brt );
+    $block->[17] = 1 if ( !$ar->[6] && $ar->[1] eq 'EXIT' );
+    $block->[17] = 1 if ( 2 == $brt );
   }
   # process scheduling/find dual instr
   process_sched($off, $sctx, $block);
@@ -1836,7 +1856,7 @@ sub int_regs
 sub block_with_exit
 {
   my $b = shift;
-  return 1 if ( defined($b->[16]) && $b->[16] );
+  return 1 if ( defined($b->[17]) && $b->[17] );
   0;
 }
 
@@ -2217,7 +2237,8 @@ sub dg
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
-  [16] - if this block contains unconditional EXIT
+  [16] - latency data [ current stall count, current latency, had bad ]
+  [17] - if this block contains unconditional EXIT
 =cut
   my @bbs;
   my $add_block = sub {
@@ -2233,6 +2254,7 @@ sub dg
     if ( defined $opt_s ) {
       my @tmp;
       $res[13] = \@tmp;
+      $res[16] = [ 0, 0, 0 ];
     }
     \@res;
   };
