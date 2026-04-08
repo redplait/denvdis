@@ -1,0 +1,556 @@
+0	P9W
+ asm-verbose=
+1	P9W
+ asm-verbose
+ 
+2	P9W
+ check-red-pass=
+3	P9W
+ check-red-pass
+ 
+4	P9W
+ device-c=
+5	P9W
+ device-c
+ 
+6	P9W
+ disable-AggressiveDCEPass=
+7	P9W
+ disable-AggressiveDCEPass
+ 
+8	P9W
+ disable-ArgumentPromotionPass=
+9	P9W
+ disable-ArgumentPromotionPass
+ 
+A	P9W
+ disable-BasicDeadBarrierEliminationPass=
+B	P9W
+ disable-BasicDeadBarrierEliminationPass
+ 
+C	P9W
+ disable-branch-dist-before-inlining=
+D	P9W
+ disable-branch-dist-before-inlining
+ 
+E	P9W
+ disable-branch-dist=
+F	P9W
+ disable-branch-dist
+ 
+10	P9W
+ disable-BranchDistPass=
+11	P9W
+ disable-BranchDistPass
+ 
+12	P9W
+ disable-break-critical-edges=
+13	P9W
+ disable-break-critical-edges
+ 
+14	P9W
+ disable-BreakCriticalEdgesPass=
+15	P9W
+ disable-BreakCriticalEdgesPass
+ 
+16	P9W
+ disable-CFGSimplificationPass=
+17	P9W
+ disable-CFGSimplificationPass
+ 
+18	P9W
+ disable-CondPropagationPass=
+19	P9W
+ disable-CondPropagationPass
+ 
+1A	P9W
+ disable-ConstantMergePass=
+1B	P9W
+ disable-ConstantMergePass
+ 
+1C	P9W
+ disable-DeadArgEliminationPass=
+1D	P9W
+ disable-DeadArgEliminationPass
+ 
+1E	P9W
+ disable-DeadStoreEliminationPass=
+1F	P9W
+ disable-DeadStoreEliminationPass
+ 
+20	P9W
+ disable-DeadTypeEliminationPass=
+21	P9W
+ disable-DeadTypeEliminationPass
+ 
+22	P9W
+ disable-FunctionInliningReadNonePass=
+23	P9W
+ disable-FunctionInliningReadNonePass
+ 
+24	P9W
+ disable-GlobalDCEPass=
+25	P9W
+ disable-GlobalDCEPass
+ 
+26	P9W
+ disable-GlobalOptimizerPass=
+27	P9W
+ disable-GlobalOptimizerPass
+ 
+28	P9W
+ disable-GVNPass=
+29	P9W
+ disable-GVNPass
+ 
+2A	P9W
+ disable-IndVarSimplifyPass=
+2B	P9W
+ disable-IndVarSimplifyPass
+ 
+2C	P9W
+ disable-inlining=
+2D	P9W
+ disable-inlining
+ 
+2E	P9W
+ disable-InstructionCombiningPass=
+2F	P9W
+ disable-InstructionCombiningPass
+ 
+30	P9W
+ disable-IPSCCPPass=
+31	P9W
+ disable-IPSCCPPass
+ 
+32	P9W
+ disable-JumpThreadingPass=
+33	P9W
+ disable-JumpThreadingPass
+ 
+34	P9W
+ disable-late-inlining=
+35	P9W
+ disable-late-inlining
+ 
+36	P9W
+ disable-LICMPass=
+37	P9W
+ disable-LICMPass
+ 
+38	P9W
+ disable-LoadStoreVectorizerPass=
+39	P9W
+ disable-LoadStoreVectorizerPass
+ 
+3A	P9W
+ disable-loop-index-splitting=
+3B	P9W
+ disable-loop-index-splitting
+ 
+3C	P9W
+ disable-loop-unswitching=
+3D	P9W
+ disable-loop-unswitching
+ 
+3E	P9W
+ disable-LoopDeletionPass=
+3F	P9W
+ disable-LoopDeletionPass
+ 
+40	P9W
+ disable-LoopIdiomPass=
+41	P9W
+ disable-LoopIdiomPass
+ 
+42	P9W
+ disable-LoopIndexSplitPass=
+43	P9W
+ disable-LoopIndexSplitPass
+ 
+44	P9W
+ disable-LoopRotatePass=
+45	P9W
+ disable-LoopRotatePass
+ 
+46	P9W
+ disable-LoopUnrollPass=
+47	P9W
+ disable-LoopUnrollPass
+ 
+48	P9W
+ disable-LoopUnswitchPass=
+49	P9W
+ disable-LoopUnswitchPass
+ 
+4A	P9W
+ disable-LowerAggrCopies=
+4B	P9W
+ disable-LowerAggrCopies
+ 
+4C	P9W
+ disable-LowerExpectIntrinsicPass=
+4D	P9W
+ disable-LowerExpectIntrinsicPass
+ 
+4E	P9W
+ disable-LowerOpsPass=
+4F	P9W
+ disable-LowerOpsPass
+ 
+50	P9W
+ disable-LowerStructArgsPass=
+51	P9W
+ disable-LowerStructArgsPass
+ 
+52	P9W
+ disable-MemorySpaceOptPass=
+53	P9W
+ disable-MemorySpaceOptPass
+ 
+54	P9W
+ disable-NVVMIPMemorySpacePropagationPass=
+55	P9W
+ disable-NVVMIPMemorySpacePropagationPass
+ 
+56	P9W
+ disable-opt-set-global-array-alignment=
+57	P9W
+ disable-opt-set-global-array-alignment
+ 
+58	P9W
+ disable-opt-set-shared-array-alignment=
+59	P9W
+ disable-opt-set-shared-array-alignment
+ 
+5A	P9W
+ disable-PostOrderFunctionAttrsLegacyPass=
+5B	P9W
+ disable-PostOrderFunctionAttrsLegacyPass
+ 
+5C	P9W
+ disable-ProcessRestrictPass=
+5D	P9W
+ disable-ProcessRestrictPass
+ 
+5E	P9W
+ disable-PromoteMemoryToRegisterPass=
+5F	P9W
+ disable-PromoteMemoryToRegisterPass
+ 
+60	P9W
+ disable-propagate-alignment=
+61	P9W
+ disable-propagate-alignment
+ 
+62	P9W
+ disable-PropagateAlignmentPass=
+63	P9W
+ disable-PropagateAlignmentPass
+ 
+64	P9W
+ disable-PruneEHPass=
+65	P9W
+ disable-PruneEHPass
+ 
+66	P9W
+ disable-ReassociatePass=
+67	P9W
+ disable-ReassociatePass
+ 
+68	P9W
+ disable-reuse-local-memory=
+69	P9W
+ disable-reuse-local-memory
+ 
+6A	P9W
+ disable-ReuseLocalMemoryPass=
+6B	P9W
+ disable-ReuseLocalMemoryPass
+ 
+6C	P9W
+ disable-SCCPPass=
+6D	P9W
+ disable-SCCPPass
+ 
+6E	P9W
+ disable-select-kernels=
+6F	P9W
+ disable-select-kernels
+ 
+70	P9W
+ disable-SetGlobalArrayAlignmentPass=
+71	P9W
+ disable-SetGlobalArrayAlignmentPass
+ 
+72	P9W
+ disable-SetLocalArrayAlignmentPass=
+73	P9W
+ disable-SetLocalArrayAlignmentPass
+ 
+74	P9W
+ disable-SignExtEliminatePass=
+75	P9W
+ disable-SignExtEliminatePass
+ 
+76	P9W
+ disable-SimplifyLibCallsPass=
+77	P9W
+ disable-SimplifyLibCallsPass
+ 
+78	P9W
+ disable-Sinking2Pass=
+79	P9W
+ disable-Sinking2Pass
+ 
+7A	P9W
+ disable-SROAPass=
+7B	P9W
+ disable-SROAPass
+ 
+7C	P9W
+ disable-StripDeadPrototypesPass=
+7D	P9W
+ disable-StripDeadPrototypesPass
+ 
+7E	P9W
+ disable-struct-lowering=
+7F	P9W
+ disable-struct-lowering
+ 
+80	P9W
+ disable-TailCallEliminationPass=
+81	P9W
+ disable-TailCallEliminationPass
+ 
+82	P9W
+ disable-triangular-unroll=
+83	P9W
+ disable-triangular-unroll
+ 
+84	P9W
+ disable-verify=
+85	P9W
+ disable-verify
+ 
+86	P9W
+ do-ip-msp=
+87	P9W
+ do-ip-msp
+ 
+88	P9W
+ do-licm=
+89	P9W
+ do-licm
+ 
+8A	P9W
+ dump-memory-space-warnings=
+8B	P9W
+ dump-memory-space-warnings
+ 
+8C	P9W
+ dump-nvvmir=
+8D	P9W
+ dump-nvvmir
+ 
+8E	P9W
+ earlycse=
+8F	P9W
+ earlycse
+ 
+90	P9W
+ enable-cvp=
+91	P9W
+ enable-cvp
+ 
+92	P9W
+ enable-llvm-gvn-hoist=
+93	P9W
+ enable-llvm-gvn-hoist
+ 
+94	P9W
+ enable-opt-byval=
+95	P9W
+ enable-opt-byval
+ 
+96	P9W
+ fallback-mode=
+97	P9W
+ fallback-mode
+ 
+98	P9W
+ force-nvomega=
+99	P9W
+ force-nvomega
+ 
+9A	P9W
+ full-inst-combine=
+9B	P9W
+ full-inst-combine
+ 
+9C	P9W
+ funit-at-a-time=
+9D	P9W
+ funit-at-a-time
+ 
+9E	P9W
+ help-hidden
+ Display hidden options
+9F	P9W
+ help
+ Display options
+A0	P9W
+ jobserver=
+A1	P9W
+ jobserver
+ 
+A2	P9W
+ ldst-vector=
+A3	P9W
+ ldst-vector
+ 
+A4	P9W
+ llc-enable-verify=
+A5	P9W
+ llc-enable-verify
+ 
+A6	P9W
+ llcO1=
+A7	P9W
+ llcO1
+ 
+A8	P9W
+ llcO2=
+A9	P9W
+ llcO2
+ 
+AA	P9W
+ memory-space-opt=
+AB	P9W
+ memory-space-opt
+ 
+AC	P9W
+ O1=
+AD	P9W
+ O1
+ 
+AE	P9W
+ O2=
+AF	P9W
+ O2
+ 
+B0	P9W
+ O3=
+B1	P9W
+ O3
+ 
+B2	P9W
+ Ofast-compile=
+B3	P9W
+ Ofast-compile
+ 
+B4	P9W
+ omega-knobs=
+B5	P9W
+ omega-knobs
+ 
+B6	P9W
+ opt-fdiv=
+B7	P9W
+ opt-fdiv
+ 
+B8	P9W
+ optO1=
+B9	P9W
+ optO1
+ 
+BA	P9W
+ optO2=
+BB	P9W
+ optO2
+ 
+BC	P9W
+ optO3=
+BD	P9W
+ optO3
+ 
+BE	P9W
+ p=
+BF	P9W
+ partial-link=
+C0	P9W
+ partial-link
+ 
+C1	P9W
+ p
+ 
+C2	P9W
+ rename-block=
+C3	P9W
+ rename-block
+ 
+C4	P9W
+ split-compile-bucket-threshold=
+C5	P9W
+ split-compile-bucket-threshold
+ 
+C6	P9W
+ split-compile-debug=
+C7	P9W
+ split-compile-debug
+ 
+C8	P9W
+ split-compile-disable-binpack=
+C9	P9W
+ split-compile-disable-binpack
+ 
+CA	P9W
+ split-compile-extended=
+CB	P9W
+ split-compile-extended
+ 
+CC	P9W
+ split-compile=
+CD	P9W
+ split-compile
+ 
+CE	P9W
+ sroa-threshold=
+CF	P9W
+ sroa-threshold
+ 
+D0	P9W
+ std-compile-opts=
+D1	P9W
+ std-compile-opts
+ 
+D2	P9W
+ std-elf=
+D3	P9W
+ std-elf
+ 
+D4	P9W
+ strip-debug=
+D5	P9W
+ strip-debug
+ 
+D6	P9W
+ trace-ocg=
+D7	P9W
+ trace-ocg
+ 
+D8	P9W
+ use-dispatcher=
+D9	P9W
+ use-dispatcher
+ 
+DA	P9W
+ use-sroa=
+DB	P9W
+ use-sroa
+ 
+DC	P9W
+ verify-each=
+DD	P9W
+ verify-each
+ 
