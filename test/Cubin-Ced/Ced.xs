@@ -307,6 +307,10 @@ class Ced_perl: public CEd_base {
     else reus.apply(ins(), cex());
     return res;
   }
+  SV *ins_dcnt() const {
+    if ( !ins() ) return &PL_sv_undef;
+    return newSViv(m_dis_forms);
+  }
   SV *ins_latency() const {
     if ( !ins() ) return &PL_sv_undef;
     auto res = calc_latency(ins(), cex());
@@ -2032,6 +2036,16 @@ grep_pred(SV *obj, const char *key)
    RETVAL = e->ins_pred(key);
  OUTPUT:
   RETVAL
+
+SV *
+ins_dcnt(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->ins_dcnt();
+ OUTPUT:
+  RETVAL
+
 
 SV *
 ins_lat(SV *obj)

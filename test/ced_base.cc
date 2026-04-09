@@ -532,6 +532,7 @@ int CEd_base::_disasm(unsigned long off)
 
 int CEd_base::_disasm_cmn(unsigned long off, int what)
 {
+  m_dis_forms = 0;
   // disasm instruction at offset
   NV_res res;
   if ( what && m_width > 64 ) what = 2;
@@ -541,6 +542,7 @@ int CEd_base::_disasm_cmn(unsigned long off, int what)
     return 0;
   }
   int res_idx = 0;
+  m_dis_forms = res.size();
   if ( res.size() > 1 ) res_idx = calc_index(res, m_dis->rz);
   if ( -1 == res_idx ) {
     Err("warning: ambigious instruction at %lX, has %ld format\n", m_dis->offset(), res.size());

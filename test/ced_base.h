@@ -260,6 +260,7 @@ class CEd_base: public CElf<ParseSASS> {
     rdr_cnt = 0;
    int flush_buf();
    // disasm results
+   size_t m_dis_forms = 0;
    NV_pair curr_dis;
    void reset_ins() {
     m_rend = nullptr;

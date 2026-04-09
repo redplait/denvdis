@@ -455,6 +455,10 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * ins_alt - if instruction is just alternate form of more general instruction
 
+=item * ins_lat - returns latency of instruction or undef
+
+=item * ins_dcnt - count of decode forms for current instruction
+
 =item * ins_mask - mask for this instruction form, all bits for fields replaced with X
 
 =item * ins_min_wait - to extract MIN_WAIT_NEEDED property of current instruction
