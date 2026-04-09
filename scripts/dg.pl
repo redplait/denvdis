@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v $opt_z/;
+use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_L $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v $opt_z/;
 
 sub usage()
 {
@@ -20,9 +20,10 @@ Usage: $0 [options] file.cubin
   -b - track read/write barriers
   -C config.file
   -d - debug mode
-  -G - generate intial config file and exit
-  -g - build cfg
-  -l - dump latency info
+  -G - generate initial config file and exit
+  -g - build cf graph
+  -l - check latency when try to swap instructions
+  -L - dump latency tables info
   -P - do real patch. Don't forget to backup your CUBIN files
   -p - dump properties
   -r - dump relocs
@@ -1214,6 +1215,8 @@ sub process_sched
   my $is_dual = 0;
   my $stall = 0;
   my $lat = $g_ced->ins_lat();
+  # set instruction offset in latency data
+  $b->[16]->[3] = $off;
   if ( $g_w == 64 ) {
     $ctrl = $g_ced->ctrl();
     # from Understanding the GPU Microarchitecture to Achieve Bare-Metal Performance Tuning:
@@ -1473,7 +1476,7 @@ sub dump_ins
     }
   }
   # latency tabs
-  dump_lat($block, $sctx) if defined ( $opt_l );
+  dump_lat($block, $sctx) if defined ( $opt_L );
   1;
 }
 
@@ -2237,7 +2240,7 @@ sub dg
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
-  [16] - latency data [ current stall count, current latency, had bad ]
+  [16] - latency data [ current stall count, current latency, had bad, instr off ]
   [17] - if this block contains unconditional EXIT
 =cut
   my @bbs;
@@ -2254,8 +2257,8 @@ sub dg
     if ( defined $opt_s ) {
       my @tmp;
       $res[13] = \@tmp;
-      $res[16] = [ 0, 0, 0 ];
     }
+    $res[16] = [ 0, 0, 0, 0 ];
     \@res;
   };
   my $cb;
@@ -2368,7 +2371,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("bdGglPprstUuvzC:");
+my $state = getopts("bdGglLPprstUuvzC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -2454,5 +2457,5 @@ foreach my $s ( @es ) {
 dump_ruc() if defined($opt_u);
 dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
-dump_lat_stat() if defined($opt_l);
+dump_lat_stat() if defined($opt_L);
 dump_swap_stat() if defined($opt_s);
