@@ -339,6 +339,27 @@ static double NVd_inf = longlong_as_double(0x7ff0000000000000ULL),
  NVd_nan = longlong_as_double(0xfff8000000000000ULL)
 ;
 
+bool NV_renderer::is_inf(NV_Format f, uint64_t res, bool &minus) {
+  minus = false;
+  switch(f) {
+    case NV_F64Imm:
+      if ( res == -NVd_nan ) { minus = true; return true; }
+      return res == NVd_nan;
+    case NV_F16Imm:
+      if ( res == 0xFC00 ) { minus = true; return true; }
+      return res == 0x7C00;
+    case NV_F32Imm:
+      if ( res == -NVf_nan ) { minus = true; return true; }
+      return res == NVf_nan;
+    case NV_E8M7Imm:
+      if ( res == 0xFF80 ) { minus = true; return true; }
+      return res == 0x7F80;
+    default:
+      return false;
+  }
+  return false;
+}
+
 bool NV_renderer::s_inf2val(bool minus, NV_Format f, uint64_t &res) {
   switch(f) {
     case NV_F64Imm:
@@ -373,6 +394,22 @@ bool NV_renderer::s_nan2val(NV_Format f, uint64_t &res) {
     case NV_E8M7Imm: // from https://github.com/peeterjoot/floatexplorer/commit/4760403f1824fb183a8dbb6f832e3c47ca7613b2
       res = 0x7FC0;
       return true;
+    default:
+      return false;
+  }
+  return false;
+}
+
+bool NV_renderer::is_nan(NV_Format f, uint64_t res) {
+  switch(f) {
+    case NV_F64Imm:
+      return res == NVd_nan;
+    case NV_F16Imm:
+      return res == 0x7E00;
+    case NV_F32Imm:
+      return res == NVf_nan;
+    case NV_E8M7Imm: // from https://github.com/peeterjoot/floatexplorer/commit/4760403f1824fb183a8dbb6f832e3c47ca7613b2
+      return res == 0x7FC0;
     default:
       return false;
   }
@@ -761,15 +798,18 @@ int NV_renderer::calc_index(const NV_res &res, int rz) const
   if ( !mult ) return res_idx;
   // try the same without alts
   mult = false; res_idx = -1;
+  size_t alt_cnt = 0;
+  int alt_idx;
   for ( size_t i = 0; i < res.size(); ++i )
   {
-    if ( res[i].first->alt ) continue;
+    if ( res[i].first->alt ) { alt_idx = i; alt_cnt++; continue; }
     if ( !missed[i] ) {
       if ( res_idx != -1 ) { mult = true; continue; }
       res_idx = i;
     }
   }
   if ( !mult ) return res_idx;
+  if ( alt_cnt == 1 ) return alt_idx;
   // no, we still have duplicates - dump missed and return -1
   for ( size_t i = 0; i < res.size(); ++i ) fprintf(m_out, " %d", missed[i]);
   return -1;
