@@ -2001,7 +2001,7 @@ sub gdisasm
         my($g, $pr) = $rt->snap();
         if ( defined($g) || defined($pr) ) {
           dump_snap($g, $pr);
-          track2lat($block->[16], $g, $pr);
+          track2lat($block->[16], $g, $pr) if ( defined $opt_l );
         }
         add_ruc($block, $off, $g) if ( defined($g) && defined($opt_u) );
         # compare snap from current at index 8 with prev at index 9
