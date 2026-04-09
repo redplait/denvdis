@@ -934,7 +934,7 @@ sub store_lat($$$$)
   my($block, $stall, $lat, $is_d) = @_;
   my $ld = $block->[16]; # latency data
   if ( defined($lat) && defined($opt_l) ) {
-    my @curl = ( $ld->[0], $lat );
+    my @curl = ( $ld->[0], $lat, $ld->[3] );
     $ld->[4] = \@curl; # store current pair
     # store in ld->[5], key is instruction offset in ld->[3]
     $ld->[5]->{ $ld->[3] } = \@curl;
@@ -1619,7 +1619,7 @@ sub track2lat
         my $pl = $ld->[6]->{$r};
         # bcs we processing instruction in ascending order of their addresses
         # we should mark instruction only if it not marked yet
-        $pl->[2] = [ $ld->[3], $r ] if ( !defined($pl->[2]) && !defined($pl->[3]) );
+        $pl->[3] = [ $ld->[3], $r ] if ( !defined($pl->[3]) && !defined($pl->[4]) );
       }
     }
     # 2) update writes to current instruction in ld->[4]
@@ -1638,7 +1638,7 @@ sub track2lat
         my $pl = $ld->[7]->{$r};
         # bcs we processing instruction in ascending order of their addresses
         # we should mark instruction only if it not marked yet
-        $pl->[3] = [ $ld->[3], $r ] if ( !defined($pl->[2]) && !defined($pl->[3]) );
+        $pl->[4] = [ $ld->[3], $r ] if ( !defined($pl->[3]) && !defined($pl->[4]) );
       }
     }
     # 4) update predicates updating to current instruction in ld->[4]
@@ -1651,6 +1651,17 @@ sub track2lat
   $res;
 }
 
+sub dump_who
+{
+  my $who = shift;
+  if ( defined $who->[3] ) {
+    printf(" by reg at %X", $who->[3]->[0]);
+  } elsif ( defined $who->[4] ) {
+    printf(" by pred at %X", $who->[4]->[0]);
+  }
+  printf("\n");
+}
+
 # dump latency xrefs - for debugging mostly
 # arg: latency data from block->[16]
 sub dump_t2l
@@ -1658,9 +1669,17 @@ sub dump_t2l
   my $ld = shift;
   if ( defined($ld->[6]) && keys %{$ld->[6]} ) {
     printf("; t2l registers:\n");
+    while( my($r, $who) = each(%{$ld->[6]}) ) {
+      printf(";  %sR%d: at %X lat %d", $r & 0x8000 ? 'U' : '', $r & 0xff, $who->[2], $who->[1]);
+      dump_who($who);
+    }
   }
   if ( defined($ld->[7]) && keys %{$ld->[7]} ) {
     printf("; t2l predicates:\n");
+    while( my($r, $who) = each(%{$ld->[7]}) ) {
+      printf(";  %sP%d at %X lat %d", $r & 0x8000 ? 'U' : '', $r & 0x7, $who->[2], $who->[1]);
+      dump_who($who);
+    }
   }
 }
 
