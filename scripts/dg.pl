@@ -573,6 +573,7 @@ sub bin_sa
   undef;
 }
 
+# lame binary search in array
 # args: ref to array, sub with <=> like return, target
 sub bin_sac
 {
@@ -932,6 +933,12 @@ sub store_lat($$$$)
 {
   my($block, $stall, $lat, $is_d) = @_;
   my $ld = $block->[16]; # latency data
+  if ( defined($lat) && defined($opt_l) ) {
+    my @curl = ( $ld->[0], $lat );
+    $ld->[4] = \@curl; # store current pair
+    # store in ld->[5], key is instruction offset in ld->[3]
+    $ld->[5]->{ $ld->[3] } = \@curl;
+  }
   # dump
   printf("; %d ", $ld->[0]);
   if ( defined $lat ) {
@@ -1597,6 +1604,66 @@ sub disasm
   } while( $g_ced->next_off() < $s_size && $g_ced->next() );
 }
 
+# latency reg tracking
+# args: latency data from block->[16], track snapshot
+sub track2lat
+{
+  my $res = 0;
+  my($ld, $g, $pr) = @_;
+  # registers
+  if ( defined $g ) {
+    # 1) check reading
+    while( my($r, $flag) = each(%$g) ) {
+      next if ( $flag & 0x80 ); # skip write ops
+      if ( exists $ld->[6]->{$r} ) {
+        my $pl = $ld->[6]->{$r};
+        # bcs we processing instruction in ascending order of their addresses
+        # we should mark instruction only if it not marked yet
+        $pl->[2] = [ $ld->[3], $r ] if ( !defined($pl->[2]) && !defined($pl->[3]) );
+      }
+    }
+    # 2) update writes to current instruction in ld->[4]
+    while( my($r, $flag) = each(%$g) ) {
+      next unless( $flag & 0x80 ); # skip non-write ops
+      $ld->[6]->{$r} = $ld->[4];   # ld->[4] is currently processing instruction, 6 - map for registers
+      $res++;
+    }
+  }
+  # predicates
+  if ( defined $pr ) {
+    # 3) check predicates reading
+    while( my($r, $flag) = each(%$pr) ) {
+      next if ( $flag & 2 ); # skip write ops
+      if ( exists $ld->[7]->{$r} ) {
+        my $pl = $ld->[7]->{$r};
+        # bcs we processing instruction in ascending order of their addresses
+        # we should mark instruction only if it not marked yet
+        $pl->[3] = [ $ld->[3], $r ] if ( !defined($pl->[2]) && !defined($pl->[3]) );
+      }
+    }
+    # 4) update predicates updating to current instruction in ld->[4]
+    while( my($r, $flag) = each(%$pr) ) {
+      next unless ( $flag & 2 ); # skip non-write ops
+      $ld->[7]->{$r} = $ld->[4]; # ld->[4] is currently processing instruction, 7 - map for predicates
+      $res++;
+    }
+  }
+  $res;
+}
+
+# dump latency xrefs - for debugging mostly
+# arg: latency data from block->[16]
+sub dump_t2l
+{
+  my $ld = shift;
+  if ( defined($ld->[6]) && keys %{$ld->[6]} ) {
+    printf("; t2l registers:\n");
+  }
+  if ( defined($ld->[7]) && keys %{$ld->[7]} ) {
+    printf("; t2l predicates:\n");
+  }
+}
+
 # dump reg track snapshot for current instruction
 sub dump_snap
 {
@@ -1913,7 +1980,10 @@ sub gdisasm
       if ( $res && defined($rt) ) {
         printf("; mask %X mask2 %X\n", $rt->mask(), $rt->mask2()) if defined($opt_v);
         my($g, $pr) = $rt->snap();
-        dump_snap($g, $pr) if ( defined($g) || defined($pr) );
+        if ( defined($g) || defined($pr) ) {
+          dump_snap($g, $pr);
+          track2lat($block->[16], $g, $pr);
+        }
         add_ruc($block, $off, $g) if ( defined($g) && defined($opt_u) );
         # compare snap from current at index 8 with prev at index 9
         if ( !$idx ) {
@@ -1956,6 +2026,7 @@ sub gdisasm
       $rt->finalize();
       post_process_swaps($block) if ( defined($opt_P) && defined($block->[15]) && !block_with_exit($block) );
       dump_rt($rt);
+      dump_t2l($block->[16]) if ( defined($opt_l) && defined($opt_v) );
     }
   }
 }
@@ -2258,7 +2329,15 @@ sub dg
       my @tmp;
       $res[13] = \@tmp;
     }
-    $res[16] = [ 0, 0, 0, 0 ];
+    my @la = ( 0, 0, 0, 0 );
+    if ( defined $opt_l ) {
+      my(%lm, %ru, %pu);
+      push @la, undef;# 4 - current pair
+      push @la, \%lm; # 5 - map instruction offset -> [ rolling stall, latency, regs usage offset, predicates usage offset ]
+      push @la, \%ru; # 6 - map fpr regs usage
+      push @la, \%pu; # 7 - map for predicates usage
+    }
+    $res[16] = \@la;
     \@res;
   };
   my $cb;
@@ -2385,6 +2464,9 @@ if ( defined $opt_s ) {
  croak("you can use -s only with CFG -g option") unless defined($opt_g);
  croak("-s must be used with -t option") unless defined($opt_t);
  croak("-s must be used with -b option") unless defined($opt_b);
+}
+if ( defined $opt_l ) {
+ croak("-l must be used wuth -t option") unless defined($opt_t);
 }
 # read config
 read_config($opt_C) if defined($opt_C);
