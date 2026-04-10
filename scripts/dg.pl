@@ -1660,7 +1660,7 @@ sub has_enough_lat
   return 1 if ( $i1_eob && $i2_eob );
   # check if i1 has some gap
   if ( !$i1_eob ) {
-    # check if we have some room, stall + lat > lim
+    # check if we have some room, stall + lat < lim
     if ( $il1->[0] + $il1->[1] >= $i1_lim ) {
       printf("; HEL i1 %s at %X - no gap\n", $i1->[2], $i1->[0]);
       return 0;
@@ -1668,7 +1668,7 @@ sub has_enough_lat
   }
   # check if i2 has some gap
   if ( !$i2_eob ) {
-    # check if we have some room, stall + lat > lim
+    # check if we have some room, stall + lat < lim
     if ( $il2->[0] + $il2->[1] >= $i2_lim ) {
       printf("; HEL i2 %s at %X - no gap\n", $i2->[2], $i2->[0]);
       return 0;
@@ -1679,6 +1679,7 @@ sub has_enough_lat
 
 # filter pair of candidates for swapping by latency
 # arg: block
+# return if swap list is not empty
 sub check_swap_lat
 {
   my $bl = shift;
@@ -2103,7 +2104,6 @@ sub gdisasm
             my $gain = can_swap($block);
             if ( defined($gain) && $gain > 0 ) {
               if ( greedy_add_swap($block) ) {
- dump_swap_list($block); # if defined($opt_d);
                 upd_swap_stat($gain, get_old_pair_stall($block));
                 printf("; Can swap to reduce %d\n", $gain);
               }
@@ -2138,11 +2138,13 @@ sub gdisasm
           # check if there was no bad latency in this block
           if ( $block->[16]->[2] ) { $do_swap = 0; }
           else { # remove swaps with insufficient latency after swapping
-            check_swap_lat($block);
-            $do_swap = scalar @{$block->[15]};
+            $do_swap = check_swap_lat($block);
           }
         }
-        post_process_swaps($block) if ( $do_swap );
+        if ( $do_swap ) {
+          dump_swap_list($block) ; # if defined($opt_d);
+          post_process_swaps($block);
+        }
       }
       dump_rt($rt);
       dump_t2l($block->[16]) if ( defined($opt_l) && defined($opt_v) );
