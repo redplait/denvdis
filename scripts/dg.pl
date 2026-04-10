@@ -691,6 +691,7 @@ sub get_ins_cb0
   $res->[1];
 }
 
+# select table(s) for some row & col
 # args: cols from l2map, rows from l2map, header
 sub intersect_lat
 {
@@ -766,6 +767,7 @@ sub dump_latmap
   }
 }
 
+# try all 3 latency table combinations - seems no one works
 # args: block, sched ctx
 sub dump_lat
 {
@@ -1605,6 +1607,92 @@ sub disasm
 }
 
 # latency reg tracking
+# check if after swapping there is still enough latency
+sub has_enough_lat
+{
+  my($ld, $pair) = @_;
+  my $i1 = $pair->[0];
+  my $i2 = $pair->[1];
+  # find latency in ld->[5], key in instr->[0]
+  unless ( exists $ld->[5]->{ $i1->[0] } ) {
+    printf("; HEL cannot find latency for i1 %s at %X\n", $i1->[2], $i1->[0]);
+    return 0;
+  }
+  my $il1 = $ld->[5]->{ $i1->[0] };
+  unless ( exists $ld->[5]->{ $i2->[0] } ) {
+    printf("; HEL cannot find latency for i2 %s at %X\n", $i2->[2], $i2->[0]);
+    return 0;
+  }
+  my $il2 = $ld->[5]->{ $i2->[0] };
+  # extract limits, if no - end of block at $ld->[0]
+  my($i1_lim, $i2_lim);
+  # end of block?
+  my $i1_eob = 0;
+  my $i2_eob = 0;
+  # find limit for i1
+  if ( defined $il1->[3] ) {
+    $i1_lim = $il1->[3]->[0]->[0];
+  } elsif ( defined $il1->[4] ) {
+    $i1_lim = $il1->[4]->[0]->[0];
+  } else {
+    $i1_lim = $ld->[0];
+    $i1_eob = 1;
+  }
+  # find limit for i2
+  if ( defined $il2->[3] ) {
+    $i2_lim = $il2->[3]->[0]->[0];
+  } elsif ( defined $il2->[4] ) {
+    $i2_lim = $il2->[4]->[0]->[0];
+  } else {
+    $i2_lim = $ld->[0];
+    $i2_eob = 1;
+  }
+  # dump what we found
+  if ( defined $opt_v ) {
+    # i1
+    printf("; HEL i1 %s at %X stall %X lim %X lat %d", $i1->[2], $i1->[0], $il1->[0], $i1_lim, $il1->[1]);
+    printf($i1_eob ? " EOB\n": "\n");
+    # i2
+    printf("; HEL i2 %s at %X stall %X lim %X lat %d", $i2->[2], $i2->[0], $il2->[0], $i2_lim, $il2->[1]);
+    printf($i2_eob ? " EOB\n": "\n");
+  }
+  # it's safe if both at End Of Block
+  return 1 if ( $i1_eob && $i2_eob );
+  # check if i1 has some gap
+  if ( !$i1_eob ) {
+    # check if we have some room, stall + lat > lim
+    if ( $il1->[0] + $il1->[1] >= $i1_lim ) {
+      printf("; HEL i1 %s at %X - no gap\n", $i1->[2], $i1->[0]);
+      return 0;
+    }
+  }
+  # check if i2 has some gap
+  if ( !$i2_eob ) {
+    # check if we have some room, stall + lat > lim
+    if ( $il2->[0] + $il2->[1] >= $i2_lim ) {
+      printf("; HEL i2 %s at %X - no gap\n", $i2->[2], $i2->[0]);
+      return 0;
+    }
+  }
+  1;
+}
+
+# filter pair of candidates for swapping by latency
+# arg: block
+sub check_swap_lat
+{
+  my $bl = shift;
+  my $ld = $bl->[16];
+  my @res;
+  foreach my $pair ( @{ $bl->[15] } ) {
+    next if ( !has_enough_lat($ld, $pair) );
+    push @res, $pair;
+  }
+  $bl->[15] = \@res;
+  return 0 != scalar @res;
+}
+
+# apply snap
 # args: latency data from block->[16], track snapshot
 sub track2lat
 {
@@ -1619,7 +1707,7 @@ sub track2lat
         my $pl = $ld->[6]->{$r};
         # bcs we processing instruction in ascending order of their addresses
         # we should mark instruction only if it not marked yet
-        $pl->[3] = [ $ld->[3], $r ] if ( !defined($pl->[3]) && !defined($pl->[4]) );
+        $pl->[3] = [ $ld->[4], $r ] if ( !defined($pl->[3]) && !defined($pl->[4]) );
       }
     }
     # 2) update writes to current instruction in ld->[4]
@@ -1638,7 +1726,7 @@ sub track2lat
         my $pl = $ld->[7]->{$r};
         # bcs we processing instruction in ascending order of their addresses
         # we should mark instruction only if it not marked yet
-        $pl->[4] = [ $ld->[3], $r ] if ( !defined($pl->[3]) && !defined($pl->[4]) );
+        $pl->[4] = [ $ld->[4], $r ] if ( !defined($pl->[3]) && !defined($pl->[4]) );
       }
     }
     # 4) update predicates updating to current instruction in ld->[4]
@@ -1655,9 +1743,9 @@ sub dump_who
 {
   my $who = shift;
   if ( defined $who->[3] ) {
-    printf(" by reg at %X", $who->[3]->[0]);
+    printf(" by reg at %X", $who->[3]->[0]->[2]);
   } elsif ( defined $who->[4] ) {
-    printf(" by pred at %X", $who->[4]->[0]);
+    printf(" by pred at %X", $who->[4]->[0]->[2]);
   }
   printf("\n");
 }
@@ -2043,7 +2131,19 @@ sub gdisasm
     # do block post-processing of block here
     if ( defined $rt ) {
       $rt->finalize();
-      post_process_swaps($block) if ( defined($opt_P) && defined($block->[15]) && !block_with_exit($block) );
+      # try to swap
+      if ( defined($opt_P) && defined($block->[15]) && !block_with_exit($block) ) {
+        my $do_swap = 1;
+        if ( defined $opt_l ) {
+          # check if there was no bad latency in this block
+          if ( $block->[16]->[2] ) { $do_swap = 0; }
+          else { # remove swaps with insufficient latency after swapping
+            check_swap_lat($block);
+            $do_swap = scalar @{$block->[15]};
+          }
+        }
+        post_process_swaps($block) if ( $do_swap );
+      }
       dump_rt($rt);
       dump_t2l($block->[16]) if ( defined($opt_l) && defined($opt_v) );
     }
