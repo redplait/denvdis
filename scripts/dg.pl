@@ -468,6 +468,9 @@ sub post_process_swaps
   }
 }
 
+#
+# machinery for symbols management
+#
 sub sym_reset { $gs_cidx = 0; }
 
 sub sym_name
@@ -818,6 +821,15 @@ sub make_sctx
     $res{'c'} = \%c;
   }
   \%res;
+}
+
+# to check if this is first or second instr in dual pair
+# warning: must be called before get_dual - specificaly in process_sched
+sub check_dual
+{
+  my $ctx = shift;
+  return 0 if ( $g_w == 128 );
+  $ctx->{'dual'};
 }
 
 # get current dual state and update it for next instruction
@@ -1236,7 +1248,7 @@ sub process_sched
     $is_dual = $stall == 0x4;
     $stall &= 0xf; # bit 0..3
     store_s_idx($b, 7, $stall);
-    store_s_idx($b, 8, $is_dual);
+    store_s_idx($b, 8, $is_dual || check_dual($sctx));
     store_lat($b, $stall, $lat, $is_dual);
     if ( defined $opt_b ) {
       # previous & current stall
@@ -1252,7 +1264,7 @@ sub process_sched
     # low 5 bits
     if ( $g_w == 88 ) {
       $is_dual = $g_ced->ins_dual();
-      store_s_idx($b, 8, $is_dual) if ( $is_dual );
+      store_s_idx($b, 8, 1) if ( $is_dual || check_dual($sctx) );
     }
     # render
     if ( defined $opt_b ) {
