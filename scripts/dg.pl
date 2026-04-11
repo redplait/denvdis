@@ -1686,6 +1686,12 @@ sub has_enough_lat
       return 0;
     }
   }
+  return 1 if ( $i1_eob );
+  # finally check than after swapping i1 will still fit in limit
+  if ( $il2->[0] + $il1->[1] >= $i1_lim ) {
+      printf("; HEL i1 at i2 %s at %X - no gap\n", $i1->[2], $i1->[0]);
+      return 0;
+    }
   1;
 }
 
