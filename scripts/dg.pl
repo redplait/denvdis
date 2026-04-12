@@ -84,6 +84,8 @@ my %gcd;
 # per-section filter, forms in filter_gcd, assigned in main sections loop
 my $gcdf;
 
+sub in_lmode { defined($opt_l) && !defined($opt_s); }
+
 sub dump_swap_stat
 {
   return unless($gs_ords);
@@ -936,7 +938,7 @@ sub store_s_idx($$$)
 {
   my($block, $idx, $v) = @_;
   return unless defined($block);
-  return unless defined($opt_s);
+  return if ( !defined($opt_s) && !defined($opt_l) );
   my $ar = $block->[13];
   $ar->[$idx] = $v;
   1;
@@ -947,6 +949,7 @@ sub store_lat($$$$)
 {
   my($block, $stall, $lat, $is_d) = @_;
   my $ld = $block->[16]; # latency data
+  # $ld->[0] += $stall unless($is_d);
   if ( defined($lat) && defined($opt_l) ) {
     my @curl = ( $ld->[0], $lat, $ld->[3] );
     $ld->[4] = \@curl; # store current pair
@@ -1390,7 +1393,7 @@ sub dump_ins
     printf("\n");
   }
   # store data for -s
-  if ( defined($block) && defined($opt_s) ) {
+  if ( defined($block) && ( defined($opt_s) || defined($opt_l) ) ) {
     my $ar = $block->[13];
     $ar->[0] = $off;
     $ar->[1] = $g_ced->ins_name();
@@ -1695,6 +1698,56 @@ sub has_enough_lat
       return 0;
     }
   1;
+}
+
+sub traverse_lat
+{
+  my($bl, $lsize) = @_;
+  my $ld = $bl->[16];
+  my $il = $bl->[18]; # pairs of [ instr, lat ]
+  # first pass - apply latency
+  for ( my $i = 0; $i < $lsize; ++$i ) {
+    my $cl_lim;
+    my $cl = $il->[$i]->[1];
+    # find limit for current latency
+    if ( defined $cl->[3] ) {
+print Dumper($cl->[3]);
+      $cl_lim = $cl->[3]->[0]->[0];
+    } elsif ( defined $cl->[4] ) {
+print Dumper($cl->[4]);
+      $cl_lim = $cl->[4]->[0]->[0];
+    } else {
+      next; # eob
+    }
+  printf(";>TL %X cl_lim %X\n", $il->[$i]->[0]->[0], $cl_lim);
+    if ( $cl->[0] + $cl->[1] >= $cl_lim ) { # too tight - mark them
+      for ( my $j = $i + 1; $j < $lsize; ++$j ) {
+        my $nl = $il->[$j]->[1];
+        last if ( $cl_lim >= $nl->[0] );
+        $nl->[2] = 0;
+      }
+    } else {
+      my $diff = $cl_lim - ($cl->[0] + $cl->[1]);
+ printf("; TL %X diff %d cl_lim %X\n", $il->[$i]->[0]->[0], $diff, $cl_lim) if ( defined $opt_d );
+      for ( my $j = $i + 1; $j < $lsize; ++$j ) {
+        my $nl = $il->[$j]->[1];
+        last if ( $cl_lim >= $nl->[0] );
+ printf("%X\n", $il->[$j]->[0]->[0]);
+        if ( !defined($nl->[2]) ) { $nl->[2] = [ $diff, $i ]; next; }
+ printf("%X %s\n", $il->[$j]->[0]->[0], ref $nl->[2]);
+        next if ( 'ARRAY' ne ref $nl->[2] );
+        if ( $diff < $nl->[2]->[0] ) { $nl->[2] = [ $diff, $i ]; }
+      }
+    }
+  }
+  # second pass - check remained
+  for ( my $i = 0; $i < $lsize; ++$i ) {
+    my $cl = $il->[$i];
+    next unless defined($cl->[2]);
+ printf("%X %s\n", $cl->[0]->[0], ref $cl->[2]);
+    next if ( 'ARRAY' ne ref $cl->[2] );
+    printf("; TL %X %s: diff %d\n", $cl->[0]->[0], $cl->[0]->[2], $cl->[2]->[0]);
+  }
 }
 
 # filter pair of candidates for swapping by latency
@@ -2113,25 +2166,31 @@ sub gdisasm
           track2lat($block->[16], $g, $pr) if ( defined $opt_l );
         }
         add_ruc($block, $off, $g) if ( defined($g) && defined($opt_u) );
-        # compare snap from current at index 8 with prev at index 9
-        if ( !$idx ) {
-          # no prev - just store current in ->[9]
-          $block->[9] = [ $g, $pr ];
+        if ( in_lmode() ) {
+          # store pair [ current instr, current latency ] in block->[18]
+          push @{ $block->[18] }, [ $block->[13], $block->[16]->[4] ];
+          $block->[13] = [];
         } else {
-          $block->[8] = [ $g, $pr ];
-          my $inter = is_interleaved($block);
-          if ( $may_swap && !$inter ) {
-            my $gain = can_swap($block);
-            if ( defined($gain) && $gain > 0 ) {
-              if ( greedy_add_swap($block) ) {
-                upd_swap_stat($gain, get_old_pair_stall($block));
-                printf("; Can swap to reduce %d\n", $gain);
+          # compare snap from current at index 8 with prev at index 9
+          if ( !$idx ) {
+            # no prev - just store current in ->[9]
+            $block->[9] = [ $g, $pr ];
+          } else {
+            $block->[8] = [ $g, $pr ];
+            my $inter = is_interleaved($block);
+            if ( $may_swap && !$inter ) {
+              my $gain = can_swap($block);
+              if ( defined($gain) && $gain > 0 ) {
+                if ( greedy_add_swap($block) ) {
+                  upd_swap_stat($gain, get_old_pair_stall($block));
+                  printf("; Can swap to reduce %d\n", $gain);
+                }
               }
             }
+            # shift for next instruction
+            $block->[9] = $block->[8];
+            $block->[8] = undef;
           }
-          # shift for next instruction
-          $block->[9] = $block->[8];
-          $block->[8] = undef;
         }
       }
       # swap -s data
@@ -2151,8 +2210,11 @@ sub gdisasm
     # do block post-processing of block here
     if ( defined $rt ) {
       $rt->finalize();
-      # try to swap
-      if ( defined($opt_P) && defined($block->[15]) && !block_with_exit($block) ) {
+      if ( in_lmode() ) {
+        my $lsize = scalar @{ $block->[18] };
+        traverse_lat($block, $lsize) if ( $lsize );
+      } elsif ( defined($opt_P) && defined($block->[15]) && !block_with_exit($block) ) {
+        # try to swap
         my $do_swap = 1;
         if ( defined $opt_l ) {
           # check if there was no bad latency in this block
@@ -2454,6 +2516,7 @@ sub dg
   [15] - array of pairs [ prev, curr ] for processing at end of block
   [16] - latency data [ current stall count, current latency, had bad, instr off ]
   [17] - if this block contains unconditional EXIT
+  [18] - array of [ instr_prop, latency_data, ...]
 =cut
   my @bbs;
   my $add_block = sub {
@@ -2466,7 +2529,7 @@ sub dg
       my %ruc;
       $res[10] = \%ruc;
     }
-    if ( defined $opt_s ) {
+    if ( defined($opt_s) || defined($opt_l) ) {
       my @tmp;
       $res[13] = \@tmp;
     }
@@ -2479,6 +2542,10 @@ sub dg
       push @la, \%pu; # 7 - map for predicates usage
     }
     $res[16] = \@la;
+    if ( in_lmode() ) {
+      my @tmp;
+      $res[18] = \@tmp;
+    }
     \@res;
   };
   my $cb;
