@@ -399,13 +399,13 @@ sub post_process_swaps
       next;
     }
     # patch ushed_info, new stall is curr stall - prev stall
-    my $dec_stall = stall_gain($sr->[0], $sr->[1]); # $sr->[1]->[7] - $sr->[0]->[7];
+    my $dec_stall = stall_gain($sr->[0], $sr->[1]); # $sr->[1]->[7]->[0] - $sr->[0]->[7]->[0];
     if ( $dec_stall ) {
-      my $patched_stall = $sr->[1]->[7] - stall_gain($sr->[1], $sr->[0]);
-      printf("decrease %d at %X, patched %d\n", $dec_stall, $p_off, $patched_stall) if defined($opt_v);
+      my $patched_usched = $sr->[1]->[7]->[1] - stall_gain($sr->[1], $sr->[0]);
+      printf("decrease %d at %X, patched %d\n", $dec_stall, $p_off, $patched_usched) if defined($opt_v);
       unless ( defined $opt_z ) {
-        unless ( $g_ced->patch(USCHED, $patched_stall) ) {
-          printf("post_process_swaps: patch stall(%X) failed, dec_stall %d, patched %d\n", $p_off, $dec_stall, $patched_stall);
+        unless ( $g_ced->patch(USCHED, $patched_usched) ) {
+          printf("post_process_swaps: patch stall(%X) failed, dec_stall %d, patched %d\n", $p_off, $dec_stall, $patched_usched);
           $gsp_bad++;
           next;
         }
@@ -1092,9 +1092,9 @@ sub can_swap
   return 0 unless( $gcdf->($prev->[0]) );
   # check if we can get some gain from swapping
   my $res = stall_gain($prev, $curr);
-printf("Gain %d\n", $res) if defined($opt_v);
   return 0 unless ( $res );
-  my $new_usched = $curr->[7] - $res;
+printf("Gain %d\n", $res) if defined($opt_v);
+  my $new_usched = $curr->[7]->[0] - $res;
   # check min_wait at ->[11]
   return 0 if ( defined($curr->[11]) && ($new_usched < $curr->[11]) );
   # check if we really can patch
@@ -1110,16 +1110,16 @@ printf("Gain %d\n", $res) if defined($opt_v);
 sub get_old_pair_stall
 {
   my $b = shift;
-  $b->[13]->[7] + $b->[14]->[7];
+  $b->[13]->[7]->[0] + $b->[14]->[7]->[0];
 }
 
 # args: prev curr
 sub stall_gain
 {
   my($p, $c) = @_;
-  my $res = $c->[7] - $p->[7];
+  my $res = $c->[7]->[0] - $p->[7]->[0];
   if ( $res < 0 ) {
-    printf("neg stall: %d vs %d\n", $c->[7], $p->[7]) if defined($opt_v);
+    printf("neg stall: %d vs %d\n", $c->[7]->[0], $p->[7]->[0]) if defined($opt_v);
     return 0;
   }
   # temporary hack
@@ -1224,7 +1224,9 @@ sub dump_swap_list
   my $b = shift;
   return unless(defined $b->[15]);
   foreach my $item ( @{ $b->[15] } ) {
-    printf("swap_list %X (%s) <-> %X (%s)\n", $item->[0]->[0], vq_name($item->[0]), $item->[1]->[0], vq_name($item->[1]));
+    printf("swap_list %X (%s) stall %d <-> %X (%s) stall %d\n",
+      $item->[0]->[0], vq_name($item->[0]), $item->[0]->[7]->[0],
+      $item->[1]->[0], vq_name($item->[1]), $item->[1]->[7]->[0]);
   }
 }
 
@@ -1247,7 +1249,7 @@ sub process_sched
     $stall = $ctrl & 0x2f;
     $is_dual = $stall == 0x4;
     $stall &= 0xf; # bit 0..3
-    store_s_idx($b, 7, $stall);
+    store_s_idx($b, 7, [ $stall, $g_ced->get(USCHED)] );
     store_s_idx($b, 8, $is_dual || check_dual($sctx));
     store_lat($b, $stall, $lat, $is_dual);
     if ( defined $opt_b ) {
@@ -1272,7 +1274,7 @@ sub process_sched
       my $curr_stall = $sctx->{'roll'};
       my $s = $g_ced->render_cword($ctrl);
       $stall = ($ctrl & 0x0000f) >> 0;
-      store_s_idx($b, 7, $stall);
+      store_s_idx($b, 7, [ $stall, , $g_ced->get(USCHED)]);
       store_lat($b, $stall, $lat, $is_dual);
       # previous & current stall
       $sctx->{'prev'} = $sctx->{'curr'};
@@ -2436,7 +2438,7 @@ sub dg
     * 4 - has rela offset
     * 5 - brt
     * 6 - has cond
-    * 7 - stall count - filled in process_sched
+    * 7 - pair [ stall count, kv[USCHED] ] - filled in process_sched
     * 8 - is dual - filled in process_sched
     * 9 - has branch like BSSY
     * 10 - VQ predicate, filled in dump_ins
