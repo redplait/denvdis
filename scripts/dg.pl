@@ -1700,6 +1700,18 @@ sub has_enough_lat
   1;
 }
 
+sub dump_cl2
+{
+  my $cl = shift;
+  if ( !defined($cl) ) {
+   printf("undef\n");
+  } elsif ( 'ARRAY' eq ref $cl ) {
+   printf("diff %d\n", $cl->[0]);
+  } else {
+   printf("%d\n", $cl);
+  }
+}
+
 sub traverse_lat
 {
   my($bl, $lsize) = @_;
@@ -1711,30 +1723,28 @@ sub traverse_lat
     my $cl = $il->[$i]->[1];
     # find limit for current latency
     if ( defined $cl->[3] ) {
-print Dumper($cl->[3]);
       $cl_lim = $cl->[3]->[0]->[0];
     } elsif ( defined $cl->[4] ) {
-print Dumper($cl->[4]);
       $cl_lim = $cl->[4]->[0]->[0];
     } else {
       next; # eob
     }
-  printf(";>TL %X cl_lim %X\n", $il->[$i]->[0]->[0], $cl_lim);
-    if ( $cl->[0] + $cl->[1] >= $cl_lim ) { # too tight - mark them
+    if ( $cl->[0] + $cl->[1] >= $cl_lim ) { # too tight - mark them with zero
       for ( my $j = $i + 1; $j < $lsize; ++$j ) {
-        my $nl = $il->[$j]->[1];
-        last if ( $cl_lim >= $nl->[0] );
+        my $nl = $il->[$j];
+        last if ( $cl_lim <= $nl->[1]->[0] );
+  printf(";>TL %X %d cl_lim %d\n", $il->[$i]->[0]->[0], $cl->[0], $cl_lim);
         $nl->[2] = 0;
       }
     } else {
       my $diff = $cl_lim - ($cl->[0] + $cl->[1]);
  printf("; TL %X diff %d cl_lim %X\n", $il->[$i]->[0]->[0], $diff, $cl_lim) if ( defined $opt_d );
       for ( my $j = $i + 1; $j < $lsize; ++$j ) {
-        my $nl = $il->[$j]->[1];
-        last if ( $cl_lim >= $nl->[0] );
- printf("%X\n", $il->[$j]->[0]->[0]);
+        my $nl = $il->[$j];
+        last if ( $cl_lim <= $nl->[1]->[0] );
+ printf("process %X ", $il->[$j]->[0]->[0]); dump_cl2($nl->[2]);
         if ( !defined($nl->[2]) ) { $nl->[2] = [ $diff, $i ]; next; }
- printf("%X %s\n", $il->[$j]->[0]->[0], ref $nl->[2]);
+ printf("%X ref %s\n", $il->[$j]->[0]->[0], ref $nl->[2]);
         next if ( 'ARRAY' ne ref $nl->[2] );
         if ( $diff < $nl->[2]->[0] ) { $nl->[2] = [ $diff, $i ]; }
       }
@@ -1742,11 +1752,13 @@ print Dumper($cl->[4]);
   }
   # second pass - check remained
   for ( my $i = 0; $i < $lsize; ++$i ) {
-    my $cl = $il->[$i];
-    next unless defined($cl->[2]);
- printf("%X %s\n", $cl->[0]->[0], ref $cl->[2]);
-    next if ( 'ARRAY' ne ref $cl->[2] );
-    printf("; TL %X %s: diff %d\n", $cl->[0]->[0], $cl->[0]->[2], $cl->[2]->[0]);
+    my $ci = $il->[$i];
+    if ( defined $opt_d ) {
+      printf(";TLR %X ", $ci->[0]->[0]); dump_cl2($ci->[2]);
+    }
+    next unless defined($ci->[2]);
+    next if ( 'ARRAY' ne ref $ci->[2] );
+    printf("; TL %X %s: diff %d\n", $ci->[0]->[0], $ci->[0]->[2], $ci->[2]->[0]);
   }
 }
 
@@ -1776,7 +1788,7 @@ sub track2lat
   if ( defined $g ) {
     # 1) check reading
     while( my($r, $flag) = each(%$g) ) {
-      next if ( $flag & 0x80 ); # skip write ops
+      next if ( $flag == 0x80 ); # skip write ops
       if ( exists $ld->[6]->{$r} ) {
         my $pl = $ld->[6]->{$r};
         # bcs we processing instruction in ascending order of their addresses
@@ -1795,7 +1807,7 @@ sub track2lat
   if ( defined $pr ) {
     # 3) check predicates reading
     while( my($r, $flag) = each(%$pr) ) {
-      next if ( $flag & 2 ); # skip write ops
+      next if ( $flag == 2 ); # skip write ops
       if ( exists $ld->[7]->{$r} ) {
         my $pl = $ld->[7]->{$r};
         # bcs we processing instruction in ascending order of their addresses
