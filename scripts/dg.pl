@@ -76,6 +76,9 @@ my $gsp_skipped = 0;
 my $gsp_patched = 0;
 my $gsp_bad = 0;
 my $gsp_bad_attrs = 0;
+# lmode stat
+# indexes: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3]
+my @g_bl = ( 0, 0, 0, 0, 0 );
 # config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -85,6 +88,14 @@ my %gcd;
 my $gcdf;
 
 sub in_lmode { defined($opt_l) && !defined($opt_s); }
+
+sub dump_lmode_stat
+{
+  printf("%d blocks with bad latency\n", $g_bl[2]) if ( $g_bl[2] );
+  printf("total %d instrs, %d stalls\n", $g_bl[0], $g_bl[1]);
+  printf("%d stalls gain: %f\n", $g_bl[3], 1.0 * $g_bl[3] / $g_bl[1]);
+  printf("%d instrs with gain: %f\n", $g_bl[4], 1.0 * $g_bl[4] / $g_bl[0]);
+}
 
 sub dump_swap_stat
 {
@@ -1700,6 +1711,7 @@ sub has_enough_lat
   1;
 }
 
+# for debugging dump 3rd element
 sub dump_cl2
 {
   my $cl = shift;
@@ -1716,6 +1728,14 @@ sub traverse_lat
 {
   my($bl, $lsize) = @_;
   my $ld = $bl->[16];
+  # update stat
+  $g_bl[0] += $lsize;
+  $g_bl[1] += $ld->[0];
+  # check if this block had bad latency
+  if ( $ld->[2] ) {
+    $g_bl[2]++;
+    return 0;
+  }
   my $il = $bl->[18]; # pairs of [ instr, lat ]
   # first pass - apply latency
   for ( my $i = 0; $i < $lsize; ++$i ) {
@@ -1730,21 +1750,21 @@ sub traverse_lat
       next; # eob
     }
     if ( $cl->[0] + $cl->[1] >= $cl_lim ) { # too tight - mark them with zero
-      for ( my $j = $i + 1; $j < $lsize; ++$j ) {
+      for ( my $j = $i; $j < $lsize; ++$j ) {
         my $nl = $il->[$j];
         last if ( $cl_lim <= $nl->[1]->[0] );
-  printf(";>TL %X %d cl_lim %d\n", $il->[$i]->[0]->[0], $cl->[0], $cl_lim);
+#  printf(";>TL %X %d cl_lim %d\n", $il->[$i]->[0]->[0], $cl->[0], $cl_lim);
         $nl->[2] = 0;
       }
     } else {
       my $diff = $cl_lim - ($cl->[0] + $cl->[1]);
  printf("; TL %X diff %d cl_lim %X\n", $il->[$i]->[0]->[0], $diff, $cl_lim) if ( defined $opt_d );
-      for ( my $j = $i + 1; $j < $lsize; ++$j ) {
+      for ( my $j = $i; $j < $lsize; ++$j ) {
         my $nl = $il->[$j];
         last if ( $cl_lim <= $nl->[1]->[0] );
- printf("process %X ", $il->[$j]->[0]->[0]); dump_cl2($nl->[2]);
+# printf("process %X ", $il->[$j]->[0]->[0]); dump_cl2($nl->[2]);
         if ( !defined($nl->[2]) ) { $nl->[2] = [ $diff, $i ]; next; }
- printf("%X ref %s\n", $il->[$j]->[0]->[0], ref $nl->[2]);
+# printf("%X ref %s\n", $il->[$j]->[0]->[0], ref $nl->[2]);
         next if ( 'ARRAY' ne ref $nl->[2] );
         if ( $diff < $nl->[2]->[0] ) { $nl->[2] = [ $diff, $i ]; }
       }
@@ -1758,7 +1778,12 @@ sub traverse_lat
     }
     next unless defined($ci->[2]);
     next if ( 'ARRAY' ne ref $ci->[2] );
+    # apply filter
+    next unless $gcdf->($ci->[0]->[0]);
     printf("; TL %X %s: diff %d\n", $ci->[0]->[0], $ci->[0]->[2], $ci->[2]->[0]);
+    # update stat
+    $g_bl[3] += $ci->[2]->[0];
+    $g_bl[4]++;
   }
 }
 
@@ -2761,3 +2786,4 @@ dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
 dump_lat_stat() if defined($opt_L);
 dump_swap_stat() if defined($opt_s);
+dump_lmode_stat() if in_lmode();
