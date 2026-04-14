@@ -1757,13 +1757,13 @@ sub traverse_lat
     my $curr = $il->[$i];
     my $stall = $curr->[0]->[7]->[0];
     # check if stall eq latency
-    if ( $stall == $cl->[0] ) {
+    if ( $stall == $cl->[1] ) {
       $curr->[2] = 0 unless defined($curr->[2]);
       next;
     }
     # if stall is > latency
-    if ( $stall > $cl->[0] ) {
-      $curr->[2] = $stall - $cl->[0];
+    if ( $stall > $cl->[1] ) {
+      $curr->[2] = $stall - $cl->[1];
       next;
     }
     next unless defined($cl_lim); # skip EoB
@@ -1771,10 +1771,65 @@ sub traverse_lat
       $curr->[2] = 0;
       next;
     }
+    # we have latency of current instruction > it's stall count
+    # so it applied to several next instructions - push it in tails for later processing
     $g_bl[5]++;
     push @tails, [ $i, $cl_lim ];
+    # mark tail witn -1
+    $curr->[2] = -1;
   }
-  # second pass - check remained
+  # second pass - try resolve tails
+  foreach my $t ( reverse @tails ) {
+    my $cl = $il->[$t->[0]];
+    my $rest = $cl->[1]->[1] - $cl->[0]->[7]->[0]; # latency - current stall
+    my $old_rest = $rest;
+printf("tail %X %s rest %d\n", $cl->[0]->[0], $cl->[0]->[2], $rest) if defined($opt_d);
+    for ( my $j = $t->[0] + 1; $rest > 0 && $j < $lsize; ++$j ) {
+      # check limit
+      my $nl = $il->[$j];
+      last if ( $t->[1] <= $nl->[1]->[0] );
+      # what we have
+      if ( !defined($nl->[2]) ) { $rest -= $nl->[0]->[7]->[0]; next; }
+      if ( 'ARRAY' ne ref $nl->[2] ) {
+        if ( !$nl->[2] ) { $rest -= $nl->[0]->[7]->[0]; next; }
+        # we already have decreased stall count, check if we can fit with new value
+        if ( $rest <= $nl->[2] ) { $rest -= $nl->[2]; last; }
+        # try with old stall count
+        if ( $rest <= $nl->[0]->[7]->[0] ) {
+          $nl->[2] = 0;
+          $rest -= $nl->[0]->[7]->[0];
+          last;
+        }
+        last;
+      } else {
+        # check if we can fit with new value
+        if ( $rest <= $nl->[2]->[0] ) { $rest -= $nl->[2]->[0]; last; }
+        # try with old
+        if ( $rest <= $nl->[0]->[7]->[0] ) {
+          $nl->[2] = 0;
+          $rest -= $nl->[0]->[7]->[0];
+          last;
+        }
+      }
+    }
+    # check rest
+    if ( !$rest ) {
+      $cl->[2] = 0;
+      next;
+    }
+    if ( $rest < 0 ) {
+      $cl->[2] = [ -$rest, $t ];
+      next;
+    }
+printf("rest %d old_rest %d\n", $rest, $old_rest) if defined($opt_d);
+    # ops, we unable to decrease stalls for this tail - return everything to vanilla state
+    for ( my $i = $t->[0]; $old_rest > 0 && $i < $lsize; ++$i ) {
+      my $nl = $il->[$i];
+      undef $nl->[2];
+      $old_rest -= $nl->[0]->[7]->[0];
+    }
+  }
+  # final pass - check remained
   for ( my $i = 0; $i < $lsize; ++$i ) {
     my $ci = $il->[$i];
     if ( defined $opt_d ) {
@@ -1782,7 +1837,7 @@ sub traverse_lat
     }
     next unless defined($ci->[2]);
     if ( 'ARRAY' ne ref $ci->[2] ) {
-      next unless($ci->[2]);
+      next if ($ci->[2] <= 0);
        # update stat
       $g_bl[3] += $ci->[2];
       $g_bl[4]++;
