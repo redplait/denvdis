@@ -1283,7 +1283,7 @@ sub process_sched
       store_s_idx($b, 8, 1) if ( $is_dual || check_dual($sctx) );
     }
     # render
-    if ( defined $opt_b ) {
+    if ( defined($opt_b) || in_lmode() ) {
       my @stat = (0, 0, 0);
       my $curr_stall = $sctx->{'roll'};
       my $s = $g_ced->render_cword($ctrl);
