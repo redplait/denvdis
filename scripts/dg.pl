@@ -77,8 +77,8 @@ my $gsp_patched = 0;
 my $gsp_bad = 0;
 my $gsp_bad_attrs = 0;
 # lmode stat
-# indexes: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3]
-my @g_bl = ( 0, 0, 0, 0, 0 );
+# indexes: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3], [5] - with tail
+my @g_bl = ( 0, 0, 0, 0, 0, 0 );
 # config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -92,7 +92,7 @@ sub in_lmode { defined($opt_l) && !defined($opt_s); }
 sub dump_lmode_stat
 {
   printf("%d blocks with bad latency\n", $g_bl[2]) if ( $g_bl[2] );
-  printf("total %d instrs, %d stalls\n", $g_bl[0], $g_bl[1]);
+  printf("total %d instrs, %d with tail, %d stalls\n", $g_bl[0], $g_bl[5], $g_bl[1]);
   printf("%d stalls gain: %f\n", $g_bl[3], 1.0 * $g_bl[3] / $g_bl[1]);
   printf("%d instrs with gain: %f\n", $g_bl[4], 1.0 * $g_bl[4] / $g_bl[0]);
 }
@@ -1303,6 +1303,7 @@ sub process_sched
       if ( defined $b ) {
         my $ar;
         if ( $watdb ) {
+          store_s_idx($b, 17, $watdb);
           $ar = [ (0) x 6 ];
           for my $idx ( 0..5 ) {
             $ar->[$idx] = 1 if ( $watdb & (1 << $idx) );
@@ -1736,39 +1737,42 @@ sub traverse_lat
     $g_bl[2]++;
     return 0;
   }
+  my @tails;
   my $il = $bl->[18]; # pairs of [ instr, lat ]
   # first pass - apply latency
   for ( my $i = 0; $i < $lsize; ++$i ) {
-    my $cl_lim;
     my $cl = $il->[$i]->[1];
+    # check if this instruction has wait index - then latency is unpredictable
+    if ( defined $il->[$i]->[0]->[17] ) {
+      $il->[$i]->[2] = 0;
+      next;
+    }
     # find limit for current latency
+    my $cl_lim; # defalt EoB
     if ( defined $cl->[3] ) {
       $cl_lim = $cl->[3]->[0]->[0];
     } elsif ( defined $cl->[4] ) {
       $cl_lim = $cl->[4]->[0]->[0];
-    } else {
-      next; # eob
     }
-    if ( $cl->[0] + $cl->[1] >= $cl_lim ) { # too tight - mark them with zero
-      for ( my $j = $i; $j < $lsize; ++$j ) {
-        my $nl = $il->[$j];
-        last if ( $cl_lim <= $nl->[1]->[0] );
-#  printf(";>TL %X %d cl_lim %d\n", $il->[$i]->[0]->[0], $cl->[0], $cl_lim);
-        $nl->[2] = 0;
-      }
-    } else {
-      my $diff = $cl_lim - ($cl->[0] + $cl->[1]);
- printf("; TL %X diff %d cl_lim %X\n", $il->[$i]->[0]->[0], $diff, $cl_lim) if ( defined $opt_d );
-      for ( my $j = $i; $j < $lsize; ++$j ) {
-        my $nl = $il->[$j];
-        last if ( $cl_lim <= $nl->[1]->[0] );
-# printf("process %X ", $il->[$j]->[0]->[0]); dump_cl2($nl->[2]);
-        if ( !defined($nl->[2]) ) { $nl->[2] = [ $diff, $i ]; next; }
-# printf("%X ref %s\n", $il->[$j]->[0]->[0], ref $nl->[2]);
-        next if ( 'ARRAY' ne ref $nl->[2] );
-        if ( $diff < $nl->[2]->[0] ) { $nl->[2] = [ $diff, $i ]; }
-      }
+    my $curr = $il->[$i];
+    my $stall = $curr->[0]->[7]->[0];
+    # check if stall eq latency
+    if ( $stall == $cl->[0] ) {
+      $curr->[2] = 0 unless defined($curr->[2]);
+      next;
     }
+    # if stall is > latency
+    if ( $stall > $cl->[0] ) {
+      $curr->[2] = $stall - $cl->[0];
+      next;
+    }
+    next unless defined($cl_lim); # skip EoB
+    if ( $cl->[0] + $cl->[1] >= $cl_lim ) { # too tight - mark current instruction with zero
+      $curr->[2] = 0;
+      next;
+    }
+    $g_bl[5]++;
+    push @tails, [ $i, $cl_lim ];
   }
   # second pass - check remained
   for ( my $i = 0; $i < $lsize; ++$i ) {
@@ -1777,7 +1781,13 @@ sub traverse_lat
       printf(";TLR %X ", $ci->[0]->[0]); dump_cl2($ci->[2]);
     }
     next unless defined($ci->[2]);
-    next if ( 'ARRAY' ne ref $ci->[2] );
+    if ( 'ARRAY' ne ref $ci->[2] ) {
+      next unless($ci->[2]);
+       # update stat
+      $g_bl[3] += $ci->[2];
+      $g_bl[4]++;
+      next;
+    }
     # apply filter
     next unless $gcdf->($ci->[0]->[0]);
     printf("; TL %X %s: diff %d\n", $ci->[0]->[0], $ci->[0]->[2], $ci->[2]->[0]);
@@ -2547,7 +2557,8 @@ sub dg
     * 14 - scbd_type is ENDING_INST
     * 15 - scbd, should skip if it is SINK (3) - for strange instructions like UTMALDG
     * 16 - sidl has _CAS suffix
-    * 17 - TBC
+    * 17 - has wait
+    * 18 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
