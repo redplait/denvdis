@@ -1800,8 +1800,11 @@ printf("tail %X %s rest %d\n", $cl->[0]->[0], $cl->[0]->[2], $rest) if defined($
           $rest -= $nl->[0]->[7]->[0];
           last;
         }
+        # this instruction has changed stall count in first pass but rest is bigger
+        # we could try 2 variants - leave it patched or with original value
+        # but this lead to O( 2 ^ n) where n is number of patched instructions in tail, so just
         last;
-      } else {
+      } else { # this instruction has tail and was patched in this pass - remember that we process tails in reverse order
         # check if we can fit with new value
         if ( $rest <= $nl->[2]->[0] ) { $rest -= $nl->[2]->[0]; last; }
         # try with old
@@ -1810,6 +1813,8 @@ printf("tail %X %s rest %d\n", $cl->[0]->[0], $cl->[0]->[2], $rest) if defined($
           $rest -= $nl->[0]->[7]->[0];
           last;
         }
+        # again rest is too big so to avoid O( 2 ^ n)
+        last;
       }
     }
     # check rest
