@@ -842,7 +842,7 @@ sub check_dual
 {
   my $ctx = shift;
   return 0 if ( $g_w == 128 );
-  $ctx->{'dual'};
+  $ctx->{'dual'} ? 2 : 0;
 }
 
 # get current dual state and update it for next instruction
@@ -1280,7 +1280,8 @@ sub process_sched
     # low 5 bits
     if ( $g_w == 88 ) {
       $is_dual = $g_ced->ins_dual();
-      store_s_idx($b, 8, 1) if ( $is_dual || check_dual($sctx) );
+      my $dv = $is_dual || check_dual($sctx);
+      store_s_idx($b, 8, $dv) if ( $dv );
     }
     # render
     if ( defined($opt_b) || in_lmode() ) {
@@ -1747,6 +1748,11 @@ sub traverse_lat
       $il->[$i]->[2] = 0;
       next;
     }
+    # check dual
+    if ( $il->[$i]->[0]->[8] ) {
+      $il->[$i]->[2] = 0;
+      next;
+    }
     # find limit for current latency
     my $cl_lim; # defalt EoB
     if ( defined $cl->[3] ) {
@@ -1788,6 +1794,8 @@ printf("tail %X %s rest %d\n", $cl->[0]->[0], $cl->[0]->[2], $rest) if defined($
       # check limit
       my $nl = $il->[$j];
       last if ( $t->[1] <= $nl->[1]->[0] );
+      # skip first in dual pair
+      next if ( defined($nl->[0]->[8]) && 1 == $nl->[0]->[8] );
       # what we have
       if ( !defined($nl->[2]) ) { $rest -= $nl->[0]->[7]->[0]; next; }
       if ( 'ARRAY' ne ref $nl->[2] ) {
