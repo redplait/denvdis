@@ -42,6 +42,14 @@ use constant MAX_SWAP_DIST => 0x70;
 use constant USCHED => 'usched_info';
 use constant GAIN_LIMIT => 2;
 
+sub limit_stall
+{
+  my($diff, $stall) = @_;
+  return 0 if ( $diff >= $stall );
+  return GAIN_LIMIT if ( $diff > GAIN_LIMIT );
+  $diff;
+}
+
 ### globals
 my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
 # stat for barriers, key is ins name, value is [ wait, read, write ] count
@@ -78,7 +86,8 @@ my $gsp_bad = 0;
 my $gsp_bad_attrs = 0;
 # lmode stat
 # indexes: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3], [5] - with tail
-my @g_bl = ( 0, 0, 0, 0, 0, 0 );
+# with -P [6] - count of patched, [7] - sum of decreased stalls
+my @g_bl = ( 0, 0, 0, 0, 0, 0, 0, 0 );
 # config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -95,6 +104,8 @@ sub dump_lmode_stat
   printf("total %d instrs, %d with tail, %d stalls\n", $g_bl[0], $g_bl[5], $g_bl[1]);
   printf("%d stalls gain: %f\n", $g_bl[3], 1.0 * $g_bl[3] / $g_bl[1]);
   printf("%d instrs with gain: %f\n", $g_bl[4], 1.0 * $g_bl[4] / $g_bl[0]);
+  printf("%d patched, %f\n", $g_bl[6], 1.0 * $g_bl[6] / $g_bl[4]) if ( $g_bl[6] && $g_bl[4]);
+  printf("%d dec stalls, %f\n", $g_bl[7], 1.0 * $g_bl[7] / $g_bl[1]) if ( $g_bl[7] && $g_bl[1]);
 }
 
 sub dump_swap_stat
@@ -1753,6 +1764,8 @@ sub traverse_lat
       $il->[$i]->[2] = 0;
       next;
     }
+    # check if scbd is SINK
+    next if ( defined($il->[$i]->[15]) && 3 == $il->[$i]->[15] );
     # find limit for current latency
     my $cl_lim; # defalt EoB
     if ( defined $cl->[3] ) {
@@ -1845,6 +1858,8 @@ printf("rest %d old_rest %d\n", $rest, $old_rest) if defined($opt_d);
   # final pass - check remained
   for ( my $i = 0; $i < $lsize; ++$i ) {
     my $ci = $il->[$i];
+    # apply filter
+    next unless $gcdf->($ci->[0]->[0]);
     if ( defined $opt_d ) {
       printf(";TLR %X ", $ci->[0]->[0]); dump_cl2($ci->[2]);
     }
@@ -1854,15 +1869,49 @@ printf("rest %d old_rest %d\n", $rest, $old_rest) if defined($opt_d);
        # update stat
       $g_bl[3] += $ci->[2];
       $g_bl[4]++;
+      dec_stall($ci, $ci->[2]);
       next;
     }
-    # apply filter
-    next unless $gcdf->($ci->[0]->[0]);
+    next if ( $ci->[2]->[0] > $ci->[0]->[7]->[0] );
     printf("; TL %X %s: diff %d\n", $ci->[0]->[0], $ci->[0]->[2], $ci->[2]->[0]);
     # update stat
     $g_bl[3] += $ci->[2]->[0];
     $g_bl[4]++;
+    next unless defined($opt_P);
+    # patch usched_info
+    dec_stall($ci, $ci->[2]->[0]);
   }
+}
+
+# args: current item [instr, latency data], diff
+sub dec_stall
+{
+  my($ci, $adiff) = @_;
+  return 0 if ( $adiff < 0 );
+  my $off = $ci->[0]->[0];
+  unless ( $g_ced->off( $off ) ) {
+    carp("traverse_lat: off($off) failed");
+    $gsp_bad++;
+    return 0;
+  }
+  # calc stall diff
+  my $c_stall = $ci->[0]->[7]->[0];
+printf("%X adiff %d cstall %d\n", $ci->[0]->[0], $adiff, $c_stall);
+  my $diff = limit_stall($adiff, $c_stall);
+  return 0 unless $diff;
+printf("%X tdiff %d cstall %d\n", $ci->[0]->[0], $diff, $c_stall);
+  # patch
+  my $patched = $ci->[0]->[7]->[1] - $diff;
+  unless ( $g_ced->patch(USCHED, $patched) ) {
+    printf("traverse_lat: patch stall(%X) failed, dec_stall %d, patched %d\n", $off, $diff, $patched);
+    $gsp_bad++;
+    return 0;
+  }
+  $gsp_patched++;
+  # update stat
+  $g_bl[6]++;
+  $g_bl[7] += $diff;
+  1;
 }
 
 # filter pair of candidates for swapping by latency
