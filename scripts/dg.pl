@@ -1737,6 +1737,14 @@ sub dump_cl2
   }
 }
 
+# check if current stall eq min_wait
+sub fit_minwait
+{
+  my $ci = shift;
+  return 0 unless defined($ci->[11]);
+  return $ci->[7]->[0] <= $ci->[11];
+}
+
 sub traverse_lat
 {
   my($bl, $lsize) = @_;
@@ -1782,6 +1790,7 @@ sub traverse_lat
     }
     # if stall is > latency
     if ( $stall > $cl->[1] ) {
+      next if fit_minwait($curr->[0]);
       $curr->[2] = $stall - $cl->[1];
       next;
     }
@@ -1873,6 +1882,7 @@ printf("rest %d old_rest %d\n", $rest, $old_rest) if defined($opt_d);
       next;
     }
     next if ( $ci->[2]->[0] > $ci->[0]->[7]->[0] );
+    next if fit_minwait($ci->[0]);
     printf("; TL %X %s: diff %d\n", $ci->[0]->[0], $ci->[0]->[2], $ci->[2]->[0]);
     # update stat
     $g_bl[3] += $ci->[2]->[0];
