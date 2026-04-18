@@ -246,6 +246,18 @@ std::optional<int> NV_renderer::calc_latency(const struct nv_instr *ins, const N
     case LatSpecial::Spec26: // .GSB - sm90 only?
       if ( check_zero_kv(kv, "gsb") ) res.emplace(9);
       break;
+    case LatSpecial::Spec27: // IMAD
+      // .HI - 7
+      // .WIDE - 9
+      // .WIDE.READ.AB - 17
+      // .WIDE.READ.CH - 17
+      // .WIDE.READ.CL - 17
+      // .WIDE.WRITE.DH - 18
+      // .WIDE.WRITE.DL - 18
+       if ( iclas.starts_with("imad_hi_x") ) res.emplace(17);
+       else if ( iclas.starts_with("imad_hi") ) res.emplace(18);
+       else if ( iclas.starts_with("imad_wide") ) res.emplace(9);
+      break;
     case LatSpecial::Spec28: // .IMM
       if ( has_key(kv, "sImm") ) res.emplace(7);
       break;
