@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_L $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v $opt_z/;
+use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_L $opt_m $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v $opt_z/;
 
 sub usage()
 {
@@ -24,6 +24,7 @@ Usage: $0 [options] file.cubin
   -g - build cf graph
   -l - check latency when try to swap instructions
   -L - dump latency tables info
+  -m - ignore instructions having min wait
   -P - do real patch. Don't forget to backup your CUBIN files
   -p - dump properties
   -r - dump relocs
@@ -1772,6 +1773,10 @@ sub traverse_lat
       $il->[$i]->[2] = 0;
       next;
     }
+    # min wait
+    if ( defined $opt_m ) {
+      next if defined($il->[$i]->[0]->[11]);
+    }
     # check if scbd is SINK
     next if ( defined($il->[$i]->[15]) && 3 == $il->[$i]->[15] );
     # find limit for current latency
@@ -2833,7 +2838,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("bdGglLPprstUuvzC:");
+my $state = getopts("bdGglLmPprstUuvzC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
