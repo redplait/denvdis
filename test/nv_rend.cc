@@ -1555,7 +1555,7 @@ printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
              rtdb->rgpr(kvi->second, off, 0, ISRC_A, t_a);
            else if ( is_sv2(b_sv, rn->name, "Rb") )
              rtdb->rgpr(kvi->second, off, 0, ISRC_B, t_b);
-           else if ( !strcmp(rn->name, "Rb") )
+           else if ( !strcmp(rn->name, "Rb2") )
              rtdb->rgpr(kvi->second, off, 0, ISRC_B, t_b);
            else if ( is_sv2(c_sv, rn->name, "Rc") )
              rtdb->rgpr(kvi->second, off, 0, ISRC_C, t_c);
