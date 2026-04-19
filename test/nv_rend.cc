@@ -1314,6 +1314,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       }
     }
   }
+  std::map<std::string_view, int> labels;
   // predicates
   int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, c_size = 0, e_size = 0, h_size = 0, i_size = 0;
   if ( p.first->predicated ) {
@@ -1341,6 +1342,17 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     pi = p.first->predicated->find("ISRC_I_SIZE"sv);
     if ( pi != p.first->predicated->end() )
       i_size = pi->second(p.second);
+    // collect labels size
+    for ( const auto &pred: *p.first->predicated ) {
+      auto &kn = pred.first;
+      if ( !kn.starts_with("ILABEL_") ) continue;
+      size_t len = kn.size() - 7;
+      // check if it end with _SIZE
+      if ( !kn.ends_with("_SIZE") ) continue;
+      len -= 4;
+      int psize = pred.second(p.second);
+      if ( psize ) labels.emplace( std::string_view{ kn.data() + 7, len }, psize );
+    }
   }
   int idx = -1;
   rtdb->pred_mask = 0;
@@ -1600,17 +1612,17 @@ printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
 #ifdef DEBUG
 printf("%lX idx %d rtype %d\n", off, idx, r->type);
 #endif
-    // we have something compound
-    auto ve_type = [&](const ve_base &ve) -> NVP_type {
+    // we have something compound, size in out_size
+    auto ve_type = [&](const ve_base &ve, int &out_size) -> NVP_type {
       auto len = strlen(ve.arg);
       if ( len < 2 ) return GENERIC;
       if ( len > 7 && !strcmp(ve.arg + len - 7, "_offset") ) len -= 7;
       if ( ve.arg[len - 2] != 'R' ) return GENERIC;
-      if ( ve.arg[len - 1] == 'a' ) return t_a;
-      if ( ve.arg[len - 1] == 'b' ) return t_b;
-      if ( ve.arg[len - 1] == 'c' ) return t_c;
-      if ( ve.arg[len - 1] == 'e' ) return t_e;
-      if ( ve.arg[len - 1] == 'h' ) return t_h;
+      if ( ve.arg[len - 1] == 'a' ) { out_size = a_size; return t_a; }
+      if ( ve.arg[len - 1] == 'b' ) { out_size = b_size; return t_b; }
+      if ( ve.arg[len - 1] == 'c' ) { out_size = c_size; return t_c; }
+      if ( ve.arg[len - 1] == 'e' ) { out_size = e_size; return t_e; }
+      if ( ve.arg[len - 1] == 'h' ) { out_size = h_size; return t_h; }
       return GENERIC;
     };
     auto check_ve_t = [&](const ve_base &ve, reg_history::RH what, const nv_eattr *ea, const NV_Prop *pr) {
@@ -1620,15 +1632,46 @@ printf("%lX idx %d rtype %d\n", off, idx, r->type);
         // check what we have
         if ( is_reg(ea, kvi) )
         {
-          auto type = pr ? pr->t : ve_type(ve);
+          int psize = 0;
+          if ( !strcmp(ve.arg, "Ra") ) psize = a_size;
+          else if ( !strcmp(ve.arg,"Rb") ) psize = b_size;
+          else if ( !strcmp(ve.arg,"Rc") ) psize = c_size;
+          else if ( !strcmp(ve.arg,"Re") ) psize = e_size;
+          else if ( !strcmp(ve.arg, "Rh") ) psize = h_size;
+          auto type = pr ? pr->t : ve_type(ve, psize);
+#ifdef DEBUG
+printf("check_ve %s %d\n", ve.arg, psize);
+#endif
           if ( pr ) what |= 1 + pr->op;
-          rtdb->rgpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type);
+          auto li = labels.find(ve.arg);
+          if ( li != labels.end() && li->second > 32 )
+            rgpr_multi(li->second, kvi, pr ? pr->op : 0, type);
+          else {
+            if ( psize > 32 )
+              rgpr_multi(psize, kvi, pr ? pr->op : 0, type);
+            else
+              rtdb->rgpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type);
+          }
           return 1;
         }
         if ( is_ureg(ea, kvi) ) {
-          auto type = pr ? pr->t : ve_type(ve);
+          int psize = 0;
+          if ( !strcmp(ve.arg,"URa") ) psize = a_size;
+          else if ( !strcmp(ve.arg,"URb") ) psize = b_size;
+          else if ( !strcmp(ve.arg, "URc") ) psize = c_size;
+          else if ( !strcmp(ve.arg, "URe") ) psize = e_size;
+          else if ( !strcmp(ve.arg, "URh") ) psize = h_size;
+          auto type = pr ? pr->t : ve_type(ve, psize);
           if ( pr ) what |= 1 + pr->op;
-          rtdb->rugpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type);
+          auto li = labels.find(ve.arg);
+          if ( li != labels.end() && li->second > 32 )
+            rugpr_multi(li->second, kvi, pr ? pr->op : 0, type);
+          else {
+            if ( psize > 32 )
+              rugpr_multi(psize, kvi, pr ? pr->op : 0, type);
+            else
+              rtdb->rugpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type);
+          }
           return 1;
         }
         // do we really can have predicates inside compound render items?
