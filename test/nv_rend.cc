@@ -1316,7 +1316,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
   }
   std::map<std::string_view, int> labels;
   // predicates
-  int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, c_size = 0, e_size = 0, h_size = 0, i_size = 0;
+  int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, b2_size = 0, c_size = 0, e_size = 0, h_size = 0, i_size = 0;
   if ( p.first->predicated ) {
     auto pi = p.first->predicated->find("IDEST_SIZE"sv);
     if ( pi != p.first->predicated->end() )
@@ -1330,6 +1330,9 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     pi = p.first->predicated->find("ISRC_B_SIZE"sv);
     if ( pi != p.first->predicated->end() )
       b_size = pi->second(p.second);
+    pi = p.first->predicated->find("ISRC_B2_SIZE"sv);
+    if ( pi != p.first->predicated->end() )
+      b2_size = pi->second(p.second);
     pi = p.first->predicated->find("ISRC_C_SIZE"sv);
     if ( pi != p.first->predicated->end() )
       c_size = pi->second(p.second);
@@ -1347,9 +1350,9 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       auto &kn = pred.first;
       if ( !kn.starts_with("ILABEL_") ) continue;
       size_t len = kn.size() - 7;
-      // check if it end with _SIZE
+      // check if it ends with _SIZE
       if ( !kn.ends_with("_SIZE") ) continue;
-      len -= 4;
+      len -= 5;
       int psize = pred.second(p.second);
       if ( psize ) labels.emplace( std::string_view{ kn.data() + 7, len }, psize );
     }
@@ -1536,6 +1539,8 @@ printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
           res += rgpr_multi(a_size, kvi, ISRC_A, t_a);
          else if ( b_size > 32 && is_sv2(b_sv, rn->name, "Rb") )
           res += rgpr_multi(b_size, kvi, ISRC_B, t_b);
+         else if ( b2_size > 32 && !strcmp(rn->name, "Rb2") )
+          res += rgpr_multi(b2_size, kvi, ISRC_B, t_b);
          else if ( c_size > 32 && is_sv2(c_sv, rn->name, "Rc") )
           res += rgpr_multi(c_size, kvi, ISRC_C, t_c);
          else if ( e_size > 32 && is_sv2(e_sv, rn->name, "Re") )
@@ -1549,6 +1554,8 @@ printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
            if ( is_sv2(a_sv, rn->name, "Ra") )
              rtdb->rgpr(kvi->second, off, 0, ISRC_A, t_a);
            else if ( is_sv2(b_sv, rn->name, "Rb") )
+             rtdb->rgpr(kvi->second, off, 0, ISRC_B, t_b);
+           else if ( !strcmp(rn->name, "Rb") )
              rtdb->rgpr(kvi->second, off, 0, ISRC_B, t_b);
            else if ( is_sv2(c_sv, rn->name, "Rc") )
              rtdb->rgpr(kvi->second, off, 0, ISRC_C, t_c);
@@ -1635,6 +1642,7 @@ printf("%lX idx %d rtype %d\n", off, idx, r->type);
           int psize = 0;
           if ( !strcmp(ve.arg, "Ra") ) psize = a_size;
           else if ( !strcmp(ve.arg,"Rb") ) psize = b_size;
+          else if ( !strcmp(ve.arg,"Rb2") ) psize = b2_size;
           else if ( !strcmp(ve.arg,"Rc") ) psize = c_size;
           else if ( !strcmp(ve.arg,"Re") ) psize = e_size;
           else if ( !strcmp(ve.arg, "Rh") ) psize = h_size;
