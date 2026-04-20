@@ -1431,7 +1431,7 @@ sub dump_ins
       $ar->[10] = $g_ced->grep_pred("VQ");
       $ar->[12] = $g_ced->check_tab(USCHED, 1);
       $ar->[13] = $cc if $cc;
-      $ar->[14] = defined($scbd_type) && (3 == $scbd_type);
+      $ar->[14] = defined($scbd_type) && (3 == $scbd_type); # 3 - BB_ENDING_INST
       $ar->[15] = $scbd if ( $scbd );
       $ar->[16] = $sidl =~ /_CAS$/ if ( $sidl );
     }
@@ -1526,7 +1526,7 @@ sub dump_ins
       }
     }
   }
-  # latency tabs
+  # latency tabs - with -L option
   dump_lat($block, $sctx) if defined ( $opt_L );
   1;
 }
@@ -1764,19 +1764,14 @@ sub traverse_lat
   for ( my $i = 0; $i < $lsize; ++$i ) {
     my $cl = $il->[$i]->[1];
     # check if this instruction has wait index - then latency is unpredictable
-    if ( defined $il->[$i]->[0]->[17] ) {
-      $il->[$i]->[2] = 0;
-      next;
-    }
+    next if ( defined $il->[$i]->[0]->[17] );
     # check dual
-    if ( $il->[$i]->[0]->[8] ) {
-      $il->[$i]->[2] = 0;
-      next;
-    }
+    next if ( $il->[$i]->[0]->[8] );
     # min wait
     if ( defined $opt_m ) {
       next if defined($il->[$i]->[0]->[11]);
     }
+    next if denied_swap($il->[$i]->[0]);
     # check if scbd is SINK
     next if ( defined($il->[$i]->[15]) && 3 == $il->[$i]->[15] );
     # find limit for current latency
@@ -1911,10 +1906,10 @@ sub dec_stall
   }
   # calc stall diff
   my $c_stall = $ci->[0]->[7]->[0];
-printf("%X adiff %d cstall %d\n", $ci->[0]->[0], $adiff, $c_stall);
+printf("%X adiff %d cstall %d\n", $ci->[0]->[0], $adiff, $c_stall) if defined($opt_d);
   my $diff = limit_stall($adiff, $c_stall);
   return 0 unless $diff;
-printf("%X tdiff %d cstall %d\n", $ci->[0]->[0], $diff, $c_stall);
+printf("%X tdiff %d cstall %d\n", $ci->[0]->[0], $diff, $c_stall) if defined($opt_d);
   # patch
   my $patched = $ci->[0]->[7]->[1] - $diff;
   unless ( $g_ced->patch(USCHED, $patched) ) {
@@ -1922,6 +1917,7 @@ printf("%X tdiff %d cstall %d\n", $ci->[0]->[0], $diff, $c_stall);
     $gsp_bad++;
     return 0;
   }
+  printf("; dec_stall %X %s dec %d usched %d\n", $off, $ci->[0]->[2], $diff, $patched) if defined($opt_v);
   $gsp_patched++;
   # update stat
   $g_bl[6]++;
@@ -2542,6 +2538,14 @@ sub is_pre
   return ($n eq 'PRET' || $n eq 'PBK' || $n eq 'PCNT' || $n eq 'PEXIT' );
 }
 
+# MEM_SCBD_TYPE filled only since sm90
+sub is_bssy
+{
+  return 1 if 'BSSY' eq $g_ced->ins_name();
+  undef;
+}
+
+# build cfg graph
 sub dg
 {
   my($code_off, $s_size) = @_;
@@ -2585,6 +2589,7 @@ sub dg
     else {
       my $brt = $g_ced->ins_brt();
       my $cond = $g_ced->has_pred();
+      my $scbd_type;
       my $link_prev = sub {
         $add_prev->($off);
         $cnd_sub->($cond, $off);
@@ -2606,7 +2611,7 @@ sub dg
         } else {
           my($rel, $is_a) = has_rel($off);
           # ignore instr having relocs
-          unless($rel) {
+          unless($rel && $is_a) {
             my $addl = $g_ced->ins_clabs();
             if ( defined($addl) ) {
               $added = 1;
@@ -2615,6 +2620,7 @@ sub dg
               } else {
                 add_label(\%br, $addl, $off);
                 $pre = is_pre();
+                $scbd_type = $g_ced->ins_scbd_type() || is_bssy();
                 $gs_loffs->{$addl} = 0; # this is really some new labal - store it for later disasm too
               }
             }
@@ -2622,8 +2628,11 @@ sub dg
           # link with prev instr
           $add_prev->($off) unless($is_dl);
           if ( $added ) {
-            # check if we have conditional branch
-            if ( $pre ) { $cnd_sub->($pre, $off); }
+printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type);
+            if ( defined($scbd_type) && 1 == $scbd_type ) { # 1 - BARRIER_INST
+              $has_prev = $off;
+            } # check if we have conditional branch
+            elsif ( $pre ) { $cnd_sub->($pre, $off); }
             else { $cnd_sub->($cond, $off) if ( $brt ); }
             if ( $is_dl ) {
               $br{$off+1} = -1; # put dead-loop marker
