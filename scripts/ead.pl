@@ -3348,6 +3348,7 @@ my %s_setp = (
 # 'SUATOM' => 1,
  'PIXLD' => 1,
  'SULD' => 1,
+ 'MATCH' => 1,
  'LEA' => 1,
  'TEX' => 1,
  'TXD' => 1,
