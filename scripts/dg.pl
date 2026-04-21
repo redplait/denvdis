@@ -1395,7 +1395,7 @@ sub dump_ins
   my($off, $sctx, $block, $rt) = @_;
   my $brt = $g_ced->ins_brt();
   my $scbd = $g_ced->ins_scbd();
-  my $scbd_type = $g_ced->ins_scbd_type();
+  my $scbd_type = $g_ced->ins_scbd_type() || is_bb_end();
   my $mw = $g_ced->ins_min_wait();
   my $i_text = $g_ced->ins_text();
   my $i_type = $g_ced->ins_itype();
@@ -1431,7 +1431,10 @@ sub dump_ins
       $ar->[10] = $g_ced->grep_pred("VQ");
       $ar->[12] = $g_ced->check_tab(USCHED, 1);
       $ar->[13] = $cc if $cc;
-      $ar->[14] = defined($scbd_type) && (3 == $scbd_type); # 3 - BB_ENDING_INST
+      if ( defined($scbd_type) && (3 == $scbd_type) ) { # 3 - BB_ENDING_INST
+        # check if this is unconditional bb_end
+        $ar->[14] = !( $g_ced->has_pred() );
+      }
       $ar->[15] = $scbd if ( $scbd );
       $ar->[16] = $sidl =~ /_CAS$/ if ( $sidl );
     }
@@ -2545,6 +2548,28 @@ sub is_bssy
   undef;
 }
 
+my %s_bb_end = (
+ BPT => 3,
+ BRA => 3,
+ BREAK => 3,
+ BRX => 3,
+ BRXU => 3,
+ EXIT => 3,
+ JMP => 3,
+ JMX => 3,
+ JMXU => 3,
+ KILL => 3,
+ RET => 3,
+);
+
+sub is_bb_end
+{
+  return if ( $g_ced->sm_num() >= 0x5a ); # >= sm90
+  my $iname = $g_ced->ins_name();
+  return $s_bb_end{$iname} if exists($s_bb_end{$iname});
+  undef;
+}
+
 # build cfg graph
 sub dg
 {
@@ -2628,7 +2653,7 @@ sub dg
           # link with prev instr
           $add_prev->($off) unless($is_dl);
           if ( $added ) {
-printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type);
+printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d));
             if ( defined($scbd_type) && 1 == $scbd_type ) { # 1 - BARRIER_INST
               $has_prev = $off;
             } # check if we have conditional branch
