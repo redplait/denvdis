@@ -53,7 +53,7 @@ void HexDump(FILE *f, const unsigned char *From, int Len)
 
 
 // ripped from sm_version.txt
-std::map<int, std::pair<const char *, const char *> > NV_renderer::s_sms = {
+std::unordered_map<int, std::pair<const char *, const char *> > NV_renderer::s_sms = {
  { 0x14, { "sm2", nullptr } },
  { 0x1E, { "sm30", "sm3" } },
  { 0x20, { "sm32", "sm4" } },
@@ -414,6 +414,29 @@ bool NV_renderer::is_nan(NV_Format f, uint64_t res) {
       return false;
   }
   return false;
+}
+
+static const char *s_ins_type_names[] = {
+/* 0 */ "MATH",
+/* 1 */ "MIO_RD_SCBD",
+/* 2 */ "MIO_RD_WR_SCBD",
+/* 3 */ "COUPLED_EMULATABLE",
+/* 4 */ "DECOUPLED_BRU_DEPBAR_RD_SCBD",
+/* 5 */ "DECOUPLED_WR_SCBD",
+/* 6 */ "DECOUPLED_RD_NOREQ_SCBD",
+/* 7 */ "DECOUPLED_WR_NOREQ_SCBD",
+/* 8 */ "DECOUPLED_BRU_DEPBAR_RD_NOREQ_SCBD",
+/* 9 */ "COUPLED_EMULATABLE_NORD_SCBD",
+/* 10 */ "COUPLED_EMULATABLE_NOWR_SCBD",
+/* 11 */ "COUPLED_EMULATABLE_NORD_NOWR_SCBD",
+};
+
+const char *NV_renderer::ins_type_name(int v)
+{
+  if ( v <= 0 ) return nullptr;
+  v -= 1;
+  if ( (size_t)v >= sizeof(s_ins_type_names) / sizeof(s_ins_type_names[0]) ) return nullptr;
+  return s_ins_type_names[v];
 }
 
 static const char s_digits[] = "0123456789";
@@ -1314,7 +1337,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       }
     }
   }
-  std::map<std::string_view, int> labels;
+  std::unordered_map<std::string_view, int> labels;
   // predicates
   int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, b2_size = 0, c_size = 0, e_size = 0, h_size = 0, i_size = 0;
   if ( p.first->predicated ) {

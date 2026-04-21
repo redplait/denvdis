@@ -317,6 +317,7 @@ class NV_renderer {
     if ( m_dis != nullptr ) delete m_dis;
     if ( m_out && m_out != stdout) fclose(m_out);
   }
+  static const char *ins_type_name(int v);
   static void finalize_rt(reg_pad *);
   static bool is_compound(NV_rend r) { return r >= R_C; }
   // string_view methods
@@ -752,5 +753,5 @@ class NV_renderer {
    static const char *s_fmts[];
    static const char *s_labels[];
    static const char *s_ltypes[];
-   static std::map<int, std::pair<const char *, const char *> > s_sms;
+   static std::unordered_map<int, std::pair<const char *, const char *> > s_sms;
 };
