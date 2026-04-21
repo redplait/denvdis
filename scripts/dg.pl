@@ -52,7 +52,7 @@ sub limit_stall
 }
 
 ### globals
-my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w);
+my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm);
 # stat for barriers, key is ins name, value is [ wait, read, write ] count
 my %g_barstat;
 # per code section globals
@@ -2564,7 +2564,7 @@ my %s_bb_end = (
 
 sub is_bb_end
 {
-  return if ( $g_ced->sm_num() >= 0x5a ); # >= sm90
+  return if ( $g_sm >= 0x5a ); # >= sm90
   my $iname = $g_ced->ins_name();
   return $s_bb_end{$iname} if exists($s_bb_end{$iname});
   undef;
@@ -2905,6 +2905,7 @@ $g_ced = Cubin::Ced->new($g_elf);
 die("cannot load cubin $ARGV[0]") unless defined($g_ced);
 $g_ced->optv(1) if defined($opt_v);
 $g_w = $g_ced->width();
+$g_sm = $g_ced->sm_num();
 if ( defined $opt_v ) {
   printf("SM %s width %d block_mask %d\n", $g_ced->sm_name(), $g_w, $g_ced->block_mask());
 }
