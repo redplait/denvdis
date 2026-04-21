@@ -463,6 +463,10 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * ins_min_wait - to extract MIN_WAIT_NEEDED property of current instruction
 
+=item * ins_type - INST_TYPE_XX, to get name use method ins_type_name
+
+=item * ins_itype - ITYPE_ABC_XXX, to get name use IType_name
+
 =item * mask - full mask of instruction, like what nvd -N option does
 
 =item * ins_text - disaasemled string

@@ -423,6 +423,9 @@ class Ced_perl: public CEd_base {
   SV *ins_scbd_type() const {
     return ins_intxxx<&nv_instr::scbd_type>();
   }
+  SV *ins_type() const {
+    return ins_intxxx<&nv_instr::ins_type>();
+  }
   SV *ins_itype() const {
     return ins_intxxx<&nv_instr::itype>();
   }
@@ -1950,13 +1953,32 @@ ins_scbd(SV *obj)
   RETVAL
 
 SV *
-ins_min_wait(SV *obj)
- ALIAS:
-  Cubin::Ced::ins_itype = 1
+ins_type_name(SV *obj, IV v)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = (ix == 1) ? e->ins_itype() : e->ins_min_wait();
+   auto res = e->ins_type_name(v);
+   if ( !res )
+    RETVAL = &PL_sv_undef;
+   else {
+    RETVAL = newSVpv( res, strlen(res) );
+   }
+ OUTPUT:
+  RETVAL
+
+SV *
+ins_min_wait(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_itype = 1
+  Cubin::Ced::ins_type = 2
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( 2 == ix )
+    RETVAL = e->ins_type();
+   else {
+    RETVAL = (ix == 1) ? e->ins_itype() : e->ins_min_wait();
+   }
  OUTPUT:
   RETVAL
 
