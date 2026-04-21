@@ -83,6 +83,25 @@ enum NV_Format {
   NV_E8M7Imm,
 };
 
+// INST_TYPE_XX + 1
+enum NV_InsType {
+ INST_TYPE_MATH = 1,
+ INST_TYPE_COUPLED_MATH = 1,
+ INST_TYPE_MIO_RD_SCBD = 2,
+ INST_TYPE_DECOUPLED_RD_SCBD = 2,
+ INST_TYPE_MIO_RD_WR_SCBD = 3,
+ INST_TYPE_DECOUPLED_RD_WR_SCBD = 3,
+ INST_TYPE_COUPLED_EMULATABLE = 4,
+ INST_TYPE_DECOUPLED_BRU_DEPBAR_RD_SCBD = 5,
+ INST_TYPE_DECOUPLED_WR_SCBD = 6,
+ INST_TYPE_DECOUPLED_RD_NOREQ_SCBD = 7,
+ INST_TYPE_DECOUPLED_WR_NOREQ_SCBD = 8,
+ INST_TYPE_DECOUPLED_BRU_DEPBAR_RD_NOREQ_SCBD= 9,
+ INST_TYPE_COUPLED_EMULATABLE_NORD_SCBD = 10,
+ INST_TYPE_COUPLED_EMULATABLE_NOWR_SCBD = 11,
+ INST_TYPE_COUPLED_EMULATABLE_NORD_NOWR_SCBD = 12
+};
+
 enum NV_IType {
  ITYPE_ABC_REG = 1,
  ITYPE_ABC_BCST = 2,
@@ -226,7 +245,8 @@ struct nv_instr {
   scbd,      // NV_Scbd or 0
   scbd_type, // NV_Scbd_Type or 0
   min_wait,  // MIN_WAIT_NEEDED
-  itype;     // NV_IType
+  itype,     // NV_IType
+  ins_type;  // NV_InsType
  const char *target_index;
  const char *cc_index;
  const char *sidl_name;

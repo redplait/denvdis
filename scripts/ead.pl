@@ -3459,6 +3459,7 @@ sub gen_instr
         printf($fh "%s,", $brt->[2] || '0'); # scbd_type
         printf($fh "%s,", $brt->[6] || '0'); # min_wait
         printf($fh "%s,", $brt->[7] || '0'); # itype
+        printf($fh "%s,", $brt->[8] || '0'); # ins_type
         # 3 - target_index, 4 - cc_index, 5 - sidl_name
         foreach my $bi ( 3 .. 5 ) {
           if ( defined $brt->[$bi]) { printf($fh "\"%s\",", $brt->[$bi]); }
@@ -3466,7 +3467,7 @@ sub gen_instr
         }
         printf($fh "\n");
       } else {
-        printf($fh "0, 0, 0, 0, 0, nullptr, nullptr, nullptr,\n");
+        printf($fh "0, 0, 0, 0, 0, 0, nullptr, nullptr, nullptr,\n");
       }
       # predicates
       $write->($pred_name);
@@ -5870,6 +5871,10 @@ while( $str = <$fh> ) {
     }
     if ( $str =~ /\bITYPE\s*=\s*(\S+)\s*;/ ) {
       $b_props[7] = $1;
+      next;
+    }
+    if ( $str =~ /\bINSTRUCTION_TYPE\s*=\s*(\S+)\s*;/ ) {
+      $b_props[8] = $1;
       next;
     }
     # SIDL_NAME
