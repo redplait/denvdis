@@ -10,13 +10,14 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_L $opt_m $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v $opt_z/;
+use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_L $opt_m $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v $opt_z/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] file.cubin
  Options:
+  -a - try apply all instructions
   -b - track read/write barriers
   -C config.file
   -d - debug mode
@@ -1039,6 +1040,7 @@ sub is_cf
 sub denied_swap
 {
   my $what = shift;
+  return 0 if ( defined $opt_a );
   # intra-warp instructions
   return 1 if ( $what->[1] =~ /BAR/ );
   return 1 if ( $what->[1] =~ /ELECT/ || $what->[1] =~ /UTCATOMSWS/ );
@@ -2872,7 +2874,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("bdGglLmPprstUuvzC:");
+my $state = getopts("abdGglLmPprstUuvzC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
