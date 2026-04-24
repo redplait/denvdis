@@ -117,19 +117,19 @@ int decuda::try_dbgtab(uint64_t off) {
     di.dasm(state);
     if ( di.is_r1() && di.ud_obj.mnemonic == UD_Ilea ) {
       auto addr = di.get_jmp(1);
-      if ( addr == m_flag_sztab_addr ) {
+      if ( addr == m_res.m_flag_sztab_addr ) {
         state = 1;
         continue;
       }
       if ( state ) {
         if ( in_sec(s_data_rel, addr) )
-          m_dbgtab_addr = addr;
+          m_res.m_dbgtab_addr = addr;
         break;
       }
     }
     if ( di.is_end() ) break;
   }
-  return (m_dbgtab_addr != 0);
+  return (m_res.m_dbgtab_addr != 0);
 }
 
 int decuda::try_sizetab(uint64_t off) {
@@ -152,20 +152,20 @@ int decuda::try_sizetab(uint64_t off) {
        continue;
     }
     if ( 1 == state && di.is_jxx_jimm(UD_Ija, UD_Ijae) ) {
-      m_flag_sztab_size = di.ud_obj.mnemonic == UD_Ija ? tmp_size + 1: tmp_size;
+      m_res.m_flag_sztab_size = di.ud_obj.mnemonic == UD_Ija ? tmp_size + 1: tmp_size;
       state++;
       continue;
     }
     if ( 2 == state && di.is_r1() && di.ud_obj.mnemonic == UD_Ilea ) {
       auto addr = di.get_jmp(1);
       if ( in_sec(s_rodata, addr) ) {
-        m_flag_sztab_addr = addr;
+        m_res.m_flag_sztab_addr = addr;
       }
       break;
     }
     if ( di.is_end() ) break;
   }
-  return has_flag_sztab();
+  return m_res.has_flag_sztab();
 }
 
 int decuda::resolve_api_gate(ptrdiff_t off) {
@@ -204,9 +204,9 @@ int decuda::resolve_api_gate(ptrdiff_t off) {
         // check in regs register from op0
         ptrdiff_t res = 0;
         if ( regs.asgn(di.ud_obj.operand[0].base, res) ) {
-          m_api_gate = res;
+          m_res.m_api_gate = res;
           res = 0;
-          if ( regs.asgn(UD_R_RDI, res) ) m_api_data = res;
+          if ( regs.asgn(UD_R_RDI, res) ) m_res.m_api_data = res;
           return 1;
         }
         break;
@@ -217,7 +217,7 @@ int decuda::resolve_api_gate(ptrdiff_t off) {
     if ( di.total )
       covered.insert_overlap( { addr, addr + di.total } );
   }
-  return (m_api_gate != 0);
+  return (m_res.m_api_gate != 0);
 }
 
 int decuda::resolve_indirects()
@@ -247,13 +247,13 @@ int decuda::resolve_indirects()
       uint64_t val = 0;
       if ( in_sec(s_data, addr) && read(*s_data, addr, val) ) {
         one_forward of{ addr, val };
-        if ( di.setup(val) ) try_dbg_flag(&di, of.flag_addr, m_trace_fn, check_bss);
+        if ( di.setup(val) ) try_dbg_flag(&di, of.flag_addr, m_res.m_trace_fn, check_bss);
         m_forwards[s.first] = of;
       }
     });
   }
-  if ( m_trace_fn && di.setup(m_trace_fn) ) {
-    try_dbg_key(&di, m_trace_flag, m_trace_key, check_bss);
+  if ( m_res.m_trace_fn && di.setup(m_res.m_trace_fn) ) {
+    try_dbg_key(&di, m_res.m_trace_flag, m_res.m_trace_key, check_bss);
   }
   return !m_forwards.empty();
 }
@@ -283,7 +283,7 @@ int decuda::resolve_flag_sztab() {
       break;
     }
   }
-  return has_flag_sztab();
+  return m_res.has_flag_sztab();
 }
 
 int decuda::find_intf_tab() {
@@ -315,12 +315,12 @@ int decuda::find_intf_tab() {
    // read value at riter->offset
    auto r_addr = drs + (riter->offset - start);
    if ( addr == *(uint64_t *)r_addr ) {
-     m_intf_tab = riter->offset;
+     m_res.m_intf_tab = riter->offset;
      break;
    }
  }
  auto prev = riter->offset;
- if ( !m_intf_tab || ++riter == m_relocs.end() ) return 0;
+ if ( !m_res.m_intf_tab || ++riter == m_relocs.end() ) return 0;
  // dirty hack - read till relocs are adjacent
  one_intf curr;
  int state = 1;
@@ -344,13 +344,13 @@ int decuda::find_intf_tab() {
    }
    // for next cycle
    if ( 2 == ++state ) {
-     m_intfs.push_back(curr);
+     m_res.m_intfs.push_back(curr);
      memset(&curr, 0, sizeof(curr));
      state = 0;
    }
    prev = riter->offset;
  }
- return !m_intfs.empty();
+ return !m_res.m_intfs.empty();
 }
 
 uint32_t decuda::read_size(uint64_t off) {
@@ -361,24 +361,24 @@ uint32_t decuda::read_size(uint64_t off) {
 
 void decuda::fill_dbgtab() {
   // read from .data.rel.ro
-  for ( int i = 0; i < m_flag_sztab_size; ++i ) {
-    m_dbgtab.push_back( read_ptr(s_data_rel.value(), m_dbgtab_addr + sizeof(int64_t) * i) );
+  for ( int i = 0; i < m_res.m_flag_sztab_size; ++i ) {
+    m_res.m_dbgtab.push_back( read_ptr(s_data_rel.value(), m_res.m_dbgtab_addr + sizeof(int64_t) * i) );
   }
 }
 
 void decuda::fill_sztab() {
   // read from rodata
-  for ( int i = 0; i < m_flag_sztab_size; ++i ) {
-    m_flag_sztab.push_back( decuda_base::read_size(s_rodata.value(), m_flag_sztab_addr + sizeof(int32_t) * i) );
+  for ( int i = 0; i < m_res.m_flag_sztab_size; ++i ) {
+    m_res.m_flag_sztab.push_back( decuda_base::read_size(s_rodata.value(), m_res.m_flag_sztab_addr + sizeof(int32_t) * i) );
   }
 }
 
 void decuda::dump_res() const {
-  if ( m_api_gate ) printf("api_gate: %lX\n", m_api_gate);
-  if ( m_api_data ) printf("api_data: %lX\n", m_api_data);
-  if ( m_intf_tab ) {
-    printf("intf_tab: %lX size %ld\n", m_intf_tab, m_intfs.size());
-    for ( auto &oi: m_intfs ) {
+  if ( m_res.m_api_gate ) printf("api_gate: %lX\n", m_res.m_api_gate);
+  if ( m_res.m_api_data ) printf("api_data: %lX\n", m_res.m_api_data);
+  if ( m_res.m_intf_tab ) {
+    printf("intf_tab: %lX size %ld\n", m_res.m_intf_tab, m_res.m_intfs.size());
+    for ( auto &oi: m_res.m_intfs ) {
       // dump UUID
       printf("%8.8X-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X",
        *(uint32_t *)(oi.uuid), *(unsigned short *)(oi.uuid + 4), *(unsigned short *)(oi.uuid + 6),
@@ -389,23 +389,23 @@ void decuda::dump_res() const {
     }
   }
   // flag_sztab
-  if ( has_flag_sztab() ) {
-    printf("flags_sztab %lX size %d\n", m_flag_sztab_addr, m_flag_sztab_size);
-    for ( size_t idx = 0; idx < m_flag_sztab.size(); idx++ ) {
-      auto v = m_flag_sztab.at(idx);
+  if ( m_res.has_flag_sztab() ) {
+    printf("flags_sztab %lX size %d\n", m_res.m_flag_sztab_addr, m_res.m_flag_sztab_size);
+    for ( size_t idx = 0; idx < m_res.m_flag_sztab.size(); idx++ ) {
+      auto v = m_res.m_flag_sztab.at(idx);
       if ( !v ) continue;
       printf(" [%d] %X", idx, v);
-      if ( idx < m_dbgtab.size() && m_dbgtab[idx] ) printf(" %lX\n", m_dbgtab[idx]);
+      if ( idx < m_res.m_dbgtab.size() && m_res.m_dbgtab[idx] ) printf(" %lX\n", m_res.m_dbgtab[idx]);
       else printf("\n");
     }
   }
-  if ( m_trace_fn ) {
-    printf("trace_get_fn: %lX\n", m_trace_fn);
-    if ( m_trace_flag ) printf("trace_flag: %lX\n", m_trace_flag);
-    if ( m_trace_key )  printf("trace_key: %lX\n", m_trace_key);
+  if ( m_res.m_trace_fn ) {
+    printf("trace_get_fn: %lX\n", m_res.m_trace_fn);
+    if ( m_res.m_trace_flag ) printf("trace_flag: %lX\n", m_res.m_trace_flag);
+    if ( m_res.m_trace_key )  printf("trace_key: %lX\n", m_res.m_trace_key);
   }
-  if ( m_dbgtab_addr )
-    printf("dbgtab %lX size %d\n", m_dbgtab_addr, m_dbgtab.size());
+  if ( m_res.m_dbgtab_addr )
+    printf("dbgtab %lX size %d\n", m_res.m_dbgtab_addr, m_res.m_dbgtab.size());
   if ( !m_forwards.empty() ) {
     printf("%ld forwards:\n", m_forwards.size());
     for ( auto &fi: m_forwards ) {
@@ -487,28 +487,28 @@ extern int patch_dbg(uint64_t, uint64_t, FILE *, const unsigned char *, size_t);
 int decuda::patch_tracepoints(uint64_t delta, const unsigned char *mask, size_t size) const {
   int res = 0;
   for ( size_t i = 0; i < size; ++i ) {
-    if ( !mask[i] || !m_flag_sztab[i] || !m_dbgtab[i] ) continue;
-    int32_t *tab = (int32_t *)(delta + m_dbgtab[i]);
-    for ( uint32_t idx = 0; idx < m_flag_sztab[i]; ++idx ) tab[idx] = 1;
+    if ( !mask[i] || !m_res.m_flag_sztab[i] || !m_res.m_dbgtab[i] ) continue;
+    int32_t *tab = (int32_t *)(delta + m_res.m_dbgtab[i]);
+    for ( uint32_t idx = 0; idx < m_res.m_flag_sztab[i]; ++idx ) tab[idx] = 1;
     res++;
   }
   return res;
 }
 
 int decuda::patch_logger(FILE *out_fp, const unsigned char *mask, size_t mask_size) const {
- if ( !m_api_gate ) {
+ if ( !m_res.m_api_gate ) {
    fprintf(out_fp, "cannot find dbg_apu_gate\n");
    return 0;
  }
- if ( !m_api_data ) {
+ if ( !m_res.m_api_data ) {
    fprintf(out_fp, "cannot find dbg_data\n");
    return 0;
  }
- if ( !has_flag_sztab() ) {
+ if ( !m_res.has_flag_sztab() ) {
    fprintf(out_fp, "cannot find dbg_tab\n");
    return 0;
  }
- size_t real_mask_size = std::min(mask_size, m_dbgtab.size());
+ size_t real_mask_size = std::min(mask_size, m_res.m_dbgtab.size());
  if ( !real_mask_size ) return 0;
  auto first_sym = m_syms.cbegin();
  // get delta
@@ -533,7 +533,7 @@ int decuda::patch_logger(FILE *out_fp, const unsigned char *mask, size_t mask_si
    return 0;
  }
  // patch dbg logger
- int res = ::patch_dbg(m_api_gate + delta, m_api_data + delta, out_fp, mask, real_mask_size);
+ int res = ::patch_dbg(m_res.m_api_gate + delta, m_res.m_api_data + delta, out_fp, mask, real_mask_size);
  if ( !res ) return res;
  // patch tab
  patch_tracepoints(delta, mask, real_mask_size);
@@ -565,13 +565,13 @@ void decuda::_verify(FILE *out_fp, std::function<void(uint64_t, rtmem_storage &)
  }
  if ( post ) (*post)(delta, rs);
  // check api gate
- check_addr(out_fp, m_api_gate, delta, "api_gate", rs);
- check_addr(out_fp, m_api_data, delta, "api_data", rs);
+ check_addr(out_fp, m_res.m_api_gate, delta, "api_gate", rs);
+ check_addr(out_fp, m_res.m_api_data, delta, "api_data", rs);
  // check dbg keys
- if ( m_trace_flag )
-   check_dword(out_fp, m_trace_flag, delta, "trace_flag", rs);
- if ( m_trace_key )
-   check_dword(out_fp, m_trace_key, delta, "trace_key", rs);
+ if ( m_res.m_trace_flag )
+   check_dword(out_fp, m_res.m_trace_flag, delta, "trace_flag", rs);
+ if ( m_res.m_trace_key )
+   check_dword(out_fp, m_res.m_trace_key, delta, "trace_key", rs);
  const my_phdr *curr = nullptr;
  // enum and dump
  for ( auto &fi: m_forwards ) {

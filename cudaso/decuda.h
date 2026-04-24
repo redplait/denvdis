@@ -2,14 +2,9 @@
 
 #include "decuda_base.h"
 #include <functional>
+#include "decuda_data.h"
 
 class rtmem_storage;
-
-struct one_intf {
-  unsigned char uuid[16];
-  uint64_t addr;
-  int size = 0;
-};
 
 class decuda: public decuda_base {
  public:
@@ -20,6 +15,10 @@ class decuda: public decuda_base {
    void verify(FILE *fp) const {
      _verify(fp, nullptr);
    }
+#ifdef WITH_CEREAL
+   template <class Archive>
+   void store(Archive &a) { a(m_res); }
+#endif
    void dump_res() const;
    void verify_patch(FILE *fp, const struct dbg_patch *, int) const;
    int patch_logger(FILE *fp, const unsigned char *, size_t) const;
@@ -45,28 +44,12 @@ class decuda: public decuda_base {
    void check_addr(FILE *fp, uint64_t, int64_t delta, const char *pfx, rtmem_storage &) const;
    void check_dword(FILE *fp, uint64_t, int64_t delta, const char *pfx, rtmem_storage &) const;
    // output data
-   uint64_t m_api_gate = 0;
-   uint64_t m_api_data = 0;
-   uint64_t m_intf_tab = 0;
-   std::vector<one_intf> m_intfs;
+   decuda_data m_res;
    const one_intf *find(const unsigned char *key) const {
-     for ( auto &i: m_intfs ) {
+     for ( auto &i: m_res.m_intfs ) {
        if ( !memcmp(i.uuid, key, 16) ) return &i;
      }
      return nullptr;
-   }
-   // dbg trace data
-   uint64_t m_trace_fn = 0;
-   uint64_t m_trace_flag = 0;
-   uint64_t m_trace_key = 0;
-   // dbg flags
-   uint64_t m_flag_sztab_addr = 0,
-     m_dbgtab_addr = 0;
-   int m_flag_sztab_size = 0;
-   std::vector<uint32_t> m_flag_sztab;
-   std::vector<uint64_t> m_dbgtab; // hopefully size is the same as of m_flag_sztab
-   inline bool has_flag_sztab() const {
-     return (m_flag_sztab_addr != 0) && (m_flag_sztab_size != 0);
    }
    // key is name from m_syms so we can use string_view
    // value is pair<ptr, original function>
