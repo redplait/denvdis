@@ -9,6 +9,7 @@
 #include "rtmem.h"
 #include <unordered_set>
 #include "interval_tree.hpp"
+#include "scfg.h"
 
 using ITree = lib_interval_tree::interval_tree_t<ptrdiff_t, lib_interval_tree::right_open>;
 
@@ -56,6 +57,9 @@ struct diter;
 struct tlg_item {
   const char *name = nullptr;
   uint64_t addr = 0;
+#ifdef WITH_CEREAL
+  int idx = 0;
+#endif
 };
 
 using Tlg = std::vector<tlg_item>;

@@ -151,7 +151,11 @@ int decuda_base::process_tlg(const char **names, size_t n_size, Tlg &res) {
   for ( auto citer = sres.cbegin(); citer != sres.end(); ++citer ) {
     auto off = citer->get_start();
     auto idx = citer->get_index();
+#ifdef WITH_CEREAL
+    res[idx] = { names[idx], d_off + off, idx };
+#else
     res[idx] = { names[idx], d_off + off };
+#endif
     added++;
   }
   if ( !added ) res.clear();
