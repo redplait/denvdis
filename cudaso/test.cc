@@ -27,13 +27,14 @@ template <typename T>
 void process(T *dc) {
   dc->read();
   if ( opt_t ) dc->dump_syms();
+#ifdef WITH_CEREAL
   if ( !s_arg.empty() ) {
     std::ofstream os(s_arg);
     cereal::JSONOutputArchive archive( os );
     dc->store(archive);
-  } else {
+  } else
+#endif
     dc->dump_res();
-  }
 }
 
 int main(int argc, char **argv) {

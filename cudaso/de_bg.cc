@@ -77,6 +77,12 @@ const char *find_de_tlg(size_t i) {
 static const char *s_api = "GetCUDADebuggerAPI";
 
 int de_bg::_read() {
+  auto sim = m_syms.find(s_api);
+  if ( sim == m_syms.end() ) {
+    fprintf(stderr, "cannot get entry %s\n", s_api);
+    return 0;
+  }
+  m_res.m_pivot = sim->second.addr;
   process_tlg(s_tlg, sizeof(s_tlg) / sizeof(s_tlg[0]), m_res.m_tlg);
   auto si = m_syms.find(s_api);
   if ( si == m_syms.end() ) {
@@ -426,11 +432,6 @@ int patch_dbg_trace(FILE *fp, uint64_t addr);
 
 int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg, int in_gdb) {
   // extract delta
-  auto si = m_syms.find(s_api);
-  if ( si == m_syms.end() ) {
-    fprintf(fp, "cannot get entry %s\n", s_api); fflush(fp);
-    return 0;
-  }
   auto dh = dlopen("libcudadebugger.so.1", 2);
   if ( !dh ) {
     fprintf(fp, "cannot load libcudadebugger, %s\n", dlerror()); fflush(fp);
@@ -442,7 +443,7 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg, int in_gdb) {
     fprintf(fp, "cannot find address of %s, (%s)\n", s_api, dlerror()); fflush(fp);
     return 0;
   }
-  auto delta = real_addr - si->second.addr;
+  auto delta = real_addr - m_res.m_pivot;
   fprintf(fp, "delta %lX\n", delta);
   CUDBGAPI api = nullptr;
   if ( hook && !in_gdb ) {
