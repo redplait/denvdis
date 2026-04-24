@@ -10,17 +10,17 @@ using AddrIdent = std::pair<uint64_t, int>;
 using Q2 = std::queue<AddrIdent>;
 
 void de_bg::dump_res() const {
-  dump_tlg(m_tlg);
-  if ( m_api )
-    printf("api %lX\n", m_api);
-  if ( m_state )
-    printf("state %lX\n", m_state);
-  if ( m_bg_log )
-    printf("bg_log %lX\n", m_bg_log);
-  if ( m_log_root )
-    printf("log_root %lX\n", m_log_root);
+  dump_tlg(m_res.m_tlg);
+  if ( m_res.m_api )
+    printf("api %lX\n", m_res.m_api);
+  if ( m_res.m_state )
+    printf("state %lX\n", m_res.m_state);
+  if ( m_res.m_bg_log )
+    printf("bg_log %lX\n", m_res.m_bg_log);
+  if ( m_res.m_log_root )
+    printf("log_root %lX\n", m_res.m_log_root);
   int idx = -1;
-  for ( auto &api: m_apis ) {
+  for ( auto &api: m_res.m_apis ) {
     idx++;
     printf("[%d] %lX %lX", idx, api.addr, api.sub);
     if ( !api.name.empty() ) printf(" %s\n", api.name.c_str());
@@ -69,10 +69,15 @@ static const char *s_tlg[] = {
 "dbg_da",
 };
 
+const char *find_de_tlg(size_t i) {
+  if ( i < 0 || i > (sizeof(s_tlg) / sizeof(s_tlg[0])) ) return nullptr;
+  return s_tlg[i];
+}
+
 static const char *s_api = "GetCUDADebuggerAPI";
 
 int de_bg::_read() {
-  process_tlg(s_tlg, sizeof(s_tlg) / sizeof(s_tlg[0]), m_tlg);
+  process_tlg(s_tlg, sizeof(s_tlg) / sizeof(s_tlg[0]), m_res.m_tlg);
   auto si = m_syms.find(s_api);
   if ( si == m_syms.end() ) {
     fprintf(stderr, "cannot get entry %s\n", s_api);
@@ -86,7 +91,7 @@ int de_bg::_read() {
   std::vector<elf_reloc>::iterator ri;
   try_api(api_addr, ri);
   try_hack_api(ri);
-  return !m_apis.empty();
+  return !m_res.m_apis.empty();
 }
 
 int de_bg::looks_name(uint64_t off, std::string &res) const {
@@ -127,7 +132,7 @@ int de_bg::try_hack_api(std::vector<elf_reloc>::iterator &ri)
     std::string name;
     try_one_api(di, val, name);
     if ( opt_d ) printf("val %lX\n", val);
-    m_apis.push_back({ri->offset, val, name});
+    m_res.m_apis.push_back({ri->offset, val, name});
     res++;
     ri++;
   }
@@ -155,12 +160,12 @@ int de_bg::try_one_api(diter &di, uint64_t off, std::string &res) {
       if ( di.is_mov64() && di.is_r1() ) {
         auto what = di.get_jmp(1);
         if ( in_sec(s_bss, what) ) {
-          if ( !m_state ) {
+          if ( !m_res.m_state ) {
              regs.add(di.ud_obj.operand[0].base, what);
-             m_state = what;
+             m_res.m_state = what;
              state = 1;
              continue;
-          } else if ( m_state == what ) {
+          } else if ( m_res.m_state == what ) {
              regs.add(di.ud_obj.operand[0].base, what);
              state = 1;
              continue;
@@ -224,7 +229,7 @@ int de_bg::extract_name(diter &di, uint64_t off, std::string &res) {
       if ( di.is_lea() && di.is_r1() ) {
         if ( looks_name(di.get_jmp(1), res) ) {
           state = 2;
-          if ( m_bg_log ) return 1;
+          if ( m_res.m_bg_log ) return 1;
           continue;
         }
       }
@@ -257,7 +262,7 @@ int de_bg::extract_name(diter &di, uint64_t off, std::string &res) {
       if ( di.is_lea() && di.is_r1() ) {
         auto off = di.get_jmp(1);
         if ( !in_sec(s_data, off) ) continue;
-        if ( !m_log_root ) m_log_root = off;
+        if ( !m_res.m_log_root ) m_res.m_log_root = off;
         regs.add(di.ud_obj.operand[0].base, off);
         state = 5;
         continue;
@@ -273,7 +278,7 @@ int de_bg::extract_name(diter &di, uint64_t off, std::string &res) {
     // 4: call reg
     if ( 4 == state ) {
       if ( di.is_call_reg() ) {
-        if ( regs.asgn(di.ud_obj.operand[0].base, m_bg_log) ) return 1;
+        if ( regs.asgn(di.ud_obj.operand[0].base, m_res.m_bg_log) ) return 1;
         break;
       }
     }
@@ -315,7 +320,7 @@ int de_bg::try_api(uint64_t addr, std::vector<elf_reloc>::iterator &ri) {
           ri = std::lower_bound(m_relocs.begin(), m_relocs.end(), (ptrdiff_t)addr,
              [](auto &what, ptrdiff_t off) { return what.offset < off; });
           if ( ri == m_relocs.end() ) continue;
-          m_api = addr;
+          m_res.m_api = addr;
           goto out;
         }
       }
@@ -323,7 +328,7 @@ int de_bg::try_api(uint64_t addr, std::vector<elf_reloc>::iterator &ri) {
     }
   }
 out:
-  return (m_api != 0);
+  return (m_res.m_api != 0);
 }
 
 void de_bg::dump_logh(FILE *fp, const my_phdr *curr, int idx, uint64_t addr, rtmem_storage &rs) {
@@ -377,9 +382,9 @@ int de_bg::vrf_log(FILE *fp, uint64_t delta, rtmem_storage &rs) {
 }
 
 int de_bg::vrf_api(FILE *fp, uint64_t delta, rtmem_storage &rs) {
-  if ( !m_api ) return 0;
-  if ( m_state ) {
-    auto addr = delta + m_state;
+  if ( !m_res.m_api ) return 0;
+  if ( m_res.m_state ) {
+    auto addr = delta + m_res.m_state;
     auto curr = rs.check(addr);
     if ( curr ) {
       uint64_t state = 0;
@@ -388,12 +393,12 @@ int de_bg::vrf_api(FILE *fp, uint64_t delta, rtmem_storage &rs) {
     }
   }
   int idx = -1;
-  auto curr = rs.check(m_api + delta);
+  auto curr = rs.check(m_res.m_api + delta);
   if ( !curr ) {
-    fprintf(fp, "api in unknown section, %lX\n", m_api);
+    fprintf(fp, "api in unknown section, %lX\n", m_res.m_api);
     return 0;
   }
-  for ( auto const &a: m_apis ) {
+  for ( auto const &a: m_res.m_apis ) {
     ++idx;
     auto addr = delta + a.addr;
     uint64_t cb = 0;
@@ -461,7 +466,7 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg, int in_gdb) {
 
 int de_bg::patch_tlg(uint64_t delta, char value) {
   int res = 0;
-  for ( auto &t: m_tlg ) {
+  for ( auto &t: m_res.m_tlg ) {
     if ( !t.addr ) continue;
     char *addr = (char *)(t.addr + delta);
     // +0x8 - 1

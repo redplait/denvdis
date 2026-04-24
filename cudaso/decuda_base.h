@@ -59,6 +59,11 @@ struct tlg_item {
   uint64_t addr = 0;
 #ifdef WITH_CEREAL
   int idx = 0;
+  template <class Archive>
+  void serialize( Archive & ar )
+  {
+    ar( addr, idx );
+  }
 #endif
 };
 
@@ -75,6 +80,10 @@ class decuda_base {
    }
    int read();
    void dump_syms() const;
+#ifdef WITH_CEREAL
+   template <class Archive>
+   void store(Archive &a) {}
+#endif
  protected:
    virtual int _read() = 0;
    bool in_sec(const std::optional<ELFIO::section *> &s, uint64_t addr) const {

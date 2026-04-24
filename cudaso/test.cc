@@ -3,16 +3,21 @@
 #include "de_cupti.h"
 #include "de_ptx.h"
 #include <unistd.h>
+#ifdef WITH_CEREAL
+#include "cereal/archives/json.hpp"
+#endif
 
 int opt_v = 0,
     opt_d = 0,
     opt_t = 0;
+std::string s_arg;
 
 void usage(const char *prog)
 {
   printf("%s usage: [options] libcubin.so\n", prog);
   printf("Options:\n");
   printf("-d - show disasm\n");
+  printf("-s - dump in json via cereal\n");
   printf("-t - dump symbols\n");
   printf("-v - verbose mode\n");
   exit(6);
@@ -22,7 +27,13 @@ template <typename T>
 void process(T *dc) {
   dc->read();
   if ( opt_t ) dc->dump_syms();
-  dc->dump_res();
+  if ( !s_arg.empty() ) {
+    std::ofstream os(s_arg);
+    cereal::JSONOutputArchive archive( os );
+    dc->store(archive);
+  } else {
+    dc->dump_res();
+  }
 }
 
 int main(int argc, char **argv) {
@@ -31,9 +42,10 @@ int main(int argc, char **argv) {
       do_cupti = 0,
       hack_ptx = 0;
   while(1) {
-    c = getopt(argc, argv, "CDdtpv");
+    c = getopt(argc, argv, "s:CDdtpv");
     if ( c == -1 ) break;
     switch(c) {
+      case 's': s_arg = optarg; break;
       case 'd': opt_d = 1; break;
       case 'C': do_cupti = 1; break;
       case 'D': do_dbg = 1; break;
