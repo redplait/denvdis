@@ -12,6 +12,11 @@ int decuda::_read() {
   find_intf_tab();
   resolve_flag_sztab();
   resolve_indirects();
+#ifdef WITH_CEREAL
+  auto first_sym = m_syms.cbegin();
+  m_res.pivot_name = first_sym->first;
+  m_res.m_pivot = first_sym->second.addr;
+#endif
   return 1;
 }
 
@@ -510,21 +515,30 @@ int decuda::patch_logger(FILE *out_fp, const unsigned char *mask, size_t mask_si
  }
  size_t real_mask_size = std::min(mask_size, m_res.m_dbgtab.size());
  if ( !real_mask_size ) return 0;
+#ifndef WITH_CEREAL
  auto first_sym = m_syms.cbegin();
  // get delta
  const char *fname = first_sym->first.c_str();
+#endif
  auto dh = dlopen("libcuda.so.1", 2);
  if ( !dh ) {
    fprintf(out_fp, "cannot load libcuda, %s\n", dlerror());
    return 0;
  }
  auto_dlclose dummy(dh);
+#ifdef WITH_CEREAL
+ auto fname = m_res.pivot_name.c_str();
+#endif
  uint64_t real_addr = (uint64_t)dlsym(dh, fname);
  if ( !real_addr ) {
    fprintf(out_fp, "cannot find address of %s, (%s)\n", fname, dlerror());
    return 0;
  }
+#ifdef WITH_CEREAL
+ auto delta = real_addr - m_res.m_pivot;
+#else
  auto delta = real_addr - first_sym->second.addr;
+#endif
  fprintf(out_fp, "real_addr %lX, delta %lX\n", real_addr, delta);
 //  fprintf(out_fp, "PID %d\n", getpid());
  rtmem_storage rs;

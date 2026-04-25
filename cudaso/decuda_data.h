@@ -35,11 +35,15 @@ struct decuda_data {
      return (m_flag_sztab_addr != 0) && (m_flag_sztab_size != 0);
   }
 #ifdef WITH_CEREAL
+  std::string pivot_name;
+  ELFIO::Elf64_Addr m_pivot = 0;
+  // serialization
   template <class Archive>
   void serialize( Archive & ar ) {
     // when we will have reflection support in every popular c++ compiler?
     ar( m_api_gate, m_api_data, m_intf_tab, CEREAL_NVP(m_intfs), m_trace_fn, m_trace_flag, m_trace_key,
-      m_flag_sztab_addr, m_dbgtab_addr, m_flag_sztab_size, CEREAL_NVP(m_flag_sztab), CEREAL_NVP(m_dbgtab)
+      m_flag_sztab_addr, m_dbgtab_addr, m_flag_sztab_size, CEREAL_NVP(m_flag_sztab), CEREAL_NVP(m_dbgtab),
+      pivot_name, m_pivot
     );
   }
 #endif
