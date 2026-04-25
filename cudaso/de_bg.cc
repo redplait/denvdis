@@ -455,7 +455,7 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg, int in_gdb) {
   vrf_api(fp, delta, rs);
   vrf_log(fp, delta, rs);
   fflush(fp);
-  if ( tlg ) patch_tlg(delta, tlg);
+  if ( tlg ) patch_tlg(delta, tlg, m_res.m_tlg);
   if ( !hook ) return 1;
   auto addr_log = bg_log();
   if ( !addr_log ) return 0;
@@ -465,9 +465,9 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg, int in_gdb) {
   return res;
 }
 
-int de_bg::patch_tlg(uint64_t delta, char value) {
+int patch_tlg(uint64_t delta, char value, const Tlg &tlg) {
   int res = 0;
-  for ( auto &t: m_res.m_tlg ) {
+  for ( auto &t: tlg ) {
     if ( !t.addr ) continue;
     char *addr = (char *)(t.addr + delta);
     // +0x8 - 1

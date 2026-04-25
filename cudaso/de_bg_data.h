@@ -5,6 +5,7 @@
 #endif
 
 const char *find_de_tlg(size_t);
+int patch_tlg(uint64_t delta, char, const Tlg &);
 
 struct bg_api {
   uint64_t addr = 0;
