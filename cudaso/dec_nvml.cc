@@ -3,6 +3,15 @@
 #include <errno.h>
 #include <string.h>
 
+/* simple decryptot of nvidia-smi logs
+   to produce logs set env vars
+__NVML_DBG_FILE=log
+__NVML_DBG_LVL=DEBUG
+__RM_ENABLE_VERBOSE_OUTPUT=1
+   in libnvidia-ml.so.1 there is string to build directory /home/huyn/work/p4/sw/tools/unix/hosts/Linux-x86/targets
+   huyn, yeah, my ass
+ */
+
 static uint32_t
  key1 = 0xD3DAECB8,
  key2 = 0x1D4D4848,
