@@ -11,6 +11,9 @@ LIBS=-L $(UDIS_PATH)/libudis86 -ludis86 -lstdc++ -ldl
 test: test.cc libdis.so
 	gcc -std=c++20 -g -I$(ELFIO_PATH) -I$(CEREAL_PATH) -o $@ test.cc ./libdis.so -lstdc++
 
+dec_nvml: dec_nvml.cc
+	gcc -o $@ $^
+
 libde_bg.a: $(DE_BG_OBJS)
 	ar rcs $@ $(AR_OBJS)
 
