@@ -147,6 +147,12 @@ extern "C" int reset_logger() {
   return 1;
 }
 
+extern "C" void set_logger_fp(FILE *fp) {
+  std::lock_guard tmp(s_mtx);
+  if ( s_fp && s_fp != fp && (s_fp != stdout && s_fp != stderr) ) fclose(s_fp);
+  s_fp = fp;
+}
+
 // var arg logger
 extern "C" int vlog(const char *fmt, ...) {
   va_list args;

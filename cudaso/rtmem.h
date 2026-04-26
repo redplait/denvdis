@@ -14,9 +14,9 @@ struct my_phdr {
     return (other.addr >= addr) && (other.addr + other.memsz) <= (addr + memsz);
   }
 #if __cplusplus >= 202002L
-  bool operator==(const my_phdr &other) = default;
+  bool operator==(const my_phdr &other) const = default;
 #else
-  bool operator==(const my_phdr &other) {
+  bool operator==(const my_phdr &other) const {
     return addr == other.addr && memsz == other.memsz;
   }
 #endif

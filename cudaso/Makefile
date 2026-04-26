@@ -6,10 +6,10 @@ AR_OBJS = $(DE_BG_OBJS) de_cupti.o decuda.o de_ptx.o
 LIBS=-L $(UDIS_PATH)/libudis86 -ludis86 -lstdc++ -ldl
 
 .cc.o:
-	gcc -g -fpic -c -I$(CEREAL_PATH) -I$(UDIS_PATH) -I$(ELFIO_PATH) $^
+	gcc -std=c++20 -g -fpic -c -I$(CEREAL_PATH) -I$(UDIS_PATH) -I$(ELFIO_PATH) $^
 
 test: test.cc libdis.so
-	gcc -g -I$(ELFIO_PATH) -I$(CEREAL_PATH) -o $@ test.cc ./libdis.so -lstdc++
+	gcc -std=c++20 -g -I$(ELFIO_PATH) -I$(CEREAL_PATH) -o $@ test.cc ./libdis.so -lstdc++
 
 libde_bg.a: $(DE_BG_OBJS)
 	ar rcs $@ $(AR_OBJS)
@@ -17,5 +17,8 @@ libde_bg.a: $(DE_BG_OBJS)
 libdis.a: $(AR_OBJS)
 	ar rcs $@ $(AR_OBJS)
 
-libdis.so: $(AR_OBJS)
-	gcc -shared -o $@ $(AR_OBJS) $(LIBS)
+my_hook.o: my_hook.cc
+	gcc -std=c++20 -g -fpic -c -I$(ELFIO_PATH) -I$(CEREAL_PATH) $^
+
+libdis.so: $(AR_OBJS) my_hook.o
+	gcc -shared -o $@ my_hook.o $(AR_OBJS) $(LIBS) -lpthread
