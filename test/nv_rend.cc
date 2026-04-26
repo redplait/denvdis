@@ -584,6 +584,7 @@ void NV_renderer::Err(const char *fmt, ...) const
    m_elog->verr(fmt, &args);
  else
   vfprintf(stderr, fmt, args);
+ va_end(args);
 }
 
 void NV_renderer::dis_stat() const

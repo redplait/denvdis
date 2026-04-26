@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <mutex>
 #include <time.h>
 #include <string.h>
@@ -59,14 +60,16 @@ static void HexDump(const unsigned char *From, int Len)
      fprintf(s_fp, "\n");
 }
 
+#define MAKE_TS    time_t t = time(NULL); \
+  struct tm ltm; \
+  localtime_r(&t, &ltm); \
+  char stime[200]; \
+  strftime(stime, sizeof(stime), "%d/%m/%Y %H:%M:%S", &ltm);
+
 
 // my logger
 static void my_logger(void *user_data, int packet_type, int func_num, void *packet, void *ud2) {
-  time_t t = time(NULL);
-  struct tm ltm;
-  localtime_r(&t, &ltm);
-  char stime[200];
-  strftime(stime, sizeof(stime), "%d/%m/%Y %H:%M:%S", &ltm);
+  MAKE_TS
   const unsigned char *body = (const unsigned char *)packet;
   int need_hex = hex_masks[packet_type];
   {
@@ -107,11 +110,7 @@ static debugger_trace s_dbg_68 = nullptr;
 static uint64_t dbg_logger_addr = 0;
 
 static void my_dbg_trace(const char *packet) {
-  time_t t = time(NULL);
-  struct tm ltm;
-  localtime_r(&t, &ltm);
-  char stime[200];
-  strftime(stime, sizeof(stime), "%d/%m/%Y %H:%M:%S", &ltm);
+  MAKE_TS
   const char **name = (const char **)(packet + 0x28);
   {
     std::lock_guard tmp(s_mtx);
@@ -146,4 +145,22 @@ extern "C" int reset_logger() {
   }
   if ( f_copy && (f_copy != stdout && f_copy != stderr) ) fclose(f_copy);
   return 1;
+}
+
+// var arg logger
+extern "C" int vlog(const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  MAKE_TS
+  int res = 0;
+  if ( !s_fp ) {
+    fprintf(stderr, "%s ", stime);
+    res = vfprintf(stderr, fmt, args);
+  } else {
+    std::lock_guard tmp(s_mtx);
+    fprintf(s_fp, "%s ", stime);
+    res = vfprintf(s_fp, fmt, args);
+  }
+  va_end(args);
+  return res;
 }

@@ -8,6 +8,7 @@ struct dbg_patch {
   int what;
 };
 
+int vlog(const char *, ...);
 void check_cuda(const char *fname, FILE *fp);
 void check_patch(const char *fname, FILE *fp, const struct dbg_patch *, int);
 // couple of cautions
