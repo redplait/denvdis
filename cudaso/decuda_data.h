@@ -11,7 +11,7 @@ struct one_intf {
 #ifdef WITH_CEREAL
   template <class Archive>
   void serialize( Archive & ar ) {
-    ar( uuid, addr, size );
+    ar( CEREAL_NVP(uuid), CEREAL_NVP(addr), CEREAL_NVP(size) );
   }
 #endif
 };
@@ -41,9 +41,10 @@ struct decuda_data {
   template <class Archive>
   void serialize( Archive & ar ) {
     // when we will have reflection support in every popular c++ compiler?
-    ar( m_api_gate, m_api_data, m_intf_tab, CEREAL_NVP(m_intfs), m_trace_fn, m_trace_flag, m_trace_key,
-      m_flag_sztab_addr, m_dbgtab_addr, m_flag_sztab_size, CEREAL_NVP(m_flag_sztab), CEREAL_NVP(m_dbgtab),
-      pivot_name, m_pivot
+    ar( CEREAL_NVP(m_api_gate), CEREAL_NVP(m_api_data), CEREAL_NVP(m_intf_tab), CEREAL_NVP(m_intfs),
+      CEREAL_NVP(m_trace_fn), CEREAL_NVP(m_trace_flag), CEREAL_NVP(m_trace_key),
+      CEREAL_NVP(m_flag_sztab_addr), CEREAL_NVP(m_dbgtab_addr), CEREAL_NVP(m_flag_sztab_size),
+      CEREAL_NVP(m_flag_sztab), CEREAL_NVP(m_dbgtab), CEREAL_NVP(pivot_name), CEREAL_NVP(m_pivot)
     );
   }
 #endif

@@ -62,7 +62,7 @@ struct tlg_item {
   template <class Archive>
   void serialize( Archive & ar )
   {
-    ar( addr, idx );
+    ar( CEREAL_NVP(addr), CEREAL_NVP(idx) );
   }
 #endif
 };

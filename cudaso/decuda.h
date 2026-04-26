@@ -17,7 +17,7 @@ class decuda: public decuda_base {
    }
 #ifdef WITH_CEREAL
    template <class Archive>
-   void store(Archive &a) { a(m_res); }
+   void store(Archive &a) { a(CEREAL_NVP(m_res)); }
 #endif
    void dump_res() const;
    void verify_patch(FILE *fp, const struct dbg_patch *, int) const;

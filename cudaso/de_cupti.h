@@ -3,6 +3,12 @@
 
 struct cupti_item {
   uint64_t addr, value, ind = 0;
+#ifdef WITH_CEREAL
+  template <class Archive>
+  void serialize( Archive & ar ) {
+    ar( CEREAL_NVP(addr), CEREAL_NVP(value), CEREAL_NVP(ind) );
+  }
+#endif
 };
 
 class de_cupti: public decuda_base {
