@@ -6,6 +6,7 @@
 
 const char *find_de_tlg(size_t);
 int patch_tlg(uint64_t delta, char, const Tlg &);
+constexpr const char *de_api = "GetCUDADebuggerAPI";
 
 struct bg_api {
   uint64_t addr = 0;

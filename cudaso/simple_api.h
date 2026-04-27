@@ -8,6 +8,8 @@ struct dbg_patch {
   int what;
 };
 
+bool is_cuda_patched();
+bool is_debg_patched();
 void set_logger_fp(FILE *);
 int vlog(const char *, ...);
 void check_cuda(const char *fname, FILE *fp);

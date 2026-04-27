@@ -11,7 +11,8 @@
 typedef void *(*Tdlsym)(void*, const char*);
 static Tdlsym real_sym = NULL;
 
-static pthread_once_t once_dlsym = PTHREAD_ONCE_INIT;
+static pthread_once_t once_dlsym = PTHREAD_ONCE_INIT,
+ once_de_bg = PTHREAD_ONCE_INIT;
 static FILE *s_log = NULL;
 static de_bg_data s_de_data;
 static decuda_data s_cudata;
@@ -19,6 +20,7 @@ static bool has_cudata = false;
 static void *sh_deb = NULL,
  *sh_cuda = NULL;
 
+/* resolve real dlsym, open log and read json from home dir */
 static void init_dlsym(void) {
   // stolen from https://github.com/kentstone84/APEX-GPU/blob/main/apex_dlsym_intercept.c
   real_sym = (Tdlsym)dlvsym(RTLD_NEXT, "dlsym", "GLIBC_2.2.5");
@@ -85,13 +87,31 @@ static void init_dlsym(void) {
   }
 }
 
+// implemented in de_bg.cc
+extern int simple_hook_debg(void *, FILE *, de_bg_data *);
+
+/* hook debugger - called after init_dlsym */
+void hook_de_bg() {
+  if ( is_debg_patched() ) return; // in case if was called check_cudbg
+  auto api = real_sym(sh_deb, de_api);
+  if ( !api ) {
+    vlog("cannot find %s\n", de_api);
+    exit(3);
+  }
+  simple_hook_debg(api, s_log, &s_de_data);
+}
+
 void* dlsym(void* handle, const char* symbol) {
   pthread_once(&once_dlsym, init_dlsym);
   if ( symbol ) {
     // for debugging
     vlog("dlsym %s\n", symbol);
     if ( !strcmp(symbol, "DebugAgentMain") ) {
-    } else if ( !strcmp(symbol, "GetCUDADebuggerAPI") ) {
+      sh_deb = handle;
+      pthread_once(&once_de_bg, hook_de_bg);
+    } else if ( !strcmp(symbol, de_api) ) {
+      sh_deb = handle;
+      pthread_once(&once_de_bg, hook_de_bg);
     }
   }
   return real_sym(handle, symbol);

@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include "trace_fmt.h"
 
+static std::mutex patch_mtx;
+// patch data - protected with patch_mtx
 static dbg_trace old_handler = nullptr;
 static uint64_t logger_addr = 0;
 static void **logger_data = nullptr;
@@ -67,7 +69,7 @@ static void HexDump(const unsigned char *From, int Len)
   strftime(stime, sizeof(stime), "%d/%m/%Y %H:%M:%S", &ltm);
 
 
-// my logger
+// cuda logger
 static void my_logger(void *user_data, int packet_type, int func_num, void *packet, void *ud2) {
   MAKE_TS
   const unsigned char *body = (const unsigned char *)packet;
@@ -87,9 +89,9 @@ static void my_logger(void *user_data, int packet_type, int func_num, void *pack
     old_handler(user_data, packet_type, func_num, packet, ud2);
 }
 
-
-// patcher
+// cuda patcher
 int patch_dbg(uint64_t addr, uint64_t data_addr, FILE *fp, const unsigned char *mask, size_t mask_size) {
+  std::lock_guard tmp(patch_mtx);
   memset(hex_masks, 0, sizeof(hex_masks));
   for ( int i = 0; i < std::min(mask_size, sizeof(hex_masks)); i++ ) {
     hex_masks[i] = ( mask[i] & 2 ) ? 1 : 0;
@@ -102,7 +104,13 @@ int patch_dbg(uint64_t addr, uint64_t data_addr, FILE *fp, const unsigned char *
   return 1;
 };
 
-// debugger logging
+extern "C" bool is_cuda_patched() {
+  std::lock_guard tmp(patch_mtx);
+  if ( !logger_addr ) return false;
+  return *(dbg_trace *)logger_addr == my_logger;
+}
+
+// debugger logging - data protected by patch_mtx
 typedef void (*debugger_trace)(const char *);
 // old handler
 static debugger_trace s_dbg_68 = nullptr;
@@ -124,11 +132,18 @@ static void my_dbg_trace(const char *packet) {
 }
 
 int patch_dbg_trace(FILE *fp, uint64_t addr) {
+  std::lock_guard tmp(patch_mtx);
   dbg_logger_addr = addr;
   s_dbg_68 = *(debugger_trace *)addr;
   s_fp = fp;
   *(debugger_trace *)addr = my_dbg_trace;
   return 1;
+}
+
+extern "C" bool is_debg_patched() {
+  std::lock_guard tmp(patch_mtx);
+  if ( !dbg_logger_addr ) return false;
+  return *(debugger_trace *)dbg_logger_addr == my_dbg_trace;
 }
 
 extern "C" int reset_logger() {

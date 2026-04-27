@@ -74,24 +74,17 @@ const char *find_de_tlg(size_t i) {
   return s_tlg[i];
 }
 
-static const char *s_api = "GetCUDADebuggerAPI";
-
 int de_bg::_read() {
-  auto sim = m_syms.find(s_api);
+  auto sim = m_syms.find(de_api);
   if ( sim == m_syms.end() ) {
-    fprintf(stderr, "cannot get entry %s\n", s_api);
+    fprintf(stderr, "cannot get entry %s\n", de_api);
     return 0;
   }
   m_res.m_pivot = sim->second.addr;
   process_tlg(s_tlg, sizeof(s_tlg) / sizeof(s_tlg[0]), m_res.m_tlg);
-  auto si = m_syms.find(s_api);
-  if ( si == m_syms.end() ) {
-    fprintf(stderr, "cannot get entry %s\n", s_api);
-    return 0;
-  }
-  auto api_addr = si->second.addr;
+  auto api_addr = sim->second.addr;
   if ( !in_sec(s_text, api_addr) ) {
-    fprintf(stderr, "entry %s not in text section\n", s_api);
+    fprintf(stderr, "entry %s not in text section\n", de_api);
     return 0;
   }
   std::vector<elf_reloc>::iterator ri;
@@ -430,6 +423,20 @@ typedef int (*und_api)(int, int, int, CUDBGAPI *api);
 
 int patch_dbg_trace(FILE *fp, uint64_t addr);
 
+int simple_hook_debg(void *addr, FILE *fp, de_bg_data *d) {
+  uint64_t real_addr = (uint64_t)addr;
+  auto delta = real_addr - d->m_pivot;
+  vlog("delta %lX\n", delta);
+  CUDBGAPI api = nullptr;
+  und_api hack = (und_api)real_addr;
+  hack(0, 0, 0, &api);
+  auto res = api->initialize();
+  vlog("init res: %X\n", res);
+  patch_tlg(delta, 'z', d->m_tlg);
+  if ( !d->m_bg_log ) return 0;
+  return patch_dbg_trace(fp, d->m_bg_log + delta);
+}
+
 int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg, int in_gdb) {
   // extract delta
   auto dh = dlopen("libcudadebugger.so.1", 2);
@@ -438,9 +445,9 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg, int in_gdb) {
     return 0;
   }
   auto_dlclose dummy(dh);
-  uint64_t real_addr = (uint64_t)dlsym(dh, s_api);
+  uint64_t real_addr = (uint64_t)dlsym(dh, de_api);
   if ( !real_addr ) {
-    fprintf(fp, "cannot find address of %s, (%s)\n", s_api, dlerror()); fflush(fp);
+    fprintf(fp, "cannot find address of %s, (%s)\n", de_api, dlerror()); fflush(fp);
     return 0;
   }
   auto delta = real_addr - m_res.m_pivot;
@@ -455,6 +462,7 @@ int de_bg::verify(FILE *fp, rtmem_storage &rs, int hook, char tlg, int in_gdb) {
   vrf_api(fp, delta, rs);
   vrf_log(fp, delta, rs);
   fflush(fp);
+  if ( is_debg_patched() ) return 1; // check if simple_hook_debg already called from dlsym hook
   if ( tlg ) patch_tlg(delta, tlg, m_res.m_tlg);
   if ( !hook ) return 1;
   auto addr_log = bg_log();
