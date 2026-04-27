@@ -9,7 +9,9 @@
 #include "cereal/archives/json.hpp"
 
 typedef void *(*Tdlsym)(void*, const char*);
+typedef long (*Texp_tab)(const void **, unsigned char *);
 static Tdlsym real_sym = NULL;
+static Texp_tab real_exp_tab = NULL; // original cuGetExportTable
 
 static pthread_once_t once_dlsym = PTHREAD_ONCE_INIT,
  once_de_bg = PTHREAD_ONCE_INIT;
@@ -101,6 +103,18 @@ void hook_de_bg() {
   simple_hook_debg(api, s_log, &s_de_data);
 }
 
+// cuGetExportTable hook
+long my_exp_tab(const void **tab, unsigned char *uuid) {
+  if ( !tab || !uuid ) return real_exp_tab(tab, uuid);
+  auto res = real_exp_tab(tab, uuid);
+  vlog("%8.8X-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X %d %p",
+   *(uint32_t *)(uuid), *(unsigned short *)(uuid + 4), *(unsigned short *)(uuid + 6),
+   uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15],
+   res, *tab
+  );
+  return res;
+}
+
 void* dlsym(void* handle, const char* symbol) {
   pthread_once(&once_dlsym, init_dlsym);
   if ( symbol ) {
@@ -112,6 +126,11 @@ void* dlsym(void* handle, const char* symbol) {
     } else if ( !strcmp(symbol, de_api) ) {
       sh_deb = handle;
       pthread_once(&once_de_bg, hook_de_bg);
+    } else if ( !strcmp(symbol, "cuGetExportTable") ) {
+      sh_cuda = handle;
+      if ( !real_exp_tab )
+        real_exp_tab = (Texp_tab)real_sym(handle, symbol);
+      if ( real_exp_tab ) return (void *)&my_exp_tab;
     }
   }
   return real_sym(handle, symbol);
