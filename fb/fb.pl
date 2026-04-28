@@ -109,7 +109,7 @@ my $e = Elf::Reader->new($ARGV[0]);
 my $fb = Elf::FatBinary->new($e, $ARGV[0]);
 if ( !$fb->read() ) {
   printf("cannot read %s\n", $ARGV[0]);
-  return 2;
+  exit(2);
 }
 # lets check what we should do
 if ( defined $opt_i ) {
@@ -119,7 +119,7 @@ if ( defined $opt_i ) {
     my $hr = $fb->[$opt_i];
     unless ( defined($hr) ) {
       printf("invalid idx %d\n", $opt_i);
-      return 3;
+      exit(3);
     }
     my $item = [ $opt_i, $hr ];
     extract($fb, [ $item ]);

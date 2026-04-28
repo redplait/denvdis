@@ -1,0 +1,3 @@
+[submodule "cudaso/cereal"]
+	path = cudaso/cereal
+	url = https://github.com/USCiLab/cereal.git

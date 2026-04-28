@@ -142,7 +142,13 @@ char *try_get_addr(const char *name) {
   return (char *)res;
 }
 
+extern "C" {
+
 void check_cuda(const char *fname, FILE *fp);
+int check_dbg(const char *fname, FILE *fp, int, char);
+
+};
+
 int opt_d = 0;
 
 // main
@@ -152,6 +158,7 @@ __host__ int main(int argc, char **argv)
   uint32_t *card_id;
   // read card id - 4 * 4 = 16 bytes + 4 for test
   auto err = cudaMalloc(&card_id, 20); checkCudaErrors(err);
+  std::atexit( []{cudaDeviceReset();} );
   FILE *out_fp = stdout;
   if ( argc > 1 ) {
     s = argv[1];
@@ -167,8 +174,9 @@ __host__ int main(int argc, char **argv)
    { "cuMemCreate", 4 },
   };
  check_patch("/usr/lib/x86_64-linux-gnu/libcuda.so", out_fp, ar, 3); */
-  unsigned char mask[31] = { 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
-  set_logger("/usr/lib/x86_64-linux-gnu/libcuda.so", out_fp, mask, sizeof(mask));
+//  unsigned char mask[31] = { 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
+//  set_logger("/usr/lib/x86_64-linux-gnu/libcuda.so", out_fp, mask, sizeof(mask));
+  check_dbg("/usr/lib/x86_64-linux-gnu/libcudadebugger.so.1", out_fp, 2, 'z');
   machine_ids<<<1,1>>>(card_id);
   err = cudaDeviceSynchronize(); checkCudaErrors(err);
   uint32_t host_card_id[5];
