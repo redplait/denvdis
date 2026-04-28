@@ -107,11 +107,17 @@ void hook_de_bg() {
 long my_exp_tab(const void **tab, unsigned char *uuid) {
   if ( !tab || !uuid ) return real_exp_tab(tab, uuid);
   auto res = real_exp_tab(tab, uuid);
-  vlog("%8.8X-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X %d %p",
-   *(uint32_t *)(uuid), *(unsigned short *)(uuid + 4), *(unsigned short *)(uuid + 6),
-   uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15],
-   res, *tab
-  );
+  if ( res ) // error
+    vlog("%8.8X-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X %d\n",
+     *(uint32_t *)(uuid), *(unsigned short *)(uuid + 4), *(unsigned short *)(uuid + 6),
+     uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15], res
+    );
+  else
+    vlog("%8.8X-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X %d %p\n",
+     *(uint32_t *)(uuid), *(unsigned short *)(uuid + 4), *(unsigned short *)(uuid + 6),
+     uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15],
+     res, *tab
+    );
   return res;
 }
 
