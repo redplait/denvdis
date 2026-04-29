@@ -32,7 +32,7 @@ WriteMakefile(
     CC                => 'g++ -std=c++20',
     LIBS              => ["-Wl,--as-needed -L$Config{'sitearch'}/auto/Elf/Reader -l:Reader.so -L.. -lced -lstdc++"], # e.g., '-lm'
     DEFINE            => '', # e.g., '-DHAVE_SOMETHING'
-    INC               => '-I. -I.. -I../../scripts -I../../../FP16/include/ -I/home/redp/disc/ELFIO', # e.g., '-I. -I/usr/include/other'
+    INC               => '-I. -I.. -I../../scripts -I../FP16/include/ -I/home/redp/disc/ELFIO', # e.g., '-I. -I/usr/include/other'
 	# Un-comment this if you add C files to link with later:
     # OBJECT            => '$(O_FILES)', # link all the C files too
 );

@@ -1,3 +1,6 @@
 [submodule "cudaso/cereal"]
 	path = cudaso/cereal
 	url = https://github.com/USCiLab/cereal.git
+[submodule "test/FP16"]
+	path = test/FP16
+	url = https://github.com/Maratyszcza/FP16

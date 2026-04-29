@@ -1768,6 +1768,7 @@ sub traverse_lat
   # - for themself
   # - for all preceeding instructions
   # so lets collect them first into @cj [ address, index ]
+  # bcs we process by offsets @cj also already ordered by instruction offsets too
   my @cj;
   for ( my $i = 0; $i < $lsize; ++$i ) {
     my $ins = $il->[$i]->[0];
@@ -1779,7 +1780,7 @@ sub traverse_lat
   my $cj_size = scalar @cj;
   my $get_cj;
   if ( $cj_size ) {
-    my $curr_cj = 0;
+    my $curr_cj = 0; # current index in @cj
     $get_cj = sub {
       my $off = shift;
       return if ( $curr_cj >= $cj_size );
@@ -1787,7 +1788,7 @@ sub traverse_lat
       $curr_cj++ if ( $off == $cj[$curr_cj]->[0] );
       $res;
     };
-  } else {
+  } else { # @cj is empty
     $get_cj = sub { return undef; };
   }
   my @tails;

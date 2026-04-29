@@ -4,7 +4,7 @@ CC=gcc -mavx2
 # CLANG=gcc -mavx2
 CLANG=clang++-21 -mavx2
 # path to fp16 (https://github.com/Maratyszcza/FP16)
-FP16=-I ../../FP16/include
+FP16=-I FP16/include
 # for release add -Os and remove -g
 CFLAGS=-Wall -Wno-missing-braces -std=c++20 -gdwarf-4
 # SM_FLAGS=-Wall -shared -fpic -msse2avx -gdwarf-4 -pthread $(IFLAGS)
