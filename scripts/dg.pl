@@ -1763,11 +1763,39 @@ sub traverse_lat
     $g_bl[2]++;
     return 0;
   }
-  my @tails;
   my $il = $bl->[18]; # pairs of [ instr, lat ]
+  # call/ret/indirect branches are joints
+  # - for themself
+  # - for all preceeding instructions
+  # so lets collect them first into @cj [ address, index ]
+  my @cj;
+  for ( my $i = 0; $i < $lsize; ++$i ) {
+    my $ins = $il->[$i]->[0];
+    if ( defined $ins->[5] ) {
+      push @cj, [ $ins->[0], $i ];
+    }
+  }
+  # make closure to get brt joint
+  my $cj_size = scalar @cj;
+  my $get_cj;
+  if ( $cj_size ) {
+    my $curr_cj = 0;
+    $get_cj = sub {
+      my $off = shift;
+      return if ( $curr_cj >= $cj_size );
+      my $res = $cj[$curr_cj]->[0];
+      $curr_cj++ if ( $off == $cj[$curr_cj]->[0] );
+      $res;
+    };
+  } else {
+    $get_cj = sub { return undef; };
+  }
+  my @tails;
   # first pass - apply latency
   for ( my $i = 0; $i < $lsize; ++$i ) {
-    my $cl = $il->[$i]->[1];
+    my $curr = $il->[$i];
+    my $cl = $curr->[1];
+    my $cj_lim = $get_cj->($curr->[0]->[0]);
     # check if this instruction has wait index - then latency is unpredictable
     next if ( defined $il->[$i]->[0]->[17] );
     # check dual
@@ -1783,10 +1811,15 @@ sub traverse_lat
     my $cl_lim; # defalt EoB
     if ( defined $cl->[3] ) {
       $cl_lim = $cl->[3]->[0]->[0];
+      # check if brt joint is lesser current joint
+      $cl_lim = $cj_lim if ( defined($cj_lim) && $cj_lim < $cl_lim );
     } elsif ( defined $cl->[4] ) {
       $cl_lim = $cl->[4]->[0]->[0];
+      # check if brt joint is lesser current joint
+      $cl_lim = $cj_lim if ( defined($cj_lim) && $cj_lim < $cl_lim );
+    } elsif ( defined $cj_lim ) {
+      $cl_lim = $cj_lim;
     }
-    my $curr = $il->[$i];
     my $stall = $curr->[0]->[7]->[0];
     # check if stall eq latency
     if ( $stall == $cl->[1] ) {
