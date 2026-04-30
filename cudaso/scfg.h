@@ -9,3 +9,6 @@ constexpr const char *json_deb = "cudadeb.json";
 constexpr const char *json_cuda = "cuda.json";
 
 #endif
+
+// for nvPTX hooking
+#define HOOK_nvPTX

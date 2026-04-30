@@ -12,6 +12,7 @@ bool is_cuda_patched();
 bool is_debg_patched();
 void set_logger_fp(FILE *);
 int vlog(const char *, ...);
+int vlog_slist(const char *, size_t, const char *const *, ...);
 void check_cuda(const char *fname, FILE *fp);
 void check_patch(const char *fname, FILE *fp, const struct dbg_patch *, int);
 // couple of cautions

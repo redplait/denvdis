@@ -8,10 +8,53 @@
 #include "simple_api.h"
 #include "cereal/archives/json.hpp"
 
+// dummy pthread_rwlock_t RAII classes
+struct rd_raii {
+  explicit rd_raii(pthread_rwlock_t *r) {
+    pthread_rwlock_rdlock(r);
+    m_lock = r;
+  }
+  ~rd_raii() {
+    pthread_rwlock_unlock(m_lock);
+  }
+ protected:
+  pthread_rwlock_t *m_lock;
+};
+
+struct wr_raii {
+  explicit wr_raii(pthread_rwlock_t *r) {
+    pthread_rwlock_wrlock(r);
+    m_lock = r;
+  }
+  ~wr_raii() {
+    pthread_rwlock_unlock(m_lock);
+  }
+ protected:
+  pthread_rwlock_t *m_lock;
+};
+
 typedef void *(*Tdlsym)(void*, const char*);
 typedef long (*Texp_tab)(const void **, unsigned char *);
 static Tdlsym real_sym = NULL;
 static Texp_tab real_exp_tab = NULL; // original cuGetExportTable
+
+#ifdef HOOK_nvPTX
+typedef int (*Tcompile)(void *, int, const char *const *);
+typedef int (*Tcompiler_create)(void **, size_t, const char *);
+typedef int (*Tcompiler_destroy)(void *);
+typedef int (*Tcompiler_get)(void *, void *);
+typedef int (*Tcompiler_getlen)(void *, size_t *);
+
+static Tcompile real_compile = NULL;
+static Tcompiler_create real_compile_create = NULL;
+static Tcompiler_destroy real_compile_destroy = NULL;
+static Tcompiler_get real_compile_get = NULL;
+static Tcompiler_getlen real_compile_getlen = NULL;
+
+// hash for holding pairs ctx -> size_t from nvPTXCompilerGetCompiledProgram
+static std::unordered_map<void *, size_t> s_cpsizes;
+static pthread_rwlock_t cpsizes_lock = PTHREAD_RWLOCK_INITIALIZER;
+#endif
 
 static pthread_once_t once_dlsym = PTHREAD_ONCE_INIT,
  once_de_bg = PTHREAD_ONCE_INIT;

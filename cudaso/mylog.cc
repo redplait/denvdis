@@ -185,3 +185,22 @@ extern "C" int vlog(const char *fmt, ...) {
   va_end(args);
   return res;
 }
+
+int vlog_slist(const char *fmt, size_t n, const char *const *slist, ...) {
+  va_list args;
+  va_start(args, slist);
+  MAKE_TS
+  int res = 0;
+  if ( !s_fp ) {
+    fprintf(stderr, "%s ", stime);
+    res = vfprintf(stderr, fmt, args);
+    for ( size_t i = 0; i < n; i++ ) fprintf(stderr, " [%d] %s\n", i, slist[i]);
+  } else {
+    std::lock_guard tmp(s_mtx);
+    fprintf(s_fp, "%s ", stime);
+    res = vfprintf(s_fp, fmt, args);
+    for ( size_t i = 0; i < n; i++ ) fprintf(s_fp, " [%d] %s\n", i, slist[i]);
+  }
+  va_end(args);
+  return res;
+}
