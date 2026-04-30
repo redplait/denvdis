@@ -186,7 +186,7 @@ extern "C" int vlog(const char *fmt, ...) {
   return res;
 }
 
-int vlog_slist(const char *fmt, size_t n, const char *const *slist, ...) {
+extern "C" int vlog_slist(const char *fmt, size_t n, const char *const *slist, ...) {
   va_list args;
   va_start(args, slist);
   MAKE_TS

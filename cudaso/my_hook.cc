@@ -164,6 +164,56 @@ long my_exp_tab(const void **tab, unsigned char *uuid) {
   return res;
 }
 
+#ifdef HOOK_nvPTX
+int my_compile(void *ctx, int len, const char *const *opts) {
+  auto res = real_compile(ctx, len, opts);
+  vlog_slist("compile %p %d\n", len, opts, ctx, res);
+  return res;
+}
+
+int my_compiler_destroy(void *ctx) {
+  auto res = real_compile_destroy(ctx);
+  vlog("compiler_destroy %p %d\n", ctx, res);
+  {
+    wr_raii tmp(&cpsizes_lock);
+    auto it = s_cpsizes.find(ctx);
+    if ( it != s_cpsizes.end() ) s_cpsizes.erase(it);
+  }
+  return res;
+}
+
+int my_compile_get(void *ctx, void *out_buf) {
+  auto res = real_compile_get(ctx, out_buf);
+  std::optional<size_t> len;
+  if ( res )
+    vlog("compiler_get %p %d\n", ctx, res);
+  else {
+    rd_raii tmp(&cpsizes_lock);
+    auto it = s_cpsizes.find(ctx);
+    if ( it != s_cpsizes.end() ) len.emplace(it->second);
+  }
+  // TODO: do here something with out_buf, len in len.value()
+  if ( len.has_value() ) {
+    vlog("can dump len %d\n", len.value());
+  }
+  return res;
+}
+
+int my_compile_getlen(void *ctx, size_t *out_len) {
+  auto res = real_compile_getlen(ctx, out_len);
+  if ( res )
+    vlog("compiler_getlen %p %d\n", ctx, res);
+  else {
+    vlog("compiler_getlen %p %d %d\n", ctx, res, *out_len);
+    if ( *out_len ) {
+      wr_raii tmp(&cpsizes_lock);
+      s_cpsizes[ctx] = *out_len;
+    }
+  }
+  return res;
+}
+#endif
+
 void* dlsym(void* handle, const char* symbol) {
   pthread_once(&once_dlsym, init_dlsym);
   if ( symbol ) {
@@ -180,6 +230,22 @@ void* dlsym(void* handle, const char* symbol) {
       if ( !real_exp_tab )
         real_exp_tab = (Texp_tab)real_sym(handle, symbol);
       if ( real_exp_tab ) return (void *)&my_exp_tab;
+    } else if ( symbol[0] == 'n' ) {
+#ifdef HOOK_nvPTX
+      if ( !strcmp(symbol, "nvPTXCompilerCompile") ) {
+        if ( !real_compile ) real_compile = (Tcompile)real_sym(handle, symbol);
+        if ( real_compile ) return (void *)&my_compile;
+      } else if ( !strcmp(symbol, "nvPTXCompilerDestroy") ) {
+        if ( !real_compile_destroy ) real_compile_destroy = (Tcompiler_destroy)real_sym(handle, symbol);
+        if ( real_compile_destroy ) return (void *)&my_compiler_destroy;
+      } else if ( !strcmp(symbol, "nvPTXCompilerGetCompiledProgramSize") ) {
+        if ( !real_compile_getlen ) real_compile_getlen = (Tcompiler_getlen)real_sym(handle, symbol);
+        if ( real_compile_getlen ) return (void *)&my_compile_getlen;
+      } else if ( !strcmp(symbol, "nvPTXCompilerGetCompiledProgram") ) {
+        if ( !real_compile_get ) real_compile_get = (Tcompiler_get)real_sym(handle, symbol);
+        if ( real_compile_get ) return (void *)&my_compile_get;
+      }
+#endif
     }
   }
   return real_sym(handle, symbol);
