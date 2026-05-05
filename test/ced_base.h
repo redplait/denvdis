@@ -80,11 +80,11 @@ class CEd_base: public CElf<ParseSASS> {
      return 1;
    }
    Elf_Word m_idx = 0; // section index
+   int m_bidx = 0;  // for 64 & 88 index of instruction inside block
    unsigned long m_obj_off = 0, // start offset of selected section (0)/function inside section
      m_obj_size = 0, // size of selected section/function
      m_file_off = 0, // offset of m_obj_off in file
      m_buf_off = -1; // offset of buf in file
-   int m_bidx = 0;  // for 64 & 88 index of instruction inside block
    inline unsigned long block_offset() const {
      return m_obj_off + m_buf_off - m_file_off;
    }
@@ -240,19 +240,15 @@ class CEd_base: public CElf<ParseSASS> {
    // swap buffer - 16 bytes
    static constexpr int swap_buf_size = 16;
    // bufs better to be aligned on 8 bytes - can use dirty hack for gcc
-#if __clang__
-   unsigned char swap_buf1[swap_buf_size] __attribute__ ((aligned (8))), swap_buf2[swap_buf_size];
-#else
-   // https://stackoverflow.com/questions/11558371/is-it-possible-to-align-a-particular-structure-member-in-single-byte-aligned-str
-   struct {} __attribute__ ((aligned (8)));
-   unsigned char swap_buf1[swap_buf_size], swap_buf2[swap_buf_size];
-#endif
+   alignas(8)
+     unsigned char swap_buf1[swap_buf_size], swap_buf2[swap_buf_size];
    // instr buffer
    // 64bit - 8 + 7 * 8 = 64 bytes
    // 88bit - 8 + 3 * 8 = 32 bytes
    // 128bit - just 16 bytes
    static constexpr int buf_size = 64;
-   unsigned char buf[buf_size];
+   alignas(8)
+     unsigned char buf[buf_size];
    size_t block_size = 0;
    int mask_size = 0;
    // stat for buffer write/read

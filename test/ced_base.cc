@@ -228,7 +228,6 @@ int CEd_base::parse_num(NV_Format fmt, std::string_view &tail) {
   // check for inf & nan
   int tidx = idx;
   if ( tail.at(idx) == '+' ) tidx++;;
-  float fl;
   if ( !strcasecmp(tail.data() + tidx, "inf") ) {
    return s_inf2val(m_minus, fmt, m_v);
   } else if ( !strcasecmp(tail.data() + tidx, "nan") || !strcasecmp(tail.data() + tidx, "qnan") ) {
