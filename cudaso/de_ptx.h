@@ -40,11 +40,15 @@ class de_ptx: public decuda_base {
        return std::all_of(st, st + sizeof(st), [](unsigned char c) { return c != 0; });
      };
    };
-   int hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call);
+   int hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call, uint64_t ops_tab, uint64_t ops_tab_end);
    typedef std::pair<uint32_t, const char *> kw_type;
    int hack_ptx_kws(uint64_t start);
  protected:
    virtual int _read();
+   int process_one_ptx_op(diter &, std::list<ptx_op> &);
+   void gather_string(diter &, ptx_op &);
+   template <typename G, typename T>
+   int cmn_ptx_op(diter &, ptx_op &, G&, T t);
    void dump_ptx_ops(std::list<ptx_op> &) const;
    void hack_ctor(uint64_t, const char *fname);
    void hack_cicc_intr(uint64_t, const char *fname);
