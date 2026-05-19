@@ -375,6 +375,8 @@ struct diter
    static int get32to16reg(ud_type, ud_type &);
    // 16 -> 64 reg conversion
    static int get16to64reg(ud_type, ud_type &);
+   // 8 -> 64
+   static int get8to64reg(ud_type, ud_type &);
    // for used_regs - use only 32 or 64bit regs
    ud_type normalize_reg(ud_type, uint8_t size);
    inline int is_ret3() const

@@ -139,6 +139,30 @@ int diter::is_jmp() const
   return 0;
 }
 
+int diter::get8to64reg(ud_type from, ud_type &res)
+{
+  switch(from)
+  {
+    case UD_R_AL: res = UD_R_RAX; return 1;
+    case UD_R_CL: res = UD_R_RCX; return 1;
+    case UD_R_DL: res = UD_R_RDX; return 1;
+    case UD_R_BL: res = UD_R_RBX; return 1;
+    case UD_R_SPL: res = UD_R_RSP; return 1;
+    case UD_R_BPL: res = UD_R_RBP; return 1;
+    case UD_R_SIL: res = UD_R_RSI; return 1;
+    case UD_R_DIL: res = UD_R_RDI; return 1;
+    case UD_R_R8B: res = UD_R_R8; return 1;
+    case UD_R_R9B: res = UD_R_R9; return 1;
+    case UD_R_R10B: res = UD_R_R10; return 1;
+    case UD_R_R11B: res = UD_R_R11; return 1;
+    case UD_R_R12B: res = UD_R_R12; return 1;
+    case UD_R_R13B: res = UD_R_R13; return 1;
+    case UD_R_R14B: res = UD_R_R14; return 1;
+    case UD_R_R15B: res = UD_R_R15; return 1;
+  }
+  return 0;
+}
+
 int diter::get32to16reg(ud_type from, ud_type &res)
 {
   switch(from)
