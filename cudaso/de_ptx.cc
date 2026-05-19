@@ -314,10 +314,47 @@ void de_ptx::dump_ptx_ops(std::list<ptx_op> &lops) const {
   }
 }
 
+int de_ptx::hack_ptx_kws(uint64_t start) {
+  diter di(*s_text);
+  std::vector<kw_type> res;
+  if ( !di.setup(start) ) return 0;
+  used_regs<const char *> regs;
+  while(1) {
+    if ( !di.next() ) break;
+    di.dasm();
+    if ( di.is_end() ) break;
+    // lea reg, rip
+    if ( di.is_lea() && di.is_r1() ) {
+      auto saddr = di.get_addr(1);
+      if ( !saddr ) { regs.erase(di.ud_obj.operand[0].base); continue; }
+      auto s = sdata(s_rodata, saddr);
+      if ( !s ) { regs.erase(di.ud_obj.operand[0].base); continue; }
+      regs.add(di.ud_obj.operand[0].base, s);
+      continue;
+    }
+    if ( di.is_lea() ) {
+       regs.erase(di.ud_obj.operand[0].base); continue;
+    }
+    // mov [mem], reg
+    if ( di.ud_obj.mnemonic == UD_Imov && di.ud_obj.operand[1].type == UD_OP_REG &&
+         di.ud_obj.operand[0].type == UD_OP_MEM && di.ud_obj.operand[0].base == UD_R_RBX ) {
+      const char *st = nullptr;
+      if ( regs.asgn(di.ud_obj.operand[1].base, st) ) res.push_back( { di.ud_obj.operand[0].lval.udword, st } );
+    }
+  }
+  if ( res.empty() ) return 0;
+  std::sort(res.begin(), res.end(), [](const kw_type &a, const kw_type &b) { return a.first < b.first; });
+  for ( auto &kw: res ) {
+    printf("%X\t%s\n", kw.first, kw.second);
+  }
+  return 1;
+}
+
 int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
   // ptxas V13.1.80 md5 f38e5732c94163b96cf797eef252b4cb
-  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0);
+//  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0);
+  hack_ptx_kws(0x391FA0);
   // cicc 13.1 - md5 f3638b32a8740eda5e8cd5e5fe9decfb
   // hack_cicc_intr(0xA8BD00, "intr.txt");
   // for 12.8 md5 14dc7bbb0bafae1313489c389e9486eb - NPDOHYX

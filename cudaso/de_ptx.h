@@ -41,6 +41,8 @@ class de_ptx: public decuda_base {
      };
    };
    int hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call);
+   typedef std::pair<uint32_t, const char *> kw_type;
+   int hack_ptx_kws(uint64_t start);
  protected:
    virtual int _read();
    void dump_ptx_ops(std::list<ptx_op> &) const;
