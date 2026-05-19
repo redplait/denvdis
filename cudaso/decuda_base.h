@@ -99,6 +99,10 @@ class decuda_base {
      if ( off < sa || off >= sa + s->get_size() ) return nullptr;
      return (const char *)(s->get_data() + off - sa);
    }
+   const char *sdata(const std::optional<ELFIO::section *> &s, uint64_t addr) const {
+     if ( !s.has_value() ) return nullptr;
+     return sdata(s.value(), addr);
+   }
    template <typename T>
    bool read(ELFIO::section *s, uint64_t off, T &res) {
      auto sa = s->get_address();
