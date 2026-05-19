@@ -139,6 +139,22 @@ int diter::is_jmp() const
   return 0;
 }
 
+int diter::get8to32reg(ud_type from, ud_type &res)
+{
+  switch(from)
+  {
+    case UD_R_AL: res = UD_R_EAX; return 1;
+    case UD_R_CL: res = UD_R_ECX; return 1;
+    case UD_R_DL: res = UD_R_EDX; return 1;
+    case UD_R_BL: res = UD_R_EBX; return 1;
+    case UD_R_SPL: res = UD_R_ESP; return 1;
+    case UD_R_BPL: res = UD_R_EBP; return 1;
+    case UD_R_SIL: res = UD_R_ESI; return 1;
+    case UD_R_DIL: res = UD_R_EDI; return 1;
+  }
+  return 0;
+}
+
 int diter::get8to64reg(ud_type from, ud_type &res)
 {
   switch(from)
@@ -298,25 +314,30 @@ ud_type diter::normalize_reg(ud_type reg, uint8_t size)
   // use 64bit registers
   if ( 64 == size )
     return reg;
-  if ( 32 == size )
-  {
+  if ( 32 == size ) {
     ud_type tmp;
     if ( get32to64reg(reg, tmp) )
       return tmp;
-  } else if ( 16 == size )
-  {
+  } else if ( 16 == size ) {
     ud_type tmp;
     if ( get16to64reg(reg, tmp) )
       return tmp;
-  }
+  } else if ( 8 == size ) {
+    ud_type tmp;
+    if ( get8to64reg(reg, tmp) )
+      return tmp;
+   }
  } else {
   // use 32bit registers
   if ( 32 == size )
     return reg;
-  if ( 16 == size )
-  {
+  if ( 16 == size ) {
     ud_type tmp;
     if ( get16to32reg(reg, tmp) )
+      return tmp;
+  } else if ( 8 == size ) {
+    ud_type tmp;
+    if ( get8to32reg(reg, tmp) )
       return tmp;
   }
  }

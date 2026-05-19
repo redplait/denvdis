@@ -238,6 +238,7 @@ int de_ptx::hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call) {
   std::list<ptx_op> res;
   ptx_op curr;
   if ( !di.setup(start) ) return 0;
+  used_regs<uint32_t> regs;
   do {
     if ( !di.next() ) break;
     di.dasm();
@@ -250,6 +251,12 @@ int de_ptx::hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call) {
       if ( di.ud_obj.operand[0].base == UD_R_RCX ) curr.cx = s;
       else if ( di.ud_obj.operand[0].base == UD_R_RDX ) curr.dx = s;
       else if ( di.ud_obj.operand[0].base == UD_R_RSI ) curr.si = s;
+      continue;
+    }
+    // or reg, imm
+    if ( di.is_or_rimm() ) {
+      auto tgt = di.normalize_reg(di.ud_obj.operand[0].base, di.ud_obj.operand[0].size);
+      regs.add(tgt, di.ud_obj.operand[1].lval.udword);
       continue;
     }
     // mov reg, imm
@@ -266,13 +273,19 @@ int de_ptx::hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call) {
       auto saddr = di.get_addr(0);
       if ( saddr != reg_call ) continue;
       res.push_back(curr);
+      regs.clear();
       continue;
     }
     // mov [mem], imm
     if ( di.ud_obj.mnemonic == UD_Imov ) {
       int off = in_sr(di);
       if ( off >= 0 ) {
-        curr.st[off] = di.ud_obj.operand[1].lval.ubyte;
+        if ( di.ud_obj.operand[1].type == UD_OP_REG ) {
+          auto src = di.normalize_reg(di.ud_obj.operand[1].base, di.ud_obj.operand[1].size);
+          uint32_t rval = 0;
+          if ( regs.asgn(src, rval) ) curr.st[off] = rval & 0xff;
+        } else
+          curr.st[off] = di.ud_obj.operand[1].lval.ubyte;
         continue;
       }
     }
@@ -284,6 +297,7 @@ int de_ptx::hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call) {
         continue;
       }
     }
+    // mov [mem], reg
   } while( di.pc() < end );
   if ( res.empty() ) return 0;
   res.sort([](ptx_op &a, ptx_op &b) { return a.idx < b.idx; });

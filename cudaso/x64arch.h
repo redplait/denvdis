@@ -377,6 +377,8 @@ struct diter
    static int get16to64reg(ud_type, ud_type &);
    // 8 -> 64
    static int get8to64reg(ud_type, ud_type &);
+   // 8 -> 32
+   static int get8to32reg(ud_type, ud_type &);
    // for used_regs - use only 32 or 64bit regs
    ud_type normalize_reg(ud_type, uint8_t size);
    inline int is_ret3() const
@@ -456,6 +458,14 @@ struct diter
             (ud_obj.operand[1].type == UD_OP_IMM)
      ;
    }
+   inline int is_or_rimm() const
+   {
+     return (ud_obj.mnemonic == UD_Ior) &&
+            (ud_obj.operand[0].type == UD_OP_REG) &&
+            (ud_obj.operand[1].type == UD_OP_IMM)
+     ;
+   }
+
    inline int is_add_rimm() const
    {
      return (ud_obj.mnemonic == UD_Iadd) &&
