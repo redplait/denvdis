@@ -223,10 +223,89 @@ int de_ptx::hack_sp(diter &di, res_map &rm) {
   return 0;
 }
 
+// check if operand 0 is OP_MEM sp based and offset fit in 0x40 - 0x50
+static int in_sr(diter &di) {
+  if ( di.ud_obj.operand[0].type != UD_OP_MEM ) return -1;
+  if ( di.ud_obj.operand[0].base != UD_R_RSP )  return -1;
+  auto off = di.ud_obj.operand[0].lval.sdword;
+  if ( off < 0x40 ) return -1;
+  if ( off >= 0x50 ) return -1;
+  return off - 0x40;
+}
+
+int de_ptx::hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call) {
+  diter di(*s_text);
+  std::list<ptx_op> res;
+  ptx_op curr;
+  if ( !di.setup(start) ) return 0;
+  do {
+    if ( !di.next() ) break;
+    di.dasm();
+    // check lea reg
+    if ( di.is_lea() && di.is_r1() ) {
+      auto saddr = di.get_addr(1);
+      if ( !saddr ) continue;
+      auto s = sdata(s_rodata, saddr);
+      if ( !s ) continue;
+      if ( di.ud_obj.operand[0].base == UD_R_RCX ) curr.cx = s;
+      else if ( di.ud_obj.operand[0].base == UD_R_RDX ) curr.dx = s;
+      else if ( di.ud_obj.operand[0].base == UD_R_RSI ) curr.si = s;
+      continue;
+    }
+    // mov reg, imm
+    if ( di.is_mov_rimm(UD_R_R8D) ) {
+      curr.idx = di.ud_obj.operand[1].lval.sdword;
+      continue;
+    }
+    if ( di.ud_obj.mnemonic == UD_Imovaps ) {
+      if ( in_sr(di) >= 0 ) curr.re_st();
+      continue;
+    }
+    // check call
+    if ( di.is_call_jimm() ) {
+      auto saddr = di.get_addr(0);
+      if ( saddr != reg_call ) continue;
+      res.push_back(curr);
+      continue;
+    }
+    // mov [mem], imm
+    if ( di.ud_obj.mnemonic == UD_Imov ) {
+      int off = in_sr(di);
+      if ( off >= 0 ) {
+        curr.st[off] = di.ud_obj.operand[1].lval.ubyte;
+        continue;
+      }
+    }
+    // or [mem], imm
+    if ( di.ud_obj.mnemonic == UD_Ior ) {
+      int off = in_sr(di);
+      if ( off >= 0 ) {
+        curr.st[off] |= di.ud_obj.operand[1].lval.ubyte;
+        continue;
+      }
+    }
+  } while( di.pc() < end );
+  if ( res.empty() ) return 0;
+  res.sort([](ptx_op &a, ptx_op &b) { return a.idx < b.idx; });
+  dump_ptx_ops(res);
+  return 1;
+}
+
+void de_ptx::dump_ptx_ops(std::list<ptx_op> &lops) const {
+  for ( auto &op: lops ) {
+    printf("%d %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X ", op.idx,
+     op.st[0], op.st[1], op.st[2], op.st[3], op.st[4], op.st[5], op.st[6], op.st[7],
+     op.st[8], op.st[9], op.st[10], op.st[11], op.st[12], op.st[13], op.st[14], op.st[15]);
+    printf("%s\t%s\t%s\n", op.dx, op.cx, op.si);
+  }
+}
+
 int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
+  // ptxas V13.1.80 md5 f38e5732c94163b96cf797eef252b4cb
+  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0);
   // cicc 13.1 - md5 f3638b32a8740eda5e8cd5e5fe9decfb
-  hack_cicc_intr(0xA8BD00, "intr.txt");
+  // hack_cicc_intr(0xA8BD00, "intr.txt");
   // for 12.8 md5 14dc7bbb0bafae1313489c389e9486eb - NPDOHYX
 //  hack_ctor(0x582500, "c15.txt");
 //  hack_ctor(0x598620, "c17.txt");
