@@ -364,6 +364,50 @@ void de_ptx::dump_ptx_ops(std::list<ptx_op> &lops) const {
   }
 }
 
+static int dump_kw_types(std::vector<de_ptx::kw_type> &res) {
+  if ( res.empty() ) return 0;
+  std::sort(res.begin(), res.end(), [](const de_ptx::kw_type &a, const de_ptx::kw_type &b) { return a.first < b.first; });
+  for ( auto &kw: res ) {
+    printf("%X\t%s\n", kw.first, kw.second);
+  }
+  return 1;
+}
+
+int de_ptx::hack_intr(uint64_t start, uint64_t reg_call) {
+  diter di(*s_text);
+  std::vector<kw_type> res;
+  kw_type curr;
+  if ( !di.setup(start) ) return 0;
+  while(1) {
+    if ( !di.next() ) break;
+    di.dasm();
+    // lea rsi
+    if ( di.is_lea() && di.is_r1() && di.ud_obj.operand[0].base == UD_R_RSI ) {
+      auto saddr = di.get_addr(1);
+      if ( !saddr ) continue;
+      curr.second = sdata(s_rodata, saddr);
+      continue;
+    }
+    // mov edx, imm
+    if ( di.is_mov_rimm(UD_R_EDX) ) {
+      curr.first = di.ud_obj.operand[1].lval.udword;
+      continue;
+    }
+    // call/jmp
+    if ( di.is_jxx_jimm(UD_Icall, UD_Ijmp) ) {
+      auto ja = di.get_addr(0);
+      if ( ja == reg_call && curr.second ) {
+        res.push_back(curr);
+        curr.first = 0;
+        curr.second = nullptr;
+      }
+    }
+    // we can have final jmp so checking for end must be last
+    if ( di.is_end() ) break;
+  }
+  return dump_kw_types(res);
+}
+
 int de_ptx::hack_ptx_kws(uint64_t start) {
   diter di(*s_text);
   std::vector<kw_type> res;
@@ -392,19 +436,15 @@ int de_ptx::hack_ptx_kws(uint64_t start) {
       if ( regs.asgn(di.ud_obj.operand[1].base, st) ) res.push_back( { di.ud_obj.operand[0].lval.udword, st } );
     }
   }
-  if ( res.empty() ) return 0;
-  std::sort(res.begin(), res.end(), [](const kw_type &a, const kw_type &b) { return a.first < b.first; });
-  for ( auto &kw: res ) {
-    printf("%X\t%s\n", kw.first, kw.second);
-  }
-  return 1;
+  return dump_kw_types(res);
 }
 
 int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
   // ptxas V13.1.80 md5 f38e5732c94163b96cf797eef252b4cb
-  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0, 0x2971260 + 8, 0x2971AD0);
+//  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0, 0x2971260 + 8, 0x2971AD0);
 //  hack_ptx_kws(0x391FA0);
+  hack_intr(0xE2F4A5, 0x1E4A20);
   // cicc 13.1 - md5 f3638b32a8740eda5e8cd5e5fe9decfb
   // hack_cicc_intr(0xA8BD00, "intr.txt");
   // for 12.8 md5 14dc7bbb0bafae1313489c389e9486eb - NPDOHYX
