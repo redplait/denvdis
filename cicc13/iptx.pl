@@ -6,14 +6,15 @@ use warnings;
 use Getopt::Std;
 
 # options
-use vars qw/$opt_f/;
+use vars qw/$opt_b $opt_f/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] md.txt
  Options:
- - f -mask frequency analysis
+ -b idx:shift
+ -f -mask frequency analysis
 EOF
   exit(8);
 }
@@ -42,6 +43,17 @@ sub do_freq
   }
 }
 
+sub try_mask
+{
+  my($idx, $sh) = @_;
+  my $mask = 1 << $sh;
+  foreach my $op ( @g_ops ) {
+    my $ar = $op->[1];
+    next unless( $ar->[$idx] & $mask );
+    printf(" line %d: %s\n", $op->[0], $op->[2]);
+  }
+}
+
 sub read_ops2
 {
   my $fname = shift;
@@ -61,7 +73,7 @@ sub read_ops2
     # make mask
     $m = substr($str, 0, 47);
     my @tmp = map { hex $_; } split /\s+/, $m;
-    if ( defined $opt_f ) {
+    if ( defined($opt_f) || defined($opt_b) ) {
       push @g_ops, [ $ln, \@tmp, $tail ];
     }
     # or with total mask
@@ -139,9 +151,18 @@ OUTER:
 }
 
 # main
-my $status = getopts("f");
+my $status = getopts("b:f");
 usage() if ( !$status );
+
 read_ops2('ptx_ops2.txt');
-if ( defined $opt_f ) {
+if ( defined $opt_b ) {
+ # parse and check -b option
+ die("bad -b option") if ( $opt_b !~ /^(\d+):(\d)$/ );
+ my $idx = int($1);
+ die("bad idx") if ( $idx > 15 );
+ my $sh = int($2);
+ die("bad shoft") if ( $sh > 7 );
+ try_mask($idx, $sh);
+} elsif ( defined $opt_f ) {
   do_freq();
 } else { apply_ptx('ptx.txt'); }
