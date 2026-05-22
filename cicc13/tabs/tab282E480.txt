@@ -1,0 +1,5 @@
+
+.clamp
+.trap
+.zero
+.wrap

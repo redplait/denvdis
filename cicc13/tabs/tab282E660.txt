@@ -1,0 +1,4 @@
+
+.override::global_dim
+.override::global_dim::global_stride
+.override::global_dim_stride

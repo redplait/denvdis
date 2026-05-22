@@ -1,0 +1,11 @@
+
+.L2::evict_first
+.L2::evict_normal
+.L2::evict_last
+.L2::evict_unchanged
+.L2::no_allocate
+.L1::evict_first
+.L1::evict_normal
+.L1::evict_last
+.L1::evict_unchanged
+.L1::no_allocate

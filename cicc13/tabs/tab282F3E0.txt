@@ -1,0 +1,12 @@
+
+.global_address
+.rank
+.box_dim
+.global_dim
+.global_stride
+.element_stride
+.elemtype
+.interleave_layout
+.swizzle_mode
+.swizzle_atomicity
+.fill_mode

@@ -1,0 +1,8 @@
+
+.ld
+.st
+.cp
+.shift
+.mma
+.alloc
+.dealloc

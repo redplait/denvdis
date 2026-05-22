@@ -1,0 +1,4 @@
+
+.sync_restrict::shared::cluster
+.sync_restrict::shared::cta
+.sync_restrict::shared::read::mma::a

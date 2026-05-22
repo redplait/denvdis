@@ -1,0 +1,11 @@
+
+.1d
+.2d
+.3d
+.1d_buffer
+.a1d
+.a2d
+.cube
+.acube
+.2dms
+.a2dms

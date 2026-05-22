@@ -1,0 +1,16 @@
+
+.kind::mx8
+.kind::int8
+.kind::fp8
+.kind::fp4
+.kind::fp16
+.kind::mxint8
+.kind::i8
+.kind::ti16
+.kind::f8f6f4
+.kind::mxf8f6f4
+.kind::nvf4
+.kind::mxf4
+.kind::tf32
+.kind::f16
+.kind::mxf4nvf4

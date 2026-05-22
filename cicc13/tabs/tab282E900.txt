@@ -1,0 +1,9 @@
+
+.weak
+.relaxed
+.release
+.release::ordered
+.acquire
+.acq_rel
+.sc
+.volatile

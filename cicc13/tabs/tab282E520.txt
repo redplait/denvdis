@@ -1,0 +1,6 @@
+
+.mbarrier
+.mbarrier::meet_tx::bytes
+.mbarrier::complete_tx::bytes
+.bulk_group
+.mbarrier::arrive::one

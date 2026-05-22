@@ -1,0 +1,7 @@
+
+.finite
+.infinite
+.number
+.notanumber
+.normal
+.subnormal
