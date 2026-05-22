@@ -4,6 +4,7 @@
 use strict;
 use warnings;
 use Getopt::Std;
+use Data::Dumper;
 
 # options
 use vars qw/$opt_a $opt_b $opt_f $opt_i $opt_o/;
@@ -17,6 +18,7 @@ Usage: $0 [options] md.txt
  -f - mask frequency analysis
  -a ins1 ins2 ... - make and mask of instructions
  -i ins1 ins2 ... - make and mask of instructions - remained
+ -o ins1 ins2 ... - make or mask of instructions - remained
 EOF
   exit(8);
 }
@@ -78,6 +80,17 @@ sub bcnt
   $res;
 }
 
+# apply not and of remaning masks in $rm
+sub nand
+{
+  my($m, $rm) = @_;
+  foreach my $mi ( @$rm ) {
+    foreach my $i ( 0 .. 15 ) {
+      $m->[$i] &= ~( $mi->[$i] );
+    }
+  }
+}
+
 sub filter_and
 {
   my $hr = shift;
@@ -105,8 +118,66 @@ sub filter_and
   $found;
 }
 
+sub filter_or
+{
+  my $hr = shift;
+  my(@res, @rem);
+  my $found = 0;
+  foreach my $o ( @g_ops ) {
+    # check name in hash
+    unless ( exists $hr->{ $o->[3] } ) {
+      push @rem, $o->[1];
+      next;
+    }
+    my $ar = $o->[1];
+    if ( !$found ) {
+      @res = @$ar; # copy first mask array
+    } else {
+      # apply and
+      foreach my $ai ( 0 .. 15 ) {
+        $res[$ai] |= $ar->[$ai];
+      }
+    }
+    $found++;
+  }
+  if ( !$found ) {
+    printf("not found\n");
+  } else {
+    nand(\@res, \@rem);
+    dump_mask(\@res);
+  }
+  $found;
+}
+
 sub filter_ins
 {
+  my $hr = shift;
+  my(@res, @rem);
+  my $found = 0;
+  foreach my $o ( @g_ops ) {
+    # check name in hash
+    unless ( exists $hr->{ $o->[3] } ) {
+      push @rem, $o->[1];
+      next;
+    }
+    my $ar = $o->[1];
+    if ( !$found ) {
+      @res = @$ar; # copy first mask array
+    } else {
+      # apply and
+      foreach my $ai ( 0 .. 15 ) {
+        $res[$ai] &= $ar->[$ai];
+      }
+    }
+    $found++;
+  }
+  if ( !$found ) {
+    printf("not found\n");
+  } else {
+    nand(\@res, \@rem);
+    dump_mask(\@res);
+  }
+  $found;
 }
 
 sub read_ops2
@@ -116,7 +187,7 @@ sub read_ops2
   my($fh, $str, $m, $rest, $iname);
   open($fh, '<', $fname) or die("Cannot open $fname, error $!");
   my $ln = 0;
-  my $add = defined($opt_f) || defined($opt_b) || defined($opt_i) || defined($opt_a);
+  my $add = defined($opt_f) || defined($opt_b) || defined($opt_i) || defined($opt_a) || defined($opt_o);
   while( $str = <$fh> ) {
     chomp $str;
     $ln++;
@@ -221,6 +292,9 @@ if ( defined $opt_i ) {
 } elsif ( defined $opt_a ) {
   $ga->('-a');
   filter_and(\%ins);
+} elsif ( defined $opt_o ) {
+  $ga->('-o');
+  filter_or(\%ins);
 } elsif ( defined $opt_b ) {
  # parse and check -b option
  die("bad -b option") if ( $opt_b !~ /^(\d+):(\d)$/ );
