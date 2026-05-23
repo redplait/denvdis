@@ -277,6 +277,13 @@ int de_ptx::cmn_ptx_op(diter &di, ptx_op &curr, G &regs, T t) {
     }
   }
   // mov [mem], reg
+  if ( di.ud_obj.mnemonic == UD_Imov ) {
+    int off = t(di);
+    if ( off >= 0 ) {
+      curr.st[off] = di.ud_obj.operand[1].lval.ubyte;
+      return 1;
+    }
+  }
   return 0;
 }
 
@@ -442,9 +449,9 @@ int de_ptx::hack_ptx_kws(uint64_t start) {
 int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
   // ptxas V13.1.80 md5 f38e5732c94163b96cf797eef252b4cb
-//  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0, 0x2971260 + 8, 0x2971AD0);
+  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0, 0x2971260 + 8, 0x2971AD0);
 //  hack_ptx_kws(0x391FA0);
-  hack_intr(0xE2F4A5, 0x1E4A20);
+//  hack_intr(0xE2F4A5, 0x1E4A20);
   // cicc 13.1 - md5 f3638b32a8740eda5e8cd5e5fe9decfb
   // hack_cicc_intr(0xA8BD00, "intr.txt");
   // for 12.8 md5 14dc7bbb0bafae1313489c389e9486eb - NPDOHYX
