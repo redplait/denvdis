@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_f $opt_i $opt_o/;
+use vars qw/$opt_a $opt_b $opt_f $opt_i $opt_o $opt_k/;
 
 sub usage()
 {
@@ -19,6 +19,7 @@ Usage: $0 [options] md.txt
  -a ins1 ins2 ... - make and mask of instructions
  -i ins1 ins2 ... - make and mask of instructions - remained
  -o ins1 ins2 ... - make or mask of instructions - remained
+ -k - exclude known
 EOF
   exit(8);
 }
@@ -27,6 +28,22 @@ EOF
 my %g_ins;
 # array of ops, each element is [ line number, mask array, rest of op, op name ]
 my @g_ops;
+# neg mask of known
+my $gk_neg;
+
+sub apply_k
+{
+  my $ar = shift;
+  return $ar unless($gk_neg);
+  my @tmp = @$ar;
+  my $res = 0;
+  foreach my $i ( 0 .. 15 ) {
+    $tmp[$i] &= $gk_neg->[$i];
+    $res++ if ( $tmp[$i] );
+  }
+  return undef unless($res);
+  \@tmp;
+}
 
 sub do_freq
 {
@@ -35,7 +52,8 @@ sub do_freq
       my $mask = 1 << $bi;
       my $latch = 0;
       foreach my $op ( @g_ops ) {
-        my $ar = $op->[1];
+        my $ar = apply_k($op->[1]);
+        next unless $ar;
         next unless( $ar->[$i] & $mask );
         unless($latch) {
           printf("idx %d bit %d:\n", $i, $bi);
@@ -52,7 +70,8 @@ sub try_mask
   my($idx, $sh) = @_;
   my $mask = 1 << $sh;
   foreach my $op ( @g_ops ) {
-    my $ar = $op->[1];
+    my $ar = apply_k($op->[1]);
+    next unless($ar);
     next unless( $ar->[$idx] & $mask );
     printf(" line %d: %s\n", $op->[0], $op->[2]);
   }
@@ -184,10 +203,11 @@ sub read_ops2
 {
   my $fname = shift;
   my @mask = ( 0 ) x16;
-  my($fh, $str, $m, $rest, $iname);
+  my($fh, $str, $m, $rest, $iname, $max_op);
   open($fh, '<', $fname) or die("Cannot open $fname, error $!");
   my $ln = 0;
   my $add = defined($opt_f) || defined($opt_b) || defined($opt_i) || defined($opt_a) || defined($opt_o);
+  my $max_mask = 0;
   while( $str = <$fh> ) {
     chomp $str;
     $ln++;
@@ -200,6 +220,12 @@ sub read_ops2
     # make mask
     $m = substr($str, 0, 47);
     my @tmp = map { hex $_; } split /\s+/, $m;
+    # calc bitlen
+    my $blen = bcnt(\@tmp);
+    if ( $blen > $max_mask ) {
+      $max_mask = $blen;
+      $max_op = [ $ln, \@tmp, $tail ];
+    }
     # add to g_ops if needed
     push @g_ops, [ $ln, \@tmp, $tail, $iname ] if ( $add );
     # or with total mask
@@ -212,6 +238,10 @@ sub read_ops2
   dump_mask(\@mask);
   printf("length of mask %d\n", bcnt(\@mask));
   printf("%d uniq ins\n", scalar keys %g_ins);
+  if ( $max_op ) {
+    printf("longest mask: %d\n", $max_mask);
+    printf("at %d %s\n", $max_op->[0], $max_op->[2]);
+  }
 }
 
 # read ptx.txt and check in g_ins every instruction
@@ -275,11 +305,57 @@ OUTER:
   printf("found %d bad %d\n", $found, $bad);
 }
 
+# key idx * 8 + shift, value - name of table in tabs sub-dir
+my %gk_tabs = (
+# idx 0
+  5 => 'tab282F560',
+  7 => 'approx',
+  1 * 8 + 1 => 'ftz',
+  3 * 8 + 2 => 'shiftamt',
+  3 * 8 + 3 => 'tab282E820', # (f)rnd
+  3 * 8 + 7 => 'uni',
+  5 * 8 + 1 => 'testp',
+  6 * 8 + 3 => 'tab282E760', # geom
+  6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
+  8 * 8 + 3 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
+  9 * 8 + 5 => 'tab282E480', # clamp
+  9 * 8 + 6 => 'po',
+  9 * 8 + 7 => 'tab282E460', # scale = { .shr7, .shr15 }
+  10 * 8 + 0 => 'prmt',
+  10 * 8 + 1 => 'tab282E400', # bfly
+  10 * 8 + 5 => 'sync', # from setmaxnreg.inc
+  10 * 8 + 6 => 'noinc',
+  11 * 8 + 2 => 'aligned',
+  13 * 8 + 6 => 'xorsign',
+  14 * 8 + 6 => 'abs',
+  15 * 8 + 5 => 'tab282F460', # launch_dependents
+  15 * 8 + 6 => 'tab282F4A0', # is_canceled
+);
+
 # main
-my $status = getopts("b:afio");
+my $status = getopts("b:afiko");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
+# build neg known mask
+if ( defined $opt_k ) {
+  my @k = ( 0 ) x 16;
+  foreach my $kt ( keys %gk_tabs ) {
+    my $idx = $kt >> 3;
+    my $mask = 1 << ($kt & 0x7);
+    $k[$idx] |= $mask;
+  }
+  # dump it
+  printf("size of known mask %d\n", bcnt(\@k));
+  printf("known mask:    ");
+  dump_mask(\@k);
+  # make negative
+  my @kn = map { (~$_) & 0xff; } @k;
+  printf("negative mask: ");
+  dump_mask(\@kn);
+  $gk_neg = \@kn;
+}
+
 my %ins;
 my $ga = sub {
   my $what = shift;

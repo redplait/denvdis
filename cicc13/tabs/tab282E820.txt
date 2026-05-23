@@ -1,0 +1,11 @@
+
+.rn
+.rna
+.rm
+.rp
+.rz
+.rs
+.rni
+.rmi
+.rpi
+.rzi
