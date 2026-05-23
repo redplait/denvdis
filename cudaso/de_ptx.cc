@@ -233,6 +233,7 @@ static int in_sr(diter &di) {
   return off - 0x40;
 }
 
+// check if operand 0 is OP_MEM sp based and offset fit in 0x20 - 0x30 - for tables func
 static int in_sr20(diter &di) {
   if ( di.ud_obj.operand[0].type != UD_OP_MEM ) return -1;
   if ( di.ud_obj.operand[0].base != UD_R_RSP )  return -1;
@@ -255,7 +256,7 @@ int de_ptx::cmn_ptx_op(diter &di, ptx_op &curr, G &regs, T t) {
     curr.idx = di.ud_obj.operand[1].lval.sdword;
     return 1;
   }
-  // mov [mem], imm
+  // mov [mem], imm/reg
   if ( di.ud_obj.mnemonic == UD_Imov ) {
     int off = t(di);
     if ( off >= 0 ) {
@@ -268,19 +269,16 @@ int de_ptx::cmn_ptx_op(diter &di, ptx_op &curr, G &regs, T t) {
       return 1;
     }
   }
-  // or [mem], imm
+  // or [mem], imm/reg
   if ( di.ud_obj.mnemonic == UD_Ior ) {
     int off = t(di);
     if ( off >= 0 ) {
-      curr.st[off] |= di.ud_obj.operand[1].lval.ubyte;
-      return 1;
-    }
-  }
-  // mov [mem], reg
-  if ( di.ud_obj.mnemonic == UD_Imov ) {
-    int off = t(di);
-    if ( off >= 0 ) {
-      curr.st[off] = di.ud_obj.operand[1].lval.ubyte;
+      if ( di.ud_obj.operand[1].type == UD_OP_REG ) {
+        auto src = di.normalize_reg(di.ud_obj.operand[1].base, di.ud_obj.operand[1].size);
+        uint32_t rval = 0;
+        if ( regs.asgn(src, rval) ) curr.st[off] |= rval & 0xff;
+      } else
+        curr.st[off] |= di.ud_obj.operand[1].lval.ubyte;
       return 1;
     }
   }
