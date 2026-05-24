@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_f $opt_i $opt_o $opt_k/;
+use vars qw/$opt_a $opt_b $opt_f $opt_i $opt_o $opt_k $opt_t/;
 
 sub usage()
 {
@@ -20,6 +20,7 @@ Usage: $0 [options] md.txt
  -i ins1 ins2 ... - make and mask of instructions - remained
  -o ins1 ins2 ... - make or mask of instructions - remained
  -k - exclude known
+ -t - verify tabs and dump still unused
 EOF
   exit(8);
 }
@@ -308,9 +309,12 @@ OUTER:
 # key idx * 8 + shift, value - name of table in tabs sub-dir
 my %gk_tabs = (
 # idx 0
+  2 => 'tab282FBC0', # CmpOp
   5 => 'tab282F560',
   7 => 'approx',
   1 * 8 + 1 => 'ftz',
+  3 * 8 + 0 => 'sat',
+  3 * 8 + 1 => 'cc',
   3 * 8 + 2 => 'shiftamt',
   3 * 8 + 3 => 'tab282E820', # (f)rnd
   3 * 8 + 7 => 'uni',
@@ -318,6 +322,7 @@ my %gk_tabs = (
   6 * 8 + 3 => 'tab282E760', # geom
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
   8 * 8 + 3 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
+  8 * 8 + 7 => 'tab282E360', # vote mode
   9 * 8 + 5 => 'tab282E480', # clamp
   9 * 8 + 6 => 'po',
   9 * 8 + 7 => 'tab282E460', # scale = { .shr7, .shr15 }
@@ -332,11 +337,36 @@ my %gk_tabs = (
   15 * 8 + 6 => 'tab282F4A0', # is_canceled
 );
 
+sub v_tabs
+{
+  my($str, $dh, %tabs);
+  opendir($dh, 'tabs/') or die("cannot open tabs sub-dir, error $!");
+  while($str = readdir($dh)) {
+    next if ( $str eq '.' || $str eq '..' );
+    next if ( $str !~ /^(.*)\.txt$/ );
+    $tabs{$1}++;
+  }
+  closedir($dh);
+  # traverse gk_tabs values
+  foreach my $t ( values %gk_tabs ) {
+    if ( exists $tabs{$t} ) {
+      delete $tabs{$t};
+    } else {
+      printf("unknown tab %s\n", $t);
+    }
+  }
+  my @rem = sort { $a cmp $b } keys %tabs;
+  return unless( scalar @rem );
+  printf("%d unused tabs:\n", scalar @rem);
+  printf(" %s\n", $_) for ( @rem );
+}
+
 # main
-my $status = getopts("b:afiko");
+my $status = getopts("b:afikot");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
+v_tabs() if ( defined $opt_t );
 # build neg known mask
 if ( defined $opt_k ) {
   my @k = ( 0 ) x 16;
