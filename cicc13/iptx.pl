@@ -306,13 +306,15 @@ OUTER:
   printf("found %d bad %d\n", $found, $bad);
 }
 
-# key idx * 8 + shift, value - name of table in tabs sub-dir
+# key idx * 8 + shift, value - name of table in tabs sub-dir without .txt extension
 my %gk_tabs = (
 # idx 0
   2 => 'tab282FBC0', # CmpOp
   5 => 'tab282F560',
   7 => 'approx',
+  1 * 8 + 0 => 'relu', # cvt/fma/min/max
   1 * 8 + 1 => 'ftz',
+  1 * 8 + 3 => 'satfinite', # cvt with floats only
   3 * 8 + 0 => 'sat',
   3 * 8 + 1 => 'cc',
   3 * 8 + 2 => 'shiftamt',
