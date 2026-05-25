@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_f $opt_i $opt_o $opt_k $opt_t $opt_U/;
+use vars qw/$opt_a $opt_B $opt_b $opt_f $opt_i $opt_o $opt_k $opt_t $opt_U/;
 
 sub usage()
 {
@@ -15,6 +15,7 @@ sub usage()
 Usage: $0 [options] md.txt
  Options:
  -b idx:shift
+ -B list of idx:shift
  -f - mask frequency analysis
  -a ins1 ins2 ... - make and mask of instructions
  -i ins1 ins2 ... - make and mask of instructions - remained
@@ -78,15 +79,56 @@ sub do_freq
   }
 }
 
+# for -b. args: index shift
 sub try_mask
 {
   my($idx, $sh) = @_;
   my $mask = 1 << $sh;
+  my @and_mask;
   foreach my $op ( @g_ops ) {
     my $ar = apply_k($op->[1]);
     next unless($ar);
     next unless( $ar->[$idx] & $mask );
     printf(" line %d: %s\n", $op->[0], $op->[2]);
+    unless( scalar @and_mask ) {
+      @and_mask = @$ar;
+    } else {
+      foreach my $mi ( 0 .. 15 ) {
+        $and_mask[$mi] &= $ar->[$mi];
+      }
+    }
+  }
+  if ( scalar @and_mask ) {
+    printf("and_mask: ");
+    dump_mask(\@and_mask);
+  }
+}
+
+# for -B. args - hash where keys are indexes and values - masks
+sub try_maskB
+{
+  my($hr) = @_;
+  my @and_mask;
+OUTER:
+  foreach my $op ( @g_ops ) {
+    my $ar = apply_k($op->[1]);
+    next unless($ar);
+    foreach my $idx ( keys %$hr ) {
+      my $mask = $hr->{$idx};
+      next OUTER unless( $ar->[$idx] & $mask );
+    }
+    printf(" line %d: %s\n", $op->[0], $op->[2]);
+    unless( scalar @and_mask ) {
+      @and_mask = @$ar;
+    } else {
+      foreach my $mi ( 0 .. 15 ) {
+        $and_mask[$mi] &= $ar->[$mi];
+      }
+    }
+  }
+  if ( scalar @and_mask ) {
+    printf("and_mask: ");
+    dump_mask(\@and_mask);
   }
 }
 
@@ -219,7 +261,7 @@ sub read_ops2
   my($fh, $str, $m, $rest, $iname, $max_op);
   open($fh, '<', $fname) or die("Cannot open $fname, error $!");
   my $ln = 0;
-  my $add = defined($opt_f) || defined($opt_b) || defined($opt_i) || defined($opt_a) || defined($opt_o);
+  my $add = defined($opt_f) || defined($opt_b) || defined($opt_B) || defined($opt_i) || defined($opt_a) || defined($opt_o);
   my $max_mask = 0;
   while( $str = <$fh> ) {
     chomp $str;
@@ -360,6 +402,7 @@ my %gk_tabs = (
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
   8 * 8 + 3 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
   8 * 8 + 7 => 'tab282E360', # vote mode
+  9 * 8 + 0 => 'tab282FC80', # redOp
   9 * 8 + 5 => 'tab282E480', # clamp
   9 * 8 + 6 => 'po',
   9 * 8 + 7 => 'tab282E460', # scale = { .shr7, .shr15 }
@@ -400,7 +443,7 @@ sub v_tabs
 }
 
 # main
-my $status = getopts("b:afikotU");
+my $status = getopts("Bb:afikotU");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
@@ -445,8 +488,21 @@ if ( defined $opt_i ) {
  my $idx = int($1);
  die("bad idx") if ( $idx > 15 );
  my $sh = int($2);
- die("bad shoft") if ( $sh > 7 );
+ die("bad shift") if ( $sh > 7 );
  try_mask($idx, $sh);
+} elsif ( defined $opt_B ) {
+  my %mh;
+   # parse list of args for -B
+  foreach my $ba ( @ARGV ) {
+     die("bad -B option $ba") if ( $ba !~ /^(\d+):(\d)$/ );
+     my $idx = int($1);
+     die("bad idx in $ba") if ( $idx > 15 );
+     my $sh = int($2);
+     die("bad shift in $ba") if ( $sh > 7 );
+     $mh{$idx} |= 1 << $sh;
+  }
+  die("no args for -B") unless( scalar keys %mh );
+  try_maskB(\%mh);
 } elsif ( defined $opt_f ) {
   do_freq();
 } else { apply_ptx('ptx.txt'); }
