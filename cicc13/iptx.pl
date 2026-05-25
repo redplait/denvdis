@@ -53,6 +53,7 @@ sub do_freq
     foreach my $bi ( 0 .. 7 ) {
       my $mask = 1 << $bi;
       my $latch = 0;
+      my @and_mask;
       foreach my $op ( @g_ops ) {
         my $ar = apply_k($op->[1]);
         next unless $ar;
@@ -60,8 +61,18 @@ sub do_freq
         unless($latch) {
           printf("idx %d bit %d:\n", $i, $bi);
           $latch++;
+          @and_mask = @$ar;
+        } else {
+          foreach my $mi ( 0 .. 15 ) {
+            $and_mask[$mi] &= $ar->[$mi];
+          }
         }
         printf(" line %d: %s\n", $op->[0], $op->[2]);
+      }
+      # dump and mask
+      if ( $latch ) {
+        printf("and_mask: ");
+        dump_mask(\@and_mask);
       }
     }
   }
