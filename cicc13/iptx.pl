@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_f $opt_i $opt_o $opt_k $opt_t/;
+use vars qw/$opt_a $opt_b $opt_f $opt_i $opt_o $opt_k $opt_t $opt_U/;
 
 sub usage()
 {
@@ -21,6 +21,7 @@ Usage: $0 [options] md.txt
  -o ins1 ins2 ... - make or mask of instructions - remained
  -k - exclude known
  -t - verify tabs and dump still unused
+ -U - dump instruction not presented in cucc
 EOF
   exit(8);
 }
@@ -255,10 +256,12 @@ sub apply_ptx
   # some stat
   my $found = 0;
   my $bad = 0;
+  my %in_cicc;
 OUTER:
   while( $str = <$fh> ) {
     chomp $str;
     $ln++;
+    my $last;
     # filter some trash
     next if ( $str eq ';' || $str eq '' );
     next if ( $str =~ /\{/ );
@@ -287,23 +290,42 @@ OUTER:
     my $name = $chain[0];
     $name = '.' . $name if ( $need_dot );
     if ( exists $g_ins{$name} ) {
-      $found++;
-      next;
+      if ( defined $opt_U ) {
+        $last = $name;
+      } else {
+        $found++;
+        next;
+      }
     }
     # try all
     foreach my $i ( 1 .. scalar(@chain) - 1 ) {
       $name = $name . '.' . $chain[$i];
       if ( exists $g_ins{$name} ) {
-        $found++;
-        next OUTER;
+        if ( defined $opt_U ) {
+          $last = $name;
+        } else {
+          $found++;
+          next OUTER;
+        }
       }
     }
+    if ( defined($opt_U) && $last ) {
+      $in_cicc{$last}++;
+      $found++;
+      next OUTER;
+    }
     # finally dump
-    printf("line %d: %s\n", $ln, $str);
+    printf("line %d: %s\n", $ln, $str) unless( defined $opt_U );
     $bad++;
   }
   close $fh;
   printf("found %d bad %d\n", $found, $bad);
+  if ( defined $opt_U ) {
+    foreach my $o ( sort keys %g_ins ) {
+      next if ( exists $in_cicc{ $o } );
+      printf("%s\n", $o);
+    }
+  }
 }
 
 # key idx * 8 + shift, value - name of table in tabs sub-dir without .txt extension
@@ -321,6 +343,8 @@ my %gk_tabs = (
   3 * 8 + 3 => 'tab282E820', # (f)rnd
   3 * 8 + 7 => 'uni',
   5 * 8 + 1 => 'testp',
+  5 * 8 + 3 => 'tab282E900', # .sem + barrier.cluster
+  5 * 8 + 5 => 'mmio',       # ld/st/red.async
   6 * 8 + 3 => 'tab282E760', # geom
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
   8 * 8 + 3 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
@@ -337,6 +361,7 @@ my %gk_tabs = (
   14 * 8 + 6 => 'abs',
   15 * 8 + 5 => 'tab282F460', # launch_dependents
   15 * 8 + 6 => 'tab282F4A0', # is_canceled
+  15 * 8 + 7 => 'read',
 );
 
 sub v_tabs
@@ -364,7 +389,7 @@ sub v_tabs
 }
 
 # main
-my $status = getopts("b:afikot");
+my $status = getopts("b:afikotU");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
