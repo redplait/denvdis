@@ -173,7 +173,8 @@ sub filter_and
   foreach my $o ( @g_ops ) {
     # check name in hash
     next unless ( exists $hr->{ $o->[3] } );
-    my $ar = $o->[1];
+    my $ar = apply_k($o->[1]);
+    next unless($ar);
     if ( !$found ) {
       @res = @$ar; # copy first mask array
     } else {
@@ -198,12 +199,13 @@ sub filter_or
   my(@res, @rem);
   my $found = 0;
   foreach my $o ( @g_ops ) {
+    my $ar = apply_k($o->[1]);
+    next unless($ar);
     # check name in hash
     unless ( exists $hr->{ $o->[3] } ) {
-      push @rem, $o->[1];
+      push @rem, $ar;
       next;
     }
-    my $ar = $o->[1];
     if ( !$found ) {
       @res = @$ar; # copy first mask array
     } else {
@@ -381,6 +383,47 @@ OUTER:
   }
 }
 
+=pod
+=begin text
+table for bits decoding
+ 01 - 0
+ 02 - 1
+ 04 - 2
+ 08 - 3
+ 10 - 4
+ 20 - 5
+ 40 - 6
+ 80 - 7
+
+good example is suld.b.geom{.cop}.vec.dtype.clamp
+
+there geom is tab282E760 - also used in tex/tld4/tex.base/tex.level/tex.grad/sured.b
+
+cop is tab282E960
+
+vec also used in many instructions like ld/st/atom/red/
+
+clamp is tab282E480 - it's position is known 9:5
+                            |
+suld.b has mask             V
+20 00 00 00 20 04 0E 00 00 20 00 00 00 00 00 00
+
+tld4 & suld.b & sured.b gives mask:
+00 00 00 00 00 00 04 00 00 00 00 00 00 00 00 00
+
+so geom must have index 6:2
+
+mask for suld/ld/st to include vec is 4:5
+
+As you cab see the hypothesis that indices should preserve order is not confirmed - here we have
+geom at 6.2
+and vec 4.5, but in suld geom must precede vec
+
+5:2 then must be cop
+
+=end text
+=cut
+
 # key idx * 8 + shift, value - name of table in tabs sub-dir without .txt extension
 my %gk_tabs = (
 # idx 0
@@ -395,11 +438,15 @@ my %gk_tabs = (
   3 * 8 + 2 => 'shiftamt',
   3 * 8 + 3 => 'tab282E820', # (f)rnd
   3 * 8 + 7 => 'uni',
+  4 * 8 + 5 => 'vec',
+  4 * 8 + 6 => 'tab282DFE0', # mov.type & cvt 01 - type with .pred
   5 * 8 + 1 => 'testp',
+  5 * 8 + 2 => 'tab282E960', # .cop
   5 * 8 + 3 => 'tab282E900', # .sem + barrier.cluster
   5 * 8 + 5 => 'mmio',       # ld/st/red.async
   6 * 8 + 3 => 'tab282E760', # geom
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
+  8 * 8 + 0 => 'tab282E520', # .completion_mechanism
   8 * 8 + 3 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
   8 * 8 + 7 => 'tab282E360', # vote mode
   9 * 8 + 0 => 'tab282FC80', # redOp
@@ -414,7 +461,7 @@ my %gk_tabs = (
   13 * 8 + 6 => 'xorsign',
   14 * 8 + 6 => 'abs',
   15 * 8 + 5 => 'tab282F460', # launch_dependents
-  15 * 8 + 6 => 'tab282F4A0', # is_canceled
+  15 * 8 + 6 => 'tab282F4A0', # get_first_ctaid{::dimension}
   15 * 8 + 7 => 'read',
 );
 
