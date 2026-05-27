@@ -87,8 +87,17 @@ sub do_freq
     my $o_size = scalar(@g_ops);
     my $l_size = scalar keys %lsk;
     printf("%d forms from %d, %f\n", $l_size, $o_size, 100.0 * $l_size / $o_size);
+    # try to find most unknown instruction
+    my($u_name, $u_max);
+    while ( my($in, $iv) = each %ins_k ) {
+      if ( $iv > $u_max ) {
+        $u_name = $in;
+        $u_max = $iv;
+      }
+    }
     my $ik = scalar keys %ins_k;
     printf("%d ins, %f\n", $ik, 100.0 * $ik / scalar(keys %g_ins));
+    printf("obscuriest %s (%d)\n", $u_name, $u_max) if $u_name;
   }
 }
 
@@ -434,6 +443,13 @@ and vec 4.5, but in suld geom must precede vec
 
 5:2 then must be cop
 
+sured.p & sured.b
+00 00 00 00 20 00 0C 00 00 24 00 00 00 00 00 00 sured.p	is0	B32
+00 00 00 00 20 00 0C 00 00 24 00 00 00 00 00 00 sured.p	is0	B64
+00 00 00 00 20 00 0C 00 00 24 00 00 00 00 00 00 sured.b	is0	B32
+00 00 00 00 20 00 0C 00 00 22 00 00 00 00 00 00 sured.b	is0	I[32|64]
+
+
 multimem.red multimem.ld_reduce cp.reduce
 00 00 00 00 80 08 01 00 00 00 00 00 00 00 00 00
 
@@ -450,6 +466,7 @@ my %gk_tabs = (
   1 * 8 + 0 => 'relu', # cvt/fma/min/max
   1 * 8 + 1 => 'ftz',
   1 * 8 + 3 => 'satfinite', # cvt with floats only
+  1 * 8 + 4 => 'tab282F560', # int types like s32
   3 * 8 + 0 => 'sat',
   3 * 8 + 1 => 'cc',
   3 * 8 + 2 => 'shiftamt',
@@ -457,26 +474,33 @@ my %gk_tabs = (
   3 * 8 + 7 => 'uni',
   4 * 8 + 5 => 'vec',
   4 * 8 + 6 => 'tab282DFE0', # mov.type & cvt 01 - type with .pred
+  4 * 8 + 7 => 'tab282EC40', # scope/ss like .gpu .cluster
   5 * 8 + 1 => 'testp',
   5 * 8 + 2 => 'tab282E960', # .cop
   5 * 8 + 3 => 'tab282E900', # .sem + barrier.cluster
   5 * 8 + 5 => 'mmio',       # ld/st/red.async
   6 * 8 + 3 => 'tab282E760', # geom
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
+  6 * 8 + 7 => 'tab282E620', # cta_group
+  7 * 8 + 0 => 'tab282E600', # multicast for tcgen05.cp
   8 * 8 + 0 => 'tab282E520', # .completion_mechanism
   8 * 8 + 3 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
   8 * 8 + 7 => 'tab282E360', # vote mode
   9 * 8 + 0 => 'tab282FC80', # redOp
+  9 * 8 + 2 => 'tab282F3A0', # redOp with popc
   9 * 8 + 5 => 'tab282E480', # clamp
   9 * 8 + 6 => 'po',
   9 * 8 + 7 => 'tab282E460', # scale = { .shr7, .shr15 }
   10 * 8 + 0 => 'prmt',
   10 * 8 + 1 => 'tab282E400', # bfly
+  10 * 8 + 2 => 'down', # for tcgen05.shift
   10 * 8 + 5 => 'sync', # from setmaxnreg.inc
   10 * 8 + 6 => 'noinc',
   11 * 8 + 2 => 'aligned',
+  11 * 8 + 6 => 'tab282ECE0', # shapes like m16n
   13 * 8 + 6 => 'xorsign',
   14 * 8 + 6 => 'abs',
+  15 * 8 + 1 => 'tab282F510', # alias for fence.proxy & membar.proxy
   15 * 8 + 5 => 'tab282F460', # launch_dependents
   15 * 8 + 6 => 'tab282F4A0', # get_first_ctaid{::dimension}
   15 * 8 + 7 => 'read',
