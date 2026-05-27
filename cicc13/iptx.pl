@@ -490,10 +490,13 @@ my %gk_tabs = (
   5 * 8 + 7 => 'tab282EB80', # eviction, since v7.4 also for ld/st/prefetch
   6 * 8 + 3 => 'tab282E760', # geom
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
+  6 * 8 + 5 => 'b1024',      # ? oficially only for tensormap.replace
   6 * 8 + 7 => 'tab282E620', # cta_group
   7 * 8 + 0 => 'tab282E600', # multicast for tcgen05.cp
   8 * 8 + 0 => 'tab282E520', # .completion_mechanism
   8 * 8 + 3 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
+  8 * 8 + 4 => 'squery',     # common for txq & suq
+  8 * 8 + 6 => 'tquery',     # tlquery is first 3 row from tquery
   8 * 8 + 7 => 'tab282E360', # vote mode
   9 * 8 + 0 => 'tab282FC80', # redOp
   9 * 8 + 2 => 'tab282F3A0', # redOp with popc
@@ -507,6 +510,7 @@ my %gk_tabs = (
   10 * 8 + 6 => 'noinc',
   11 * 8 + 2 => 'aligned',
   11 * 8 + 6 => 'tab282ECE0', # shapes like m16n
+  12 * 8 + 1 => 'trans',
   13 * 8 + 6 => 'xorsign',
   14 * 8 + 6 => 'abs',
   15 * 8 + 1 => 'tab282F510', # alias for fence.proxy & membar.proxy

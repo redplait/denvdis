@@ -1,0 +1,9 @@
+.width
+.height
+.depth
+.channel_data_type
+.channel_order
+.normalized_coords
+.array_size
+.num_mipmap_levels
+.num_samples

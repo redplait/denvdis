@@ -1,0 +1,12 @@
+.force_unnormalized_coords
+.filter_mode
+.addr_mode_0
+.addr_mode_1
+.addr_mode_2
+.width
+.height
+.depth
+.channel_data_type
+.channel_order
+.array_size
+.memory_layout
