@@ -465,6 +465,7 @@ my %gk_tabs = (
   7 => 'approx',
   1 * 8 + 0 => 'relu', # cvt/fma/min/max
   1 * 8 + 1 => 'ftz',
+  1 * 8 + 2 => 'noftz',
   1 * 8 + 3 => 'satfinite', # cvt with floats only
   1 * 8 + 4 => 'tab282F560', # int types like s32
   3 * 8 + 0 => 'sat',
@@ -478,6 +479,7 @@ my %gk_tabs = (
   5 * 8 + 1 => 'testp',
   5 * 8 + 2 => 'tab282E960', # .cop
   5 * 8 + 3 => 'tab282E900', # .sem + barrier.cluster
+  5 * 8 + 4 => 'tab282E8D0', # .to_proxykind::from_proxykind = {.tensormap::generic}
   5 * 8 + 5 => 'mmio',       # ld/st/red.async
   6 * 8 + 3 => 'tab282E760', # geom
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
@@ -512,7 +514,10 @@ sub v_tabs
   opendir($dh, 'tabs/') or die("cannot open tabs sub-dir, error $!");
   while($str = readdir($dh)) {
     next if ( $str eq '.' || $str eq '..' );
-    next if ( $str !~ /^(.*)\.txt$/ );
+    if ( $str !~ /^(.*)\.txt$/ ) {
+      printf("bad tab %s\n", $str);
+      next;
+    }
     $tabs{$1}++;
   }
   closedir($dh);
