@@ -50,6 +50,7 @@ sub apply_k
 
 sub do_freq
 {
+  my(%lsk, %ins_k);
   foreach my $i ( 0 .. 15 ) {
     foreach my $bi ( 0 .. 7 ) {
       my $mask = 1 << $bi;
@@ -59,6 +60,10 @@ sub do_freq
         my $ar = apply_k($op->[1]);
         next unless $ar;
         next unless( $ar->[$i] & $mask );
+        if ( defined $opt_k ) {
+          $lsk{ $op->[0] }++;
+          $ins_k{ $op->[3] }++;
+        }
         unless($latch) {
           printf("idx %d bit %d:\n", $i, $bi);
           $latch++;
@@ -76,6 +81,14 @@ sub do_freq
         dump_mask(\@and_mask);
       }
     }
+  }
+  # dump stat
+  if ( $opt_k ) {
+    my $o_size = scalar(@g_ops);
+    my $l_size = scalar keys %lsk;
+    printf("%d forms from %d, %f\n", $l_size, $o_size, 100.0 * $l_size / $o_size);
+    my $ik = scalar keys %ins_k;
+    printf("%d ins, %f\n", $ik, 100.0 * $ik / scalar(keys %g_ins));
   }
 }
 
@@ -421,12 +434,16 @@ and vec 4.5, but in suld geom must precede vec
 
 5:2 then must be cop
 
+multimem.red multimem.ld_reduce cp.reduce
+00 00 00 00 80 08 01 00 00 00 00 00 00 00 00 00
+
 =end text
 =cut
 
 # key idx * 8 + shift, value - name of table in tabs sub-dir without .txt extension
 my %gk_tabs = (
 # idx 0
+  0 => 'tab282FC80', # BoolOp
   2 => 'tab282FBC0', # CmpOp
   5 => 'tab282F560',
   7 => 'approx',
