@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_B $opt_b $opt_f $opt_i $opt_o $opt_k $opt_t $opt_U/;
+use vars qw/$opt_a $opt_B $opt_b $opt_f $opt_i $opt_o $opt_k $opt_t $opt_U $opt_w/;
 
 sub usage()
 {
@@ -23,6 +23,7 @@ Usage: $0 [options] md.txt
  -k - exclude known
  -t - verify tabs and dump still unused
  -U - dump instruction not presented in cucc
+ -w - ignore obscure _mma.warpgroup & _mma
 EOF
   exit(8);
 }
@@ -50,7 +51,7 @@ sub apply_k
 
 sub do_freq
 {
-  my(%lsk, %ins_k);
+  my(%lsk, %ins_k, $u_name);
   foreach my $i ( 0 .. 15 ) {
     foreach my $bi ( 0 .. 7 ) {
       my $mask = 1 << $bi;
@@ -88,7 +89,7 @@ sub do_freq
     my $l_size = scalar keys %lsk;
     printf("%d forms from %d, %f\n", $l_size, $o_size, 100.0 * $l_size / $o_size);
     # try to find most unknown instruction
-    my($u_name, $u_max);
+    my $u_max = 0;
     while ( my($in, $iv) = each %ins_k ) {
       if ( $iv > $u_max ) {
         $u_name = $in;
@@ -295,6 +296,8 @@ sub read_ops2
     # opcode name and tail starts at 48
     my $tail = substr($str, 48);
     $iname = (split /\t/, $tail)[0];
+    # skip _mma.warpgroup
+    next if ( defined($opt_w) && ( $iname eq '_mma.warpgroup' or $iname eq '_mma' ) );
     $g_ins{$iname}++; # insert into g_ins
     # make mask
     $m = substr($str, 0, 47);
@@ -461,6 +464,7 @@ my %gk_tabs = (
 # idx 0
   0 => 'tab282FC80', # BoolOp
   2 => 'tab282FBC0', # CmpOp
+  3 => 'no_atexit',  # index might as well be 4
   5 => 'tab282F560',
   7 => 'approx',
   1 * 8 + 0 => 'relu', # cvt/fma/min/max
@@ -468,6 +472,8 @@ my %gk_tabs = (
   1 * 8 + 2 => 'noftz',
   1 * 8 + 3 => 'satfinite', # cvt with floats only
   1 * 8 + 4 => 'tab282F560', # int types like s32
+  2 * 8 + 1 => 'ashift',
+  2 * 2 + 2 => 'tab282F900', # .collector_usage
   3 * 8 + 0 => 'sat',
   3 * 8 + 1 => 'cc',
   3 * 8 + 2 => 'shiftamt',
@@ -481,6 +487,7 @@ my %gk_tabs = (
   5 * 8 + 3 => 'tab282E900', # .sem + barrier.cluster
   5 * 8 + 4 => 'tab282E8D0', # .to_proxykind::from_proxykind = {.tensormap::generic}
   5 * 8 + 5 => 'mmio',       # ld/st/red.async
+  5 * 8 + 7 => 'tab282EB80', # eviction, since v7.4 also for ld/st/prefetch
   6 * 8 + 3 => 'tab282E760', # geom
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
   6 * 8 + 7 => 'tab282E620', # cta_group
@@ -503,6 +510,7 @@ my %gk_tabs = (
   13 * 8 + 6 => 'xorsign',
   14 * 8 + 6 => 'abs',
   15 * 8 + 1 => 'tab282F510', # alias for fence.proxy & membar.proxy
+  15 * 8 + 4 => 'tab282F4E0', # sync_restrict::shared:*
   15 * 8 + 5 => 'tab282F460', # launch_dependents
   15 * 8 + 6 => 'tab282F4A0', # get_first_ctaid{::dimension}
   15 * 8 + 7 => 'read',
@@ -536,7 +544,7 @@ sub v_tabs
 }
 
 # main
-my $status = getopts("Bb:afikotU");
+my $status = getopts("Bb:afikotUw");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
