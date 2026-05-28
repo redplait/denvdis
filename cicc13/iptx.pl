@@ -482,6 +482,7 @@ my %gk_tabs = (
   4 * 8 + 5 => 'vec',
   4 * 8 + 6 => 'tab282DFE0', # mov.type & cvt 01 - type with .pred
   4 * 8 + 7 => 'tab282EC40', # scope/ss like .gpu .cluster
+  5 * 8 + 0 => 'tab282E6A0', # load_mode
   5 * 8 + 1 => 'testp',
   5 * 8 + 2 => 'tab282E960', # .cop
   5 * 8 + 3 => 'tab282E900', # .sem + barrier.cluster
@@ -492,6 +493,7 @@ my %gk_tabs = (
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
   6 * 8 + 5 => 'b1024',      # ? oficially only for tensormap.replace
   6 * 8 + 7 => 'tab282E620', # cta_group
+  7 * 8 + 1 => 'tab282E5E0', # src_fmt/dst_fmt for tcgen05.cp & ldmatrix
   7 * 8 + 0 => 'tab282E600', # multicast for tcgen05.cp
   8 * 8 + 0 => 'tab282E520', # .completion_mechanism
   8 * 8 + 3 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
@@ -511,6 +513,8 @@ my %gk_tabs = (
   11 * 8 + 2 => 'aligned',
   11 * 8 + 6 => 'tab282ECE0', # shapes like m16n
   12 * 8 + 1 => 'trans',
+  12 * 8 + 2 => 'tab282ECE0', # shape3/shape4
+  12 * 8 + 5 => 'tab282F7A0', # num for tcgen05.ld/tcgen05.st
   13 * 8 + 6 => 'xorsign',
   14 * 8 + 6 => 'abs',
   15 * 8 + 1 => 'tab282F510', # alias for fence.proxy & membar.proxy
