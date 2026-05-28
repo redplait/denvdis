@@ -520,10 +520,39 @@ my %gk_tabs = (
   15 * 8 + 7 => 'read',
 );
 
+use constant TabsDir => 'tabs/';
+
+sub tab_fname { TabsDir . shift . '.txt'; }
+
+sub read_tab {
+  my $tn = shift;
+  my $fn = tab_fname($tn);
+  my(@res, $fh, $str);
+  open($fh, '<', $fn) or die("cannot open $fn for table $tn, error $!");
+  my $ln = -1;
+  while( $str = <$fh> ) {
+    chomp $str;
+    $ln++;
+    # skip first empty line
+    next if ( !$ln && $str eq '' );
+    push @res, $str;
+  }
+  close $fh;
+  return \@res;
+}
+
+# args: table name, ident string
+sub read_dump_tab {
+  my($tn, $pfx) = @_;
+  my $ar = read_tab($tn);
+  next unless defined $ar;
+  foreach my $str ( @$ar ) { printf("%s%s\n", $pfx, $str); }
+}
+
 sub v_tabs
 {
   my($str, $dh, %tabs);
-  opendir($dh, 'tabs/') or die("cannot open tabs sub-dir, error $!");
+  opendir($dh, TabsDir) or die("cannot open tabs sub-dir, error $!");
   while($str = readdir($dh)) {
     next if ( $str eq '.' || $str eq '..' );
     if ( $str !~ /^(.*)\.txt$/ ) {
@@ -544,7 +573,10 @@ sub v_tabs
   my @rem = sort { $a cmp $b } keys %tabs;
   return unless( scalar @rem );
   printf("%d unused tabs:\n", scalar @rem);
-  printf(" %s\n", $_) for ( @rem );
+  foreach my $tn ( @rem ) {
+    printf(" %s\n", $tn);
+    read_dump_tab($tn, '   ') if ( $tn =~ /^tab/ );
+  }
 }
 
 # main
