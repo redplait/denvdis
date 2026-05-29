@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_B $opt_b $opt_f $opt_i $opt_o $opt_k $opt_t $opt_U $opt_w/;
+use vars qw/$opt_a $opt_B $opt_b $opt_d $opt_f $opt_i $opt_o $opt_k $opt_t $opt_U $opt_w/;
 
 sub usage()
 {
@@ -16,6 +16,7 @@ Usage: $0 [options] md.txt
  Options:
  -b idx:shift
  -B list of idx:shift
+ -d - dump known tables rows
  -f - mask frequency analysis
  -a ins1 ins2 ... - make and mask of instructions
  -i ins1 ins2 ... - make and mask of instructions - remained
@@ -80,6 +81,7 @@ sub do_freq
       if ( $latch ) {
         printf("and_mask: ");
         dump_mask(\@and_mask);
+        dump_mtabs(\@and_mask, '') if defined($opt_d);
       }
     }
   }
@@ -124,6 +126,7 @@ sub try_mask
   if ( scalar @and_mask ) {
     printf("and_mask: ");
     dump_mask(\@and_mask);
+    dump_mtabs(\@and_mask, '') if defined($opt_d);
   }
 }
 
@@ -152,6 +155,7 @@ OUTER:
   if ( scalar @and_mask ) {
     printf("and_mask: ");
     dump_mask(\@and_mask);
+    dump_mtabs(\@and_mask, '') if defined($opt_d);
   }
 }
 
@@ -212,6 +216,7 @@ sub filter_and
     printf("not found\n");
   } else {
     dump_mask(\@res);
+    dump_mtabs(\@res, '') if defined($opt_d);
   }
   $found;
 }
@@ -244,6 +249,7 @@ sub filter_or
   } else {
     nand(\@res, \@rem);
     dump_mask(\@res);
+    dump_mtabs(\@res, '') if defined($opt_d);
   }
   $found;
 }
@@ -275,6 +281,7 @@ sub filter_ins
   } else {
     nand(\@res, \@rem);
     dump_mask(\@res);
+    dump_mtabs(\@res, '') if defined($opt_d);
   }
   $found;
 }
@@ -525,6 +532,7 @@ my %gk_tabs = (
 );
 
 use constant TabsDir => 'tabs/';
+use constant TabLen => 96;
 
 sub tab_fname { TabsDir . shift . '.txt'; }
 
@@ -545,12 +553,61 @@ sub read_tab {
   return \@res;
 }
 
-# args: table name, ident string
+# args: table name, prefix string
 sub read_dump_tab {
   my($tn, $pfx) = @_;
   my $ar = read_tab($tn);
   next unless defined $ar;
   foreach my $str ( @$ar ) { printf("%s%s\n", $pfx, $str); }
+}
+
+# tabs cache, key - name, value - array of rows
+my %g_tcache;
+
+# return array of table rows
+# if not in cache - read it
+# args: name of table
+sub get_trows {
+  my $tn = shift;
+  return $g_tcache{$tn} if ( exists $g_tcache{$tn} );
+  my $ar = read_tab($tn);
+  return unless defined $ar;
+  $g_tcache{$tn} = $ar;
+  $ar;
+}
+
+sub make_trow {
+  my $row = shift;
+  my $res = $row->[0];
+  my $rlen = scalar @$row;
+  my $len = length($res);
+  for ( my $i = 1; $i < $rlen && $len < TabLen; ++$i ) {
+    $res .= ' ' . $row->[$i];
+    $len = length($res);
+  }
+  $res;
+}
+
+# dump tabs
+# args: bitmask, prefix string
+sub dump_mtabs {
+  my($mask, $pfx) = @_;
+  my $res = 0;
+  my $idx = 0;
+  foreach my $m ( @$mask ) {
+    foreach my $i ( 0 .. 7 ) {
+      next unless ( $m & (1 << $i) );
+      my $tab_idx = $idx * 8 + $i;
+      next unless exists $gk_tabs{$tab_idx};
+      my $ar = get_trows($gk_tabs{$tab_idx});
+      next unless defined($ar);
+      # dump them
+      printf("%s%2.2d:%d: %s\n", $pfx, $idx, $i, make_trow($ar));
+      ++$res;
+    }
+    ++$idx;
+  }
+  $res;
 }
 
 sub v_tabs
@@ -584,7 +641,7 @@ sub v_tabs
 }
 
 # main
-my $status = getopts("Bb:afikotUw");
+my $status = getopts("Bb:adfikotUw");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
