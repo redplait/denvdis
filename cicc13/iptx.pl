@@ -466,6 +466,16 @@ multimem.red multimem.ld_reduce cp.reduce
 =end text
 =cut
 
+# for instructions with zero mask for unknown reason
+# key is instruction name, value - table name
+# I hope where will be single attribute per instruction
+my %gn_tabs = (
+# 'istypep' => [ .texref , .samplerref, surfref ],
+ 'pmevent' => 'tab282E1E0',
+ 'tcgen05.fence' => 'tab282EB00',
+ 'tensormap.replace' => 'tab282F3E0',
+);
+
 # key idx * 8 + shift, value - name of table in tabs sub-dir without .txt extension
 my %gk_tabs = (
 # idx 0
@@ -637,6 +647,15 @@ sub v_tabs
       printf("unknown tab %s\n", $t);
     }
   }
+  # traverse gn_tabs values
+  foreach my $t ( values %gn_tabs ) {
+    if ( exists $tabs{$t} ) {
+      delete $tabs{$t};
+    } else {
+      printf("unknown gn tab %s\n", $t);
+    }
+  }
+  # sort remainings and dump
   my @rem = sort { $a cmp $b } keys %tabs;
   return unless( scalar @rem );
   printf("%d unused tabs:\n", scalar @rem);
