@@ -50,6 +50,13 @@ void de_ptx::hack_ctor(uint64_t off, const char *fname) {
   if ( hack(di, res) ) dump_deres(fname, res);
 }
 
+void de_ptx::hack_ops(uint64_t off, uint64_t croot, const char *fname) {
+  diter di(*s_text);
+  if ( !di.setup(off) ) return;
+  res_map res;
+  if ( hack_ops(di, croot, res) ) dump_deres(fname, res);
+}
+
 void de_ptx::hack_sp(uint64_t off, const char *fname) {
   diter di(*s_text);
   if ( !di.setup(off) ) return;
@@ -173,6 +180,42 @@ int de_ptx::hack(diter &di, res_map &rm) {
     break;
   }
   return 0;
+}
+
+int de_ptx::hack_ops(diter &di, uint64_t croot, res_map &rm) {
+  used_regs<uint64_t> regs;
+  while(1) {
+    if ( !di.next() ) break;
+    di.dasm();
+    // lea
+    if ( di.is_lea() && di.is_r1() ) {
+      auto res = di.get_addr(1);
+      if ( res <= croot || !in_sec(s_rodata, res) ) { regs.erase(di.ud_obj.operand[0].base); continue; }
+      regs.add(di.ud_obj.operand[0].base, res);
+      continue;
+    }
+    if ( di.is_end() || di.ud_obj.mnemonic == UD_Imovsq ) break;
+    // mov [rbx + xx], imm/reg
+    if ( di.is_mmem(UD_R_RBX) ) {
+      auto off = di.ud_obj.operand[0].lval.udword;
+      if ( !off ) continue;
+      if ( di.ud_obj.operand[1].type == UD_OP_IMM ) {
+        auto val = di.ud_obj.operand[1].lval.sdword;
+        lat_res what{ 0, val };
+        rm[off] = what;
+        continue;
+      } else if ( di.ud_obj.operand[1].type == UD_OP_REG ) {
+        uint64_t r_val;
+        if ( !regs.asgn(di.ud_obj.operand[1].base, r_val) ) continue;
+        lat_res what{ 0};
+        if ( check(what, r_val) ) {
+          rm[off] = what;
+          continue;
+        }
+      }
+    }
+  }
+  return !rm.empty();
 }
 
 int de_ptx::hack_sp(diter &di, res_map &rm) {
@@ -447,7 +490,9 @@ int de_ptx::hack_ptx_kws(uint64_t start) {
 int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
   // ptxas V13.1.80 md5 f38e5732c94163b96cf797eef252b4cb
-  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0, 0x2971260 + 8, 0x2971AD0);
+//  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0, 0x2971260 + 8, 0x2971AD0);
+  hack_ops(0x7357B7, 0x1E01480, "ops1.txt");
+  hack_ops(0xEE17A7, 0x1E01480, "ops2.txt");
 //  hack_ptx_kws(0x391FA0);
 //  hack_intr(0xE2F4A5, 0x1E4A20);
   // cicc 13.1 - md5 f3638b32a8740eda5e8cd5e5fe9decfb

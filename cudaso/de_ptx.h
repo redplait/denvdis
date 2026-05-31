@@ -52,10 +52,12 @@ class de_ptx: public decuda_base {
    int cmn_ptx_op(diter &, ptx_op &, G&, T t);
    void dump_ptx_ops(std::list<ptx_op> &) const;
    void hack_ctor(uint64_t, const char *fname);
+   void hack_ops(uint64_t, uint64_t, const char *fname);
    void hack_cicc_intr(uint64_t, const char *fname);
    void hack_sp(uint64_t, const char *fname);
    int hack_sp(diter &, res_map &);
    int hack(diter &, res_map &);
+   int hack_ops(diter &, uint64_t, res_map &);
    template <typename T>
    int hack_cicc(diter &, T &);
    int check(lat_res &, uint64_t off);
