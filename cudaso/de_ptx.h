@@ -17,7 +17,8 @@ class de_ptx: public decuda_base {
    typedef std::map<uint64_t, lat_res> res_map;
    typedef std::map<std::string_view, int> cicc_names;
    // instr dumpers
-   typedef std::map<std::string, uint64_t> dump_map;
+   typedef std::pair<uint64_t, std::unordered_set<uint64_t> > one_dump;
+   typedef std::map<std::string, one_dump> dump_map;
    // for extracting PTX ops
    struct ptx_op {
      int idx; // r8d
@@ -48,6 +49,7 @@ class de_ptx: public decuda_base {
    virtual int _read();
    void hack_dumpers(uint64_t start, uint64_t reg_func);
    int hack_dumpers(diter &, uint64_t reg_func, dump_map &);
+   int collect(diter &, one_dump &);
    int hack_ptx_kws(uint64_t start); // ptx_kwds.txt
    int hack_intr(uint64_t start, uint64_t reg_call);
    int process_one_ptx_op(diter &, std::list<ptx_op> &);

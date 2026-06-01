@@ -1,5 +1,6 @@
 #include "de_ptx.h"
 #include "x64arch.h"
+#include <queue>
 
 extern int opt_d;
 
@@ -509,7 +510,7 @@ int de_ptx::hack_dumpers(diter &di, uint64_t reg_func, dump_map &res) {
     if ( di.is_jxx_jimm(UD_Icall, UD_Ijmp) ) {
       auto ja = di.get_addr(0);
       if ( ja == reg_func && !name.empty() && val ) {
-        res[name] = val;
+        res[name] = { val, {} };
         name.clear();
         val = 0;
       }
@@ -521,16 +522,62 @@ int de_ptx::hack_dumpers(diter &di, uint64_t reg_func, dump_map &res) {
 }
 
 void de_ptx::dump_dumpers(const dump_map &res) const {
-  for( auto pair: res ) {
-    printf("%X %s\n", pair.second, pair.first.c_str());
+  for( auto &pair: res ) {
+    printf("%X %s\n", pair.second.first, pair.first.c_str());
+    for ( auto off: pair.second.second ) printf("  %X\n", off);
   }
+}
+
+int de_ptx::collect(diter &di, one_dump &res) {
+  std::queue<ptrdiff_t> addr_list;
+  ITree covered;
+  addr_list.push(res.first);
+  ud_type base = UD_NONE;
+  while( !addr_list.empty() ) {
+    auto addr = addr_list.front();
+    addr_list.pop();
+    // check if we already processed it
+    auto visited = covered.overlap_find( { addr, addr + 1 } );
+    if ( visited != covered.end() ) continue;
+    // setup
+    if ( !di.setup(addr) ) continue;
+    while(1) {
+      if ( !di.next() ) break;
+      di.dasm();
+      // check if we have base
+      if ( base == UD_NONE && di.is_movrr(UD_R_RSI) ) {
+         base = di.ud_obj.operand[0].base;
+         continue;
+      }
+      if ( di.is_end() ) break;
+      if ( base == UD_NONE ) continue;
+      // collect all lea reg, [base + off]
+      if ( di.is_lea() && di.ud_obj.operand[1].base == base ) {
+        res.second.insert(di.ud_obj.operand[1].lval.udword);
+        continue;
+      }
+    }
+    // add covered area
+    if ( di.total )
+      covered.insert_overlap( { addr, addr + di.total } );
+  }
+  return !res.second.empty();
 }
 
 void de_ptx::hack_dumpers(uint64_t start, uint64_t reg_func) {
   diter di(*s_text);
   if ( !di.setup(start) ) return;
   dump_map res;
-  if ( hack_dumpers(di, reg_func, res) ) dump_dumpers(res);
+  if ( hack_dumpers(di, reg_func, res) ) {
+    for ( auto &rpair: res ) {
+      if ( !di.setup(rpair.second.first) ) {
+        fprintf(stderr, "cannot setup %X for %s\n", rpair.second.first, rpair.first.c_str());
+        continue;
+      }
+      collect(di, rpair.second);
+    }
+    dump_dumpers(res);
+  }
 }
 
 int de_ptx::_read() {

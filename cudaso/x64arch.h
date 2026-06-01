@@ -705,6 +705,11 @@ struct diter
      return is_movr() &&
             (ud_obj.operand[1].type == UD_OP_REG);
    }
+   inline int is_movrr(ud_type r) const {
+     return is_movr() &&
+            (ud_obj.operand[1].type == UD_OP_REG) &&
+            (ud_obj.operand[1].base == r);
+   }
    inline int is_mmem() const {
      return (ud_obj.mnemonic == UD_Imov) &&
             (ud_obj.operand[0].type == UD_OP_MEM);
