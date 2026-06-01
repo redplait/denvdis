@@ -16,6 +16,8 @@ class de_ptx: public decuda_base {
    };
    typedef std::map<uint64_t, lat_res> res_map;
    typedef std::map<std::string_view, int> cicc_names;
+   // instr dumpers
+   typedef std::map<std::string, uint64_t> dump_map;
    // for extracting PTX ops
    struct ptx_op {
      int idx; // r8d
@@ -44,13 +46,14 @@ class de_ptx: public decuda_base {
    typedef std::pair<uint32_t, const char *> kw_type;
  protected:
    virtual int _read();
+   void hack_dumpers(uint64_t start, uint64_t reg_func);
+   int hack_dumpers(diter &, uint64_t reg_func, dump_map &);
    int hack_ptx_kws(uint64_t start); // ptx_kwds.txt
    int hack_intr(uint64_t start, uint64_t reg_call);
    int process_one_ptx_op(diter &, std::list<ptx_op> &);
    void gather_string(diter &, ptx_op &);
    template <typename G, typename T>
    int cmn_ptx_op(diter &, ptx_op &, G&, T t);
-   void dump_ptx_ops(std::list<ptx_op> &) const;
    void hack_ctor(uint64_t, const char *fname);
    void hack_ops(uint64_t, uint64_t, const char *fname);
    void hack_cicc_intr(uint64_t, const char *fname);
@@ -61,6 +64,8 @@ class de_ptx: public decuda_base {
    template <typename T>
    int hack_cicc(diter &, T &);
    int check(lat_res &, uint64_t off);
+   void dump_ptx_ops(std::list<ptx_op> &) const;
+   void dump_dumpers(const dump_map &) const;
    int dump_deres(const char *fname, const res_map &);
    int dump_cicc(const char *fname, const cicc_names &);
 };

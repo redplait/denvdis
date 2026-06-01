@@ -487,13 +487,63 @@ int de_ptx::hack_ptx_kws(uint64_t start) {
   return dump_kw_types(res);
 }
 
+int de_ptx::hack_dumpers(diter &di, uint64_t reg_func, dump_map &res) {
+  std::string name; // rsi
+  uint64_t val = 0; // rdx
+  while(1) {
+    if ( !di.next() ) break;
+    di.dasm();
+    if ( di.is_lea() && di.is_r1() ) {
+      if ( di.ud_obj.operand[0].base == UD_R_RSI ) {
+        auto saddr = di.get_addr(1);
+        if ( !saddr ) continue;
+        name = sdata(s_rodata, saddr);
+      } else if ( di.ud_obj.operand[0].base == UD_R_RDX ) {
+        auto saddr = di.get_addr(1);
+        if ( !saddr ) continue;
+        if ( !in_sec(s_text, saddr) ) continue;
+        val = saddr;
+      }
+      continue;
+    }
+    if ( di.is_jxx_jimm(UD_Icall, UD_Ijmp) ) {
+      auto ja = di.get_addr(0);
+      if ( ja == reg_func && !name.empty() && val ) {
+        res[name] = val;
+        name.clear();
+        val = 0;
+      }
+    }
+    // must be last
+    if ( di.is_end() ) break;
+  }
+  return !res.empty();
+}
+
+void de_ptx::dump_dumpers(const dump_map &res) const {
+  for( auto pair: res ) {
+    printf("%X %s\n", pair.second, pair.first.c_str());
+  }
+}
+
+void de_ptx::hack_dumpers(uint64_t start, uint64_t reg_func) {
+  diter di(*s_text);
+  if ( !di.setup(start) ) return;
+  dump_map res;
+  if ( hack_dumpers(di, reg_func, res) ) dump_dumpers(res);
+}
+
 int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
   // ptxas V13.1.80 md5 f38e5732c94163b96cf797eef252b4cb
 //  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0, 0x2971260 + 8, 0x2971AD0);
-  hack_ops(0x7357B7, 0x1E01480, "ops1.txt");
-  hack_ops(0xEE17A7, 0x1E01480, "ops2.txt");
+ // yet another couple of latency tables, totally identical to c17.txt
+  // hack_ops(0x7357B7, 0x1E01480, "ops1.txt");
+  // hack_ops(0xEE17A7, 0x1E01480, "ops2.txt");
+ // extract dumpers
+  hack_dumpers(0xE32420, 0x1E4A20);
 //  hack_ptx_kws(0x391FA0);
+ // extract ptx_intr.txt
 //  hack_intr(0xE2F4A5, 0x1E4A20);
   // cicc 13.1 - md5 f3638b32a8740eda5e8cd5e5fe9decfb
   // hack_cicc_intr(0xA8BD00, "intr.txt");
