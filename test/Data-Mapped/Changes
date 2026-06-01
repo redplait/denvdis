@@ -1,0 +1,6 @@
+Revision history for Perl extension Data::Mapped.
+
+0.01  Mon Jun  1 12:53:08 2026
+	- original version; created by h2xs 1.23 with options
+		-cfn Data::Mapped
+

@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+MANIFEST
+Mapped.xs
+ppport.h
+README
+t/Data-Mapped.t
+lib/Data/Mapped.pm
