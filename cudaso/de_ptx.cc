@@ -549,6 +549,12 @@ int de_ptx::collect(diter &di, one_dump &res) {
          base = di.ud_obj.operand[0].base;
          continue;
       }
+      // collect jmps
+      if ( di.is_jmp() && (di.ud_obj.operand[0].type == UD_OP_JIMM) ) {
+        // add to queue
+        auto jv = di.get_jmp(0);
+        addr_list.push(jv);
+      }
       if ( di.is_end() ) break;
       if ( base == UD_NONE ) continue;
       // collect all lea reg, [base + off]
