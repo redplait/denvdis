@@ -529,12 +529,14 @@ void de_ptx::dump_dumpers(const dump_map &res) const {
 }
 
 int de_ptx::collect(diter &di, one_dump &res) {
-  std::queue<ptrdiff_t> addr_list;
+  // to keep block addresses ordered
+  std::priority_queue<ptrdiff_t, std::vector<ptrdiff_t>, std::greater<ptrdiff_t> > addr_list;
   ITree covered;
   addr_list.push(res.first);
+  std::unordered_set<uint64_t> added;
   ud_type base = UD_NONE;
   while( !addr_list.empty() ) {
-    auto addr = addr_list.front();
+    auto addr = addr_list.top();
     addr_list.pop();
     // check if we already processed it
     auto visited = covered.overlap_find( { addr, addr + 1 } );
@@ -559,7 +561,12 @@ int de_ptx::collect(diter &di, one_dump &res) {
       if ( base == UD_NONE ) continue;
       // collect all lea reg, [base + off]
       if ( di.is_lea() && di.ud_obj.operand[1].base == base ) {
-        res.second.insert(di.ud_obj.operand[1].lval.udword);
+        auto off = di.ud_obj.operand[1].lval.udword;
+        auto vi = added.find(off);
+        if ( vi == added.end() ) {
+          res.second.push_back(off);
+          added.insert(off);
+        }
         continue;
       }
     }

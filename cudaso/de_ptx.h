@@ -17,7 +17,7 @@ class de_ptx: public decuda_base {
    typedef std::map<uint64_t, lat_res> res_map;
    typedef std::map<std::string_view, int> cicc_names;
    // instr dumpers
-   typedef std::pair<uint64_t, std::unordered_set<uint64_t> > one_dump;
+   typedef std::pair<uint64_t, std::vector<uint64_t> > one_dump;
    typedef std::map<std::string, one_dump> dump_map;
    // for extracting PTX ops
    struct ptx_op {
