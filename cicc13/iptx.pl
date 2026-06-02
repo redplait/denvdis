@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_B $opt_b $opt_d $opt_f $opt_i $opt_o $opt_k $opt_t $opt_U $opt_w/;
+use vars qw/$opt_a $opt_B $opt_b $opt_d $opt_f $opt_i $opt_o $opt_k $opt_l $opt_t $opt_U $opt_w/;
 
 sub usage()
 {
@@ -22,6 +22,7 @@ Usage: $0 [options] md.txt
  -i ins1 ins2 ... - make and mask of instructions - remained
  -o ins1 ins2 ... - make or mask of instructions - remained
  -k - exclude known
+ -l - generate fake ptx with all tables
  -t - verify tabs and dump still unused
  -U - dump instruction not presented in cucc
  -w - ignore obscure _mma.warpgroup & _mma
@@ -665,12 +666,85 @@ sub v_tabs
   }
 }
 
+# collect uniq attributes from all tables
+sub collect_attrs
+{
+  my($str, $dh, %attrs);
+  opendir($dh, TabsDir) or die("cannot open tabs sub-dir, error $!");
+  while($str = readdir($dh)) {
+    next if ( $str eq '.' || $str eq '..' );
+    if ( $str !~ /^(.*)\.txt$/ ) {
+      printf("bad tab %s\n", $str);
+      next;
+    }
+    $str = $1;
+    # skip strange .1t
+    next if ( $str eq 'tab282F780' );
+    my $ar = get_trows($str);
+    unless( defined $ar ) {
+      printf("ignore %s\b", $str);
+      next;
+    }
+    foreach my $a ( @$ar ) {
+      # skip <>= etc
+      next if ( $a =~ /<|>|=|\||%|&|\*|\!|\/|~/ );
+      # and digits
+      next if ( $a =~ /^-?(\d+)$/ );
+      next if exists $attrs{$a};
+      $attrs{$a} = $str;
+    }
+  }
+  closedir($dh);
+  return \%attrs;
+}
+
+# args - hash ref from collect_attrs, out file name
+sub force_attrs
+{
+  my($hr, $fname) = @_;
+  my($fh, $ai);
+  open($fh, '>', $fname) or die("force_attrs: cannot create $fname, $!");
+  # prolog
+  print $fh <<'PRLOG';
+.version 9.1
+.target sm_101
+.address_size 64
+
+.visible .func  (.param .s32 func_retval0) _Z15test(
+        .param .b32 param_0
+)
+{
+        .reg .pred      %p<2>;
+        .reg .b32       %r<3>;
+        ld.param.u32    %r2, [param_0];
+PRLOG
+  # variants of setp with collected attrs
+  my $lock = 0;
+  foreach $ai ( sort keys %$hr ) {
+    printf($fh ' @%%p1 ') if ( $lock == 1 );
+    printf($fh " setp%s %%p1, %%r2, %%r2;\n", $ai);
+    ++$lock;
+  }
+  # epilog
+print $fh <<EPLOG;
+        ret;
+
+}
+EPLOG
+  close $fh;
+}
+
 # main
-my $status = getopts("Bb:adfikotUw");
+my $status = getopts("Bb:adfikl:otUw");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
 v_tabs() if ( defined $opt_t );
+if ( defined $opt_l ) {
+  my $hr = collect_attrs();
+  force_attrs($hr, $opt_l);
+  exit;
+}
 # build neg known mask
 if ( defined $opt_k ) {
   my @k = ( 0 ) x 16;
