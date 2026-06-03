@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_B $opt_b $opt_d $opt_f $opt_i $opt_o $opt_k $opt_l $opt_t $opt_U $opt_w/;
+use vars qw/$opt_a $opt_B $opt_b $opt_d $opt_f $opt_i $opt_o $opt_k $opt_L $opt_l $opt_t $opt_U $opt_w/;
 
 sub usage()
 {
@@ -23,8 +23,9 @@ Usage: $0 [options] md.txt
  -o ins1 ins2 ... - make or mask of instructions - remained
  -k - exclude known
  -l - generate fake ptx with all tables
+ -L process output from ptx/colsetp.pl
  -t - verify tabs and dump still unused
- -U - dump instruction not presented in cucc
+ -U - dump instruction not presented in cicc
  -w - ignore obscure _mma.warpgroup & _mma
 EOF
   exit(8);
@@ -287,6 +288,9 @@ sub filter_ins
   $found;
 }
 
+# assigned in read_ops2
+my $g_total_mask;
+
 sub read_ops2
 {
   my $fname = shift;
@@ -326,6 +330,7 @@ sub read_ops2
   close $fh;
   # dump results
   dump_mask(\@mask);
+  $g_total_mask = \@mask;
   printf("length of mask %d\n", bcnt(\@mask));
   printf("%d uniq ins\n", scalar keys %g_ins);
   if ( $max_op ) {
@@ -490,6 +495,7 @@ my %gk_tabs = (
   1 * 8 + 2 => 'noftz',
   1 * 8 + 3 => 'satfinite', # cvt with floats only
   1 * 8 + 4 => 'tab282F560', # int types like s32
+  1 * 8 + 7 => 'tab282F2A0', # mma/tcgen05.mma .sp/.sp::ordered_metadata
   2 * 8 + 0 => 'block_scale', # mma & tcgen05.mma
   2 * 8 + 3 => 'tab282FA00', # kind for tcgen05.mma & tcgen05.mma.ws
   2 * 8 + 4 => 'tab282F8E0', # scale_vectorsize
@@ -627,7 +633,7 @@ sub dump_mtabs {
   $res;
 }
 
-sub v_tabs
+sub get_not_used_tabs
 {
   my($str, $dh, %tabs);
   opendir($dh, TabsDir) or die("cannot open tabs sub-dir, error $!");
@@ -656,8 +662,15 @@ sub v_tabs
       printf("unknown gn tab %s\n", $t);
     }
   }
+  return \%tabs;
+}
+
+sub v_tabs
+{
+  my $tabs = get_not_used_tabs();
+  return unless defined $tabs;
   # sort remainings and dump
-  my @rem = sort { $a cmp $b } keys %tabs;
+  my @rem = sort { $a cmp $b } keys %$tabs;
   return unless( scalar @rem );
   printf("%d unused tabs:\n", scalar @rem);
   foreach my $tn ( @rem ) {
@@ -755,8 +768,81 @@ EPLOG
   close $fh;
 }
 
+# parse log from ptx/colsetp.pl to get
+# 1) mapping lex tolen to table
+# 2) find not used tables
+# args - hash from get_not_used_tabs, hash from collect_sfx
+sub parse_L
+{
+  my($tr, $sr) = @_;
+  # read all tabs bodies
+  my %kh; # key - attribute name, value - table name
+  foreach my $t ( keys %$tr ) {
+    my $ar = get_trows($t);
+    next unless defined $ar; # wtf?
+    # put every name in kh, check for duplicates
+    foreach my $ak ( @$ar ) {
+       if ( exists $kh{$ak} ) {
+         printf("duplicated %s from %s, already got from %s\n", $ak, $t, $kh{$ak});
+         next;
+       }
+       $kh{$ak} = $t;
+    }
+    # mark table as unused
+    $tr->{$t} = 0;
+  }
+  # read log and parse attributes
+  my $line = 0;
+  my $res = 0;
+  while(my $str = <> ) {
+    ++$line;
+    chomp $str;
+    #              1 - number           2 - rest of list
+    if ( $str !~ /^(\d+)\/(?:[^:]+):\s*(.*)$/ ) {
+      printf("bad string line %d: %s\n", $line, $str);
+      next;
+    }
+    my $num = int($1);
+    next if ( $num == 58 || $num == 275 );
+    my @res = split /\s+/, $2;
+    # traverse list of attributes
+    my $old_tab;
+    foreach my $ma ( @res ) {
+      next if exists $sr->{$ma};
+      if ( !exists $kh{$ma} ) {
+        # printf("unknown attr %s for %d, line %d\n", $ma, $num, $line);
+        next;
+      }
+      $res++;
+      # mark table as used
+      my $tname = $kh{$ma};
+      $tr->{ $tname }++;
+      # check if this is first
+      unless ( defined $old_tab ) {
+        printf("%d: %s (%s)", $num, $tname, $ma);
+        $old_tab = $tname;
+        next;
+      }
+      next if ( $old_tab eq $tname );
+      printf(" %s (%s)", $tname, $ma);
+      $old_tab = $tname;
+    }
+    printf("\n") if defined($old_tab);
+  }
+  # dump unused tables
+  my $latch = 0;
+  foreach my $tn ( keys %$tr ) {
+    next if ( $tr->{$tn} );
+    unless($latch) { ++$latch;
+      printf("--- still unused tables:\n");
+      printf(" %s\n", $tn);
+    }
+  }
+  return $res;
+}
+
 # main
-my $status = getopts("Bb:adfikl:otUw");
+my $status = getopts("Bb:adfikLl:otUw");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
@@ -766,6 +852,10 @@ if ( defined $opt_l ) {
   my $sr;
   $sr = collect_sfx() if ( defined $opt_i );
   force_attrs($hr, $opt_l, $sr);
+  exit;
+}
+if ( defined $opt_L ) {
+  parse_L(get_not_used_tabs(), collect_sfx());
   exit;
 }
 # build neg known mask
@@ -785,6 +875,11 @@ if ( defined $opt_k ) {
   printf("negative mask: ");
   dump_mask(\@kn);
   $gk_neg = \@kn;
+  # union with $g_total_mask
+  my @still_unk = ( 0 ) x 16;
+  for my $i ( 0 .. 15 ) { $still_unk[$i] = $g_total_mask->[$i] & $kn[$i]; }
+  printf("unknown mask:  ");
+  dump_mask(\@still_unk);
 }
 
 my %ins;
