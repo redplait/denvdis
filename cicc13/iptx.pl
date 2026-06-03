@@ -698,10 +698,22 @@ sub collect_attrs
   return \%attrs;
 }
 
-# args - hash ref from collect_attrs, out file name
+# collect all suffixes after . from g_ins keys
+sub collect_sfx {
+  my %res;
+  my $cnt = 0;
+  foreach my $name ( keys %g_ins ) {
+    next if ( $name !~ /^[^\.]+\.(.*)$/ );
+    $res{'.' . $_}++ for ( split /\./, $1 );
+    $cnt++;
+  }
+  return $cnt ? \%res : undef;
+}
+
+# args - hash ref from collect_attrs, out file name, hash ref from collect_sfx
 sub force_attrs
 {
-  my($hr, $fname) = @_;
+  my($hr, $fname, $sr) = @_;
   my($fh, $ai);
   open($fh, '>', $fname) or die("force_attrs: cannot create $fname, $!");
   # prolog
@@ -720,10 +732,19 @@ sub force_attrs
 PRLOG
   # variants of setp with collected attrs
   my $lock = 0;
-  foreach $ai ( sort keys %$hr ) {
-    printf($fh ' @%%p1 ') if ( $lock == 1 );
-    printf($fh " setp%s %%p1, %%r2, %%r2;\n", $ai);
-    ++$lock;
+  if ( defined $sr ) {
+    foreach $ai ( sort keys %$sr ) {
+      next if ( exists $hr->{$ai} );
+      printf($fh ' @%%p1 ') if ( $lock == 1 );
+      printf($fh " setp%s %%p1, %%r2, %%r2;\n", $ai);
+      ++$lock;
+    }
+  } else {
+    foreach $ai ( sort keys %$hr ) {
+      printf($fh ' @%%p1 ') if ( $lock == 1 );
+      printf($fh " setp%s %%p1, %%r2, %%r2;\n", $ai);
+      ++$lock;
+    }
   }
   # epilog
 print $fh <<EPLOG;
@@ -742,7 +763,9 @@ read_ops2('ptx_ops2.txt');
 v_tabs() if ( defined $opt_t );
 if ( defined $opt_l ) {
   my $hr = collect_attrs();
-  force_attrs($hr, $opt_l);
+  my $sr;
+  $sr = collect_sfx() if ( defined $opt_i );
+  force_attrs($hr, $opt_l, $sr);
   exit;
 }
 # build neg known mask

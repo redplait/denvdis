@@ -1,0 +1,78 @@
+.version 9.1
+.target sm_101
+.address_size 64
+
+.visible .func  (.param .s32 func_retval0) _Z15test(
+        .param .b32 param_0
+)
+{
+        .reg .pred      %p<2>;
+        .reg .b32       %r<3>;
+        ld.param.u32    %r2, [param_0];
+ setp.allocation_granularity %p1, %r2, %r2;
+ @%p1  setp.are_columns_allocated %p1, %r2, %r2;
+ setp.arrive %p1, %r2, %r2;
+ setp.arrive_drop %p1, %r2, %r2;
+ setp.base %p1, %r2, %r2;
+ setp.bulk %p1, %r2, %r2;
+ setp.c %p1, %r2, %r2;
+ setp.check_sparse_usage %p1, %r2, %r2;
+ setp.commit %p1, %r2, %r2;
+ setp.commit_batch %p1, %r2, %r2;
+ setp.commit_group %p1, %r2, %r2;
+ setp.complete_tx %p1, %r2, %r2;
+ setp.cp_fenceproxy %p1, %r2, %r2;
+ setp.cvt %p1, %r2, %r2;
+ setp.d %p1, %r2, %r2;
+ setp.datapath_alignment %p1, %r2, %r2;
+ setp.divide %p1, %r2, %r2;
+ setp.expect_tx %p1, %r2, %r2;
+ setp.fence %p1, %r2, %r2;
+ setp.flush %p1, %r2, %r2;
+ setp.fractional %p1, %r2, %r2;
+ setp.full %p1, %r2, %r2;
+ setp.fused %p1, %r2, %r2;
+ setp.grad %p1, %r2, %r2;
+ setp.guardrails %p1, %r2, %r2;
+ setp.in_physical_bounds %p1, %r2, %r2;
+ setp.init %p1, %r2, %r2;
+ setp.inval %p1, %r2, %r2;
+ setp.is_current_warp_valid_owner %p1, %r2, %r2;
+ setp.is_phase_valid %p1, %r2, %r2;
+ setp.l %p1, %r2, %r2;
+ setp.ld_reduce %p1, %r2, %r2;
+ setp.level %p1, %r2, %r2;
+ setp.load %p1, %r2, %r2;
+ setp.mask %p1, %r2, %r2;
+ setp.mma_async %p1, %r2, %r2;
+ setp.one %p1, %r2, %r2;
+ setp.p %p1, %r2, %r2;
+ setp.pack %p1, %r2, %r2;
+ setp.parity %p1, %r2, %r2;
+ setp.pending_count %p1, %r2, %r2;
+ setp.prefetch %p1, %r2, %r2;
+ setp.proxy %p1, %r2, %r2;
+ setp.query_cancel %p1, %r2, %r2;
+ setp.range %p1, %r2, %r2;
+ setp.red %p1, %r2, %r2;
+ setp.reduce %p1, %r2, %r2;
+ setp.relinquish_alloc_permit %p1, %r2, %r2;
+ setp.replace %p1, %r2, %r2;
+ setp.sp_consistency_across_idesc_mod %p1, %r2, %r2;
+ setp.store %p1, %r2, %r2;
+ setp.tensor %p1, %r2, %r2;
+ setp.test_wait %p1, %r2, %r2;
+ setp.to %p1, %r2, %r2;
+ setp.try_alloc %p1, %r2, %r2;
+ setp.try_cancel %p1, %r2, %r2;
+ setp.try_wait %p1, %r2, %r2;
+ setp.tx %p1, %r2, %r2;
+ setp.wait_all %p1, %r2, %r2;
+ setp.wait_group %p1, %r2, %r2;
+ setp.warp %p1, %r2, %r2;
+ setp.warpgroup %p1, %r2, %r2;
+ setp.wide %p1, %r2, %r2;
+ setp.ws %p1, %r2, %r2;
+        ret;
+
+}
