@@ -1,5 +1,0 @@
-
-_up
-_down
-_bfly
-_idx

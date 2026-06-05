@@ -542,6 +542,7 @@ my %gk_tabs = (
  11 * 8 + 0 => 'tab282F800', # isspacep/cvta/cvt.to
  11 * 8 + 2 => 'aligned',
  11 * 8 + 6 => 'tab282ECE0', # shapes like m16n
+ 12 * 8 + 0 => 'tab282EB40', # ld/cp.async .level::prefetch_size
  12 * 8 + 1 => 'trans',
  12 * 8 + 2 => 'tab282ECE0', # shape3/shape4
  12 * 8 + 5 => 'tab282F7A0', # num for tcgen05.ld/tcgen05.st
@@ -769,7 +770,7 @@ EPLOG
 }
 
 # parse log from ptx/colsetp.pl to get
-# 1) mapping lex tolen to table
+# 1) mapping lex token to table
 # 2) find not used tables
 # args - hash from get_not_used_tabs, hash from collect_sfx
 sub parse_L
@@ -803,6 +804,9 @@ sub parse_L
       next;
     }
     my $num = int($1);
+    # see https://gh.evko.io/nvopen-tools/ptxas/pipeline/ptx-parser.html#token-categories
+    # 58 is ':' symbol
+    # 275 is just symbols like '&' or '%'
     next if ( $num == 58 || $num == 275 );
     my @res = split /\s+/, $2;
     # traverse list of attributes
