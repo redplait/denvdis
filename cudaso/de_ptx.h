@@ -23,9 +23,12 @@ class de_ptx: public decuda_base {
    struct ptx_op {
      int idx; // r8d
      const char *cx, *dx, *si;
-     unsigned char st[16];
+     unsigned char st[20];
      inline void re_st() {
        memset(st, 0, sizeof(st));
+     }
+     inline void re_st16() {
+       memset(st, 0, 0x10);
      }
      ptx_op() {
        reset();
@@ -41,7 +44,11 @@ class de_ptx: public decuda_base {
      }
      bool has_st() const {
        return std::all_of(st, st + sizeof(st), [](unsigned char c) { return c != 0; });
-     };
+     }
+     void store_add_mask(uint32_t v) {
+       uint32_t *fptr = (uint32_t *)(st + 0x10);
+       *fptr = v;
+     }
    };
    int hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call, uint64_t ops_tab, uint64_t ops_tab_end);
    typedef std::pair<uint32_t, const char *> kw_type;
@@ -54,8 +61,8 @@ class de_ptx: public decuda_base {
    int hack_intr(uint64_t start, uint64_t reg_call);
    int process_one_ptx_op(diter &, std::list<ptx_op> &);
    void gather_string(diter &, ptx_op &);
-   template <typename G, typename T>
-   int cmn_ptx_op(diter &, ptx_op &, G&, T t);
+   template <typename G, typename T, typename A>
+   int cmn_ptx_op(diter &, ptx_op &, G&, T t, A add);
    void hack_ctor(uint64_t, const char *fname);
    void hack_ops(uint64_t, uint64_t, const char *fname);
    void hack_cicc_intr(uint64_t, const char *fname);
