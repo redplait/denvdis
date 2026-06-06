@@ -31,6 +31,8 @@ EOF
   exit(8);
 }
 
+use constant MaskSize => 15;
+
 # instr names from ptx_ops2.txt
 my %g_ins;
 # array of ops, each element is [ line number, mask array, rest of op, op name ]
@@ -44,7 +46,7 @@ sub apply_k
   return $ar unless($gk_neg);
   my @tmp = @$ar;
   my $res = 0;
-  foreach my $i ( 0 .. 15 ) {
+  foreach my $i ( 0 .. MaskSize ) {
     $tmp[$i] &= $gk_neg->[$i];
     $res++ if ( $tmp[$i] );
   }
@@ -55,7 +57,7 @@ sub apply_k
 sub do_freq
 {
   my(%lsk, %ins_k, $u_name);
-  foreach my $i ( 0 .. 15 ) {
+  foreach my $i ( 0 .. MaskSize ) {
     foreach my $bi ( 0 .. 7 ) {
       my $mask = 1 << $bi;
       my $latch = 0;
@@ -73,7 +75,7 @@ sub do_freq
           $latch++;
           @and_mask = @$ar;
         } else {
-          foreach my $mi ( 0 .. 15 ) {
+          foreach my $mi ( 0 .. MaskSize ) {
             $and_mask[$mi] &= $ar->[$mi];
           }
         }
@@ -120,7 +122,7 @@ sub try_mask
     unless( scalar @and_mask ) {
       @and_mask = @$ar;
     } else {
-      foreach my $mi ( 0 .. 15 ) {
+      foreach my $mi ( 0 .. MaskSize ) {
         $and_mask[$mi] &= $ar->[$mi];
       }
     }
@@ -149,7 +151,7 @@ OUTER:
     unless( scalar @and_mask ) {
       @and_mask = @$ar;
     } else {
-      foreach my $mi ( 0 .. 15 ) {
+      foreach my $mi ( 0 .. MaskSize ) {
         $and_mask[$mi] &= $ar->[$mi];
       }
     }
@@ -188,7 +190,7 @@ sub nand
 {
   my($m, $rm) = @_;
   foreach my $mi ( @$rm ) {
-    foreach my $i ( 0 .. 15 ) {
+    foreach my $i ( 0 .. MaskSize ) {
       $m->[$i] &= ~( $mi->[$i] );
     }
   }
@@ -208,7 +210,7 @@ sub filter_and
       @res = @$ar; # copy first mask array
     } else {
       # apply and
-      foreach my $ai ( 0 .. 15 ) {
+      foreach my $ai ( 0 .. MaskSize ) {
         $res[$ai] &= $ar->[$ai];
       }
     }
@@ -240,7 +242,7 @@ sub filter_or
       @res = @$ar; # copy first mask array
     } else {
       # apply and
-      foreach my $ai ( 0 .. 15 ) {
+      foreach my $ai ( 0 .. MaskSize ) {
         $res[$ai] |= $ar->[$ai];
       }
     }
@@ -272,7 +274,7 @@ sub filter_ins
       @res = @$ar; # copy first mask array
     } else {
       # apply and
-      foreach my $ai ( 0 .. 15 ) {
+      foreach my $ai ( 0 .. MaskSize ) {
         $res[$ai] &= $ar->[$ai];
       }
     }
@@ -323,7 +325,7 @@ sub read_ops2
     # add to g_ops if needed
     push @g_ops, [ $ln, \@tmp, $tail, $iname ] if ( $add );
     # or with total mask
-    foreach my $mi ( 0 .. 15 ) {
+    foreach my $mi ( 0 .. MaskSize ) {
       $mask[$mi] |= $tmp[$mi] if $tmp[$mi];
     }
   }
@@ -487,26 +489,29 @@ my %gk_tabs = (
 # idx 0
   0 => 'tab282FC80', # BoolOp
   2 => 'tab282FBC0', # CmpOp
-  3 => 'no_atexit',  # index might as well be 4
+  3 => 'keeprefcount',  # test    byte ptr [r12], 8
+  4 => 'no_atexit',
   5 => 'tab282F560',
   7 => 'approx',
   1 * 8 + 0 => 'relu', # cvt/fma/min/max
   1 * 8 + 1 => 'ftz',
   1 * 8 + 2 => 'noftz',
-  1 * 8 + 3 => 'satfinite', # cvt with floats only
-  1 * 8 + 4 => 'tab282F560', # int types like s32
+  1 * 8 + 4 => 'sat',        # test    byte ptr [r12+1], 10h
+  1 * 8 + 5 => 'satfinite',  # test    byte ptr [r12+1], 20h
   1 * 8 + 7 => 'tab282F2A0', # mma/tcgen05.mma .sp/.sp::ordered_metadata
-  2 * 8 + 0 => 'block_scale', # mma & tcgen05.mma
-  2 * 8 + 3 => 'tab282FA00', # kind for tcgen05.mma & tcgen05.mma.ws
-  2 * 8 + 4 => 'tab282F8E0', # scale_vectorsize
+  2 * 8 + 0 => 'tab282FA00', # test    byte ptr [r12+2], 1
   2 * 8 + 1 => 'ashift',
-  2 * 8 + 2 => 'tab282F900', # .collector_usage
+  2 * 8 + 2 => 'tab282F9C0', # .collector::a - test    byte ptr [r12+2], 4
+  2 * 8 + 3 => 'tab282F900', # .collector::b
+  2 * 8 + 4 => 'tab282F8E0', # scale_vectorsize
+  2 * 8 + 5 => 'tab282F8B0', # test    byte ptr [r12+2], 20h
   3 * 8 + 0 => 'sat',
   3 * 8 + 1 => 'cc',
   3 * 8 + 2 => 'shiftamt',
   3 * 8 + 3 => 'tab282E820', # (f)rnd
-  3 * 8 + 7 => 'uni',
-  4 * 8 + 5 => 'vec',
+  3 * 8 + 6 => 'uni',
+  3 * 8 + 7 => 'tab282E7E0', # cmp     byte ptr [r12+3], 0/js
+  4 * 8 + 0 => 'tab282E7C0', # test    byte ptr [r12+4], 1
   4 * 8 + 6 => 'tab282DFE0', # mov.type & cvt 01 - type with .pred
   4 * 8 + 7 => 'tab282EC40', # scope/ss like .gpu .cluster
   5 * 8 + 0 => 'tab282E6A0', # load_mode
@@ -517,13 +522,18 @@ my %gk_tabs = (
   5 * 8 + 5 => 'mmio',       # ld/st/red.async
   5 * 8 + 6 => 'tab282EC20', # cache level like .l1
   5 * 8 + 7 => 'tab282EB80', # eviction, since v7.4 also for ld/st/prefetch
+  6 * 8 + 1 => 'tab282EC40', # test    byte ptr [r12+6], 1
+  6 * 8 + 2 => 'vec',
   6 * 8 + 3 => 'tab282E760', # geom
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
   6 * 8 + 5 => 'b1024',      # ? oficially only for tensormap.replace
   6 * 8 + 7 => 'tab282E620', # cta_group
-  7 * 8 + 1 => 'tab282E5E0', # src_fmt/dst_fmt for tcgen05.cp & ldmatrix
   7 * 8 + 0 => 'tab282E600', # multicast for tcgen05.cp
-  7 * 8 + 4 => 'multicast',  # tcgen05.commit & cp.async.bulk.tensor
+  7 * 8 + 1 => 'tab282E5E0', # src_fmt/dst_fmt for tcgen05.cp & ldmatrix
+  7 * 8 + 2 => 'packed_offsets', # test    byte ptr [rdx+7], 4
+  7 * 8 + 3 => 'multicast',  # test    byte ptr [r12+7], 8
+  7 * 8 + 4 => 'multicast_cluster',  # tcgen05.commit & cp.async.bulk.tensor
+  7 * 8 + 5 => 'tab282E680', # test    byte ptr [rdx+7], 20h
   8 * 8 + 0 => 'tab282E520', # .completion_mechanism
   8 * 8 + 3 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
   8 * 8 + 4 => 'squery',     # common for txq & suq
@@ -533,26 +543,43 @@ my %gk_tabs = (
   9 * 8 + 2 => 'tab282F3A0', # redOp with popc
   9 * 8 + 5 => 'tab282E480', # clamp
   9 * 8 + 6 => 'po',
-  9 * 8 + 7 => 'tab282E460', # scale = { .shr7, .shr15 }
+#  9 * 8 + 7 => 'tab282E460', # scale = { .shr7, .shr15 }
+  9 * 8 + 7 => 'tab282E440',
  10 * 8 + 0 => 'prmt',
  10 * 8 + 1 => 'tab282E400', # bfly
  10 * 8 + 2 => 'down', # for tcgen05.shift
+ 10 * 8 + 3 => 'noComplete', # test    byte ptr [rbx+161h], 4
+ 10 * 8 + 4 => 'rand', # movzx   eax, byte ptr [r12+0Ah]/test al, 10h
  10 * 8 + 5 => 'sync', # from setmaxnreg.inc
- 10 * 8 + 6 => 'noinc',
+ 10 * 8 + 6 => 'noinc',      # movzx   eax, byte ptr [r12+0Ah]/test al, 40h
  11 * 8 + 0 => 'tab282F800', # isspacep/cvta/cvt.to
  11 * 8 + 2 => 'aligned',
- 11 * 8 + 6 => 'tab282ECE0', # shapes like m16n
+ 11 * 8 + 4 => 'dual',       # test    byte ptr [r12+0Bh], 10h
+ 11 * 8 + 5 => 'close',      # test    byte ptr [r12+0Bh], 20h
+ 11 * 8 + 6 => 'tab282ECE0', # test byte ptr [r12+0Bh], 40h
  12 * 8 + 0 => 'tab282EB40', # ld/cp.async .level::prefetch_size
  12 * 8 + 1 => 'trans',
- 12 * 8 + 2 => 'tab282ECE0', # shape3/shape4
- 12 * 8 + 5 => 'tab282F7A0', # num for tcgen05.ld/tcgen05.st
- 13 * 8 + 6 => 'xorsign',
+ 12 * 8 + 2 => 'tab282F7A0', # num for tcgen05.ld/tcgen05.st
+ 12 * 8 + 3 => 'frd',        # test    byte ptr [r12+0Ch], 8
+ 12 * 8 + 4 => 'tab282F780', # test    byte ptr [r12+0Ch], 10h
+ 12 * 8 + 5 => 'tab282F360', # test    byte ptr [r12+0Ch], 20h
+ 12 * 8 + 6 => 'expand',     # test    byte ptr [r12+0Ch], 40
+ 12 * 8 + 7 => 'tab282ECA0', # cmp byte ptr [r12+0Ch], 0/js good
+ 13 * 8 + 2 => 'tab282F280', # movzx edx, byte ptr [r12+0Dh]/test dl, 2
+ 13 * 8 + 4 => 'desc',       # test byte ptr [r12+0Dh], 10h
+ 13 * 8 + 5 => 'nan',        # test    byte ptr [r12+0Dh], 20h
+ 13 * 8 + 6 => 'xorsign',    # test    byte ptr [r12+0Dh], 40h
+ 14 * 8 + 3 => 'ignoreC',    #  test    byte ptr [r12+0Eh], 8
+ 14 * 8 + 4 => 'ignoreC_pred', # test    byte ptr [r12+0Eh], 10h
+ 14 * 8 + 5 => 'frel',       # movzx   edx, byte ptr [r12+0Eh]/and     edx, 20h
  14 * 8 + 6 => 'abs',
- 15 * 8 + 1 => 'tab282F510', # alias for fence.proxy & membar.proxy
+# bbo 15 * 8 + 1 => 'tab282F510', # alias for fence.proxy & membar.proxy
+ 15 * 8 + 2 => 'tab282F510', # test    byte ptr [r12+0Fh], 2
+ 15 * 8 + 3 => 'mbarrier_init', # test    byte ptr [r12+0Fh], 8
  15 * 8 + 4 => 'tab282F4E0', # sync_restrict::shared:*
  15 * 8 + 5 => 'tab282F460', # launch_dependents
  15 * 8 + 6 => 'tab282F4A0', # get_first_ctaid{::dimension}
- 15 * 8 + 7 => 'read',
+ 15 * 8 + 7 => 'tab282F480',
 );
 
 use constant TabsDir => 'tabs/';
@@ -881,7 +908,7 @@ if ( defined $opt_k ) {
   $gk_neg = \@kn;
   # union with $g_total_mask
   my @still_unk = ( 0 ) x 16;
-  for my $i ( 0 .. 15 ) { $still_unk[$i] = $g_total_mask->[$i] & $kn[$i]; }
+  for my $i ( 0 .. MaskSize ) { $still_unk[$i] = $g_total_mask->[$i] & $kn[$i]; }
   printf("unknown mask:  ");
   dump_mask(\@still_unk);
 }
@@ -905,7 +932,7 @@ if ( defined $opt_i ) {
  # parse and check -b option
  die("bad -b option") if ( $opt_b !~ /^(\d+):(\d)$/ );
  my $idx = int($1);
- die("bad idx") if ( $idx > 15 );
+ die("bad idx") if ( $idx > MaskSize );
  my $sh = int($2);
  die("bad shift") if ( $sh > 7 );
  try_mask($idx, $sh);
@@ -915,7 +942,7 @@ if ( defined $opt_i ) {
   foreach my $ba ( @ARGV ) {
      die("bad -B option $ba") if ( $ba !~ /^(\d+):(\d)$/ );
      my $idx = int($1);
-     die("bad idx in $ba") if ( $idx > 15 );
+     die("bad idx in $ba") if ( $idx > MaskSize );
      my $sh = int($2);
      die("bad shift in $ba") if ( $sh > 7 );
      $mh{$idx} |= 1 << $sh;
