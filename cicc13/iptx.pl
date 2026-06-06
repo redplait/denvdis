@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_B $opt_b $opt_d $opt_f $opt_i $opt_o $opt_k $opt_L $opt_l $opt_t $opt_U $opt_w/;
+use vars qw/$opt_a $opt_B $opt_b $opt_d $opt_f $opt_i $opt_m $opt_o $opt_k $opt_L $opt_l $opt_t $opt_U $opt_w/;
 
 sub usage()
 {
@@ -24,6 +24,7 @@ Usage: $0 [options] md.txt
  -k - exclude known
  -l - generate fake ptx with all tables
  -L process output from ptx/colsetp.pl
+ -m - ignore psedo-instructions
  -t - verify tabs and dump still unused
  -U - dump instruction not presented in cicc
  -w - ignore obscure _mma.warpgroup & _mma
@@ -39,6 +40,36 @@ my %g_ins;
 my @g_ops;
 # neg mask of known
 my $gk_neg;
+
+# pseudo-instructions - for -m
+my %g_mpi;
+
+use constant ExpFName => 'ptx_expand.txt';
+
+# read pseudo-instructions from ptx_expand.txt
+sub read_expands
+{
+  my($fh, $str, $name);
+  open($fh, '<', ExpFName) or die("cannot open expands, error $!");
+  my $res = 0;
+  while($str = <$fh>) {
+    chomp $str;
+    next if ( $str !~ /^\w+\s+(.*)$/ );
+    $name = $1;
+    # ignore names contained only digits
+    next if ( $name =~ /^\d+$/ );
+    $g_mpi{$name}++;
+    ++$res;
+  }
+  close($fh);
+  $res;
+}
+
+# check of this is pseudo-instruction
+sub is_mpi {
+  my $name = shift;
+  return defined($opt_m) && exists($g_mpi{$name});
+}
 
 sub apply_k
 {
@@ -66,6 +97,7 @@ sub do_freq
         my $ar = apply_k($op->[1]);
         next unless $ar;
         next unless( $ar->[$i] & $mask );
+        next if is_mpi($op->[2]);
         if ( defined $opt_k ) {
           $lsk{ $op->[0] }++;
           $ins_k{ $op->[3] }++;
@@ -117,6 +149,7 @@ sub try_mask
   foreach my $op ( @g_ops ) {
     my $ar = apply_k($op->[1]);
     next unless($ar);
+    next if is_mpi($op->[2]);
     next unless( $ar->[$idx] & $mask );
     printf(" line %d: %s\n", $op->[0], $op->[2]);
     unless( scalar @and_mask ) {
@@ -143,6 +176,7 @@ OUTER:
   foreach my $op ( @g_ops ) {
     my $ar = apply_k($op->[1]);
     next unless($ar);
+    next if is_mpi($op->[2]);
     foreach my $idx ( keys %$hr ) {
       my $mask = $hr->{$idx};
       next OUTER unless( $ar->[$idx] & $mask );
@@ -862,11 +896,15 @@ sub parse_L
 }
 
 # main
-my $status = getopts("Bb:adfikLl:otUw");
+my $status = getopts("Bb:adfikLl:motUw");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
-v_tabs() if ( defined $opt_t );
+if ( defined $opt_t ) {
+  v_tabs();
+  exit;
+}
+read_expands() if defined($opt_m);
 if ( defined $opt_l ) {
   my $hr = collect_attrs();
   my $sr;
