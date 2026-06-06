@@ -423,8 +423,18 @@ OUTER:
   }
 }
 
+# for instructions with zero mask for unknown reason
+# key is instruction name, value - table name
+# I hope where will be single attribute per instruction
+my %gn_tabs = (
+# 'istypep' => [ .texref , .samplerref, surfref ],
+ 'pmevent' => 'tab282E1E0',
+ 'tensormap.replace' => 'tab282F3E0',
+);
+
 =pod
 =begin text
+
 table for bits decoding
  01 - 0
  02 - 1
@@ -435,53 +445,8 @@ table for bits decoding
  40 - 6
  80 - 7
 
-good example is suld.b.geom{.cop}.vec.dtype.clamp
-
-there geom is tab282E760 - also used in tex/tld4/tex.base/tex.level/tex.grad/sured.b
-
-cop is tab282E960
-
-vec also used in many instructions like ld/st/atom/red/
-
-clamp is tab282E480 - it's position is known 9:5
-                            |
-suld.b has mask             V
-20 00 00 00 20 04 0E 00 00 20 00 00 00 00 00 00
-
-tld4 & suld.b & sured.b gives mask:
-00 00 00 00 00 00 04 00 00 00 00 00 00 00 00 00
-
-so geom must have index 6:2
-
-mask for suld/ld/st to include vec is 4:5
-
-As you cab see the hypothesis that indices should preserve order is not confirmed - here we have
-geom at 6.2
-and vec 4.5, but in suld geom must precede vec
-
-5:2 then must be cop
-
-sured.p & sured.b
-00 00 00 00 20 00 0C 00 00 24 00 00 00 00 00 00 sured.p	is0	B32
-00 00 00 00 20 00 0C 00 00 24 00 00 00 00 00 00 sured.p	is0	B64
-00 00 00 00 20 00 0C 00 00 24 00 00 00 00 00 00 sured.b	is0	B32
-00 00 00 00 20 00 0C 00 00 22 00 00 00 00 00 00 sured.b	is0	I[32|64]
-
-
-multimem.red multimem.ld_reduce cp.reduce
-00 00 00 00 80 08 01 00 00 00 00 00 00 00 00 00
-
 =end text
 =cut
-
-# for instructions with zero mask for unknown reason
-# key is instruction name, value - table name
-# I hope where will be single attribute per instruction
-my %gn_tabs = (
-# 'istypep' => [ .texref , .samplerref, surfref ],
- 'pmevent' => 'tab282E1E0',
- 'tensormap.replace' => 'tab282F3E0',
-);
 
 # key idx * 8 + shift, value - name of table in tabs sub-dir without .txt extension
 my %gk_tabs = (
@@ -492,7 +457,7 @@ my %gk_tabs = (
   4 => 'no_atexit',
   5 => 'tab282F560',
   7 => 'approx',
-  1 * 8 + 0 => 'relu', # cvt/fma/min/max
+  1 * 8 + 0 => 'relu', # cvt/fma/min/max, test    byte ptr [r12+1], 1
   1 * 8 + 1 => 'ftz',
   1 * 8 + 2 => 'noftz',
   1 * 8 + 4 => 'sat',        # test    byte ptr [r12+1], 10h
@@ -522,10 +487,11 @@ my %gk_tabs = (
   5 * 8 + 5 => 'mmio',       # ld/st/red.async
   5 * 8 + 6 => 'tab282EC20', # cache level like .l1
   5 * 8 + 7 => 'tab282EB80', # eviction, since v7.4 also for ld/st/prefetch
-  6 * 8 + 1 => 'tab282EC40', # test    byte ptr [r12+6], 1
+  6 * 8 + 0 => 'tab282EC40', # test    byte ptr [r12+6], 1
   6 * 8 + 2 => 'vec',
   6 * 8 + 3 => 'tab282E760', # geom
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
+  6 * 8 + 6 => 'tab282E640', # occurs only in print handler for cp.async.bulk.tensor
   6 * 8 + 7 => 'tab282E620', # cta_group
   7 * 8 + 0 => 'tab282E600', # multicast for tcgen05.cp
   7 * 8 + 1 => 'tab282E5E0', # src_fmt/dst_fmt for tcgen05.cp & ldmatrix
@@ -534,6 +500,7 @@ my %gk_tabs = (
   7 * 8 + 4 => 'multicast_cluster',  # tcgen05.commit & cp.async.bulk.tensor
   7 * 8 + 5 => 'tab282E680', # test    byte ptr [rdx+7], 20h
   7 * 8 + 6 => 'tab282E660', # test    byte ptr [rdx+7], 40
+  7 * 8 + 7 => 'tab282E550', # occurs only in print handler for cp.async.bulk
   8 * 8 + 0 => 'tab282E520', # .completion_mechanism
   8 * 8 + 3 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
   8 * 8 + 4 => 'squery',     # common for txq & suq
@@ -553,11 +520,13 @@ my %gk_tabs = (
  10 * 8 + 5 => 'sync', # from setmaxnreg.inc
  10 * 8 + 6 => 'noinc',      # movzx   eax, byte ptr [r12+0Ah]/test al, 40h
  11 * 8 + 0 => 'tab282F800', # isspacep/cvta/cvt.to
+ 11 * 8 + 1 => 'tab282F310', # test    byte ptr [r12+0Bh], 2
  11 * 8 + 2 => 'aligned',
  11 * 8 + 4 => 'dual',       # test    byte ptr [r12+0Bh], 10h
  11 * 8 + 5 => 'close',      # test    byte ptr [r12+0Bh], 20h
  11 * 8 + 6 => 'tab282ECE0', # test byte ptr [r12+0Bh], 40h
- 12 * 8 + 0 => 'tab282EB40', # ld/cp.async .level::prefetch_size
+ 11 * 8 + 7 => 'tab282EB40', # ld/cp.async .level::prefetch_size
+ 12 * 8 + 0 => 'tab282EB60', # test    byte ptr [r12+0Ch], 1
  12 * 8 + 1 => 'trans',
  12 * 8 + 2 => 'tab282F7A0', # num for tcgen05.ld/tcgen05.st
  12 * 8 + 3 => 'frd',        # test    byte ptr [r12+0Ch], 8
@@ -569,11 +538,14 @@ my %gk_tabs = (
  13 * 8 + 4 => 'desc',       # test byte ptr [r12+0Dh], 10h
  13 * 8 + 5 => 'nan',        # test    byte ptr [r12+0Dh], 20h
  13 * 8 + 6 => 'xorsign',    # test    byte ptr [r12+0Dh], 40h
- 14 * 8 + 3 => 'ignoreC',    #  test    byte ptr [r12+0Eh], 8
+ 13 * 8 + 7 => 'transA',
+ 14 * 8 + 0 => 'negA',       # test    byte ptr [r12+0Eh], 1
+ 14 * 8 + 2 => 'negB',       # test    byte ptr [r12+0Eh], 4
+ 14 * 8 + 3 => 'ignoreC',    # test    byte ptr [r12+0Eh], 8
  14 * 8 + 4 => 'ignoreC_pred', # test    byte ptr [r12+0Eh], 10h
  14 * 8 + 5 => 'frel',       # movzx   edx, byte ptr [r12+0Eh]/and     edx, 20h
  14 * 8 + 6 => 'abs',
-# bbo 15 * 8 + 1 => 'tab282F510', # alias for fence.proxy & membar.proxy
+ 15 * 8 + 0 => 'oob', # fma only
  15 * 8 + 2 => 'tab282F510', # test    byte ptr [r12+0Fh], 2
  15 * 8 + 3 => 'mbarrier_init', # test    byte ptr [r12+0Fh], 8
  15 * 8 + 4 => 'tab282F4E0', # sync_restrict::shared:*
