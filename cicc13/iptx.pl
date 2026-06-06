@@ -31,7 +31,7 @@ EOF
   exit(8);
 }
 
-use constant MaskSize => 15;
+use constant MaskSize => 19;
 
 # instr names from ptx_ops2.txt
 my %g_ins;
@@ -296,7 +296,7 @@ my $g_total_mask;
 sub read_ops2
 {
   my $fname = shift;
-  my @mask = ( 0 ) x16;
+  my @mask = ( 0 ) x (MaskSize + 1);
   my($fh, $str, $m, $rest, $iname, $max_op);
   open($fh, '<', $fname) or die("Cannot open $fname, error $!");
   my $ln = 0;
@@ -308,13 +308,13 @@ sub read_ops2
     next if ( $str !~ /^\d+\s+(.*)$/ );
     $str = $1;
     # opcode name and tail starts at 48
-    my $tail = substr($str, 48);
+    my $tail = substr($str, 60);
     $iname = (split /\t/, $tail)[0];
     # skip _mma.warpgroup
     next if ( defined($opt_w) && ( $iname eq '_mma.warpgroup' or $iname eq '_mma' ) );
     $g_ins{$iname}++; # insert into g_ins
     # make mask
-    $m = substr($str, 0, 47);
+    $m = substr($str, 0, 59);
     my @tmp = map { hex $_; } split /\s+/, $m;
     # calc bitlen
     my $blen = bcnt(\@tmp);
@@ -480,7 +480,6 @@ multimem.red multimem.ld_reduce cp.reduce
 my %gn_tabs = (
 # 'istypep' => [ .texref , .samplerref, surfref ],
  'pmevent' => 'tab282E1E0',
- 'tcgen05.fence' => 'tab282EB00',
  'tensormap.replace' => 'tab282F3E0',
 );
 
@@ -505,6 +504,7 @@ my %gk_tabs = (
   2 * 8 + 3 => 'tab282F900', # .collector::b
   2 * 8 + 4 => 'tab282F8E0', # scale_vectorsize
   2 * 8 + 5 => 'tab282F8B0', # test    byte ptr [r12+2], 20h
+  2 * 8 + 7 => 'tab282F890',
   3 * 8 + 0 => 'sat',
   3 * 8 + 1 => 'cc',
   3 * 8 + 2 => 'shiftamt',
@@ -526,7 +526,6 @@ my %gk_tabs = (
   6 * 8 + 2 => 'vec',
   6 * 8 + 3 => 'tab282E760', # geom
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
-  6 * 8 + 5 => 'b1024',      # ? oficially only for tensormap.replace
   6 * 8 + 7 => 'tab282E620', # cta_group
   7 * 8 + 0 => 'tab282E600', # multicast for tcgen05.cp
   7 * 8 + 1 => 'tab282E5E0', # src_fmt/dst_fmt for tcgen05.cp & ldmatrix
@@ -534,6 +533,7 @@ my %gk_tabs = (
   7 * 8 + 3 => 'multicast',  # test    byte ptr [r12+7], 8
   7 * 8 + 4 => 'multicast_cluster',  # tcgen05.commit & cp.async.bulk.tensor
   7 * 8 + 5 => 'tab282E680', # test    byte ptr [rdx+7], 20h
+  7 * 8 + 6 => 'tab282E660', # test    byte ptr [rdx+7], 40
   8 * 8 + 0 => 'tab282E520', # .completion_mechanism
   8 * 8 + 3 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
   8 * 8 + 4 => 'squery',     # common for txq & suq
@@ -580,6 +580,11 @@ my %gk_tabs = (
  15 * 8 + 5 => 'tab282F460', # launch_dependents
  15 * 8 + 6 => 'tab282F4A0', # get_first_ctaid{::dimension}
  15 * 8 + 7 => 'tab282F480',
+ 16 * 8 + 0 => 'tab282F440', # test    byte ptr [r14+10h], 1
+ 16 * 8 + 2 => 'b1024',
+ 16 * 8 + 5 => 'tab282E2C0', # test    byte ptr [r12+10h], 20h
+ 16 * 8 + 6 => 'tab282E280', # test    byte ptr [r12+10h], 40h
+ 16 * 8 + 7 => 'cp_mask',
 );
 
 use constant TabsDir => 'tabs/';
@@ -707,10 +712,20 @@ sub v_tabs
   }
 }
 
+# collect used tables
+sub collect_used_attrs
+{
+  my %res;
+  foreach my $t ( values %gk_tabs ) { $res{$t}++; }
+  \%res;
+}
+
 # collect uniq attributes from all tables
 sub collect_attrs
 {
   my($str, $dh, %attrs);
+  my $ktabs;
+  $ktabs = collect_used_attrs() if defined($opt_k);
   opendir($dh, TabsDir) or die("cannot open tabs sub-dir, error $!");
   while($str = readdir($dh)) {
     next if ( $str eq '.' || $str eq '..' );
@@ -719,6 +734,8 @@ sub collect_attrs
       next;
     }
     $str = $1;
+    # skip known tables
+    next if ( defined($ktabs) && exists $ktabs->{$str} );
     # skip strange .1t
     next if ( $str eq 'tab282F780' );
     my $ar = get_trows($str);
@@ -891,7 +908,7 @@ if ( defined $opt_L ) {
 }
 # build neg known mask
 if ( defined $opt_k ) {
-  my @k = ( 0 ) x 16;
+  my @k = ( 0 ) x (MaskSize + 1);
   foreach my $kt ( keys %gk_tabs ) {
     my $idx = $kt >> 3;
     my $mask = 1 << ($kt & 0x7);
@@ -907,7 +924,7 @@ if ( defined $opt_k ) {
   dump_mask(\@kn);
   $gk_neg = \@kn;
   # union with $g_total_mask
-  my @still_unk = ( 0 ) x 16;
+  my @still_unk = ( 0 ) x (MaskSize + 1);
   for my $i ( 0 .. MaskSize ) { $still_unk[$i] = $g_total_mask->[$i] & $kn[$i]; }
   printf("unknown mask:  ");
   dump_mask(\@still_unk);

@@ -1,3 +1,0 @@
-
-::before_thread_sync 
-::after_thread_sync 
