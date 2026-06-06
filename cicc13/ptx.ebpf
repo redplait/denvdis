@@ -1,0 +1,3020 @@
+
+tab282F560 = [ ".b1" | ".b2" | ".o4" | ".b8" | ".b16" | ".b32" | ".b64" | ".o128" | ".u2" | ".u4" | ".u8" | ".h8k4" | ".u16" | ".u16x2" | ".u32" | ".u64" | ".s2" | ".s4" | ".s8" | ".f8k4" | ".s16" | ".s16x2" | ".s32" | ".s64" | ".e4m3" | ".e5m2" | ".e3m4" | ".e2m3" | ".e3m2" | ".e0m3" | ".e2m1" | ".ue8m0" | ".ue4m3" | ".s2m6" | ".e2m1x2" | ".e0m3x2" | ".e4m3x2" | ".e2m3x2" | ".e3m2x2" | ".e5m2x2" | ".e3m4x2" | ".ue8m0x2" | ".ue5m3x2" | ".s2m6x2" | ".e4m3x4" | ".e5m2x4" | ".e3m4x4" | ".e2m3x4" | ".e3m2x4" | ".e2m1x4" | ".e0m3x4" | ".ue8m0x4" | ".f16" | ".f32" | ".f16x2" | ".s32k2" | ".f64" | ".tf32" | ".bf16" | ".bf16x2" ]
+
+cc = [ ".cc" ]
+
+mad.fused.hi = [ tab282F560 | cc ] ; mad.fused.hi	000U	I32
+
+madc.fused.hi = [ tab282F560 | cc ] ; madc.fused.hi	000U	I32
+
+approx = [ ".approx" ]
+
+tab282E820 = [ ".rn" | ".rna" | ".rm" | ".rp" | ".rz" | ".rs" | ".rni" | ".rmi" | ".rpi" | ".rzi" ]
+
+tanh = [ tab282F560 | approx | tab282E820 ] ; tanh	00	F16
+
+tanh = [ tab282F560 | approx ] ; tanh	00	F32
+
+tanh = [ tab282F560 | approx | tab282E820 ] ; tanh	00	H32
+
+tanh = [ tab282F560 | approx ] ; tanh	00	E16
+
+tanh = [ tab282F560 | approx ] ; tanh	00	E32
+
+tanh = [ tab282F560 | approx | tab282E820 ] ; tanh	00	F16
+
+tanh = [ tab282F560 | approx ] ; tanh	00	F32
+
+tanh = [ tab282F560 | approx | tab282E820 ] ; tanh	00	H32
+
+ftz = [ ".ftz" ]
+
+ex2 = [ tab282F560 | approx | ftz | tab282E820 ] ; ex2	00	F16
+
+ex2 = [ tab282F560 | approx | ftz | tab282E820 ] ; ex2	00	H32
+
+ex2 = [ tab282F560 | approx | ftz ] ; ex2	00	F32
+
+ex2 = [ tab282F560 | approx | ftz ] ; ex2	00	E16
+
+ex2 = [ tab282F560 | approx | ftz ] ; ex2	00	E32
+
+ex2 = [ tab282F560 | approx | ftz | tab282E820 ] ; ex2	00	F16
+
+ex2 = [ tab282F560 | approx | ftz | tab282E820 ] ; ex2	00	H32
+
+p2r = [ tab282F560 ] ; p2r	uQC	B32
+
+p2r = [ tab282F560 ] ; p2r	uQCu	B32
+
+r2p = [ tab282F560 ] ; r2p	QuC	B32
+
+tab282EC40 = [ ".cta" | ".gl" | ".gpu" | ".sys" | ".cluster" ]
+
+tab282E960 = [ ".ca" | ".cg" | ".cs" | ".lu" | ".cv" | ".wb" | ".wt" | ".inv" | ".invall" ]
+
+tab282E900 = [ ".weak" | ".relaxed" | ".release" | ".release::ordered" | ".acquire" | ".acq_rel" | ".sc" | ".volatile" ]
+
+mmio = [ ".mmio" ]
+
+tab282EC20 = [ ".L1" | ".L2" | ".tensormap" ]
+
+tab282EB80 = [ ".L2::evict_first" | ".L2::evict_normal" | ".L2::evict_last" | ".L2::evict_unchanged" | ".L2::no_allocate" | ".L1::evict_first" | ".L1::evict_normal" | ".L1::evict_last" | ".L1::evict_unchanged" | ".L1::no_allocate" ]
+
+tab282EB60 = [ ".64B" | ".128B" | ".256B" ]
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | mmio | tab282EC20 | tab282EB80 | tab282EC40 | tab282EB60 ] ; ld	0M	F
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | mmio | tab282EC20 | tab282EB80 | tab282EC40 | tab282EB60 ] ; ld	0M	I[8|16|32|64]
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | mmio | tab282EC20 | tab282EB80 | tab282EC40 | tab282EB60 ] ; ld	0M	B[8|16|32|64]
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | tab282EC20 | tab282EB80 | tab282EC40 | tab282EB60 ] ; ld	0M	B128
+
+tab282EB40 = [ ".L2.64B" | ".L2.128B" | ".L2.256B" ]
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 | tab282EB40 ] ; ld	0M	B128
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 | tab282EB40 ] ; ld	0MU	B128
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | mmio | tab282EB80 | tab282EC40 | tab282EB40 ] ; ld	0M	F
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | mmio | tab282EB80 | tab282EC40 | tab282EB40 ] ; ld	0M	I[8|16|32|64]
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | mmio | tab282EB80 | tab282EC40 | tab282EB40 ] ; ld	0M	B[8|16|32|64]
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 | tab282EB40 ] ; ld	0MU	F
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 | tab282EB40 ] ; ld	0MU	I[8|16|32|64]
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 | tab282EB40 ] ; ld	0MU	B[8|16|32|64]
+
+desc = [ ".desc" ]
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | tab282EC20 | tab282EB80 | tab282EC40 | tab282EB60 | desc ] ; ld	0MU	F
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | tab282EC20 | tab282EB80 | tab282EC40 | tab282EB60 | desc ] ; ld	0MU	I[8|16|32|64]
+
+ld = [ tab282F560 | tab282EC40 | tab282E960 | tab282E900 | tab282EC20 | tab282EB80 | tab282EC40 | tab282EB60 | desc ] ; ld	0MU	B[8|16|32|64]
+
+tab282F510 = [ ".alias" | ".async" ]
+
+st = [ tab282EC40 | tab282E960 | tab282E900 | mmio | tab282EB80 | tab282EC40 | tab282F510 ] ; st	M0	F
+
+st = [ tab282EC40 | tab282E960 | tab282E900 | mmio | tab282EB80 | tab282EC40 | tab282F510 ] ; st	M0	I[8|16|32|64]
+
+st = [ tab282EC40 | tab282E960 | tab282E900 | mmio | tab282EB80 | tab282EC40 | tab282F510 ] ; st	M0	B[8|16|32|64]
+
+st = [ tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 ] ; st	M0	B128
+
+st = [ tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 ] ; st	M0U	B128
+
+st = [ tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 ] ; st	M0U	F
+
+st = [ tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 ] ; st	M0U	I[8|16|32|64]
+
+st = [ tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 ] ; st	M0U	B[8|16|32|64]
+
+st = [ tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 | desc ] ; st	M0U	F
+
+st = [ tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 | desc ] ; st	M0U	I[8|16|32|64]
+
+st = [ tab282EC40 | tab282E960 | tab282E900 | tab282EB80 | tab282EC40 | desc ] ; st	M0U	B[8|16|32|64]
+
+cachepolicy = [ tab282EC40 | tab282EC20 | tab282EB80 ] ; cachepolicy	M	
+
+relu = [ ".relu" ]
+
+satfinite = [ ".satfinite" ]
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	01	F16F32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	011	H32F32
+
+cvt = [ tab282F560 | relu | ftz | satfinite | tab282E820 ] ; cvt	01	E16F32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	011	E32F32
+
+cvt = [ tab282F560 | ftz | tab282E820 ] ; cvt	01	F32E16
+
+sat = [ ".sat" ]
+
+cvt = [ tab282F560 | ftz | sat | tab282E820 ] ; cvt	01	F[16|32|64]F[16|32|64]
+
+cvt = [ tab282F560 | ftz | sat | tab282E820 ] ; cvt	01	F[16|32|64]I[8|16|32|64]
+
+cvt = [ tab282F560 | ftz | sat ] ; cvt	01	I[8|16|32|64]F[16|32|64]
+
+tab282DFE0 = [ ".b1" | ".b2" | ".b4" | ".b8" | ".b16" | ".b32" | ".b64" | ".o128" | ".u2" | ".u4" | ".u8" | ".h8k4" | ".u16" | ".u16x2" | ".u32" | ".u64" | ".s2" | ".s4" | ".s8" | ".f8k4" | ".s16" | ".s16x2" | ".s32" | ".s64" | ".e4m3" | ".e5m2" | ".e3m4" | ".e2m3" | ".e3m2" | ".ue8m0" | ".ue4m3" | ".e0m3" | ".e2m1" | ".s2m6" | ".e0m3x2" | ".e2m1x2" | ".e2m3x2" | ".e3m2x2" | ".e4m3x2" | ".e5m2x2" | ".e3m4x2" | ".ue8m0x2" | ".ue5m3x2" | ".s2m6x2" | ".e4m3x4" | ".e5m2x4" | ".e3m4x4" | ".e2m3x4" | ".e3m2x4" | ".e0m3x4" | ".e2m1x4" | ".ue8m0x4" | ".f16" | ".bf16" | ".bf16x2" | ".tf32" | ".f16x2" | ".s32k2" | ".f32" | ".f64" | ".pred" ]
+
+cvt = [ tab282F560 | sat | tab282DFE0 ] ; cvt	01	I[8|16|32|64]I[8|16|32|64]
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	c11	Q16F32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	c1	Q16H32
+
+cvt = [ tab282F560 | relu | tab282E820 ] ; cvt	0c	H32Q16
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	d1	T32F32
+
+cvt = [ tab282F560 ] ; cvt	01	E16E16
+
+cvt = [ tab282F560 | tab282E820 ] ; cvt	01	F[16|64]E16
+
+cvt = [ tab282F560 | tab282E820 ] ; cvt	01	E16F[16|64]
+
+cvt = [ tab282F560 | tab282E820 ] ; cvt	01	E16I[8|16|32|64]
+
+cvt = [ tab282F560 ] ; cvt	01	I[8|16|32|64]E16
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	b11	R8F32
+
+cvt = [ tab282F560 | relu | tab282E820 ] ; cvt	0b	H32R8
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	01	E32Q16
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	01	Q16E32
+
+tab282F890 = [ ".scaled::n1::ue8m0" | ".scaled::n2::ue8m0" ]
+
+cvt = [ tab282F560 | relu | satfinite | tab282F890 | tab282E820 ] ; cvt	011x	Q16F32
+
+cvt = [ tab282F560 | relu | satfinite | tab282F890 | tab282E820 ] ; cvt	01x	E32Q16
+
+cvt = [ tab282F560 | relu | satfinite | tab282F890 | tab282E820 ] ; cvt	01x	Q16E32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	011d	H32F32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	011d	E32F32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	dfd	Q32F32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	cfd	R16F32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	b1	R8H32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	bd	R8E32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	01	F16F32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	011	H32F32
+
+cvt = [ tab282F560 | relu | ftz | satfinite | tab282E820 ] ; cvt	01	E16F32
+
+cvt = [ tab282F560 | relu | satfinite | tab282E820 ] ; cvt	011	E32F32
+
+cvt = [ tab282F560 | ftz | tab282E820 ] ; cvt	01	F32E16
+
+sync = [ ".sync" ]
+
+aligned = [ ".aligned" ]
+
+tab282ECE0 = [ ".m8n8k4" | ".m8n8k16" | ".m8n8k32" | ".m16n16k8" | ".m16n16k16" | ".m32n8k16" | ".m8n32k16" | ".m16n8k8" | ".m16n8k16" | ".m16n8k4" | ".m8n8k128" | ".m8n8" | ".m8n16" | ".m8n32" | ".m8n64" | ".m16n8" | ".m16n16" | ".m16n8k32" | ".m8n8k64" | ".m16n8k64" | ".m16n8k128" | ".m16n8k256" | ".m64n8k32" | ".m64n16k32" | ".m64n24k32" | ".m64n32k32" | ".m64n40k32" | ".m64n48k32" | ".m64n56k32" | ".m64n64k32" | ".m64n72k32" | ".m64n80k32" | ".m64n88k32" | ".m64n96k32" | ".m64n104k32" | ".m64n112k32" | ".m64n120k32" | ".m64n128k32" | ".m64n136k32" | ".m64n144k32" | ".m64n152k32" | ".m64n160k32" | ".m64n168k32" | ".m64n176k32" | ".m64n184k32" | ".m64n192k32" | ".m64n200k32" | ".m64n208k32" | ".m64n216k32" | ".m64n224k32" | ".m64n232k32" | ".m64n240k32" | ".m64n248k32" | ".m64n256k32" | ".m64n8k16" | ".m64n16k16" | ".m64n24k16" | ".m64n32k16" | ".m64n40k16" | ".m64n48k16" | ".m64n56k16" | ".m64n64k16" | ".m64n72k16" | ".m64n80k16" | ".m64n88k16" | ".m64n96k16" | ".m64n104k16" | ".m64n112k16" | ".m64n120k16" | ".m64n128k16" | ".m64n136k16" | ".m64n144k16" | ".m64n152k16" | ".m64n160k16" | ".m64n168k16" | ".m64n176k16" | ".m64n184k16" | ".m64n192k16" | ".m64n200k16" | ".m64n208k16" | ".m64n216k16" | ".m64n224k16" | ".m64n232k16" | ".m64n240k16" | ".m64n248k16" | ".m64n256k16" | ".m64n8k8" | ".m64n16k8" | ".m64n24k8" | ".m64n32k8" | ".m64n40k8" | ".m64n48k8" | ".m64n56k8" | ".m64n64k8" | ".m64n72k8" | ".m64n80k8" | ".m64n88k8" | ".m64n96k8" | ".m64n104k8" | ".m64n112k8" | ".m64n120k8" | ".m64n128k8" | ".m64n136k8" | ".m64n144k8" | ".m64n152k8" | ".m64n160k8" | ".m64n168k8" | ".m64n176k8" | ".m64n184k8" | ".m64n192k8" | ".m64n200k8" | ".m64n208k8" | ".m64n216k8" | ".m64n224k8" | ".m64n232k8" | ".m64n240k8" | ".m64n248k8" | ".m64n256k8" | ".m64n8k64" | ".m64n16k64" | ".m64n24k64" | ".m64n32k64" | ".m64n40k64" | ".m64n48k64" | ".m64n56k64" | ".m64n64k64" | ".m64n72k64" | ".m64n80k64" | ".m64n88k64" | ".m64n96k64" | ".m64n104k64" | ".m64n112k64" | ".m64n120k64" | ".m64n128k64" | ".m64n136k64" | ".m64n144k64" | ".m64n152k64" | ".m64n160k64" | ".m64n168k64" | ".m64n176k64" | ".m64n184k64" | ".m64n192k64" | ".m64n200k64" | ".m64n208k64" | ".m64n216k64" | ".m64n224k64" | ".m64n232k64" | ".m64n240k64" | ".m64n248k64" | ".m64n256k64" | ".m64n8k256" | ".m64n16k256" | ".m64n24k256" | ".m64n32k256" | ".m64n48k256" | ".m64n64k256" | ".m64n80k256" | ".m64n96k256" | ".m64n112k256" | ".m64n128k256" | ".m64n144k256" | ".m64n160k256" | ".m64n176k256" | ".m64n192k256" | ".m64n208k256" | ".m64n224k256" | ".m64n240k256" | ".m64n256k256" | ".4x256b" | ".16x32bx2" | ".16x64b" | ".16x128b" | ".16x256b" | ".32x32b" | ".32x128b" | ".64x128b" | ".128x128b" | ".128x256b" ]
+
+mma = [ tab282F560 | sync | aligned | tab282ECE0 ] ; mma	hhhhdC	F16F16F16F16
+
+mma = [ tab282F560 | sync | aligned | tab282ECE0 ] ; mma	dhhddC	F32F16F16F32
+
+mma = [ tab282F560 | sync | aligned | tab282ECE0 ] ; mma	dddddC	F32F32
+
+mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 ] ; mma	sddsdC	I32I8I8I32
+
+mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 ] ; mma	sddsdC	I32I32
+
+cp_mask = [ ".cp_mask" ]
+
+mma = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	hhhh	F16F16F16F16
+
+mma = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fhhh	F32F16F16F16
+
+mma = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fhhf	F32F16F16F32
+
+mma = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	VVVV	F16F16F16F32
+
+tab282FC80 = [ "<" | "<=" | ">" | ">=" | "==" | "!=" | ".or" | "||" | ".and" | "&&" | ".xor" | ".add" | ".sub" | "<<" | ">>" | "*" | "/" | "%" | "!" | "~" | ".min" | ".max" | ".maxabs" | ".inc" | ".dec" | ".popc" | ".cas" | ".exch" | ".safeadd" ]
+
+mma = [ tab282FC80 | tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	sdds	I32I32
+
+mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; mma	sdds	I32I8I8I32
+
+mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; mma	sdds	I32I32
+
+mma = [ tab282F560 | tab282E820 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	0123	F64F64F64F64
+
+mma = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	dddd	F32F32
+
+tab282FA00 = [ ".kind::mx8" | ".kind::int8" | ".kind::fp8" | ".kind::fp4" | ".kind::fp16" | ".kind::mxint8" | ".kind::i8" | ".kind::ti16" | ".kind::f8f6f4" | ".kind::mxf8f6f4" | ".kind::nvf4" | ".kind::mxf4" | ".kind::tf32" | ".kind::f16" | ".kind::mxf4nvf4" ]
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddf	F32Q8Q8F32
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	hddh	F16Q8Q8F16
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdC	F32Q8Q8F32
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	hddh	F16R4Q8F16
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddf	F32R4Q8F32
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	hddh	F16Q8R4F16
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddf	F32Q8R4F32
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	hddh	F16R4R4F16
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddf	F32R4R4F32
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	hddhdC	F16R4Q8F16
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdC	F32R4Q8F32
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	hddhdC	F16Q8R4F16
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdC	F32Q8R4F32
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	hddhdC	F16R4R4F16
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdC	F32R4R4F32
+
+mma = [ tab282F560 | tab282FA00 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	hddhdC	F16Q8Q8F16
+
+tab282F2A0 = [ ".fc" | ".sp::ordered_metadata" | ".fc::2gb4" ]
+
+tab282F8E0 = [ ".scale_vec::1X" | ".scale_vec::2X" | ".scale_vec::4X" ]
+
+mma = [ tab282F560 | tab282F2A0 | tab282FA00 | tab282F8E0 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdxdx	F32R4R4F32Q8
+
+mma = [ tab282F560 | tab282F2A0 | tab282FA00 | tab282F8E0 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdCdxdx	F32R4R4F32Q8
+
+mma = [ tab282F560 | tab282F2A0 | tab282FA00 | tab282F8E0 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdxdx	F32Q8Q8F32Q8
+
+mma = [ tab282F560 | tab282F2A0 | tab282FA00 | tab282F8E0 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdxdx	F32R4Q8F32Q8
+
+mma = [ tab282F560 | tab282F2A0 | tab282FA00 | tab282F8E0 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdxdx	F32Q8R4F32Q8
+
+mma = [ tab282F560 | tab282F2A0 | tab282FA00 | tab282F8E0 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdCdxdx	F32Q8Q8F32Q8
+
+mma = [ tab282F560 | tab282F2A0 | tab282FA00 | tab282F8E0 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdCdxdx	F32R4Q8F32Q8
+
+mma = [ tab282F560 | tab282F2A0 | tab282FA00 | tab282F8E0 | sync | aligned | tab282ECE0 | cp_mask ] ; mma	fddfdCdxdx	F32Q8R4F32Q8
+
+mma = [ tab282F560 | sync | aligned | tab282ECE0 ] ; mma	hhhhdC	F16F16F16F16
+
+mma = [ tab282F560 | sync | aligned | tab282ECE0 ] ; mma	dhhddC	F32F16F16F32
+
+mma = [ tab282F560 | sync | aligned | tab282ECE0 ] ; mma	dddddC	F32F32
+
+mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 ] ; mma	sddsdC	I32I8I8I32
+
+mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 ] ; mma	sddsdC	I32I32
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	hhhh	F16F16
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	fhhh	F32F16
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	fhhf	F32F32
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	VVVV	F16F32
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	ssss	I8I8
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	sdds	
+
+_mma = [ tab282FC80 | tab282F560 | tab282ECE0 ] ; _mma	sdds	I32I32
+
+_mma = [ tab282F560 | tab282E820 | tab282ECE0 ] ; _mma	0123	F64F64F64F64
+
+tab282ECA0 = [ ".thread" | ".pair" | ".quad" ]
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 ] ; _mma	hhhhdC	F16F16F16F16
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 ] ; _mma	dhhddC	F32F16F16F32
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 ] ; _mma	dddddC	F32F32
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 ] ; _mma	sddsdC	I32I8I8I32
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 ] ; _mma	sddsdC	I32I32
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 ] ; _mma	sdds	I32I8I8I32
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 ] ; _mma	sdds	I32I32
+
+_mma = [ tab282F560 | tab282ECE0 ] ; _mma	hddh	F16Q8Q8F16
+
+_mma = [ tab282F560 | tab282ECE0 ] ; _mma	fddf	F32Q8Q8F32
+
+_mma = [ tab282F560 | tab282ECE0 | tab282ECA0 ] ; _mma	hddhdC	F16Q8Q8F16
+
+_mma = [ tab282F560 | tab282ECE0 | tab282ECA0 ] ; _mma	fddfdC	F32Q8Q8F32
+
+_mma = [ tab282F560 | tab282ECE0 | cp_mask ] ; _mma	hddh	F16R4Q8F16
+
+_mma = [ tab282F560 | tab282ECE0 | cp_mask ] ; _mma	fddf	F32R4Q8F32
+
+_mma = [ tab282F560 | tab282ECE0 | cp_mask ] ; _mma	hddh	F16Q8R4F16
+
+_mma = [ tab282F560 | tab282ECE0 | cp_mask ] ; _mma	fddf	F32Q8R4F32
+
+_mma = [ tab282F560 | tab282ECE0 | cp_mask ] ; _mma	hddh	F16R4R4F16
+
+_mma = [ tab282F560 | tab282ECE0 | cp_mask ] ; _mma	fddf	F32R4R4F32
+
+_mma = [ tab282F560 | tab282ECE0 | tab282ECA0 | cp_mask ] ; _mma	hddhdC	F16R4Q8F16
+
+_mma = [ tab282F560 | tab282ECE0 | tab282ECA0 | cp_mask ] ; _mma	fddfdC	F32R4Q8F32
+
+_mma = [ tab282F560 | tab282ECE0 | tab282ECA0 | cp_mask ] ; _mma	hddhdC	F16Q8R4F16
+
+_mma = [ tab282F560 | tab282ECE0 | tab282ECA0 | cp_mask ] ; _mma	fddfdC	F32Q8R4F32
+
+_mma = [ tab282F560 | tab282ECE0 | tab282ECA0 | cp_mask ] ; _mma	hddhdC	F16R4R4F16
+
+_mma = [ tab282F560 | tab282ECE0 | tab282ECA0 | cp_mask ] ; _mma	fddfdC	F32R4R4F32
+
+_mma = [ tab282F560 | tab282F2A0 | tab282F8E0 | tab282ECE0 | cp_mask ] ; _mma	fddfdxdx	F32R4R4F32Q8
+
+_mma = [ tab282F560 | tab282F2A0 | tab282F8E0 | tab282ECE0 | tab282ECA0 | cp_mask ] ; _mma	fddfdCdxdx	F32R4R4F32Q8
+
+_mma = [ tab282F560 | tab282F2A0 | tab282F8E0 | tab282ECE0 | cp_mask ] ; _mma	fddfdxdx	F32Q8Q8F32Q8
+
+_mma = [ tab282F560 | tab282F2A0 | tab282F8E0 | tab282ECE0 | cp_mask ] ; _mma	fddfdxdx	F32R4Q8F32Q8
+
+_mma = [ tab282F560 | tab282F2A0 | tab282F8E0 | tab282ECE0 | cp_mask ] ; _mma	fddfdxdx	F32Q8R4F32Q8
+
+_mma = [ tab282F560 | tab282F2A0 | tab282F8E0 | tab282ECE0 | cp_mask ] ; _mma	fddfdxdx	F32R4R4F32Q8
+
+_mma = [ tab282F560 | tab282F2A0 | tab282F8E0 | tab282ECE0 | tab282ECA0 | cp_mask ] ; _mma	fddfdCdxdx	F32Q8Q8F32Q8
+
+_mma = [ tab282F560 | tab282F2A0 | tab282F8E0 | tab282ECE0 | tab282ECA0 | cp_mask ] ; _mma	fddfdCdxdx	F32R4Q8F32Q8
+
+_mma = [ tab282F560 | tab282F2A0 | tab282F8E0 | tab282ECE0 | tab282ECA0 | cp_mask ] ; _mma	fddfdCdxdx	F32Q8R4F32Q8
+
+_mma = [ tab282F560 | tab282F2A0 | tab282F8E0 | tab282ECE0 | tab282ECA0 | cp_mask ] ; _mma	fddfdCdxdx	F32R4R4F32Q8
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	hhhh	F16F16
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	fhhh	F32F16
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	fhhf	F32F32
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	VVVV	F16F32
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	ssss	I8I8
+
+_mma = [ tab282F560 | sat | satfinite | tab282ECE0 ] ; _mma	sdds	
+
+_mma = [ tab282FC80 | tab282F560 | tab282ECE0 ] ; _mma	sdds	I32I32
+
+_mma = [ tab282F560 | tab282E820 | tab282ECE0 ] ; _mma	0123	F64F64F64F64
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 ] ; _mma	hhhhdC	F16F16F16F16
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 ] ; _mma	dhhddC	F32F16F16F32
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 ] ; _mma	dddddC	F32F32
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 ] ; _mma	sddsdC	I32I8I8I32
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 ] ; _mma	sddsdC	I32I32
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 ] ; _mma	sdds	I32I8I8I32
+
+_mma = [ tab282F560 | satfinite | tab282ECE0 ] ; _mma	sdds	I32I32
+
+_mma = [ tab282F560 | tab282ECE0 ] ; _mma	hddh	F16Q8Q8F16
+
+_mma = [ tab282F560 | tab282ECE0 ] ; _mma	fddf	F32Q8Q8F32
+
+_mma = [ tab282F560 | tab282ECE0 | tab282ECA0 ] ; _mma	hddhdC	F16Q8Q8F16
+
+_mma = [ tab282F560 | tab282ECE0 | tab282ECA0 ] ; _mma	fddfdC	F32Q8Q8F32
+
+transA = [ ".transA" ]
+
+negA = [ ".negA" ]
+
+negB = [ ".negB" ]
+
+ignoreC = [ ".ignoreC" ]
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUUh	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUf	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUhh	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUhf	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUh	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUf	F32F16F16F32
+
+ignoreC_pred = [ ".ignoreC_pred" ]
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUUhP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUhhP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUhfP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hhUhP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fhUfP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUf	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdf	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUf	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUf	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdf	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUf	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUdfP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fdUfP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUdfP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fdUfP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhdC	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdC	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhdC	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfdC	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhdC	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfdC	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUUhdCP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUhhdCP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUhfdCP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hhUhdCP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fhUfdCP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhdCu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdCu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhdCu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfdCu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhdCu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfdCu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdC	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfdC	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfdC	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdC	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfdC	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfdC	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdCu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfdCu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfdCu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdCu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfdCu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfdCu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUUh	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUUf	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUhh	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUhf	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUh	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUf	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUUhP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUhhP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUhfP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hhUhP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fhUfP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhd	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfd	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhd	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfd	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhd	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfd	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUUhdP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfdP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUhhdP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUhfdP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hhUhdP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fhUfdP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhdu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhdu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfdu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhdu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfdu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUUs	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUds	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sdUs	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sUUsP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sUdsP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sdUsP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUUsu	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUdsu	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sdUsu	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sUUsd	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sUdsd	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sdUsd	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC_pred ] ; _mma.warpgroup	sUUsdP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC_pred ] ; _mma.warpgroup	sUdsdP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC_pred ] ; _mma.warpgroup	sdUsdP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sUUsdu	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sUdsdu	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sdUsdu	I32I8I8I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUUs	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUds	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sdUs	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sUUsP	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sUdsP	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sdUsP	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUUsu	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUdsu	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sdUsu	I32B1B1I32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUUh	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUf	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUhh	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUhf	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUh	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUf	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUUhP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUhhP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUhfP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hhUhP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fhUfP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUf	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdf	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUf	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUf	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdf	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUf	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUdfP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fdUfP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUdfP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fdUfP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhdC	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdC	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhdC	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfdC	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhdC	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfdC	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUUhdCP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUhhdCP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUhfdCP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hhUhdCP	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fhUfdCP	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhdCu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdCu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhdCu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfdCu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhdCu	F16F16F16F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfdCu	F32F16F16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdC	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfdC	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfdC	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdC	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfdC	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfdC	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdCu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfdCu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfdCu	F32E16E16F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdCu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | transA | negA | negB | ignoreC ] ; _mma.warpgroup	fUdfdCu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fdUfdCu	F32T32T32F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUUh	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUUf	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUhh	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUhf	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUh	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUf	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUUhP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUhhP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUhfP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hhUhP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fhUfP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhd	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfd	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhd	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfd	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhd	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfd	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUUhdP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUUfdP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hUhhdP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fUhfdP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	hhUhdP	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC_pred ] ; _mma.warpgroup	fhUfdP	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUUhdu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUUfdu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hUhhdu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fUhfdu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	hhUhdu	F16Q8Q8F16
+
+_mma.warpgroup = [ tab282F560 | tab282ECE0 | tab282ECA0 | negA | negB | ignoreC ] ; _mma.warpgroup	fhUfdu	F32Q8Q8F32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUUs	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUds	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sdUs	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sUUsP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sUdsP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sdUsP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUUsu	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUdsu	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sdUsu	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sUUsd	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sUdsd	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sdUsd	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC_pred ] ; _mma.warpgroup	sUUsdP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC_pred ] ; _mma.warpgroup	sUdsdP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC_pred ] ; _mma.warpgroup	sdUsdP	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sUUsdu	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sUdsdu	I32I8I8I32
+
+_mma.warpgroup = [ tab282F560 | satfinite | tab282ECE0 | tab282ECA0 | ignoreC ] ; _mma.warpgroup	sdUsdu	I32I8I8I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUUs	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUds	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sdUs	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sUUsP	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sUdsP	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC_pred ] ; _mma.warpgroup	sdUsP	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUUsu	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sUdsu	I32B1B1I32
+
+_mma.warpgroup = [ tab282FC80 | tab282F560 | tab282ECE0 | ignoreC ] ; _mma.warpgroup	sdUsu	I32B1B1I32
+_warpgroup.arrive		F32F16F16F32
+_warpgroup.arrive		(null)
+_warpgroup.commit_batch		F32F16F16F32
+_warpgroup.commit_batch		(null)
+_warpgroup.wait		F32F16F16F32
+_warpgroup.wait	u	
+_warpgroup.wait		(null)
+_warpgroup.wait	u	
+
+tab282E6A0 = [ ".im2col" | ".im2col_no_offs" | ".im2col::w" | ".im2col::w::128" | ".im2col_no_offs::w" | ".tile" | ".w128" | ".w" | ".scatter4" | ".gather4" | ".tile::scatter4" | ".tile::gather4" ]
+
+vec = [ ".v2" | ".v4" | ".v8" ]
+
+tab282E720 = [ ".1d" | ".2d" | ".3d" | ".4d" | ".5d" ]
+
+tab282E640 = [ ".cta1" | ".cta2" ]
+
+tab282E620 = [ ".cta_group::1" | ".cta_group::2" ]
+
+tab282E520 = [ ".mbarrier" | ".mbarrier::meet_tx::bytes" | ".mbarrier::complete_tx::bytes" | ".bulk_group" | ".mbarrier::arrive::one" ]
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | tab282E520 ] ; cp.async.bulk.tensor	MMsM	
+
+packed_offsets = [ ".packed_offsets" ]
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | packed_offsets | tab282E520 ] ; cp.async.bulk.tensor	MMsMx	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E520 ] ; cp.async.bulk.tensor	MsM	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | tab282E520 ] ; cp.async.bulk.tensor	MMsMU	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | packed_offsets | tab282E520 ] ; cp.async.bulk.tensor	MMsMxU	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E520 ] ; cp.async.bulk.tensor	MsMU	
+
+multicast_cluster = [ ".multicast::cluster" | ".multicast::cluster::all" | ".multicast::cluster::16b" | ".multicast::cluster::32b" ]
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | multicast_cluster | tab282E520 ] ; cp.async.bulk.tensor	MMsMx	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | packed_offsets | multicast_cluster | tab282E520 ] ; cp.async.bulk.tensor	MMsMxx	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | multicast_cluster | tab282E520 ] ; cp.async.bulk.tensor	MMsMxU	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | packed_offsets | multicast_cluster | tab282E520 ] ; cp.async.bulk.tensor	MMsMxxU	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | tab282E520 ] ; cp.async.bulk.tensor	MMsM	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | packed_offsets | tab282E520 ] ; cp.async.bulk.tensor	MMsMx	
+
+multicast = [ ".multicast" ]
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | multicast | tab282E520 ] ; cp.async.bulk.tensor	MMsMx	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | packed_offsets | multicast | tab282E520 ] ; cp.async.bulk.tensor	MMsMxx	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E520 ] ; cp.async.bulk.tensor	MsM	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | tab282E520 ] ; cp.async.bulk.tensor	MMsMU	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | tab282E620 | packed_offsets | tab282E520 ] ; cp.async.bulk.tensor	MMsMxU	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | multicast | tab282E520 ] ; cp.async.bulk.tensor	MMsMxU	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E640 | packed_offsets | multicast | tab282E520 ] ; cp.async.bulk.tensor	MMsMxxU	
+
+cp.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E520 ] ; cp.async.bulk.tensor	MsMU	
+
+tab282F3A0 = [ ".and" | ".xor" | ".popc" ]
+
+cp.reduce.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E520 | tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsM	
+
+cp.reduce.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E520 | tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsMU	
+
+cp.reduce.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E520 | tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsM	
+
+cp.reduce.async.bulk.tensor = [ tab282E6A0 | vec | tab282E720 | tab282E520 | tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsMU	
+
+tab282E550 = [ ".asc::b32" | ".asc::b64" ]
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | tab282E550 | tab282E520 ] ; cp.async.bulk	MMuM	
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | tab282E550 | tab282E520 ] ; cp.async.bulk	MMuMU	
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | tab282E550 | tab282E520 ] ; cp.async.bulk	MMu	
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | tab282E550 | tab282E520 ] ; cp.async.bulk	MMuU	
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | multicast_cluster | tab282E550 | tab282E520 ] ; cp.async.bulk	MMuMx	
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | multicast_cluster | tab282E550 | tab282E520 ] ; cp.async.bulk	MMuMxU	
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | tab282E550 | tab282E520 | cp_mask ] ; cp.async.bulk	MMux	
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | tab282E550 | tab282E520 | cp_mask ] ; cp.async.bulk	MMuUx	
+
+cp.async.bulk = [ tab282E6A0 | multicast | tab282E520 ] ; cp.async.bulk	MMuMx	
+
+cp.async.bulk = [ tab282E6A0 | multicast | tab282E520 ] ; cp.async.bulk	MMuMxU	
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | tab282E550 | tab282E520 ] ; cp.async.bulk	MMuM	
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | tab282E550 | tab282E520 ] ; cp.async.bulk	MMuMU	
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | tab282E550 | tab282E520 ] ; cp.async.bulk	MMu	
+
+cp.async.bulk = [ tab282E6A0 | tab282EC40 | tab282E550 | tab282E520 ] ; cp.async.bulk	MMuU	
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 ] ; cp.reduce.async.bulk	MMuM	I[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282F3A0 ] ; cp.reduce.async.bulk	MMuM	B[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 ] ; cp.reduce.async.bulk	MMu	I[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282F3A0 ] ; cp.reduce.async.bulk	MMu	B[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMu	F[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 ] ; cp.reduce.async.bulk	MMuU	I[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282F3A0 ] ; cp.reduce.async.bulk	MMuU	B[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMuU	F[32|64]
+
+noftz = [ ".noftz" ]
+
+cp.reduce.async.bulk = [ noftz | tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMu	F16
+
+cp.reduce.async.bulk = [ noftz | tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMu	E16
+
+cp.reduce.async.bulk = [ noftz | tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMuU	F16
+
+cp.reduce.async.bulk = [ noftz | tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMuU	E16
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 ] ; cp.reduce.async.bulk	MMuM	I[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282F3A0 ] ; cp.reduce.async.bulk	MMuM	B[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 ] ; cp.reduce.async.bulk	MMu	I[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282F3A0 ] ; cp.reduce.async.bulk	MMu	B[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMu	F[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 ] ; cp.reduce.async.bulk	MMuU	I[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282F3A0 ] ; cp.reduce.async.bulk	MMuU	B[32|64]
+
+cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMuU	F[32|64]
+
+cp.reduce.async.bulk = [ noftz | tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMu	F16
+
+cp.reduce.async.bulk = [ noftz | tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMu	E16
+
+cp.reduce.async.bulk = [ noftz | tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMuU	F16
+
+cp.reduce.async.bulk = [ noftz | tab282E6A0 | tab282E520 | tab282FC80 ] ; cp.reduce.async.bulk	MMuU	E16
+cp.async.bulk.commit_group		E16
+cp.async.bulk.commit_group		(null)
+
+tab282F480 = [ ".read" | ".write" ]
+
+cp.async.bulk.wait_group = [ tab282F480 ] ; cp.async.bulk.wait_group	C	
+
+cp.async.bulk.wait_group = [ tab282F480 ] ; cp.async.bulk.wait_group	C	
+
+cp.async.bulk.prefetch = [ tab282EC40 | tab282EC20 ] ; cp.async.bulk.prefetch	MuU	
+
+cp.async.bulk.prefetch = [ tab282EC40 | tab282EC20 | tab282EB80 ] ; cp.async.bulk.prefetch	Mu	
+
+cp.async.bulk.prefetch = [ tab282EC40 | tab282EC20 ] ; cp.async.bulk.prefetch	MuU	
+
+cp.async.bulk.prefetch = [ tab282EC40 | tab282EC20 | tab282EB80 ] ; cp.async.bulk.prefetch	Mu	
+
+cp.async.bulk.prefetch.tensor = [ tab282EC40 | tab282EC20 | vec | tab282E720 ] ; cp.async.bulk.prefetch.tensor	MsxU	
+
+cp.async.bulk.prefetch.tensor = [ tab282EC40 | tab282EC20 | tab282EB80 | vec | tab282E720 ] ; cp.async.bulk.prefetch.tensor	Msx	
+
+cp.async.bulk.prefetch.tensor = [ tab282EC40 | tab282EC20 | vec | tab282E720 ] ; cp.async.bulk.prefetch.tensor	MsU	
+
+cp.async.bulk.prefetch.tensor = [ tab282EC40 | tab282EC20 | tab282EB80 | vec | tab282E720 ] ; cp.async.bulk.prefetch.tensor	Ms	
+
+cp.async.bulk.prefetch.tensor = [ tab282EC40 | tab282EC20 | vec | tab282E720 ] ; cp.async.bulk.prefetch.tensor	MsxU	
+
+cp.async.bulk.prefetch.tensor = [ tab282EC40 | tab282EC20 | tab282EB80 | vec | tab282E720 ] ; cp.async.bulk.prefetch.tensor	Msx	
+
+cp.async.bulk.prefetch.tensor = [ tab282EC40 | tab282EC20 | vec | tab282E720 ] ; cp.async.bulk.prefetch.tensor	MsU	
+
+cp.async.bulk.prefetch.tensor = [ tab282EC40 | tab282EC20 | tab282EB80 | vec | tab282E720 ] ; cp.async.bulk.prefetch.tensor	Ms	
+
+st.async = [ tab282EC40 | tab282E900 | tab282EC40 | tab282E520 ] ; st.async	M0M	I[32|64]
+
+st.async = [ tab282EC40 | tab282E900 | tab282EC40 | tab282E520 ] ; st.async	M0M	B[32|64]
+
+st.async = [ tab282EC40 | tab282E900 | tab282EC40 | tab282E520 ] ; st.async	M0M	F[32|64]
+
+b1024 = [ ".b1024" ]
+
+st.async = [ tab282EC40 | tab282E900 | mmio | tab282EC40 | tab282E520 | b1024 ] ; st.async	M0	I[8|16|32|64]
+
+st.async = [ tab282EC40 | tab282E900 | mmio | tab282EC40 | tab282E520 | b1024 ] ; st.async	M0	B[8|16|32|64]
+
+st.async = [ tab282EC40 | tab282E900 | mmio | tab282EC40 | tab282E520 | b1024 ] ; st.async	M0	F[32|64]
+
+st.async = [ tab282EC40 | tab282E900 | tab282EC40 | tab282E520 ] ; st.async	M0M	I[32|64]
+
+st.async = [ tab282EC40 | tab282E900 | tab282EC40 | tab282E520 ] ; st.async	M0M	B[32|64]
+
+st.async = [ tab282EC40 | tab282E900 | tab282EC40 | tab282E520 ] ; st.async	M0M	F[32|64]
+
+red.async = [ tab282EC40 | tab282E900 | tab282EC40 | tab282E520 ] ; red.async	M0M	I[32|64]
+
+red.async = [ tab282EC40 | tab282E900 | tab282EC40 | tab282E520 | tab282F3A0 ] ; red.async	M0M	B[32|64]
+
+red.async = [ tab282EC40 | tab282E900 | mmio | tab282EC40 | tab282E520 | b1024 ] ; red.async	M0	I[32|64]
+
+red.async = [ tab282EC40 | tab282E900 | mmio | tab282EC40 | tab282E520 | tab282F3A0 | b1024 ] ; red.async	M0	B[32|64]
+
+red.async = [ tab282EC40 | tab282E900 | tab282EC40 | tab282E520 ] ; red.async	M0M	I[32|64]
+
+red.async = [ tab282EC40 | tab282E900 | tab282EC40 | tab282E520 | tab282F3A0 ] ; red.async	M0M	B[32|64]
+
+cp.async = [ tab282E6A0 | tab282E960 | tab282EB40 | b1024 ] ; cp.async	MMCu	
+
+cp.async = [ tab282E6A0 | tab282E960 | tab282EB40 | b1024 ] ; cp.async	MMC	
+
+cp.async = [ tab282E6A0 | tab282E960 | tab282EB40 | b1024 ] ; cp.async	MMCP	
+
+cp.async = [ tab282E6A0 | tab282E960 | tab282EB40 | b1024 ] ; cp.async	MMCuU	
+
+cp.async = [ tab282E6A0 | tab282E960 | tab282EB40 | b1024 ] ; cp.async	MMCU	
+
+cp.async = [ tab282E6A0 | tab282E960 | tab282EB40 | b1024 ] ; cp.async	MMCPU	
+
+cp.async = [ tab282E6A0 | tab282E960 | desc ] ; cp.async	MMCuU	
+
+cp.async = [ tab282E6A0 | tab282E960 | desc ] ; cp.async	MMCU	
+
+trans = [ ".trans" ]
+
+tab282F7A0 = [ ".x1" | ".x2" | ".x4" | ".x8" | ".x16" | ".x32" | ".x64" | ".x128" ]
+
+_ldsm = [ tab282F560 | tab282ECE0 | trans | tab282F7A0 ] ; _ldsm	dM	B[8|16]
+
+_ldsm = [ tab282F560 | tab282ECE0 | tab282F7A0 ] ; _ldsm	dM	I8I4
+
+_ldsm = [ tab282F560 | tab282ECE0 | tab282F7A0 ] ; _ldsm	dM	I4I2
+
+tab282E5E0 = [ ".b8x16" | ".b4x16_p64" | ".b6x16_p32" ]
+
+_ldsm = [ tab282F560 | tab282E5E0 | tab282ECE0 | trans | tab282F7A0 | b1024 ] ; _ldsm	dM	
+
+_ldsm = [ tab282F560 | tab282ECE0 | trans | tab282F7A0 ] ; _ldsm	dM	B[8|16]
+
+_ldsm = [ tab282F560 | tab282ECE0 | tab282F7A0 ] ; _ldsm	dM	I8I4
+
+_ldsm = [ tab282F560 | tab282ECE0 | tab282F7A0 ] ; _ldsm	dM	I4I2
+
+_movm = [ tab282F560 | tab282ECE0 | trans ] ; _movm	dd	B16
+
+expand = [ ".expand" ]
+
+_movm = [ tab282F560 | tab282ECE0 | expand ] ; _movm	ed	I8I4
+
+_movm = [ tab282F560 | tab282ECE0 | expand ] ; _movm	ed	I4I2
+
+_movm = [ tab282F560 | tab282ECE0 | trans ] ; _movm	dd	B16
+
+_movm = [ tab282F560 | tab282ECE0 | expand ] ; _movm	ed	I8I4
+
+_movm = [ tab282F560 | tab282ECE0 | expand ] ; _movm	ed	I4I2
+
+scatter = [ tab282F560 | tab282ECA0 ] ; scatter	uuVVVu	B8B8
+
+scatter = [ tab282F560 | tab282ECA0 ] ; scatter	uuVVVu	B8B4
+
+scatter = [ tab282F560 | tab282ECA0 ] ; scatter	uuVVVu	B[8|16]B8
+
+scatter = [ tab282F560 | tab282ECA0 ] ; scatter	uuVVVu	B[8|16]B4
+
+spmetadata = [ tab282F560 | tab282ECA0 ] ; spmetadata	uuCCCu	B[8|16]B4
+
+spmetadata = [ tab282F560 | tab282ECA0 ] ; spmetadata	uuCCCu	B[8|16]B8
+
+tab282F780 = [ ".1t" | ".2t" | ".4t" ]
+
+gather = [ tab282F560 | tab282F780 ] ; gather	uuuuC	B[4|8|16]B[2|4|8]
+
+frd = [ ".frd" ]
+
+genmetadata = [ tab282F560 | frd | tab282F780 ] ; genmetadata	uuuCCu	F16B[2|4|8]
+
+genmetadata = [ tab282F560 | frd | tab282F780 ] ; genmetadata	uuuCCu	E16B[2|4|8]
+
+genmetadata = [ tab282F560 | frd | tab282F780 ] ; genmetadata	uuuCCu	I[4|8]B[2|4|8]
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0	F32
+
+atom = [ tab282F560 | noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0	H32
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0	F64
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; atom	0M0	I[32|64]
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F3A0 | b1024 ] ; atom	0M0	B[32|64]
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; atom	0M00	B[32|64]
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F3A0 | b1024 ] ; atom	0M0	B128
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; atom	0M00	B128
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F3A0 | b1024 ] ; atom	0M0U	B128
+
+atom = [ tab282F560 | noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0	F16
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; atom	0M00	B16
+
+atom = [ tab282F560 | noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0U	H32
+
+atom = [ tab282F560 | noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0U	F16
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0U	F32
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0U	F64
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; atom	0M0U	I[32|64]
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F3A0 | b1024 ] ; atom	0M0U	B[32|64]
+
+atom = [ tab282F560 | noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0	E16
+
+atom = [ tab282F560 | noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0	E32
+
+atom = [ tab282F560 | noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0U	E16
+
+atom = [ tab282F560 | noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; atom	0M0U	E32
+
+atom = [ tab282F560 | noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | desc ] ; atom	0M0U	H32
+
+atom = [ tab282F560 | noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | desc ] ; atom	0M0U	F16
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | desc ] ; atom	0M0U	F32
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | desc ] ; atom	0M0U	F64
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | desc ] ; atom	0M0U	I[32|64]
+
+atom = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F3A0 | desc ] ; atom	0M0U	B[32|64]
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0	F32
+
+red = [ noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0	H32
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0	F64
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; red	M0	I[32|64]
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | tab282F3A0 | b1024 ] ; red	M0	B[32|64]
+
+red = [ noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0	F16
+
+red = [ noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0U	H32
+
+red = [ noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0U	F16
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0U	F32
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0U	F64
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; red	M0U	I[32|64]
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | tab282F3A0 | b1024 ] ; red	M0U	B[32|64]
+
+red = [ noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0	E16
+
+red = [ noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0	E32
+
+red = [ noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0U	E16
+
+red = [ noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | b1024 ] ; red	M0U	E32
+
+red = [ noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | desc ] ; red	M0U	H32
+
+red = [ noftz | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | desc ] ; red	M0U	F16
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | desc ] ; red	M0U	F32
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | desc ] ; red	M0U	F64
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | desc ] ; red	M0U	I[32|64]
+
+red = [ tab282EC40 | tab282E900 | tab282EC40 | tab282F3A0 | desc ] ; red	M0U	B[32|64]
+
+mbarrier.expect_tx = [ tab282EC40 | tab282E900 | tab282EC40 ] ; mbarrier.expect_tx	Mu	B64
+
+mbarrier.expect_tx = [ tab282EC40 | tab282E900 | tab282EC40 ] ; mbarrier.expect_tx	Mu	B64
+
+mbarrier.tx = [ tab282EC40 | tab282E900 | tab282EC40 ] ; mbarrier.tx	Mu	B64
+
+mbarrier.arrive.expect_tx = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 ] ; mbarrier.arrive.expect_tx	UMu	B64
+
+mbarrier.arrive.expect_tx = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 ] ; mbarrier.arrive.expect_tx	UMu	B64
+
+mbarrier.arrive_drop.expect_tx = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 ] ; mbarrier.arrive_drop.expect_tx	UMu	B64
+
+mbarrier.arrive_drop.expect_tx = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 ] ; mbarrier.arrive_drop.expect_tx	UMu	B64
+
+setmaxreg.try_alloc = [ tab282F560 | sync ] ; setmaxreg.try_alloc	PC	I32
+
+setmaxreg.alloc = [ sync ] ; setmaxreg.alloc	C	I32
+
+setmaxreg.dealloc = [ sync ] ; setmaxreg.dealloc	C	I32
+
+setsmemsize = [ sync ] ; setsmemsize	C	I32
+
+setsmemsize.flush = [ sync ] ; setsmemsize.flush		I32
+setsmemsize.flush		I32
+
+elect.one = [ tab282F560 | sync | aligned ] ; elect.one	uu	
+
+testp = [ ".finite" | ".infinite" | ".number" | ".notanumber" | ".normal" | ".subnormal" ]
+
+testp = [ tab282F560 | testp ] ; testp	P0	F[32|64]
+
+copysign = [ tab282F560 ] ; copysign	000	F[32|64]
+
+add = [ tab282F560 | ftz | sat | tab282E820 ] ; add	000	F16
+
+add = [ tab282F560 | ftz | sat | tab282E820 ] ; add	000	H32
+
+add = [ tab282F560 | ftz | sat | tab282E820 ] ; add	000	F32
+
+add = [ tab282F560 | tab282E820 ] ; add	000	F64
+
+add = [ tab282F560 | sat | cc ] ; add	000	I
+
+add = [ tab282F560 | tab282E820 ] ; add	000	E16
+
+add = [ tab282F560 | tab282E820 ] ; add	000	E32
+
+add = [ tab282F560 | sat ] ; add	000	N32
+
+add = [ tab282F560 | ftz | tab282E820 ] ; add	000	H64
+
+add = [ tab282F560 | sat | tab282E820 ] ; add	010	F32F16
+
+add = [ tab282F560 | sat | tab282E820 ] ; add	010	F32E16
+
+sub = [ tab282F560 | ftz | sat | tab282E820 ] ; sub	000	F16
+
+sub = [ tab282F560 | ftz | sat | tab282E820 ] ; sub	000	H32
+
+sub = [ tab282F560 | ftz | sat | tab282E820 ] ; sub	000	F32
+
+sub = [ tab282F560 | tab282E820 ] ; sub	000	F64
+
+sub = [ tab282F560 | sat | cc ] ; sub	000	I
+
+sub = [ tab282F560 | tab282E820 ] ; sub	000	E16
+
+sub = [ tab282F560 | tab282E820 ] ; sub	000	E32
+
+sub = [ tab282F560 | ftz | tab282E820 ] ; sub	000	H64
+
+sub = [ tab282F560 | sat | tab282E820 ] ; sub	010	F32F16
+
+sub = [ tab282F560 | sat | tab282E820 ] ; sub	010	F32E16
+
+addc = [ tab282F560 | sat | cc ] ; addc	000	I
+
+subc = [ tab282F560 | sat | cc ] ; subc	000	I
+
+mul = [ tab282F560 | ftz | sat | tab282E820 ] ; mul	000	F16
+
+mul = [ tab282F560 | ftz | sat | tab282E820 ] ; mul	000	H32
+
+mul = [ tab282F560 | ftz | sat | tab282E820 ] ; mul	000	F32
+
+mul = [ tab282F560 | tab282E820 ] ; mul	000	F64
+
+mul = [ tab282F560 | tab282E820 ] ; mul	000	E16
+
+mul = [ tab282F560 | tab282E820 ] ; mul	000	E32
+
+mul = [ tab282F560 | ftz | tab282E820 ] ; mul	000	H64
+
+mul.wide = [ tab282F560 ] ; mul.wide	000	I[16|32]
+
+mul.lo = [ tab282F560 ] ; mul.lo	000	I
+
+mul.hi = [ tab282F560 ] ; mul.hi	000	I
+
+mul24.lo = [ tab282F560 ] ; mul24.lo	000	I32
+
+mul24.hi = [ tab282F560 ] ; mul24.hi	000	I32
+
+mad = [ tab282F560 | ftz | sat | tab282E820 ] ; mad	0000	F32
+
+mad = [ tab282F560 | tab282E820 ] ; mad	0000	F64
+
+mad.wide = [ tab282F560 ] ; mad.wide	0000	I[16|32]
+
+mad.lo = [ tab282F560 | cc ] ; mad.lo	0000	I
+
+madc.lo = [ tab282F560 | cc ] ; madc.lo	0000	I
+
+mad.hi = [ tab282F560 | sat | cc ] ; mad.hi	0000	I
+
+madc.hi = [ tab282F560 | sat | cc ] ; madc.hi	0000	I
+
+mad24.lo = [ tab282F560 ] ; mad24.lo	0000	I32
+
+mad24.hi = [ tab282F560 | sat ] ; mad24.hi	0000	I32
+
+oob = [ ".oob" ]
+
+fma = [ tab282F560 | relu | ftz | sat | tab282E820 | oob ] ; fma	0000	F16
+
+fma = [ tab282F560 | relu | ftz | sat | tab282E820 | oob ] ; fma	0000	H32
+
+fma = [ tab282F560 | ftz | sat | tab282E820 ] ; fma	0000	F32
+
+fma = [ tab282F560 | tab282E820 ] ; fma	0000	F64
+
+fma = [ tab282F560 | relu | tab282E820 | oob ] ; fma	0000	E16
+
+fma = [ tab282F560 | relu | tab282E820 | oob ] ; fma	0000	E32
+
+fma = [ tab282F560 | ftz | tab282E820 ] ; fma	0000	H64
+
+fma = [ tab282F560 | sat | tab282E820 ] ; fma	0110	F32F16
+
+fma = [ tab282F560 | sat | tab282E820 ] ; fma	0110	F32E16
+
+sad = [ tab282F560 ] ; sad	0000	I
+
+div = [ tab282F560 | approx | ftz | tab282E820 ] ; div	000	F32
+
+div = [ tab282F560 | tab282E820 ] ; div	000	F64
+
+div = [ tab282F560 ] ; div	000	I
+
+rem = [ tab282F560 ] ; rem	000	I
+
+div.full = [ tab282F560 | ftz ] ; div.full	000	F32
+
+rcp = [ tab282F560 | approx | ftz | tab282E820 ] ; rcp	00	F32
+
+rcp = [ tab282F560 | approx | ftz | tab282E820 ] ; rcp	00	F64
+
+sqrt = [ tab282F560 | approx | ftz | tab282E820 ] ; sqrt	00	F32
+
+sqrt = [ tab282F560 | tab282E820 ] ; sqrt	00	F64
+
+rsqrt = [ tab282F560 | approx | ftz ] ; rsqrt	00	F32
+
+rsqrt = [ tab282F560 | approx | ftz ] ; rsqrt	00	F64
+
+sin = [ tab282F560 | approx | ftz ] ; sin	00	F32
+
+cos = [ tab282F560 | approx | ftz ] ; cos	00	F32
+
+lg2 = [ tab282F560 | approx | ftz ] ; lg2	00	F32
+
+abs = [ tab282F560 | ftz ] ; abs	00	F16
+
+abs = [ tab282F560 | ftz ] ; abs	00	H32
+
+abs = [ tab282F560 ] ; abs	00	E16
+
+abs = [ tab282F560 ] ; abs	00	E32
+
+abs = [ tab282F560 | ftz ] ; abs	00	F32
+
+abs = [ tab282F560 ] ; abs	00	F64
+
+abs = [ tab282F560 ] ; abs	00	I
+
+neg = [ tab282F560 | ftz ] ; neg	00	F16
+
+neg = [ tab282F560 | ftz ] ; neg	00	H32
+
+neg = [ tab282F560 ] ; neg	00	E16
+
+neg = [ tab282F560 ] ; neg	00	E32
+
+neg = [ tab282F560 | ftz ] ; neg	00	F32
+
+neg = [ tab282F560 ] ; neg	00	F64
+
+neg = [ tab282F560 ] ; neg	00	I
+
+nan = [ ".NaN" ]
+
+xorsign = [ ".xorsign" ]
+
+abs = [ ".abs" ]
+
+min = [ tab282F560 | ftz | nan | xorsign | abs ] ; min	000	F16
+
+min = [ tab282F560 | ftz | nan | xorsign | abs ] ; min	000	H32
+
+min = [ tab282F560 | nan | xorsign | abs ] ; min	000	E16
+
+min = [ tab282F560 | nan | xorsign | abs ] ; min	000	E32
+
+min = [ tab282F560 | ftz | nan | xorsign | abs ] ; min	000	F32
+
+min = [ tab282F560 ] ; min	000	F64
+
+min = [ tab282F560 | relu ] ; min	000	I
+
+min = [ tab282F560 | relu ] ; min	000	N32
+
+min = [ tab282F560 | ftz | nan | abs ] ; min	0000	F32
+
+max = [ tab282F560 | ftz | nan | xorsign | abs ] ; max	000	F16
+
+max = [ tab282F560 | ftz | nan | xorsign | abs ] ; max	000	H32
+
+max = [ tab282F560 | nan | xorsign | abs ] ; max	000	E16
+
+max = [ tab282F560 | nan | xorsign | abs ] ; max	000	E32
+
+max = [ tab282F560 | ftz | nan | xorsign | abs ] ; max	000	F32
+
+max = [ tab282F560 ] ; max	000	F64
+
+max = [ tab282F560 | relu ] ; max	000	I
+
+max = [ tab282F560 | relu ] ; max	000	N32
+
+max = [ tab282F560 | ftz | nan | abs ] ; max	0000	F32
+
+popc = [ tab282F560 ] ; popc	u0	B[32|64]
+
+clz = [ tab282F560 ] ; clz	u0	B[32|64]
+
+shiftamt = [ ".shiftamt" ]
+
+bfind = [ tab282F560 | shiftamt ] ; bfind	u0	I[32|64]
+
+brev = [ tab282F560 ] ; brev	00	B[32|64]
+
+bfe = [ tab282F560 ] ; bfe	00uu	I[32|64]
+
+bfi = [ tab282F560 ] ; bfi	000uu	B[32|64]
+
+prmt = [ ".f4e" | ".b4e" | ".rc8" | ".ecl" | ".ecr" | ".rc16" ]
+
+prmt = [ tab282F560 | prmt ] ; prmt	0000	B32
+
+tab282E400 = [ ".up" | ".down" | ".bfly" | ".idx" ]
+
+shfl = [ tab282F560 | tab282E400 ] ; shfl	0000	B32
+
+tab282E7C0 = [ ".no_membermask_overlap" ]
+
+shfl = [ tab282F560 | tab282E7C0 | tab282E400 | sync | aligned ] ; shfl	0000u	B32
+
+tab282E480 = [ ".clamp" | ".trap" | ".zero" | ".wrap" ]
+
+bmsk = [ tab282F560 | tab282E480 ] ; bmsk	uuu	B32
+
+szext = [ tab282F560 | tab282E480 ] ; szext	00u	I32
+
+tab282FBC0 = [ ".eq" | ".ne" | ".lt" | ".le" | ".gt" | ".ge" | ".lo" | ".ls" | ".hi" | ".hs" | ".num" | ".nan" | ".equ" | ".neu" | ".ltu" | ".leu" | ".gtu" | ".geu" | ".g" | ".s" ]
+
+set = [ tab282FBC0 | tab282F560 | ftz ] ; set	011	F16F16
+
+set = [ tab282FBC0 | tab282F560 | ftz ] ; set	011	I16F16
+
+set = [ tab282FBC0 | tab282F560 | ftz ] ; set	011	I32F16
+
+set = [ tab282FBC0 | tab282F560 | ftz ] ; set	011	I32H32
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 | ftz ] ; set	011P	I16F16
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 | ftz ] ; set	011P	I32F16
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 | ftz ] ; set	011P	I32H32
+
+set = [ tab282FBC0 | tab282F560 | ftz ] ; set	011	F16F32
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	F16F64
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	F16I
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	F16B
+
+set = [ tab282FBC0 | tab282F560 | ftz ] ; set	011	H32H32
+
+set = [ tab282FBC0 | tab282F560 | ftz ] ; set	011	F32F32
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	F32F64
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	F32I
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	F32B
+
+set = [ tab282FBC0 | tab282F560 | ftz ] ; set	011	I32F32
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	I32F64
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	I32I
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	I32B
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 | ftz ] ; set	011P	F16F16
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 | ftz ] ; set	011P	F16F32
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	F16F64
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	F16I
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	F16B
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 | ftz ] ; set	011P	H32H32
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 | ftz ] ; set	011P	F32F32
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	F32F64
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	F32I
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	F32B
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 | ftz ] ; set	011P	I32F32
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	I32F64
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	I32I
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	I32B
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	E16E16
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	E16E16
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	E16F16
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	E16F16
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	E16F32
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	E16F32
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	E16F64
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	E16F64
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	E16I
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	E16I
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	E16B
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	E16B
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	I16E16
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	I16E16
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	I32E16
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	I32E16
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	I32E32
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	I32E32
+
+set = [ tab282FBC0 | tab282F560 ] ; set	011	E32E32
+
+set = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; set	011P	E32E32
+
+setp = [ tab282FBC0 | tab282F560 | ftz ] ; setp	P00	F16
+
+setp = [ tab282FBC0 | tab282F560 | ftz ] ; setp	P00	H32
+
+setp = [ tab282FBC0 | tab282F560 | ftz ] ; setp	P00	F32
+
+setp = [ tab282FBC0 | tab282F560 ] ; setp	P00	F64
+
+setp = [ tab282FBC0 | tab282F560 ] ; setp	P00	I
+
+setp = [ tab282FBC0 | tab282F560 ] ; setp	P00	B
+
+setp = [ tab282FC80 | tab282FBC0 | tab282F560 | ftz ] ; setp	P00P	F16
+
+setp = [ tab282FC80 | tab282FBC0 | tab282F560 | ftz ] ; setp	P00P	H32
+
+setp = [ tab282FC80 | tab282FBC0 | tab282F560 | ftz ] ; setp	P00P	F32
+
+setp = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; setp	P00P	F64
+
+setp = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; setp	P00P	I
+
+setp = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; setp	P00P	B
+
+setp = [ tab282FBC0 | tab282F560 ] ; setp	P00	E16
+
+setp = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; setp	P00P	E16
+
+setp = [ tab282FBC0 | tab282F560 ] ; setp	P00	E32
+
+setp = [ tab282FC80 | tab282FBC0 | tab282F560 ] ; setp	P00P	E32
+
+selp = [ tab282F560 ] ; selp	000P	F
+
+selp = [ tab282F560 ] ; selp	000P	I
+
+selp = [ tab282F560 ] ; selp	000P	B
+
+slct = [ tab282F560 | ftz ] ; slct	0001	FF32
+
+slct = [ tab282F560 | ftz ] ; slct	0001	IF32
+
+slct = [ tab282F560 | ftz ] ; slct	0001	BF32
+
+slct = [ tab282F560 ] ; slct	0001	FI32
+
+slct = [ tab282F560 ] ; slct	0001	II32
+
+slct = [ tab282F560 ] ; slct	0001	BI32
+
+and = [ tab282F560 ] ; and	000	B
+
+and = [ tab282F560 ] ; and	000	P
+
+or = [ tab282F560 ] ; or	000	B
+
+or = [ tab282F560 ] ; or	000	P
+
+xor = [ tab282F560 ] ; xor	000	B
+
+xor = [ tab282F560 ] ; xor	000	P
+
+not = [ tab282F560 ] ; not	00	B
+
+not = [ tab282F560 ] ; not	00	P
+
+cnot = [ tab282F560 ] ; cnot	00	B
+
+shr = [ tab282F560 ] ; shr	00u	I
+
+shr = [ tab282F560 ] ; shr	00u	B
+
+shl = [ tab282F560 ] ; shl	00u	B
+
+shf.l = [ tab282F560 | tab282E480 ] ; shf.l	000u	B32
+
+shf.r = [ tab282F560 | tab282E480 ] ; shf.r	000u	B32
+
+lop3 = [ tab282F560 ] ; lop3	0000C	B32
+
+lop3 = [ tab282FC80 | tab282F560 ] ; lop3	0000CP	B32
+
+fns = [ tab282F560 ] ; fns	0000	B32
+
+dp4a = [ tab282F560 ] ; dp4a	u01u	I32I32
+
+dp2a = [ tab282F560 ] ; dp2a	u01u	I32I32
+
+dp2a.hi = [ tab282F560 ] ; dp2a.hi	u01u	I32I32
+
+dp2a.lo = [ tab282F560 ] ; dp2a.lo	u01u	I32I32
+
+mov = [ tab282F560 ] ; mov	00	F
+
+mov = [ tab282F560 | tab282DFE0 ] ; mov	00	I
+
+mov = [ tab282F560 | tab282DFE0 ] ; mov	00	B
+
+mov = [ tab282F560 | tab282DFE0 ] ; mov	00	P
+
+mov = [ tab282F560 | tab282DFE0 ] ; mov	00	B128
+
+ldu = [ tab282F560 | tab282EC40 ] ; ldu	0M	B128
+
+ldu = [ tab282F560 | tab282EC40 ] ; ldu	0M	F
+
+ldu = [ tab282F560 | tab282EC40 ] ; ldu	0M	I[8|16|32|64]
+
+ldu = [ tab282F560 | tab282EC40 ] ; ldu	0M	B[8|16|32|64]
+
+_ldldu = [ tab282F560 | tab282EC40 ] ; _ldldu	01MM	B[8|16|32|64|128]B[8|16|32|64|128]
+
+st.bulk = [ tab282EC40 | tab282E900 ] ; st.bulk	MUC	
+
+st.bulk = [ tab282EC40 | tab282E900 ] ; st.bulk	MuC	
+
+prefetch = [ tab282EC40 | tab282EC20 | tab282EB80 ] ; prefetch	M	
+
+prefetchu = [ tab282EC40 | tab282EC20 ] ; prefetchu	M	
+
+applypriority = [ tab282EC40 | tab282EC20 | tab282EB80 ] ; applypriority	MC	
+
+createpolicy.fractional = [ tab282EC20 | tab282EB80 ] ; createpolicy.fractional	U	B64
+
+createpolicy.fractional = [ tab282EC20 | tab282EB80 ] ; createpolicy.fractional	Uf	B64
+
+createpolicy.range = [ tab282EC40 | tab282EC20 | tab282EB80 ] ; createpolicy.range	UMuu	B64
+
+createpolicy.cvt = [ tab282EC20 ] ; createpolicy.cvt	UU	B64
+
+_createpolicy.fractional = [ tab282F560 | tab282EC20 | tab282EB80 ] ; _createpolicy.fractional	Uuu	B64
+
+_createpolicy.range = [ tab282F560 | tab282EC40 | tab282EC20 | tab282EB80 ] ; _createpolicy.range	Uuuu	B64
+
+discard = [ tab282EC40 | tab282EC20 ] ; discard	MC	
+
+tab282F800 = [ "::cta" | "::cluster" | "::entry" | "::func" ]
+
+isspacep = [ tab282F560 | tab282EC40 | tab282F800 ] ; isspacep	Pu	
+
+isspacep = [ tab282F560 | tab282EC40 | tab282F800 ] ; isspacep	PU	
+
+cvta = [ tab282F560 | tab282EC40 | tab282F800 ] ; cvta	00	I[32|64]
+
+cvta.to = [ tab282F560 | tab282EC40 | tab282F800 ] ; cvta.to	00	I[32|64]
+
+mapa = [ tab282F560 | tab282EC40 ] ; mapa	00u	I[32|64]
+
+getctarank = [ tab282F560 | tab282EC40 ] ; getctarank	u0	I[32|64]
+
+cctl = [ tab282EC40 | tab282E960 ] ; cctl	M	
+
+cctl = [ tab282EC40 | tab282E960 ] ; cctl		
+
+cctlu = [ tab282EC40 | tab282E960 ] ; cctlu	M	
+
+cctlu = [ tab282EC40 | tab282E960 ] ; cctlu		
+
+cvt.pack = [ tab282F560 | sat ] ; cvt.pack	1112	I8I32B32
+
+cvt.pack = [ tab282F560 | sat ] ; cvt.pack	111	I16I32
+
+cvt.pack = [ tab282F560 | sat ] ; cvt.pack	1112	I[2|4]I32B32
+
+tab282F440 = [ ".acc::f16" | ".acc::f32" ]
+
+multimem.ld_reduce = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F440 ] ; multimem.ld_reduce	0M	I[32|64]
+
+multimem.ld_reduce = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F3A0 | tab282F440 ] ; multimem.ld_reduce	0M	B[32|64]
+
+multimem.ld_reduce = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | tab282F440 ] ; multimem.ld_reduce	0M	F[32|64]
+
+multimem.ld_reduce = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | tab282F440 ] ; multimem.ld_reduce	0M	H32
+
+multimem.ld_reduce = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | tab282F440 ] ; multimem.ld_reduce	0M	E[16|32]
+
+multimem.ld_reduce = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | tab282F440 ] ; multimem.ld_reduce	0M	F16
+
+multimem.ld_reduce = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | tab282F440 ] ; multimem.ld_reduce	0M	Q[8|16|32]
+
+multimem.st = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F440 ] ; multimem.st	M0	I[32|64]
+
+multimem.st = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F440 ] ; multimem.st	M0	B[32|64]
+
+multimem.st = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F440 ] ; multimem.st	M0	F[16|32|64]
+
+multimem.st = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F440 ] ; multimem.st	M0	H32
+
+multimem.st = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F440 ] ; multimem.st	M0	E[16|32]
+
+multimem.st = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F440 ] ; multimem.st	M0	Q[8|16|32]
+
+multimem.red = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F440 ] ; multimem.red	M0	I[32|64]
+
+multimem.red = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282F3A0 | tab282F440 ] ; multimem.red	M0	B[32|64]
+
+multimem.red = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | tab282F440 ] ; multimem.red	M0	F[16|32|64]
+
+multimem.red = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | tab282F440 ] ; multimem.red	M0	H32
+
+multimem.red = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | tab282FC80 | tab282F440 ] ; multimem.red	M0	E[16|32]
+
+multimem.cp.async.bulk = [ tab282E6A0 | tab282E520 | tab282F440 ] ; multimem.cp.async.bulk	MMu	
+
+multimem.cp.async.bulk = [ tab282E6A0 | tab282E520 | cp_mask ] ; multimem.cp.async.bulk	MMux	
+
+multimem.cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | cp_mask ] ; multimem.cp.reduce.async.bulk	MMu	I[32|64]
+
+multimem.cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282F3A0 | cp_mask ] ; multimem.cp.reduce.async.bulk	MMu	B[32|64]
+
+multimem.cp.reduce.async.bulk = [ tab282E6A0 | tab282E520 | tab282FC80 | cp_mask ] ; multimem.cp.reduce.async.bulk	MMu	F[32|64]
+
+multimem.cp.reduce.async.bulk = [ noftz | tab282E6A0 | tab282E520 | tab282FC80 | cp_mask ] ; multimem.cp.reduce.async.bulk	MMu	F16
+
+multimem.cp.reduce.async.bulk = [ noftz | tab282E6A0 | tab282E520 | tab282FC80 | cp_mask ] ; multimem.cp.reduce.async.bulk	MMu	E16
+
+wmma.mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.mma	hhhh	F16F16
+
+wmma.mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.mma	fhhh	F32F16
+
+wmma.mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.mma	fhhf	F32F32
+
+wmma.mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.mma	hhhf	F16F32
+
+wmma.mma = [ tab282FC80 | tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.mma	ssss	I32B1B1I32
+
+wmma.mma = [ tab282FC80 | tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.mma	ssss	I32I4I4I32
+
+wmma.mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.mma	ssss	I32I8I8I32
+
+wmma.mma = [ tab282F560 | tab282E820 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.mma	0123	F64F64F64F64
+
+wmma.mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.mma	dddd	F32E16E16F32
+
+wmma.mma = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.mma	dddd	F32T32T32F32
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	hM	F16
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	hMu	F16
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	VV	F32
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	VVV	F32
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	sM	
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	sMu	
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	sM	I8
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	sMu	I8
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	0M	F64
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	0Mu	F64
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	dM	
+
+wmma.load.a = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.a	dMu	
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	hM	F16
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	hMu	F16
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	VV	F32
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	VVV	F32
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	sM	
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	sMu	
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	sM	I8
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	sMu	I8
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	0M	F64
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	0Mu	F64
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	dM	
+
+wmma.load.b = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.b	dMu	
+
+wmma.load.c = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.c	hM	F16
+
+wmma.load.c = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.c	hMu	F16
+
+wmma.load.c = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.c	fM	F32
+
+wmma.load.c = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.c	fMu	F32
+
+wmma.load.c = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.c	sM	I32
+
+wmma.load.c = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.c	sMu	I32
+
+wmma.load.c = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.c	0M	F64
+
+wmma.load.c = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.load.c	0Mu	F64
+
+wmma.store.d = [ tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.store.d	Mh	F16
+
+wmma.store.d = [ tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.store.d	Mhu	F16
+
+wmma.store.d = [ tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.store.d	Mf	F32
+
+wmma.store.d = [ tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.store.d	Mfu	F32
+
+wmma.store.d = [ tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.store.d	Ms	I32
+
+wmma.store.d = [ tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.store.d	Msu	I32
+
+wmma.store.d = [ tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.store.d	M0	F64
+
+wmma.store.d = [ tab282EC40 | sync | aligned | tab282ECE0 | cp_mask ] ; wmma.store.d	M0u	F64
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	hUUPCCCC	F16F16F16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	hhUPCCC	F16F16F16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fUUPCCCC	F32F16F16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fhUPCCC	F32F16F16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fUUPCCCC	F32E16E16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fdUPCCC	F32E16E16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fUUPCC	F32T32T32
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fdUPCC	F32T32T32
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	hUUPCC	F16Q8Q8
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	hdUPCC	F16Q8Q8
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fUUPCC	F32Q8Q8
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fdUPCC	F32Q8Q8
+
+wgmma.mma_async = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	sUUP	I32I8I8
+
+wgmma.mma_async = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	sdUP	I32I8I8
+
+wgmma.mma_async = [ tab282FC80 | tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	sUUP	I32B1B1
+
+wgmma.mma_async = [ tab282FC80 | tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	sdUP	I32B1B1
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	hUUdCPCCCC	F16F16F16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	hhUdCPCCC	F16F16F16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fUUdCPCCCC	F32F16F16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fhUdCPCCC	F32F16F16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fUUdCPCCCC	F32E16E16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fdUdCPCCC	F32E16E16
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fUUdCPCC	F32T32T32
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fdUdCPCC	F32T32T32
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	hUUdCPCC	F16Q8Q8
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	hdUdCPCC	F16Q8Q8
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fUUdCPCC	F32Q8Q8
+
+wgmma.mma_async = [ tab282F560 | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	fdUdCPCC	F32Q8Q8
+
+wgmma.mma_async = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	sUUdCP	I32I8I8
+
+wgmma.mma_async = [ tab282F560 | satfinite | sync | aligned | tab282ECE0 | cp_mask ] ; wgmma.mma_async	sdUdCP	I32I8I8
+
+wgmma.fence = [ sync | aligned | cp_mask ] ; wgmma.fence		I32I8I8
+
+wgmma.commit_group = [ sync | aligned | cp_mask ] ; wgmma.commit_group		I32I8I8
+
+wgmma.wait_group = [ sync | aligned | cp_mask ] ; wgmma.wait_group	C	
+
+tcgen05.ld.red = [ tab282F560 | tab282FC80 | sync | aligned | tab282ECE0 | tab282F7A0 | nan | abs | cp_mask ] ; tcgen05.ld.red	ddM	F32
+
+tcgen05.ld.red = [ tab282F560 | tab282FC80 | sync | aligned | tab282ECE0 | tab282F7A0 | nan | abs | cp_mask ] ; tcgen05.ld.red	ddMC	F32
+
+tcgen05.ld.red = [ tab282F560 | sync | aligned | tab282ECE0 | tab282F7A0 | cp_mask ] ; tcgen05.ld.red	ddM	I32
+
+tcgen05.ld.red = [ tab282F560 | sync | aligned | tab282ECE0 | tab282F7A0 | cp_mask ] ; tcgen05.ld.red	ddMC	I32
+
+tcgen05.alloc = [ tab282EC40 | tab282E620 | sync | aligned | cp_mask ] ; tcgen05.alloc	Mu	B32
+
+tcgen05.dealloc = [ tab282E620 | sync | aligned | cp_mask ] ; tcgen05.dealloc	uu	B32
+
+tcgen05.relinquish_alloc_permit = [ tab282E620 | sync | aligned | cp_mask ] ; tcgen05.relinquish_alloc_permit		B32
+
+_tcgen05.guardrails.is_phase_valid = [ cp_mask ] ; _tcgen05.guardrails.is_phase_valid	d	
+
+_tcgen05.guardrails.is_current_warp_valid_owner = [ cp_mask ] ; _tcgen05.guardrails.is_current_warp_valid_owner	duC	
+
+tab282F360 = [ ".lower::16b" | ".pack::16b" | ".unpack::16b" ]
+
+tab282E2C0 = [ ".ld" | ".st" | ".cp" | ".shift" | ".mma" | ".alloc" | ".dealloc" ]
+
+_tcgen05.guardrails.are_columns_allocated = [ tab282ECE0 | tab282F7A0 | tab282F360 | tab282E2C0 ] ; _tcgen05.guardrails.are_columns_allocated	du	
+
+tab282E280 = [ ".matrix::A" | ".matrix::D" | ".matrix::scaleA" | ".matrix::scaleB" | ".matrix::sparseMetadata" ]
+
+_tcgen05.guardrails.are_columns_allocated = [ tab282E620 | tab282E2C0 | tab282E280 ] ; _tcgen05.guardrails.are_columns_allocated	duu	
+
+_tcgen05.guardrails.in_physical_bounds = [ tab282ECE0 | tab282F7A0 | tab282F360 | tab282E2C0 ] ; _tcgen05.guardrails.in_physical_bounds	du	
+
+_tcgen05.guardrails.in_physical_bounds = [ tab282E620 | tab282E2C0 | tab282E280 ] ; _tcgen05.guardrails.in_physical_bounds	duu	
+
+_tcgen05.guardrails.allocation_granularity = [ tab282E2C0 | tab282E280 ] ; _tcgen05.guardrails.allocation_granularity	du	
+
+_tcgen05.guardrails.datapath_alignment = [ tab282E620 | tab282E2C0 | tab282E280 ] ; _tcgen05.guardrails.datapath_alignment	duuC	
+
+_tcgen05.guardrails.sp_consistency_across_idesc_mod = [ tab282E2C0 | tab282E280 ] ; _tcgen05.guardrails.sp_consistency_across_idesc_mod	du	
+
+_tcgen05.guardrails.check_sparse_usage = [ tab282FA00 | tab282E2C0 | tab282E280 ] ; _tcgen05.guardrails.check_sparse_usage	du	
+
+tab282F4E0 = [ ".sync_restrict::shared::cluster" | ".sync_restrict::shared::cta" | ".sync_restrict::shared::read::mma::a" ]
+
+tcgen05.commit = [ tab282EC40 | tab282E620 | tab282E520 | tab282F4E0 | tab282E2C0 | tab282E280 ] ; tcgen05.commit	M	B64
+
+tcgen05.commit = [ tab282EC40 | tab282E620 | multicast_cluster | tab282E520 | tab282F4E0 | tab282E2C0 | tab282E280 ] ; tcgen05.commit	Mx	B64
+
+down = [ ".down" ]
+
+tcgen05.shift = [ tab282E620 | down | tab282E2C0 | tab282E280 ] ; tcgen05.shift	M	
+
+tab282E600 = [ ".warpx2::02_13" | ".warpx2::01_23" | ".warpx4" ]
+
+tcgen05.cp = [ tab282E620 | tab282E600 | tab282E5E0 | tab282ECE0 | tab282E2C0 | tab282E280 ] ; tcgen05.cp	MU	
+tcgen05.fence		
+
+tcgen05.wait = [ sync | aligned ] ; tcgen05.wait		
+
+tcgen05.ld = [ tab282F560 | sync | aligned | tab282ECE0 | tab282F7A0 | tab282F360 ] ; tcgen05.ld	dM	B32
+
+tcgen05.ld = [ tab282F560 | sync | aligned | tab282ECE0 | tab282F7A0 | tab282F360 ] ; tcgen05.ld	dMC	B32
+
+tcgen05.st = [ sync | aligned | tab282ECE0 | tab282F7A0 | tab282F360 ] ; tcgen05.st	Md	B32
+
+tcgen05.st = [ sync | aligned | tab282ECE0 | tab282F7A0 | tab282F360 ] ; tcgen05.st	MCd	B32
+
+tab282F9C0 = [ ".collector::a::fill" | ".collector::a::use" | ".collector::a::lastuse" | ".collector::a::discard" ]
+
+tab282F900 = [ ".collector::b::fill" | ".collector::b::use" | ".collector::b::lastuse" | ".collector::b::discard" | ".collector::b0::fill" | ".collector::b0::use" | ".collector::b0::lastuse" | ".collector::b0::discard" | ".collector::b1::fill" | ".collector::b1::use" | ".collector::b1::lastuse" | ".collector::b1::discard" | ".collector::b2::fill" | ".collector::b2::use" | ".collector::b2::lastuse" | ".collector::b2::discard" | ".collector::b3::fill" | ".collector::b3::use" | ".collector::b3::lastuse" | ".collector::b3::discard" ]
+
+tcgen05.mma = [ tab282FA00 | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MUUuP	
+
+tcgen05.mma = [ tab282FA00 | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MUUMuP	
+
+tcgen05.mma = [ tab282FA00 | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MUUudP	
+
+tcgen05.mma = [ tab282FA00 | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MUUuPC	
+
+tcgen05.mma = [ tab282FA00 | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MUUMudP	
+
+tcgen05.mma = [ tab282FA00 | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MUUMuPC	
+
+tcgen05.mma = [ tab282FA00 | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MUUudPC	
+
+tcgen05.mma = [ tab282FA00 | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MUUMudPC	
+
+ashift = [ ".ashift" ]
+
+tcgen05.mma = [ tab282FA00 | ashift | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MMUuP	
+
+tcgen05.mma = [ tab282FA00 | ashift | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MMUMuP	
+
+tcgen05.mma = [ tab282FA00 | ashift | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MMUudP	
+
+tcgen05.mma = [ tab282FA00 | ashift | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MMUuPC	
+
+tcgen05.mma = [ tab282FA00 | ashift | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MMUMudP	
+
+tcgen05.mma = [ tab282FA00 | ashift | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MMUMuPC	
+
+tcgen05.mma = [ tab282FA00 | ashift | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MMUudPC	
+
+tcgen05.mma = [ tab282FA00 | ashift | tab282F9C0 | tab282F900 | tab282E620 ] ; tcgen05.mma	MMUMudPC	
+
+tab282F8B0 = [ ".block16" | ".block32" ]
+
+tcgen05.mma = [ tab282F2A0 | tab282FA00 | tab282F9C0 | tab282F900 | tab282F8E0 | tab282F8B0 | tab282E620 ] ; tcgen05.mma	MUUuMMP	
+
+tcgen05.mma = [ tab282F2A0 | tab282FA00 | tab282F9C0 | tab282F900 | tab282F8E0 | tab282F8B0 | tab282E620 ] ; tcgen05.mma	MUUMuMMP	
+
+tcgen05.mma = [ tab282F2A0 | tab282FA00 | tab282F9C0 | tab282F900 | tab282F8E0 | tab282F8B0 | tab282E620 ] ; tcgen05.mma	MMUuMMP	
+
+tcgen05.mma = [ tab282F2A0 | tab282FA00 | tab282F9C0 | tab282F900 | tab282F8E0 | tab282F8B0 | tab282E620 ] ; tcgen05.mma	MMUMuMMP	
+
+tcgen05.mma.ws = [ tab282FA00 | tab282F900 | tab282E620 ] ; tcgen05.mma.ws	MUUuP	
+
+tcgen05.mma.ws = [ tab282FA00 | tab282F900 | tab282E620 ] ; tcgen05.mma.ws	MUUuPU	
+
+tcgen05.mma.ws = [ tab282FA00 | tab282F900 | tab282E620 ] ; tcgen05.mma.ws	MUUMuP	
+
+tcgen05.mma.ws = [ tab282FA00 | tab282F900 | tab282E620 ] ; tcgen05.mma.ws	MUUMuPU	
+
+tcgen05.mma.ws = [ tab282FA00 | tab282F900 | tab282E620 ] ; tcgen05.mma.ws	MMUuP	
+
+tcgen05.mma.ws = [ tab282FA00 | tab282F900 | tab282E620 ] ; tcgen05.mma.ws	MMUuPU	
+
+tcgen05.mma.ws = [ tab282FA00 | tab282F900 | tab282E620 ] ; tcgen05.mma.ws	MMUMuP	
+
+tcgen05.mma.ws = [ tab282FA00 | tab282F900 | tab282E620 ] ; tcgen05.mma.ws	MMUMuPU	
+
+tab282F3E0 = [ ".global_address" | ".rank" | ".box_dim" | ".global_dim" | ".global_stride" | ".element_stride" | ".elemtype" | ".interleave_layout" | ".swizzle_mode" | ".swizzle_atomicity" | ".fill_mode" ]
+
+tensormap.replace = [ tab282EC40 | b1024 | tab282F3E0 ] ; tensormap.replace	M0	B[32|64]
+
+tensormap.replace = [ tab282EC40 | b1024 | tab282F3E0 ] ; tensormap.replace	MC0	B[32|64]
+
+cp.async.wait_all = [ b1024 ] ; cp.async.wait_all		
+
+cp.async.commit_group = [ b1024 ] ; cp.async.commit_group		
+
+cp.async.wait_group = [ b1024 ] ; cp.async.wait_group	C	
+
+noinc = [ ".noinc" ]
+
+cp.async.mbarrier.arrive = [ tab282EC40 | noinc | b1024 ] ; cp.async.mbarrier.arrive	M	B64
+
+stacksave = [ tab282F560 | b1024 ] ; stacksave	0	I[32|64]
+
+stackrestore = [ tab282F560 | b1024 ] ; stackrestore	0	I[32|64]
+
+alloca = [ tab282F560 | b1024 ] ; alloca	00	I[32|64]
+
+alloca = [ tab282F560 | b1024 ] ; alloca	00C	I[32|64]
+
+ldmatrix = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | trans | tab282F7A0 | b1024 ] ; ldmatrix	dM	B[8|16]
+
+ldmatrix = [ tab282F560 | tab282EC40 | tab282E5E0 | sync | aligned | tab282ECE0 | trans | tab282F7A0 | b1024 ] ; ldmatrix	dM	
+
+movmatrix = [ tab282F560 | sync | aligned | tab282ECE0 | trans | b1024 ] ; movmatrix	dd	B16
+
+stmatrix = [ tab282F560 | tab282EC40 | sync | aligned | tab282ECE0 | trans | tab282F7A0 | b1024 ] ; stmatrix	Md	B[8|16]
+
+uni = [ ".uni" ]
+
+tab282E760 = [ ".1d" | ".2d" | ".3d" | ".1d_buffer" | ".a1d" | ".a2d" | ".cube" | ".acube" | ".2dms" | ".a2dms" ]
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1	F32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1	F32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1	I32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1	I32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1s	F32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1s	F32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1s	I32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1s	I32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1sl	F32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1sl	I32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1l	F32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1l	I32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1	F16F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1	F16I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1	H32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1	H32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1s	F16F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1s	F16I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1s	H32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1s	H32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1sl	F16F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1sl	H32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1l	F16F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0i1l	H32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1	F32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1	F32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1	I32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1	I32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1s	F32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1s	F32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1s	I32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1s	I32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1sl	F32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1sl	I32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1l	F32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1l	I32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1	F16F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1	F16I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1	H32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1	H32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1s	F16F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1s	F16I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1s	H32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1s	H32I32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1sl	F16F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1sl	H32F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1l	F16F32
+
+tex = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex	0ii1l	H32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1	F32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1	F32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1	I32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1	I32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1s	F32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1s	F32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1s	I32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1s	I32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1sl	F32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1sl	I32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1l	F32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1l	I32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1	F16F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1	F16I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1	H32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1	H32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1s	F16F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1s	F16I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1s	H32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1s	H32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1sl	F16F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1sl	H32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1l	F16F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0i1l	H32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1	F32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1	F32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1	I32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1	I32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1s	F32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1s	F32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1s	I32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1s	I32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1sl	F32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1sl	I32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1l	F32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1l	I32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1	F16F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1	F16I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1	H32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1	H32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1s	F16F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1s	F16I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1s	H32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1s	H32I32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1sl	F16F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1sl	H32F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1l	F16F32
+
+tex.base = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.base	0ii1l	H32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11	F32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11	F32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11	I32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11	I32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11s	F32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11s	F32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11s	I32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11s	I32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11sl	F32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11sl	I32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11l	F32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11l	I32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11	F16F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11	F16I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11	H32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11	H32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11s	F16F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11s	F16I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11s	H32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11s	H32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11sl	F16F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11sl	H32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11l	F16F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0i11l	H32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11	F32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11	F32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11	I32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11	I32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11s	F32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11s	F32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11s	I32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11s	I32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11sl	F32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11sl	I32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11l	F32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11l	I32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11	F16F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11	F16I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11	H32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11	H32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11s	F16F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11s	F16I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11s	H32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11s	H32I32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11sl	F16F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11sl	H32F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11l	F16F32
+
+tex.level = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.level	0ii11l	H32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ff	F32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ff	F32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ff	I32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ff	I32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffs	F32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffs	F32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffs	I32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffs	I32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffl	F32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffl	I32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffsl	F32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffsl	I32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ff	F16F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ff	F16I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ff	H32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ff	H32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffs	F16F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffs	F16I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffs	H32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffs	H32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffl	F16F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffl	H32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffsl	F16F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0i1ffsl	H32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ff	F32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ff	F32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ff	I32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ff	I32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffs	F32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffs	F32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffs	I32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffs	I32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffl	F32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffl	I32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffsl	F32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffsl	I32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ff	F16F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ff	F16I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ff	H32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ff	H32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffs	F16F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffs	F16I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffs	H32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffs	H32I32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffl	F16F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffl	H32F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffsl	F16F32
+
+tex.grad = [ tab282F560 | uni | vec | tab282E760 | b1024 ] ; tex.grad	0ii1ffsl	H32F32
+
+istypep = [ tab282F560 | b1024 ] ; istypep	PU	O
+
+tab282E4C0 = [ ".r" | ".g" | ".b" | ".a" ]
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0i1	I32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0i1	F32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0ii1	I32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0ii1	F32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0i1s	I32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0i1s	F32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0ii1s	I32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0ii1s	F32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0i1l	I32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0i1l	F32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0ii1l	I32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0ii1l	F32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0i1sl	I32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0i1sl	F32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0ii1sl	I32F32
+
+tld4 = [ tab282F560 | uni | vec | tab282E760 | tab282E4C0 | b1024 ] ; tld4	0ii1sl	F32F32
+
+squery = [ ".force_unnormalized_coords" | ".filter_mode" | ".addr_mode_0" | ".addr_mode_1" | ".addr_mode_2" | ".width" | ".height" | ".depth" | ".channel_data_type" | ".channel_order" | ".array_size" | ".memory_layout" ]
+
+tquery = [ ".width" | ".height" | ".depth" | ".channel_data_type" | ".channel_order" | ".normalized_coords" | ".array_size" | ".num_mipmap_levels" | ".num_samples" ]
+
+txq = [ tab282F560 | squery | tquery | b1024 ] ; txq	0i	B32
+
+txq.level = [ tab282F560 | tquery | b1024 ] ; txq.level	0is	B32
+
+suq = [ tab282F560 | squery | b1024 ] ; suq	0i	B32
+
+suld.b = [ tab282F560 | tab282E960 | vec | tab282E760 | tab282E480 | b1024 ] ; suld.b	0is	B[8|16|32|64]
+
+sust.b = [ tab282E960 | vec | tab282E760 | tab282E480 | b1024 ] ; sust.b	is0	B[8|16|32|64]
+
+sust.p = [ tab282E960 | vec | tab282E760 | tab282E480 | b1024 ] ; sust.p	is0	B32
+
+sured.b = [ vec | tab282E760 | tab282F3A0 | tab282E480 | b1024 ] ; sured.b	is0	B32
+
+sured.b = [ vec | tab282E760 | tab282E480 | b1024 ] ; sured.b	is0	I[32|64]
+
+sured.p = [ vec | tab282E760 | tab282F3A0 | tab282E480 | b1024 ] ; sured.p	is0	B32
+
+sured.p = [ vec | tab282E760 | tab282F3A0 | tab282E480 | b1024 ] ; sured.p	is0	B64
+
+_sulea.b = [ tab282F560 | vec | tab282E760 | tab282E480 | b1024 ] ; _sulea.b	Uis	B[8|16|32|64]
+
+_sulea.b = [ tab282F560 | vec | tab282E760 | tab282E480 | b1024 ] ; _sulea.b	Pis	B[8|16|32|64]
+
+_sulea.p = [ tab282F560 | vec | tab282E760 | tab282E480 | b1024 ] ; _sulea.p	Uis	
+
+_sulea.p = [ tab282F560 | vec | tab282E760 | tab282E480 | b1024 ] ; _sulea.p	Pis	
+
+_checkfp.divide = [ tab282F560 | b1024 ] ; _checkfp.divide	P00	F32
+
+_warpsync = [ b1024 ] ; _warpsync	u	
+
+tab282E7E0 = [ ".unanimous" | ".conv" | ".div" ]
+
+bra = [ uni | tab282E7E0 | b1024 ] ; bra	T	
+
+bra = [ uni | tab282E7E0 | tab282E7C0 | b1024 ] ; bra	Tu	
+
+tab282F460 = [ ".launch_dependents" | ".wait" ]
+
+griddepcontrol = [ tab282F460 | b1024 ] ; griddepcontrol		
+
+brx.idx = [ uni | b1024 ] ; brx.idx	uS	
+
+_gen_proto = [ uni | b1024 ] ; _gen_proto	T	
+
+_jcall = [ uni | b1024 ] ; _jcall	T	
+
+call = [ uni | b1024 ] ; call	T	
+
+call = [ uni | b1024 ] ; call	TA	
+
+call = [ uni | b1024 ] ; call	AT	
+
+call = [ uni | b1024 ] ; call	ATA	
+
+call = [ uni | b1024 ] ; call	TS	
+
+call = [ uni | b1024 ] ; call	TAS	
+
+call = [ uni | b1024 ] ; call	ATS	
+
+call = [ uni | b1024 ] ; call	ATAS	
+
+ret = [ uni | b1024 ] ; ret		
+
+keeprefcount = [ ".keeprefcount" ]
+
+no_atexit = [ ".no_atexit" ]
+
+exit = [ keeprefcount | no_atexit | b1024 ] ; exit		
+
+tab282F310 = [ ".all" | ".any" ]
+
+bar = [ sync | tab282F310 | b1024 ] ; bar	u	
+
+bar = [ sync | tab282F310 | b1024 ] ; bar	uu	
+
+barrier = [ sync | aligned | b1024 ] ; barrier	u	
+
+barrier = [ sync | aligned | b1024 ] ; barrier	uu	
+
+bar.arrive = [ tab282F310 | b1024 ] ; bar.arrive	uu	
+
+barrier.arrive = [ aligned | b1024 ] ; barrier.arrive	uu	
+
+bar.warp = [ tab282E7C0 | sync | aligned | b1024 ] ; bar.warp	u	
+
+bar.red = [ tab282F560 | tab282F310 | b1024 ] ; bar.red	0uP	I32
+
+bar.red = [ tab282F560 | tab282F310 | b1024 ] ; bar.red	0uuP	I32
+
+bar.red = [ tab282F560 | tab282F3A0 | tab282F310 | b1024 ] ; bar.red	0uP	P
+
+bar.red = [ tab282F560 | tab282F3A0 | tab282F310 | b1024 ] ; bar.red	0uuP	P
+
+barrier.red = [ tab282F560 | aligned | b1024 ] ; barrier.red	0uP	I32
+
+barrier.red = [ tab282F560 | aligned | b1024 ] ; barrier.red	0uuP	I32
+
+barrier.red = [ tab282F560 | tab282F3A0 | aligned | b1024 ] ; barrier.red	0uP	P
+
+barrier.red = [ tab282F560 | tab282F3A0 | aligned | b1024 ] ; barrier.red	0uuP	P
+
+bar.cta = [ sync | b1024 ] ; bar.cta	u	
+
+bar.cta = [ sync | b1024 ] ; bar.cta	uu	
+
+barrier.cta = [ sync | aligned | b1024 ] ; barrier.cta	u	
+
+barrier.cta = [ sync | aligned | b1024 ] ; barrier.cta	uu	
+
+bar.cta.arrive = [ b1024 ] ; bar.cta.arrive	uu	
+
+barrier.cta.arrive = [ aligned | b1024 ] ; barrier.cta.arrive	uu	
+
+bar.cta.red = [ tab282F560 | b1024 ] ; bar.cta.red	0uP	I32
+
+bar.cta.red = [ tab282F560 | b1024 ] ; bar.cta.red	0uuP	I32
+
+bar.cta.red = [ tab282F560 | tab282F3A0 | b1024 ] ; bar.cta.red	0uP	P
+
+bar.cta.red = [ tab282F560 | tab282F3A0 | b1024 ] ; bar.cta.red	0uuP	P
+
+barrier.cta.red = [ tab282F560 | aligned | b1024 ] ; barrier.cta.red	0uP	I32
+
+barrier.cta.red = [ tab282F560 | aligned | b1024 ] ; barrier.cta.red	0uuP	I32
+
+barrier.cta.red = [ tab282F560 | tab282F3A0 | aligned | b1024 ] ; barrier.cta.red	0uP	P
+
+barrier.cta.red = [ tab282F560 | tab282F3A0 | aligned | b1024 ] ; barrier.cta.red	0uuP	P
+
+barrier.cluster.arrive = [ tab282E900 | aligned | b1024 ] ; barrier.cluster.arrive		P
+
+barrier.cluster.wait = [ tab282E900 | aligned | b1024 ] ; barrier.cluster.wait		P
+
+membar = [ tab282E960 | tab282E900 | tab282EC40 | b1024 ] ; membar		P
+
+mbarrier_init = [ ".mbarrier_init" ]
+
+fence = [ tab282E900 | tab282EC40 | mbarrier_init | tab282F4E0 | b1024 ] ; fence		P
+
+tab282E8D0 = [ ".async::generic" | ".tensormap::generic" ]
+
+fence.proxy = [ tab282EC40 | tab282E900 | tab282E8D0 | tab282EC40 | tab282F4E0 | b1024 ] ; fence.proxy		P
+
+fence.proxy = [ tab282E900 | tab282E8D0 | tab282EC40 | b1024 ] ; fence.proxy	MC	
+
+membar.proxy = [ b1024 ] ; membar.proxy		
+
+tensormap.cp_fenceproxy = [ tab282E6A0 | tab282E900 | tab282E8D0 | tab282EC40 | sync | aligned | b1024 ] ; tensormap.cp_fenceproxy	MMC	
+
+tab282E360 = [ ".all" | ".any" | ".ballot" | ".uni" ]
+
+_match = [ tab282F560 | tab282E360 | b1024 ] ; _match	u0	B[32|64]
+
+match = [ tab282F560 | tab282E7C0 | tab282E360 | sync | aligned | b1024 ] ; match	u0u	B[32|64]
+
+vote = [ tab282F560 | tab282E360 | b1024 ] ; vote	00	P
+
+vote = [ tab282F560 | tab282E360 | b1024 ] ; vote	0P	B32
+
+vote = [ tab282F560 | tab282E7C0 | tab282E360 | sync | aligned | b1024 ] ; vote	00u	P
+
+vote = [ tab282F560 | tab282E7C0 | tab282E360 | sync | aligned | b1024 ] ; vote	0Pu	B32
+
+redux = [ tab282FC80 | tab282F560 | tab282E7C0 | sync | aligned | b1024 ] ; redux	uuu	B32
+
+redux = [ tab282FC80 | tab282F560 | tab282E7C0 | sync | aligned | b1024 ] ; redux	uuu	I32
+
+redux = [ tab282FC80 | tab282F560 | tab282E7C0 | sync | aligned | nan | abs | b1024 ] ; redux	00u	F32
+
+activemask = [ tab282F560 | b1024 ] ; activemask	0	B32
+
+mbarrier.init = [ tab282EC40 | b1024 ] ; mbarrier.init	Mu	B64
+
+mbarrier.inval = [ tab282EC40 | b1024 ] ; mbarrier.inval	M	B64
+
+mbarrier.arrive = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; mbarrier.arrive	UM	B64
+
+mbarrier.arrive = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; mbarrier.arrive	UMs	B64
+
+mbarrier.test_wait = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; mbarrier.test_wait	PMU	B64
+
+mbarrier.arrive_drop = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; mbarrier.arrive_drop	UM	B64
+
+mbarrier.arrive_drop = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; mbarrier.arrive_drop	UMs	B64
+
+mbarrier.pending_count = [ tab282F560 | b1024 ] ; mbarrier.pending_count	uU	B64
+
+mbarrier.test_wait.parity = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; mbarrier.test_wait.parity	PMu	B64
+
+mbarrier.try_wait = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; mbarrier.try_wait	PMU	B64
+
+mbarrier.try_wait = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; mbarrier.try_wait	PMUu	B64
+
+mbarrier.try_wait.parity = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; mbarrier.try_wait.parity	PMu	B64
+
+mbarrier.try_wait.parity = [ tab282F560 | tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; mbarrier.try_wait.parity	PMuu	B64
+
+mbarrier.complete_tx = [ tab282EC40 | tab282E900 | tab282EC40 | b1024 ] ; mbarrier.complete_tx	Mu	B64
+
+setmaxnreg.inc = [ sync | aligned | b1024 ] ; setmaxnreg.inc	C	I32
+
+setmaxnreg.dec = [ sync | aligned | b1024 ] ; setmaxnreg.dec	C	I32
+
+elect = [ tab282F560 | sync | aligned | b1024 ] ; elect	uu	
+
+trap = [ b1024 ] ; trap		
+
+brkpt = [ b1024 ] ; brkpt		
+
+tab282E1E0 = [ "-1" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11" | "12" | "13" | "14" | "15" ]
+
+pmevent = [ b1024 | tab282E1E0 ] ; pmevent	C	
+
+pmevent.mask = [ b1024 ] ; pmevent.mask	C	
+
+nanosleep = [ b1024 ] ; nanosleep	u	I32
+
+clusterlaunchcontrol.try_cancel.async = [ tab282EC40 | multicast_cluster | tab282E520 | b1024 ] ; clusterlaunchcontrol.try_cancel.async	MM	B128
+
+tab282F4A0 = [ ".is_canceled" | ".get_first_ctaid" | ".get_first_ctaid::x" | ".get_first_ctaid::y" | ".get_first_ctaid::z" ]
+
+clusterlaunchcontrol.query_cancel = [ tab282F560 | tab282F4A0 | b1024 ] ; clusterlaunchcontrol.query_cancel	P1	PB128
+
+clusterlaunchcontrol.query_cancel = [ tab282F560 | tab282F4A0 | b1024 ] ; clusterlaunchcontrol.query_cancel	01	B32B128
+
+vadd = [ sat | b1024 ] ; vadd	012	I32I32I32
+
+vadd = [ sat | b1024 ] ; vadd	0120	I32I32I32
+
+vsub = [ sat | b1024 ] ; vsub	012	I32I32I32
+
+vsub = [ sat | b1024 ] ; vsub	0120	I32I32I32
+
+vabsdiff = [ sat | b1024 ] ; vabsdiff	012	I32I32I32
+
+vabsdiff = [ sat | b1024 ] ; vabsdiff	0120	I32I32I32
+
+vmin = [ sat | b1024 ] ; vmin	012	I32I32I32
+
+vmin = [ sat | b1024 ] ; vmin	0120	I32I32I32
+
+vmax = [ sat | b1024 ] ; vmax	012	I32I32I32
+
+vmax = [ sat | b1024 ] ; vmax	0120	I32I32I32
+
+vshl = [ sat | tab282E480 | b1024 ] ; vshl	012	I32I32I32
+
+vshl = [ sat | tab282E480 | b1024 ] ; vshl	0120	I32I32I32
+
+vshr = [ sat | tab282E480 | b1024 ] ; vshr	012	I32I32I32
+
+vshr = [ sat | tab282E480 | b1024 ] ; vshr	0120	I32I32I32
+
+po = [ ".po" ]
+
+tab282E440 = [ ".negAB" | ".negB" | ".po" ]
+
+vmad = [ sat | po | tab282E440 | b1024 ] ; vmad	0120	I32I32I32
+
+vset = [ tab282FBC0 | b1024 ] ; vset	u01	I32I32
+
+vset = [ tab282FBC0 | b1024 ] ; vset	u01u	I32I32
+
+vadd2 = [ sat | b1024 ] ; vadd2	0120	I32I32I32
+
+vsub2 = [ sat | b1024 ] ; vsub2	0120	I32I32I32
+
+vavrg2 = [ sat | b1024 ] ; vavrg2	0120	I32I32I32
+
+vabsdiff2 = [ sat | b1024 ] ; vabsdiff2	0120	I32I32I32
+
+vmin2 = [ sat | b1024 ] ; vmin2	0120	I32I32I32
+
+vmax2 = [ sat | b1024 ] ; vmax2	0120	I32I32I32
+
+vset2 = [ tab282FBC0 | b1024 ] ; vset2	u01u	I32I32
+
+vadd4 = [ sat | b1024 ] ; vadd4	0120	I32I32I32
+
+vsub4 = [ sat | b1024 ] ; vsub4	0120	I32I32I32
+
+vavrg4 = [ sat | b1024 ] ; vavrg4	0120	I32I32I32
+
+vabsdiff4 = [ sat | b1024 ] ; vabsdiff4	0120	I32I32I32
+
+vmin4 = [ sat | b1024 ] ; vmin4	0120	I32I32I32
+
+vmax4 = [ sat | b1024 ] ; vmax4	0120	I32I32I32
+
+vset4 = [ tab282FBC0 | b1024 ] ; vset4	u01u	I32I32

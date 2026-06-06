@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_B $opt_b $opt_d $opt_f $opt_i $opt_m $opt_o $opt_k $opt_L $opt_l $opt_t $opt_U $opt_w/;
+use vars qw/$opt_a $opt_B $opt_b $opt_d $opt_e $opt_f $opt_i $opt_m $opt_o $opt_k $opt_L $opt_l $opt_t $opt_U $opt_w/;
 
 sub usage()
 {
@@ -17,6 +17,7 @@ Usage: $0 [options] md.txt
  -b idx:shift
  -B list of idx:shift
  -d - dump known tables rows
+ -e - generate EBNF
  -f - mask frequency analysis
  -a ins1 ins2 ... - make and mask of instructions
  -i ins1 ins2 ... - make and mask of instructions - remained
@@ -97,7 +98,7 @@ sub do_freq
         my $ar = apply_k($op->[1]);
         next unless $ar;
         next unless( $ar->[$i] & $mask );
-        next if is_mpi($op->[2]);
+        next if is_mpi($op->[3]);
         if ( defined $opt_k ) {
           $lsk{ $op->[0] }++;
           $ins_k{ $op->[3] }++;
@@ -149,7 +150,7 @@ sub try_mask
   foreach my $op ( @g_ops ) {
     my $ar = apply_k($op->[1]);
     next unless($ar);
-    next if is_mpi($op->[2]);
+    next if is_mpi($op->[3]);
     next unless( $ar->[$idx] & $mask );
     printf(" line %d: %s\n", $op->[0], $op->[2]);
     unless( scalar @and_mask ) {
@@ -176,7 +177,7 @@ OUTER:
   foreach my $op ( @g_ops ) {
     my $ar = apply_k($op->[1]);
     next unless($ar);
-    next if is_mpi($op->[2]);
+    next if is_mpi($op->[3]);
     foreach my $idx ( keys %$hr ) {
       my $mask = $hr->{$idx};
       next OUTER unless( $ar->[$idx] & $mask );
@@ -334,7 +335,8 @@ sub read_ops2
   my($fh, $str, $m, $rest, $iname, $max_op);
   open($fh, '<', $fname) or die("Cannot open $fname, error $!");
   my $ln = 0;
-  my $add = defined($opt_f) || defined($opt_b) || defined($opt_B) || defined($opt_i) || defined($opt_a) || defined($opt_o);
+  # place masks to g_ops? seems that it's better not have big array with 1420 masks if you don't use it
+  my $add = defined($opt_f) || defined($opt_b) || defined($opt_B) || defined($opt_e) || defined($opt_i) || defined($opt_a) || defined($opt_o);
   my $max_mask = 0;
   while( $str = <$fh> ) {
     chomp $str;
@@ -365,13 +367,15 @@ sub read_ops2
   }
   close $fh;
   # dump results
-  dump_mask(\@mask);
   $g_total_mask = \@mask;
-  printf("length of mask %d\n", bcnt(\@mask));
-  printf("%d uniq ins\n", scalar keys %g_ins);
-  if ( $max_op ) {
-    printf("longest mask: %d\n", $max_mask);
-    printf("at %d %s\n", $max_op->[0], $max_op->[2]);
+  unless ( defined $opt_e ) {
+    dump_mask(\@mask);
+    printf("length of mask %d\n", bcnt(\@mask));
+    printf("%d uniq ins\n", scalar keys %g_ins);
+    if ( $max_op ) {
+      printf("longest mask: %d\n", $max_mask);
+      printf("at %d %s\n", $max_op->[0], $max_op->[2]);
+    }
   }
 }
 
@@ -593,6 +597,68 @@ my %gk_tabs = (
  16 * 8 + 7 => 'cp_mask',
 );
 
+# collect all tables for some instruction
+# args: arr from g_ops
+sub gather_tabs
+{
+  my $op = shift;
+  my $ar = $op->[1];
+  my @res;
+  my $idx = 0;
+  foreach my $m ( @$ar ) {
+    foreach my $i ( 0 .. 7 ) {
+      next unless ( $m & (1 << $i) );
+      my $key = $idx * 8 + $i;
+      next unless exists $gk_tabs{$key};
+      push @res, $gk_tabs{$key};
+    }
+    ++$idx;
+  }
+  # check gn_tabs
+  push @res, $gn_tabs{ $op->[3] } if exists($gn_tabs{ $op->[3] });
+  return scalar(@res) ? \@res : undef;
+}
+
+# tabs cache, key - name, value - array of rows
+my %g_tcache;
+
+# args - hash with instruction names (or undef for all)
+sub gen_ebpf
+{
+  my $ih = shift;
+  my $res = 0;
+  foreach my $op ( @g_ops ) {
+    my $op_name = $op->[3];
+    next if ( defined($ih) && !exists($ih->{$op_name}) );
+    next if ( is_mpi($op_name) );
+    # yep, our client
+    my $tr = gather_tabs($op);
+    unless( defined $tr ) {
+      printf("%s\n", $op->[2]);
+      next;
+    }
+    # and we have some tables
+    foreach my $tab ( @$tr ) {
+      # I use dirty hack here - if tables was not read yet - it not in g_tcache and so need to be dumped
+      next if ( exists $g_tcache{$tab} );
+      my $ar = get_trows($tab);
+      unless( defined $ar ) {
+        printf("cannot read table %s for %s\n", $tab, $op->[3]);
+        next;
+      }
+      # produce name = [ ... ] for table - see grammar at https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form
+      printf("\n%s = [ ", $tab);
+      my $or_str = join ' | ', map { '"' . $_ . '"'; } @$ar;
+      printf("%s ]\n", $or_str);
+    }
+    # finally dump instruction name = [ | ]
+    printf("\n%s = [ ", $op->[3]);
+    my $tabs = join ' | ', @$tr;
+    printf("%s ] ; %s\n", $tabs, $op->[2]);
+  }
+  $res;
+}
+
 use constant TabsDir => 'tabs/';
 use constant TabLen => 96;
 
@@ -622,9 +688,6 @@ sub read_dump_tab {
   next unless defined $ar;
   foreach my $str ( @$ar ) { printf("%s%s\n", $pfx, $str); }
 }
-
-# tabs cache, key - name, value - array of rows
-my %g_tcache;
 
 # return array of table rows
 # if not in cache - read it
@@ -896,7 +959,7 @@ sub parse_L
 }
 
 # main
-my $status = getopts("Bb:adfikLl:motUw");
+my $status = getopts("Bb:adefikLl:motUw");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
@@ -905,6 +968,15 @@ if ( defined $opt_t ) {
   exit;
 }
 read_expands() if defined($opt_m);
+# -e - just generate EBNF
+if ( defined $opt_e ) {
+  # read for what instructions
+  my %ins;
+  $ins{$_} = 1 foreach @ARGV;
+  gen_ebpf(scalar(keys %ins) ? \%ins : undef);
+  exit;
+}
+# -l - make ptx for lexer brute-force
 if ( defined $opt_l ) {
   my $hr = collect_attrs();
   my $sr;
@@ -912,6 +984,7 @@ if ( defined $opt_l ) {
   force_attrs($hr, $opt_l, $sr);
   exit;
 }
+# -L parse file from colsetp.pl
 if ( defined $opt_L ) {
   parse_L(get_not_used_tabs(), collect_sfx());
   exit;
