@@ -66,7 +66,7 @@ sub read_expands
   $res;
 }
 
-# check of this is pseudo-instruction
+# check if this is pseudo-instruction
 sub is_mpi {
   my $name = shift;
   return defined($opt_m) && exists($g_mpi{$name});
@@ -467,7 +467,6 @@ OUTER:
 my %gn_tabs = (
 # 'istypep' => [ .texref , .samplerref, surfref ],
  'pmevent' => 'tab282E1E0',
- 'tensormap.replace' => 'tab282F3E0',
 );
 
 =pod
@@ -591,7 +590,9 @@ my %gk_tabs = (
  15 * 8 + 6 => 'tab282F4A0', # get_first_ctaid{::dimension}
  15 * 8 + 7 => 'tab282F480',
  16 * 8 + 0 => 'tab282F440', # test    byte ptr [r14+10h], 1
+ 16 * 8 + 1 => 'tab282F3E0',
  16 * 8 + 2 => 'b1024',
+ 16 * 8 + 4 => 'wait', # ::ld/::st for tcgen05.wait
  16 * 8 + 5 => 'tab282E2C0', # test    byte ptr [r12+10h], 20h
  16 * 8 + 6 => 'tab282E280', # test    byte ptr [r12+10h], 40h
  16 * 8 + 7 => 'cp_mask',
