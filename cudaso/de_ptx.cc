@@ -328,10 +328,14 @@ int de_ptx::cmn_ptx_op(diter &di, ptx_op &curr, G &regs, T t, A add) {
   if ( di.ud_obj.mnemonic == UD_Imov ) {
     int off = add(di);
     if ( off ) {
+      if ( opt_d ) printf("add mask[%d], sizr %d, %X\n", off, di.ud_obj.operand[0].size,
+       32 == di.ud_obj.operand[0].size ? di.ud_obj.operand[1].lval.udword : di.ud_obj.operand[1].lval.ubyte);
       // check zeroing
-      if ( 32 == di.ud_obj.operand[0].size && !di.ud_obj.operand[1].lval.udword ) return 1;
+      if ( 32 == di.ud_obj.operand[0].size ) {
+        curr.store_add_mask(di.ud_obj.operand[1].lval.udword);
+        return 1;
+      }
       curr.st[off] = di.ud_obj.operand[1].lval.ubyte;
-      if ( opt_d ) printf("add mask[%d], %X\n", off, di.ud_obj.operand[1].lval.ubyte);
       return 1;
     }
     off = t(di);
