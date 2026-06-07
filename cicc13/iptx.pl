@@ -463,10 +463,12 @@ OUTER:
 
 # for instructions with zero mask for unknown reason
 # key is instruction name, value - table name
-# I hope where will be single attribute per instruction
+# I can only hope there will be single attribute per instruction
+# pls keep this hash ordered by key
 my %gn_tabs = (
-# 'istypep' => [ .texref , .samplerref, surfref ],
+ 'istypep' => 'istypep',
  'pmevent' => 'tab282E1E0',
+ 'vmad' => 'tab282E460',
 );
 
 =pod
@@ -525,6 +527,7 @@ my %gk_tabs = (
   5 * 8 + 6 => 'tab282EC20', # cache level like .l1
   5 * 8 + 7 => 'tab282EB80', # eviction, since v7.4 also for ld/st/prefetch
   6 * 8 + 0 => 'tab282EC40', # test    byte ptr [r12+6], 1
+  6 * 8 + 1 => 'tab282F2D0', # just speculation for _col/_row
   6 * 8 + 2 => 'vec',
   6 * 8 + 3 => 'tab282E760', # geom
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
@@ -628,6 +631,8 @@ sub gen_ebpf
 {
   my $ih = shift;
   my $res = 0;
+  my @total;
+  my %nums;
   foreach my $op ( @g_ops ) {
     my $op_name = $op->[3];
     next if ( defined($ih) && !exists($ih->{$op_name}) );
@@ -652,10 +657,23 @@ sub gen_ebpf
       my $or_str = join ' | ', map { '"' . $_ . '"'; } @$ar;
       printf("%s ]\n", $or_str);
     }
+    # compose ins alias
+    my $alias = $op->[3];
+    $alias =~ s/\./_/;
+    $alias .= $nums{$alias}++;
+    # and push to total
+    push @total, $alias;
     # finally dump instruction name = [ | ]
-    printf("\n%s = [ ", $op->[3]);
-    my $tabs = join ' | ', @$tr;
+    printf("\n%s = \"%s\" [ ", $alias, $op->[3]);
+    my $tabs = join ' ', @$tr;
     printf("%s ] ; %s\n", $tabs, $op->[2]);
+  }
+  # dump total
+  printf("\ninsn = ");
+  my $idx = 0;
+  foreach my $ins ( @total ) {
+    printf(" | ") if ( $idx++ );
+    printf("%s\n", $ins);
   }
   $res;
 }
