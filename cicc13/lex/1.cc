@@ -10,6 +10,8 @@
 typedef std::unordered_set<int> Visited;
 typedef std::vector<std::thread *> Pool;
 
+#define ROOT_IDX	2
+
 struct yy_trans_info
 {
   unsigned char yy_verify;
@@ -53,8 +55,8 @@ int rec_chain(int lvl, int old, std::string &prev, Visited &vis) {
   for ( auto pair: di->second ) {
     auto vi = vis.find(pair.first);
     if ( vi != vis.end() ) continue; // skip already visited to avoid loops
-    if ( pair.first < 2 ) continue;
-    if ( 2 == pair.first ) {
+    if ( pair.first < ROOT_IDX ) continue;
+    if ( ROOT_IDX == pair.first ) {
       auto res = prev + char(pair.second);
       dump_res(old, res);
       return 1;
@@ -88,13 +90,17 @@ int main(int argc, char **argv) {
 //  int64_t test = 0xFFFFD8D4;
 //  printf("%d\n", test - 0x100000000);
   // fix negatives
-  int idx = 0;
   for ( auto &neg: shit ) {
     if ( neg.yy_nxt > 0xf0000000 ) {
 // printf("%X %d\n", neg.yy_nxt, neg.yy_nxt - 0x100000000);
       neg.yy_nxt -= 0x100000000;
     }
+  }
+  // form cache & back distance map
+  int idx = 0;
+  for ( auto &neg: shit ) {
     if ( neg.yy_nxt > 0 ) cache[neg.yy_nxt].push_back(idx);
+    // to speed-up brute-force I use only symbols 32 .. 127
     if ( upto - idx > 128 ) {
       for ( int l = 32; l < 128; l++ ) {
         if ( shit[idx + l].yy_verify != l ) continue;

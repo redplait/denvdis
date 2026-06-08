@@ -1,2 +1,2 @@
 a.out: 1.cc
-	clang -o $@ $^ -lstdc++ -lpthread
+	clang-21 -o $@ $^ -lstdc++ -lpthread
