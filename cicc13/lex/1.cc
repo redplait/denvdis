@@ -55,7 +55,8 @@ int rec_chain(int lvl, int old, std::string &prev, Visited &vis) {
     if ( vi != vis.end() ) continue; // skip already visited to avoid loops
     if ( pair.first < 2 ) continue;
     if ( 2 == pair.first ) {
-      dump_res(old, prev);
+      auto res = prev + char(pair.second);
+      dump_res(old, res);
       return 1;
     }
     std::string ns = prev + char(pair.second);
