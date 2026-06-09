@@ -53,6 +53,9 @@ int rec_chain(int lvl, int old, std::string &prev, Visited &vis) {
 //    std::lock_guard<std::mutex> tmp(glock);
 //    printf("rec_chain(%d, %d, %s, %d)\n", lvl, old, prev.c_str(), di->second.size());
 //  }
+  // to reduce object creating reuse the same string and visited set for eech iteration - just clean them up after each loop
+  std::string ns = prev;
+  Visited vnext = vis;
   for ( auto pair: di->second ) {
     auto vi = vis.find(pair.first);
     if ( vi != vis.end() ) continue; // skip already visited to avoid loops
@@ -62,10 +65,11 @@ int rec_chain(int lvl, int old, std::string &prev, Visited &vis) {
       dump_res(old, res);
       return 1;
     }
-    std::string ns = prev + char(pair.second);
-    Visited vnext = vis;
+    ns.push_back(char(pair.second));
     vnext.insert(pair.first);
     if ( rec_chain(1 + lvl, pair.first, ns, vnext) ) return 1;
+    ns.pop_back();
+    vnext.erase(pair.first);
   }
   return 0;
 }
@@ -73,7 +77,7 @@ int rec_chain(int lvl, int old, std::string &prev, Visited &vis) {
 void try_state(int idx, Pool &pool) {
   auto di = dist.find(idx);
   if ( di == dist.end() ) return;
-printf("idx %d -> %d\n", idx, di->second.size());
+// printf("idx %d -> %zu\n", idx, di->second.size());
   auto cloj = [di, idx]() {
     for ( auto start: di->second ) {
        std::string s; s.push_back(start.second);
