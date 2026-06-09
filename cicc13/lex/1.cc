@@ -11,6 +11,7 @@ typedef std::unordered_set<int> Visited;
 typedef std::vector<std::thread *> Pool;
 
 #define ROOT_IDX	2
+#define MAX_LEN		32
 
 struct yy_trans_info
 {
@@ -45,7 +46,7 @@ void dump_res(const std::vector<int> &res) {
 }
 
 int rec_chain(int lvl, int old, std::string &prev, Visited &vis) {
-  if ( lvl > 16 ) return 0;
+  if ( lvl > MAX_LEN ) return 0;
   auto di = dist.find(old);
   if ( di == dist.end() ) return 0;
 //  {
@@ -73,15 +74,20 @@ void try_state(int idx, Pool &pool) {
   auto di = dist.find(idx);
   if ( di == dist.end() ) return;
 printf("idx %d -> %d\n", idx, di->second.size());
-  for ( auto start: di->second ) {
-    // create new thread to process start
-    auto *t = new std::thread([start, idx]() {
+  auto cloj = [di, idx]() {
+    for ( auto start: di->second ) {
        std::string s; s.push_back(start.second);
        Visited vis;
        vis.insert(idx);
        vis.insert(start.first);
        rec_chain(0, start.first, s, vis);
-     });
+     }
+  };
+  if ( 1 == di->second.size() ) {
+    cloj();
+  } else {
+    // create new thread to process start
+    auto *t = new std::thread(cloj);
     pool.push_back(t);
   }
 }
@@ -121,9 +127,11 @@ int main(int argc, char **argv) {
      for ( int r: res ) {
        try_state(1+r, pool);
      }
-     printf("%d threads\n", pool.size());
-     // wait
-     for ( auto t: pool ) t->join();
-     for ( auto t: pool ) delete t;
+     if ( !pool.empty() ) {
+       printf("%zu threads\n", pool.size());
+       // wait
+       for ( auto t: pool ) t->join();
+       for ( auto t: pool ) delete t;
+     }
   }
 }
