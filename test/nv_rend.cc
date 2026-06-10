@@ -2784,3 +2784,23 @@ bool NV_renderer::check_dual(const NV_extracted &kv) const
   if ( kvi == kv.end() ) return false;
   return kvi->second == 0x10; // floxy2
 }
+
+bool NV_renderer::arr_by_vq(std::map<int, std::list<const nv_instr *> > &res) const {
+  if ( !m_dis ) return false;
+  auto sorted = m_dis->get_instrs();
+  if ( !sorted ) return false;
+  // luckily all queue preds actually don't use NV_extracted, so we can reuse single fake
+  NV_extracted fake;
+  for ( auto &ins_list: *sorted ) {
+    for ( auto ins: ins_list.second ) {
+      int def = -1;
+      if ( ins->predicated ) {
+        auto vqi = ins->predicated->find("VQ");
+        if ( vqi != ins->predicated->end() )
+         def = vqi->second(fake);
+      }
+      res[def].push_back(ins);
+    }
+  }
+  return !res.empty();
+}

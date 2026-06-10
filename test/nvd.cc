@@ -14,6 +14,7 @@ int opt_c = 0,
     opt_P = 0,
     opt_r = 0,
     opt_S = 0,
+    opt_q = 0,
     opt_N = 0,
     opt_O = 0;
 
@@ -138,6 +139,7 @@ class nv_dis: public CElf<NV_renderer>
       fprintf(m_out, "filters %ld success %ld, conditions %ld (%ld) cached %ld\n",
         sfilters, sfilters_succ, scond_count, scond_succ, scond_hits);
    }
+   void dump_queues() const;
   protected:
    mutable SRels::const_iterator riter;
    SRels::const_iterator riter_end;
@@ -810,6 +812,25 @@ static int cmp_srels(FILE *m_out, section *sec) {
   return 1;
 }
 
+void nv_dis::dump_queues() const {
+  std::map<int, std::list<const nv_instr *> > dq;
+  if ( !arr_by_vq(dq) ) return;
+  fprintf(m_out, "%ld queues:\n", dq.size());
+  for ( auto &dqi: dq ) {
+    auto name = m_vq(dqi.first);
+    if ( name ) fprintf(m_out, " %s:", name);
+    else fprintf(m_out, " %d::", dqi.first);
+    // dirty hack - the same names shared the same pointer
+    const char *old_name = nullptr;
+    for ( auto ins: dqi.second ) {
+      if ( ins->name == old_name ) continue;
+      fprintf(m_out, " %s", ins->name);
+      old_name = ins->name;
+    }
+    fputc('\n', m_out);
+  }
+}
+
 void nv_dis::process()
 {
   n_sec = m_reader->sections.size();
@@ -820,6 +841,8 @@ void nv_dis::process()
   fprintf(m_out, "type %X, %d sections\n", et, n_sec);
   if ( opt_t || opt_r )
     read_symbols();
+  if ( opt_q )
+    dump_queues();
   // enum sections
   for ( Elf_Half i = 0; i < n_sec; ++i )
   {
@@ -891,6 +914,7 @@ void usage(const char *prog)
   printf("-O - dump operands\n");
   printf("-p - dump predicates\n");
   printf("-P - dump instructions without properties\n");
+  printf("-q - dump queues\n");
   printf("-r - dump relocs\n");
   printf("-s index - disasm only single section withh index\n");
   printf("-S - dump sched info\n");
@@ -905,7 +929,7 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "ceghlmMrtTNOpPSs:o:");
+    c = getopt(argc, argv, "ceghlmMqrtTNOpPSs:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'c': opt_c = 1; break;
@@ -918,6 +942,7 @@ int main(int argc, char **argv)
       case 't': opt_t = 1; break;
       case 'T': opt_T = 1; break;
       case 'O': opt_O = 1; break;
+      case 'q': opt_q = 1; break;
       case 'p': opt_p = 1; break;
       case 'P': opt_P = 1; break;
       case 'r': opt_r = 1; break;

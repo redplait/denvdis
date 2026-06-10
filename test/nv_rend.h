@@ -392,6 +392,8 @@ class NV_renderer {
     // latency methods
     int check_lat_set(const NV_sorted *) const;
     std::optional<int> calc_latency(const struct nv_instr *, const NV_extracted &) const;
+    // arrange instructions by queue
+    bool arr_by_vq(std::map<int, std::list<const nv_instr *> > &) const;
   protected:
    template <typename T, typename I>
    const T& get_it(const std::initializer_list<T>& list, I index) const {
