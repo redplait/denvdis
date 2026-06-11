@@ -79,6 +79,9 @@ struct reg_reuse {
   inline int kb() const { return keep & 2; }
 };
 
+typedef std::pair<const NV_tab *, int> RegTabChain;
+typedef std::list<RegTabChain> RegTabChains;
+
 struct reg_history {
   unsigned long off;
   // 0x8000 - write, else read
@@ -123,6 +126,7 @@ struct reg_history {
   inline int windex() const {
     return (kind >> 4) & 7;
   }
+  RegTabChains tab_chain;
 };
 
 struct typed_reg_history: public reg_history {
@@ -193,7 +197,7 @@ struct reg_pad {
   void add_cb(unsigned long off, unsigned long cb_off, unsigned short cb_num, unsigned short k) {
     cbs.push_back( { off, cb_off, cb_num, k });
   }
-  void _add(RSet &rs, int idx, unsigned long off, reg_history::RH k) {
+  RegTabChains* _add(RSet &rs, int idx, unsigned long off, reg_history::RH k) {
     if ( snap ) {
       if ( &rs == &pred ) {
         if ( k & 0x8000 )
@@ -212,31 +216,35 @@ struct reg_pad {
     if ( ri != rs.end() ) {
       if ( !ri->second.empty() ) { // check if prev item is the same
         auto &last = ri->second.back();
-        if ( last.off == off && last.kind == k ) return;
+        if ( last.off == off && last.kind == k ) return nullptr;
       }
       ri->second.push_back( { off, k } );
+      return &ri->second.back().tab_chain;
     } else {
      std::vector<reg_history> tmp;
      tmp.push_back( { off, k } );
-     rs[idx] = std::move(tmp);
+     auto et = rs.emplace(idx, std::move(tmp) );
+     return &et.first->second.back().tab_chain;
     }
   }
-  void _add(TRSet &rs, int idx, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+  RegTabChains* _add(TRSet &rs, int idx, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
     k |= pred_mask;
     auto ri = rs.find(idx);
     if ( ri != rs.end() ) {
       if ( !ri->second.empty() ) { // check if prev item is the same
         auto &last = ri->second.back();
-        if ( last.off == off && last.kind == k ) return;
+        if ( last.off == off && last.kind == k ) return nullptr;
       }
-      ri->second.push_back( { off, k, t } );
+      ri->second.push_back( { off, k, {}, t } );
+      return &ri->second.back().tab_chain;
     } else {
      std::vector<typed_reg_history> tmp;
-     tmp.push_back( { off, k, t } );
-     rs[idx] = std::move(tmp);
+     tmp.push_back( { off, k, {}, t } );
+     auto et = rs.emplace(idx, std::move(tmp) );
+     return &et.first->second.back().tab_chain;
     }
   }
-  void rgpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {
+  RegTabChains* rgpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {
      auto reuse = check_reuse(op);
      if ( snap ) {
        std::unordered_map<unsigned short, unsigned char>::iterator si = snap->gpr.find(r);
@@ -246,13 +254,13 @@ struct reg_pad {
        } else
        snap->gpr[r] = op | (reuse ? 0x40 : 0) | (k & 0x8000 ? 0x80: 0);
      }
-    _add(gpr, r, off, k | reuse, t);
+     return _add(gpr, r, off, k | reuse, t);
   }
-  void wgpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+  RegTabChains* wgpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
      if ( snap ) snap->gpr[r] = 0x80;
-    _add(gpr, r, off, k | 0x8000, t);
+     return _add(gpr, r, off, k | 0x8000, t);
   }
-  void rugpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {
+  RegTabChains* rugpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {
      auto reuse = check_reuse(op);
      if ( snap ) {
        std::unordered_map<unsigned short, unsigned char>::iterator si = snap->gpr.find(r | 0x8000);
@@ -262,23 +270,23 @@ struct reg_pad {
        } else
        snap->gpr[r | 0x8000] = op | (reuse ? 0x40 : 0) | (k & 0x8000 ? 0x80: 0);
      }
-    _add(ugpr, r, off, k | reuse, t);
+     return _add(ugpr, r, off, k | reuse, t);
   }
-  void wugpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+  RegTabChains* wugpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
      if ( snap ) snap->gpr[r | 0x8000] = 0x80;
-    _add(ugpr, r, off, k | 0x8000, t);
+     return _add(ugpr, r, off, k | 0x8000, t);
   }
-  void rpred(int r, unsigned long off, reg_history::RH k) {
-    _add(pred, r, off, k);
+  inline RegTabChains* rpred(int r, unsigned long off, reg_history::RH k) {
+    return _add(pred, r, off, k);
   }
-  void wpred(int r, unsigned long off, reg_history::RH k) {
-    _add(pred, r, off, k | 0x8000);
+  inline RegTabChains* wpred(int r, unsigned long off, reg_history::RH k) {
+    return _add(pred, r, off, k | 0x8000);
   }
-  void rupred(int r, unsigned long off, reg_history::RH k) {
-    _add(upred, r, off, k);
+  inline RegTabChains* rupred(int r, unsigned long off, reg_history::RH k) {
+    return _add(upred, r, off, k);
   }
-  void wupred(int r, unsigned long off, reg_history::RH k) {
-    _add(upred, r, off, k | 0x8000);
+  inline RegTabChains* wupred(int r, unsigned long off, reg_history::RH k) {
+    return _add(upred, r, off, k | 0x8000);
   }
   bool empty() const {
     return gpr.empty() && pred.empty() && ugpr.empty() && upred.empty() && cbs.empty();

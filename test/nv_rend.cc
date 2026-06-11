@@ -1284,6 +1284,26 @@ const NV_Prop *NV_renderer::find_compound_prop(const nv_instr *i, const T* ct) c
   return nullptr;
 }
 
+static const std::string_view s_tkey_gpr("GPR"), s_tkey_ugpr("UGPR"),
+ s_tkey_pred("PRED"), s_tkey_upred("OPRED"), s_tkey_cc("CC");
+
+// for write is_col = 0
+static int fill_tab_chains(const NV_renderer::NV_pair &p, const std::string_view &key, RegTabChains *tlist, int is_col) {
+  if ( !tlist ) return 0;
+  auto what = is_col ? p.first->cols : p.first->rows;
+  if ( !what ) return 0;
+  int res = 0;
+  for ( auto &wi: *what ) {
+    // filter out if presents
+    if ( wi.filter && !wi.filter(p.first, p.second) ) continue;
+    // filter by connection
+    if ( key != wi.tab->connection ) continue;
+    tlist->push_back( { wi.tab, wi.idx } );
+    res++;
+  }
+  return res;
+}
+
 int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &p, unsigned long off)
 {
   int res = 0;
@@ -1412,10 +1432,10 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       if ( kvi->second == 7 ) continue;
       if ( !strcmp(ea->ename, "Predicate") )
        { rtdb->pred_mask = (1 + (unsigned short)kvi->second) << 11;
-         rtdb->rpred(kvi->second, off, 0); res++; }
+         fill_tab_chains(p, s_tkey_pred, rtdb->rpred(kvi->second, off, 0), 1); res++; }
       else if ( !strcmp(ea->ename, "UniformPredicate") )
        { rtdb->pred_mask = 0x4000 | (1 + (unsigned short)kvi->second) << 11;
-         rtdb->rupred(kvi->second, off, 0); res++; }
+         fill_tab_chains(p, s_tkey_upred, rtdb->rupred(kvi->second, off, 0), 1); res++; }
       else
        fprintf(m_out, "unknown predicate %s at %lX\n", ea->ename, off);
       continue;
@@ -1433,12 +1453,14 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       if ( kvi == p.second.end() ) continue;
       idx++;
       if ( !strcmp(ea->ename, "Predicate") && kvi->second != 7 )
-       { rtdb->wpred(kvi->second, off, 0);
+       {
+         fill_tab_chains(p, s_tkey_pred, rtdb->wpred(kvi->second, off, 0), 0);
          res++;
          continue;
        }
       else if ( !strcmp(ea->ename, "UniformPredicate") && kvi->second != 7 )
-       { rtdb->wupred(kvi->second, off, 0);
+       {
+         fill_tab_chains(p, s_tkey_upred, rtdb->wupred(kvi->second, off, 0), 0);
          res++;
          continue;
        }
@@ -1460,9 +1482,15 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
         if ( kvi == p.second.end() ) continue;
         idx++;
         if ( !strcmp(ea->ename, "Predicate") && kvi->second != 7 )
-         { rtdb->wpred(kvi->second, off, 0); res++; continue; }
+        {
+          fill_tab_chains(p, s_tkey_pred, rtdb->wpred(kvi->second, off, 0), 0);
+          res++; continue;
+        }
         else if ( !strcmp(ea->ename, "UniformPredicate") && kvi->second != 7 )
-         { rtdb->wupred(kvi->second, off, 0); res++; continue; }
+        {
+          fill_tab_chains(p, s_tkey_upred, rtdb->wupred(kvi->second, off, 0), 0);
+          res++; continue;
+        }
         idx--;
       }
     }
@@ -1475,7 +1503,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
-        rtdb->rgpr(kvi->second + i, off, what, op_idx, _t);
+        fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second + i, off, what, op_idx, _t), 1);
         res++;
       }
       return res;
@@ -1485,7 +1513,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
-        rtdb->wgpr(kvi->second + i, off, what, _t);
+        fill_tab_chains(p, s_tkey_gpr, rtdb->wgpr(kvi->second + i, off, what, _t), 0);
         res++;
       }
       return res;
@@ -1495,7 +1523,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
-        rtdb->rugpr(kvi->second + i, off, what, op_idx, _t);
+        fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second + i, off, what, op_idx, _t), 1);
         res++;
       }
       return res;
@@ -1505,7 +1533,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         reg_history::RH what = reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
-        rtdb->wugpr(kvi->second + i, off, what, _t);
+        fill_tab_chains(p, s_tkey_ugpr, rtdb->wugpr(kvi->second + i, off, what, _t), 0);
         res++;
       }
       return res;
@@ -1531,12 +1559,14 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
 printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
 #endif
       if ( is_pred(ea, kvi) )
-       { rtdb->rpred(kvi->second, off, 0);
+       {
+         fill_tab_chains(p, s_tkey_pred, rtdb->rpred(kvi->second, off, 0), 1);
          res++; idx++;
          continue;
        }
       if ( is_upred(ea, kvi) )
-       { rtdb->rupred(kvi->second, off, 0);
+       {
+         fill_tab_chains(p, s_tkey_upred, rtdb->rupred(kvi->second, off, 0), 1);
          res++; idx++;
          continue;
        }
@@ -1544,19 +1574,19 @@ printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
       {
         if ( is_sv(d_sv, rn->name) ) {
          if ( d_size <= 32 )
-          { rtdb->wgpr(kvi->second, off, 0, t1); res++; }
+          { fill_tab_chains(p, s_tkey_gpr, rtdb->wgpr(kvi->second, off, 0, t1), 0); res++; }
          else res += gpr_multi(d_size, kvi, t1);
         } else if ( is_sv(d2_sv, rn->name) ) {
          if ( d2_size <= 32 )
-         { rtdb->wgpr(kvi->second, off, 0, t2); res++; }
+         { fill_tab_chains(p, s_tkey_gpr, rtdb->wgpr(kvi->second, off, 0, t2), 0); res++; }
          else res += gpr_multi(d2_size, kvi, t2);
         } else if ( !strcmp(rn->name, "Rd") ) {
          if ( d_size <= 32 )
-          { rtdb->wgpr(kvi->second, off, 0, t1); res++; }
+          { fill_tab_chains(p, s_tkey_gpr, rtdb->wgpr(kvi->second, off, 0, t1), 0); res++; }
          else res += gpr_multi(d_size, kvi, t1);
         } else if ( !strcmp(rn->name, "Rd2") ) {
          if ( d2_size <= 32 )
-          { rtdb->wgpr(kvi->second, off, 0, t2); res++; }
+          { fill_tab_chains(p, s_tkey_gpr, rtdb->wgpr(kvi->second, off, 0, t2), 0); res++; }
          else res += gpr_multi(d2_size, kvi, t2);
         } else {
          if ( a_size > 32 && is_sv2(a_sv, rn->name, "Ra") )
@@ -1576,18 +1606,18 @@ printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
          else
          {
            if ( is_sv2(a_sv, rn->name, "Ra") )
-             rtdb->rgpr(kvi->second, off, 0, ISRC_A, t_a);
+             fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second, off, 0, ISRC_A, t_a), 1);
            else if ( is_sv2(b_sv, rn->name, "Rb") )
-             rtdb->rgpr(kvi->second, off, 0, ISRC_B, t_b);
+             fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second, off, 0, ISRC_B, t_b), 1);
            else if ( !strcmp(rn->name, "Rb2") )
-             rtdb->rgpr(kvi->second, off, 0, ISRC_B, t_b);
+             fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second, off, 0, ISRC_B, t_b), 1);
            else if ( is_sv2(c_sv, rn->name, "Rc") )
-             rtdb->rgpr(kvi->second, off, 0, ISRC_C, t_c);
+             fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second, off, 0, ISRC_C, t_c), 1);
            else if ( is_sv2(e_sv, rn->name, "Re") )
-             rtdb->rgpr(kvi->second, off, 0, ISRC_E, t_e);
+             fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second, off, 0, ISRC_E, t_e), 1);
            else if ( is_sv2(h_sv, rn->name, "Rh") ) // NOTE - ISRC_H_SIZE is always 32bit at time of writing this
-             rtdb->rgpr(kvi->second, off, 0, ISRC_H, t_h);
-           else rtdb->rgpr(kvi->second, off, 0, 0);
+             fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second, off, 0, ISRC_H, t_h), 1);
+           else fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second, off, 0, 0), 1);
            res++;
          }
         }
@@ -1595,19 +1625,19 @@ printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
       {
         if ( is_sv(d_sv, rn->name) ) {
          if ( d_size <= 32 )
-          { rtdb->wugpr(kvi->second, off, 0, t1); res++; }
+          { fill_tab_chains(p, s_tkey_ugpr, rtdb->wugpr(kvi->second, off, 0, t1), 0); res++; }
           else res += ugpr_multi(d_size, kvi, t1);
         } else if ( is_sv(d2_sv, rn->name) ) {
          if ( d2_size <= 32 )
-           { rtdb->wugpr(kvi->second, off, 0, t2); res++; }
+           { fill_tab_chains(p, s_tkey_ugpr, rtdb->wugpr(kvi->second, off, 0, t2), 0); res++; }
          else res += ugpr_multi(d2_size, kvi, t2);
         } else if ( !strcmp(rn->name, "URd") ) {
          if ( d_size <= 32 )
-          { rtdb->wugpr(kvi->second, off, 0, t1); res++; }
+          { fill_tab_chains(p, s_tkey_ugpr, rtdb->wugpr(kvi->second, off, 0, t1), 0); res++; }
          else res += ugpr_multi(d_size, kvi, t1);
         } else if ( !strcmp(rn->name, "URd2") ) {
          if ( d2_size <= 32 )
-          { rtdb->wugpr(kvi->second, off, 0, t2); res++; }
+          { fill_tab_chains(p, s_tkey_ugpr, rtdb->wugpr(kvi->second, off, 0, t2), 0); res++; }
          else res += ugpr_multi(d2_size, kvi, t2);
         } else {
          if ( a_size > 32 && is_sv2(a_sv, rn->name, "URa") )
@@ -1623,16 +1653,16 @@ printf("%lX idx %d reg %ld %s\n", off, idx, kvi->second, rn->name);
          else
          {
            if ( is_sv2(a_sv, rn->name, "URa") )
-             rtdb->rugpr(kvi->second, off, 0, ISRC_A, t_a);
+             fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second, off, 0, ISRC_A, t_a), 1);
            else if ( is_sv2(a_sv, rn->name, "URb") )
-             rtdb->rugpr(kvi->second, off, 0, ISRC_B, t_b);
+             fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second, off, 0, ISRC_B, t_b), 1);
            else if ( is_sv2(a_sv, rn->name, "URc") )
-             rtdb->rugpr(kvi->second, off, 0, ISRC_C, t_c);
+             fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second, off, 0, ISRC_C, t_c), 1);
            else if ( is_sv2(a_sv, rn->name, "URe") )
-             rtdb->rugpr(kvi->second, off, 0, ISRC_E, t_e);
+             fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second, off, 0, ISRC_E, t_e), 1);
            else if ( is_sv2(nullptr, rn->name, "URi") )
-             rtdb->rugpr(kvi->second, off, 0, 0);
-           else rtdb->rugpr(kvi->second, off, 0, 0);
+             fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second, off, 0, 0), 1);
+           else fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second, off, 0, 0), 1);
            res++;
          }
         }
@@ -1682,7 +1712,7 @@ printf("check_ve %s %d\n", ve.arg, psize);
             if ( psize > 32 )
               rgpr_multi(psize, kvi, pr ? pr->op : 0, type);
             else
-              rtdb->rgpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type);
+              fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type), 1);
           }
           return 1;
         }
@@ -1702,15 +1732,15 @@ printf("check_ve %s %d\n", ve.arg, psize);
             if ( psize > 32 )
               rugpr_multi(psize, kvi, pr ? pr->op : 0, type);
             else
-              rtdb->rugpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type);
+              fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type), 1);
           }
           return 1;
         }
         // do we really can have predicates inside compound render items?
         if ( is_pred(ea, kvi) )
-        { rtdb->rpred(kvi->second, off, what); return 1; }
+        { fill_tab_chains(p, s_tkey_pred, rtdb->rpred(kvi->second, off, what), 1); return 1; }
         if ( is_upred(ea, kvi) )
-        { rtdb->rupred(kvi->second, off, what); return 1; }
+        { fill_tab_chains(p, s_tkey_upred, rtdb->rupred(kvi->second, off, what), 1); return 1; }
         return 0;
     };
     auto check_ve = [&](const ve_base &ve, reg_history::RH what, const NV_Prop *pr) {
