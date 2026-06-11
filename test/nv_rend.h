@@ -178,6 +178,7 @@ struct track_snap {
 struct reg_pad {
   typedef std::unordered_map<int, std::vector<reg_history> > RSet;
   typedef std::unordered_map<int, std::vector<typed_reg_history> > TRSet;
+  std::vector<reg_history> cc;
   TRSet gpr, ugpr;
   RSet pred, upred;
   std::vector<cbank_history> cbs;
@@ -226,6 +227,14 @@ struct reg_pad {
      auto et = rs.emplace(idx, std::move(tmp) );
      return &et.first->second.back().tab_chain;
     }
+  }
+  RegTabChains* rcc(unsigned long off) {
+    cc.push_back( { off, 0 } );
+    return &cc.back().tab_chain;
+  }
+  RegTabChains* wcc(unsigned long off) {
+    cc.push_back( { off, 0x8000 } );
+    return &cc.back().tab_chain;
   }
   RegTabChains* _add(TRSet &rs, int idx, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
     k |= pred_mask;

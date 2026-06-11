@@ -990,6 +990,8 @@ void NV_renderer::finalize_rt(reg_pad *rtdb) {
   for ( auto &r: rtdb->pred ) std::sort(r.second.begin(), r.second.end(), srt);
  if ( !rtdb->upred.empty() )
   for ( auto &r: rtdb->upred ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !rtdb->cc.empty() )
+  std::sort(rtdb->cc.begin(), rtdb->cc.end(), srt);
  if ( !rtdb->cbs.empty() ) {
   std::sort(rtdb->cbs.begin(), rtdb->cbs.end(), [](const cbank_history &a, const cbank_history &b) { return a.off < b.off; });
  }
@@ -1012,6 +1014,11 @@ void NV_renderer::dump_rt(reg_pad *rtdb) const {
   if ( !rtdb->upred.empty() ) {
     fprintf(m_out, ";;; %ld UPRED\n", rtdb->upred.size());
     dump_rset(rtdb->upred, "UP");
+  }
+  if ( !rtdb->cc.empty() ) {
+   fprintf(m_out, ";;; %ld CC\n", rtdb->cbs.size());
+   for ( auto &c: rtdb->cc )
+     fprintf(m_out, " ;   %lX: %X\n", c.off, c.kind);
   }
   if ( !rtdb->cbs.empty() ) {
    fprintf(m_out, ";;; %ld CBanks\n", rtdb->cbs.size());
@@ -1285,7 +1292,8 @@ const NV_Prop *NV_renderer::find_compound_prop(const nv_instr *i, const T* ct) c
 }
 
 static const std::string_view s_tkey_gpr("GPR"), s_tkey_ugpr("UGPR"),
- s_tkey_pred("PRED"), s_tkey_upred("OPRED"), s_tkey_cc("CC");
+ s_tkey_pred("PRED"), s_tkey_upred("UPRED"), s_tkey_cc("CC"),
+ s_cc_prop("DOES_READ_CC"); // pred name for cc reading
 
 // for write is_col = 0
 static int fill_tab_chains(const NV_renderer::NV_pair &p, const std::string_view &key, RegTabChains *tlist, int is_col) {
@@ -1362,6 +1370,11 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
   // predicates
   int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, b2_size = 0, c_size = 0, e_size = 0, h_size = 0, i_size = 0;
   if ( p.first->predicated ) {
+    auto cci = p.first->predicated->find(s_cc_prop);
+    if ( cci != p.first->predicated->end() ) {
+      int read_cc = cci->second(p.second);
+      if ( read_cc ) fill_tab_chains(p, s_tkey_cc, rtdb->rcc(off), 1);
+    }
     auto pi = p.first->predicated->find("IDEST_SIZE"sv);
     if ( pi != p.first->predicated->end() )
       d_size = pi->second(p.second);
@@ -1401,6 +1414,10 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       if ( psize ) labels.emplace( std::string_view{ kn.data() + 7, len }, psize );
     }
   }
+  // track writeCC
+  auto ccki = p.second.find("writeCC");
+  if ( ccki != p.second.end() && ccki->second )
+    fill_tab_chains(p, s_tkey_cc, rtdb->wcc(off), 0);
   int idx = -1;
   rtdb->pred_mask = 0;
   if ( is_s2xx(p.first) ) rtdb->pred_mask = (1 << 10);
