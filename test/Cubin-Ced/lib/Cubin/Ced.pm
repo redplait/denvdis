@@ -63,6 +63,7 @@ our %PTypes = (
  28 => "FP8SIMD",
  29 => 'TMEM_ADDRESS',
  30 => 'FLOAT128',
+ 31 => 'TENSOR_ADDRESS',
 );
 
 sub PType_name($)
