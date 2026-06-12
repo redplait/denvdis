@@ -3735,6 +3735,7 @@ sub try_convert_ccond
       }
     }
   }
+  $body =~ s/_MAX/std::max/g;
   $res .= 'return ' . $body . ';';
   # store body
   $g_used_ccond{$name} = $res;
@@ -4448,6 +4449,10 @@ sub read_groups
     chomp $str;
     $str =~ s/\s*$//;
     $line++;
+    # string comments
+    $str =~ s/\s*\/\*.*\*\///g;
+    next if ( $str =~ /^\s*\/\// );
+    $str =~ s/\s*\/\/.*$//;
     next if ( $str eq '' );
     if ( $str =~ /OPERATION SET(?:S?)/ ) {
         $state = 1; next;
@@ -4478,6 +4483,7 @@ sub read_groups
       } elsif ( $str =~ /CONNECTOR SET(?:S?)/ ) {
         $state = 5; next;
       } else {
+        next if ( $str =~ /#\s*define/ );
         printf("bad CCond %s at line %d\n", substr($str, 0, 64), $line);
         $state = 0;
         next;

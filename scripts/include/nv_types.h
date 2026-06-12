@@ -52,6 +52,7 @@ enum NVP_type {
  FP8SIMD = 28,
  TMEM_ADDRESS = 29,
  FLOAT128 = 30,
+ TENSOR_ADDRESS = 31,
 };
 
 enum NVP_ops {
@@ -81,6 +82,7 @@ enum NV_Format {
   NV_F16Imm,
   NV_F32Imm,
   NV_E8M7Imm,
+  NV_E6M9Imm,
 };
 
 // INST_TYPE_XX + 1
