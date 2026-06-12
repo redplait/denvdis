@@ -4616,6 +4616,38 @@ sub check_abs
 }
 
 # properties logic
+
+# collect properties, merge with previously loaded and save into opt_u storable
+sub merge_props
+{
+  my $old_hr = shift;
+  my %added; # new proprs
+  my $cnt = 0; # count of newly added props
+  while( my($kmask, $op) = each(%g_masks) ) {
+    foreach my $inst ( @$op ) {
+      next if ( exists $old_hr->{$inst->[0]} ); # skip existing
+      $cnt++;
+      # form ar: 0 - predicates, 1 - properties
+      my $ar = [ $inst->[21], $inst->[22] ];
+      if ( exists $added{$inst->[0]} ) {
+        my $v = $added{$inst->[0]};
+        push @$v, $ar;
+      } else {
+        $added{$inst->[0]} = [ $ar ];
+      }
+    }
+  }
+  return unless $cnt;
+  printf("merge_props: %d new props, total %d\n", $cnt, scalar(keys %$old_hr));
+  # merge
+  while (my ($name, $prop) = each %added) {
+    $old_hr->{$name} = $prop;
+  }
+  # store
+  store($old_hr, $opt_u);
+}
+
+# collect properties and save into opt_u storable
 sub store_props
 {
   my(%hr, $ar);
@@ -4985,7 +5017,7 @@ sub try_hack_render
   undef;
 }
 
-sub apply_props
+sub read_props
 {
   unless ( -f $opt_U ) {
     carp("cannot open $opt_U");
@@ -4996,6 +5028,13 @@ sub apply_props
     carp("cannot read from $opt_U");
     return;
   }
+  $hr;
+}
+
+sub apply_props
+{
+  my $hr = read_props();
+  return unless defined($hr);
   my $fc = 0;
   my $notf = 0;
   my $notm = 0;
@@ -5159,11 +5198,6 @@ usage() if ( !$status );
 if ( 1 == $#ARGV ) {
   printf("where is arg?\n");
   exit(5);
-}
-# options validation
-if ( defined($opt_u) && defined($opt_U) ) {
-  printf("you cannot use both -u & -U\n");
-  usage();
 }
 
 my($fh, $state, $str, $line);
@@ -6052,11 +6086,20 @@ if ( defined($opt_m) ) {
     if ( defined($opt_B) ) {
       $g_dec_tree = build_tree();
       printf("min mask len %d\n", $g_min_len);
-      store_props() if defined($opt_u);
+      if (defined $opt_u) {
+        if (defined $opt_U) {
+          my $hr = read_props();
+          merge_props($hr);
+        } else {
+          store_props();
+        }
+      }
       if ( defined $opt_C ) {
         $g_sm_num = int($1) if ( $opt_C =~ /(\d+)/ );
       }
-      apply_props() if defined($opt_U);
+      # if both -u & -U then merge
+      # if only -U then apply early saved props
+      apply_props() if ( defined($opt_U) && !defined($opt_u) );
       gen_C() if ( defined $opt_C );
     } else {
       dump_dup_masks();
