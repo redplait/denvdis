@@ -151,8 +151,10 @@ struct track_snap {
   static constexpr int pr_size = 7;
   char pr[pr_size] = { 0, 0, 0, 0, 0, 0, 0 },
       upr[pr_size] = { 0, 0, 0, 0, 0, 0, 0 };
+  // cc
+  std::optional<int> cc;
   void reset() {
-    gpr.clear();
+    gpr.clear(); cc.reset();
     memset(pr, 0, pr_size); memset(upr, 0, pr_size);
   }
   bool empty_pr() const {
@@ -229,10 +231,12 @@ struct reg_pad {
     }
   }
   RegTabChains* rcc(unsigned long off) {
+    if ( snap ) snap->cc.emplace(0);
     cc.push_back( { off, 0 } );
     return &cc.back().tab_chain;
   }
   RegTabChains* wcc(unsigned long off) {
+    if ( snap ) snap->cc.emplace(0x8000);
     cc.push_back( { off, 0x8000 } );
     return &cc.back().tab_chain;
   }

@@ -710,6 +710,9 @@ void NV_renderer::dump_value(const nv_vattr &a, uint64_t v, NV_Format kind, std:
     case NV_F64Imm:
       snprintf(buf, buf_size, "%f", *(double *)&v);
      break;
+    case NV_E6M9Imm:
+      snprintf(buf, buf_size, "%f", e6m9_f((uint16_t)v));
+     break;
     case NV_E8M7Imm:
       snprintf(buf, buf_size, "%f", e8m7_f((uint16_t)v));
      break;

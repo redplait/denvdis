@@ -62,6 +62,21 @@ union float_bf16
     void fromFloat( float tf );
 };
 
+union float_e6m9
+{
+    using UNSIGNED_TYPE = std::uint16_t;
+    using SIGNED_TYPE = std::int16_t;
+
+    static constexpr UNSIGNED_TYPE EXPONENT_BITS = 6;
+    static constexpr UNSIGNED_TYPE MANTISSA_BITS = 9;
+
+    static constexpr UNSIGNED_TYPE EXPONENT_MASK = ( ( UNSIGNED_TYPE( 1 ) << EXPONENT_BITS ) - 1 );
+    static constexpr UNSIGNED_TYPE EXPONENT_BIAS = ( ( UNSIGNED_TYPE( 1 ) << ( EXPONENT_BITS - 1 ) ) - 1 );
+
+    UNSIGNED_TYPE u;
+    void fromFloat( float tf );
+};
+
 union float_ieee32
 {
     using UNSIGNED_TYPE = std::uint32_t;
@@ -223,6 +238,11 @@ double e4m3_d(uint8_t v) {
   return toDouble( tmp );
 }
 
+double e6m9_d(uint8_t v) {
+  float_e6m9 tmp{ v };
+  return toDouble( tmp );
+}
+
 float e5m2_f(uint8_t v) {
   float_e5m2 tmp{ v };
   return (float)toDouble( tmp );
@@ -235,6 +255,11 @@ double e5m2_d(uint8_t v) {
 
 float e8m7_f(uint16_t v) {
   float_bf16 tmp{ v };
+  return (float)toDouble( tmp );
+}
+
+float e6m9_f(uint16_t v) {
+  float_e6m9 tmp{ v };
   return (float)toDouble( tmp );
 }
 
@@ -253,4 +278,8 @@ uint8_t conv_e5m2(float f) {
 
 uint16_t conv_e8m7(float f) {
     return fromFloatHelper<float_bf16>(f);
+}
+
+uint16_t conv_e6m9(float f) {
+    return fromFloatHelper<float_e6m9>(f);
 }

@@ -307,6 +307,8 @@ int ParseSASS::set_num_value(const nv_vattr *vas, const char *name, one_form &of
     of.l_kv[name] = v;
   } else if ( vas->kind == NV_E8M7Imm ) {
     of.l_kv[name] = conv_e8m7(float(m_minus ? -m_v : m_v));
+  } else if ( vas->kind == NV_E6M9Imm ) {
+    of.l_kv[name] = conv_e6m9(float(m_minus ? -m_v : m_v));
   } else if ( vas->kind == NV_F16Imm ) {
     uint64_t v = fp16_ieee_from_fp32_value(float(m_minus ? -m_v : m_v));
     of.l_kv[name] = v;
@@ -341,6 +343,9 @@ int ParseSASS::reduce_value()
             f.l_kv[rn->name] = v;
           } else if ( vas->kind == NV_E8M7Imm ) {
             v = conv_e8m7(float(this->m_d));
+            f.l_kv[rn->name] = v;
+          } else if ( vas->kind == NV_E6M9Imm ) {
+            v = conv_e6m9(float(this->m_d));
             f.l_kv[rn->name] = v;
           } else if ( vas->kind == NV_F16Imm ) {
             v = fp16_ieee_from_fp32_value(float(this->m_d));

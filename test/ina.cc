@@ -854,6 +854,10 @@ int INA::patch_internal(Fields_Iter *what, const char *s, uint64_t &v)
       fd = atof(s);
       v = conv_e8m7(fd);
       return 1;
+    case NV_E6M9Imm:
+      fd = atof(s);
+      v = conv_e6m9(fd);
+      return 1;
     case NV_F16Imm:
       fd = atof(s);
       v = fp16_ieee_from_fp32_value(fd);
