@@ -3080,6 +3080,18 @@ snap(SV *obj)
   }
 
 SV *
+cc(SV *obj)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+   if ( !r->snap->cc.has_value() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = newSViv(r->snap->cc.value());
+ OUTPUT:
+  RETVAL
+
+SV *
 cbs(SV *obj)
  PREINIT:
   U8 gimme = GIMME_V;
@@ -3100,6 +3112,15 @@ cbs(SV *obj)
       XSRETURN(1);
     }
   }
+
+SV *
+ccs(SV *obj, unsigned long from = 0)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+  RETVAL = fill_reg(r->cc, from);
+ OUTPUT:
+  RETVAL
 
 SV *
 rs(SV *obj)

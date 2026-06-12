@@ -232,12 +232,12 @@ struct reg_pad {
   }
   RegTabChains* rcc(unsigned long off) {
     if ( snap ) snap->cc.emplace(0);
-    cc.push_back( { off, 0 } );
+    cc.push_back( { off, pred_mask } );
     return &cc.back().tab_chain;
   }
   RegTabChains* wcc(unsigned long off) {
     if ( snap ) snap->cc.emplace(0x8000);
-    cc.push_back( { off, 0x8000 } );
+    cc.push_back( { off, reg_history::RH(0x8000 | pred_mask) } );
     return &cc.back().tab_chain;
   }
   RegTabChains* _add(TRSet &rs, int idx, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {

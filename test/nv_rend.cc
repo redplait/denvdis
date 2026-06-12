@@ -1373,11 +1373,6 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
   // predicates
   int d_size = 0, d2_size = 0, a_size = 0, b_size = 0, b2_size = 0, c_size = 0, e_size = 0, h_size = 0, i_size = 0;
   if ( p.first->predicated ) {
-    auto cci = p.first->predicated->find(s_cc_prop);
-    if ( cci != p.first->predicated->end() ) {
-      int read_cc = cci->second(p.second);
-      if ( read_cc ) fill_tab_chains(p, s_tkey_cc, rtdb->rcc(off), 1);
-    }
     auto pi = p.first->predicated->find("IDEST_SIZE"sv);
     if ( pi != p.first->predicated->end() )
       d_size = pi->second(p.second);
@@ -1417,10 +1412,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       if ( psize ) labels.emplace( std::string_view{ kn.data() + 7, len }, psize );
     }
   }
-  // track writeCC
-  auto ccki = p.second.find("writeCC");
-  if ( ccki != p.second.end() && ccki->second )
-    fill_tab_chains(p, s_tkey_cc, rtdb->wcc(off), 0);
+
   int idx = -1;
   rtdb->pred_mask = 0;
   if ( is_s2xx(p.first) ) rtdb->pred_mask = (1 << 10);
@@ -1809,6 +1801,19 @@ printf("check_ve %s %d\n", ve.arg, psize);
     }
     idx++;
   }
+  // track CC - must be last after filling pred_mask
+  if ( p.first->predicated ) {
+    auto cci = p.first->predicated->find(s_cc_prop);
+    if ( cci != p.first->predicated->end() ) {
+      int read_cc = cci->second(p.second);
+      if ( read_cc ) fill_tab_chains(p, s_tkey_cc, rtdb->rcc(off), 1);
+    }
+  }
+  // track writeCC
+  auto ccki = p.second.find("writeCC");
+  if ( ccki != p.second.end() && ccki->second )
+    fill_tab_chains(p, s_tkey_cc, rtdb->wcc(off), 0);
+
   return res;
 }
 

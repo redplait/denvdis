@@ -246,6 +246,8 @@ int CEd_base::parse_num(NV_Format fmt, std::string_view &tail) {
     m_v = fp16_ieee_from_fp32_value(float(m_d));
   } else if ( fmt == NV_E8M7Imm ) {
     m_v = conv_e8m7((float)m_d);
+  } else if ( fmt == NV_E6M9Imm ) {
+    m_v = conv_e6m9((float)m_d);
   } else return 0;
   return 1;
 }
