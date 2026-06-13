@@ -1019,9 +1019,25 @@ void NV_renderer::dump_rt(reg_pad *rtdb) const {
     dump_rset(rtdb->upred, "UP");
   }
   if ( !rtdb->cc.empty() ) {
-   fprintf(m_out, ";;; %ld CC\n", rtdb->cbs.size());
-   for ( auto &c: rtdb->cc )
-     fprintf(m_out, " ;   %lX: %X\n", c.off, c.kind);
+   fprintf(m_out, ";;; %ld CC\n", rtdb->cc.size());
+   constexpr int mask = (1 << 11) - 1;
+   for ( auto &c: rtdb->cc ) {
+      // truncated version of dump_rset
+      int pred = 0;
+      bool is_pred = c.has_pred(pred);
+      if ( c.kind & 0x8000 )
+      {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX <- %X %d\n", c.off, c.kind & mask, pred);
+        else
+          fprintf(m_out, " ;   %lX <- %X\n", c.off, c.kind & mask);
+      } else {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX %X %d\n", c.off, c.kind & mask, pred);
+        else
+          fprintf(m_out, " ;   %lX %X\n", c.off, c.kind & mask);
+      }
+   }
   }
   if ( !rtdb->cbs.empty() ) {
    fprintf(m_out, ";;; %ld CBanks\n", rtdb->cbs.size());

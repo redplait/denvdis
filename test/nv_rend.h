@@ -237,7 +237,8 @@ struct reg_pad {
   }
   RegTabChains* wcc(unsigned long off) {
     if ( snap ) snap->cc.emplace(0x8000);
-    cc.push_back( { off, reg_history::RH(0x8000 | pred_mask) } );
+    reg_history::RH kind = 0x8000 | pred_mask;
+    cc.push_back( { off, kind } );
     return &cc.back().tab_chain;
   }
   RegTabChains* _add(TRSet &rs, int idx, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
@@ -311,6 +312,7 @@ struct reg_pad {
      ugpr.clear();
      upred.clear();
      cbs.clear();
+     cc.clear();
   }
 };
 
