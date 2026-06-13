@@ -3119,6 +3119,7 @@ sub rend_C_list
 }
 
 # extract first non-/ enum after instruction
+# arg - ptr to op array
 sub extract_efirst
 {
   my $op = shift;
@@ -3136,6 +3137,16 @@ sub extract_efirst
     }
   }
   undef;
+}
+
+# check if op0 is (u)pred
+# arg - ptr to op array
+sub is_op0_pred
+{
+  my $op = shift;
+  my $op0 = extract_efirst($op);
+  return 0 unless( defined $op0 );
+  $op0->[0] eq 'Predicate' || $op0->[0] eq 'UniformPredicate';
 }
 
 sub gen_render
@@ -3365,6 +3376,10 @@ my %s_setp = (
 # 'UISETP' => 1,
 # 'UPSETP' => 1,
 );
+
+my %g_pred_names; # from table TRUE with connection PRED/UPRED
+my $s_from_tp = 0;
+
 sub is_setp
 {
   my $op = shift;
@@ -3379,17 +3394,20 @@ sub is_setp
     $need_ex = $op->[20]->[5] =~ /_CAS$/ if ( $op->[20]->[5] );
   }
   if ( $need_ex ) {
-    my $first = extract_efirst($op);
-    if ( defined $first ) {
-      if ( $first->[0] eq 'Predicate' || $first->[0] eq 'UniformPredicate' ) {
-        return 2 if ( $name eq 'IMNMX' ); # sm120 has 2 predicates
-        return 1;
-      }
+    if ( is_op0_pred($op) ) {
+      return 2 if ( $name eq 'IMNMX' ); # sm120 has 2 predicates
+      return 1;
     }
   }
   return $s_setp{$name} if ( exists $s_setp{$name} );
   # rest like hsetp2 etc
   return $res if ( $name =~ /SETP/ );
+  if ( exists $g_pred_names{$op} ) {
+    ++$s_from_tp;
+    printf("add %s as pred changer, line %d\n", $name, $op->[4]);
+    return 2 if ( $name eq 'UIMNMX' ); # sm120 has 2 predicates
+    return 1;
+  }
   0;
 }
 sub gen_instr
@@ -3990,10 +4008,10 @@ sub check_tab_rows
   $res;
 }
 
-# args: name of group, ref to table, index, optional filter
+# args: name of group, ref to table, index, optional filter, is_true_pred
 sub mark_tab_col
 {
-  my($gname, $t, $cidx, $filt) = @_;
+  my($gname, $t, $cidx, $filt, $is_tp) = @_;
   my $res = 0;
   if ( 'ARRAY' eq ref $gname ) {
     $filt = c_ccond_func($gname->[1]);
@@ -4001,6 +4019,9 @@ sub mark_tab_col
   }
   my $g = $g_groups{$gname};
   foreach my $k ( keys %$g ) {
+    if ( $is_tp ) {
+      next unless is_op0_pred($g->{$k});
+    }
     my @what = ( $t, $cidx, $gname );
     push(@what, $filt) if defined($filt);
     if ( !exists $g_gtcols{ $k } ) {
@@ -4024,23 +4045,23 @@ sub mark_tab_col
 # args: name of connection set, ref to table, index
 sub mark_tab_col_cset
 {
-  my($gname, $t, $cidx) = @_;
+  my($gname, $t, $cidx, $is_tp) = @_;
   my $res = 0;
   my $cs = $g_csets{$gname};
   foreach my $s ( @$cs ) {
     if ( 'ARRAY' eq ref $s ) {
-      $res += mark_tab_col($s->[0], $t, $cidx, c_ccond_func($s->[1]));
+      $res += mark_tab_col($s->[0], $t, $cidx, c_ccond_func($s->[1]), $is_tp);
     } else {
-      $res += mark_tab_col($s, $t, $cidx);
+      $res += mark_tab_col($s, $t, $cidx, undef, $is_tp);
     }
   }
   $res;
 }
 
-# args: name of group, ref to table, index, optional filter
+# args: name of group, ref to table, index, optional filter, is_true_pred
 sub mark_tab_row
 {
-  my($gname, $t, $ridx, $filt) = @_;
+  my($gname, $t, $ridx, $filt, $is_tp) = @_;
   my $res = 0;
   if ( 'ARRAY' eq ref $gname) {
     $filt = c_ccond_func($gname->[1]) if defined($gname->[1]);
@@ -4048,6 +4069,10 @@ sub mark_tab_row
   }
   my $g = $g_groups{$gname};
   foreach my $k ( keys %$g ) {
+    if ( $is_tp ) {
+      next unless is_op0_pred($g->{$k});
+      $g_pred_names{$k}++;
+    }
     my @what = ( $t, $ridx, $gname );
     push(@what, $filt) if defined($filt);
     if ( !exists $g_gtrows{ $k } ) {
@@ -4068,17 +4093,17 @@ sub mark_tab_row
   $res;
 }
 
-# args: name of connection set, ref to table, index
+# args: name of connection set, ref to table, index, is_true_pred
 sub mark_tab_row_cset
 {
-  my($gname, $t, $ridx) = @_;
+  my($gname, $t, $ridx, $is_tp) = @_;
   my $res = 0;
   my $cs = $g_csets{$gname};
   foreach my $s ( @$cs ) {
     if ( 'ARRAY' eq ref $s ) {
-      $res += mark_tab_row($s->[0], $t, $ridx, c_ccond_func($s->[1]));
+      $res += mark_tab_row($s->[0], $t, $ridx, c_ccond_func($s->[1]), $is_tp);
     } else {
-      $res += mark_tab_row($s, $t, $ridx);
+      $res += mark_tab_row($s, $t, $ridx, undef, $is_tp);
     }
   }
   $res;
@@ -4101,6 +4126,9 @@ sub gen_c_gtab
   printf($fh "\"%s\",\n", $t->[0]);
   # connector
   printf($fh "\"%s\",\n", $t->[1]);
+  # true/output/anti tables for (U)PRED
+  my $is_row_pred = ($t->[0] eq 'TRUE' || $t->[0] eq 'OUTPUT') && (uc($t->[1]) eq 'PRED' || uc($t->[1]) eq 'UPRED');
+  my $is_col_pred = ($t->[0] eq 'ANTI' || $t->[0] eq 'OUTPUT') && (uc($t->[1]) eq 'PRED' || uc($t->[1]) eq 'UPRED');
   # col names
   my $cols = $t->[3];
   printf($fh "// columns\n{");
@@ -4109,9 +4137,9 @@ sub gen_c_gtab
     my $cname = $c;
     $cname = $c->[0] if ( 'ARRAY' eq ref $c );
     if ( exists $g_groups{$cname} ) {
-      mark_tab_col($c, $t, $cidx);
+      mark_tab_col($c, $t, $cidx, undef, $is_col_pred);
     } else {
-      mark_tab_col_cset($c, $t, $cidx);
+      mark_tab_col_cset($c, $t, $cidx, $is_col_pred);
     }
     $cidx++;
     printf($fh " { \"%s\",", $cname);
@@ -4129,9 +4157,9 @@ sub gen_c_gtab
     my $rname = $r->[0];
     $rname = $r->[0]->[0] if ( 'ARRAY' eq ref $r->[0] );
     if ( exists $g_groups{$rname} ) {
-      mark_tab_row($r->[0], $t, $i-4);
+      mark_tab_row($r->[0], $t, $i-4, undef, $is_row_pred);
     } else {
-      mark_tab_row_cset($r->[0], $t, $i-4);
+      mark_tab_row_cset($r->[0], $t, $i-4, $is_row_pred);
     }
     printf($fh " { \"%s\",", $rname);
     # cond list
