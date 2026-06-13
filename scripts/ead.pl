@@ -5000,12 +5000,13 @@ sub heur_rend
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'FLOAT') if ( $op->[0] =~ /fp2i/ );
   return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'GENERIC') if ( $op->[0] =~ /2fp/ );
   return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'FLOAT') if ( $op->[0] =~ /fadd/ );
+  return merge_with_render_regs($op, $res, $regs, 'FP16SIMD', 'FP16SIMD') if ( $op->[0] =~ /^(?:ufhadd|ufhfma)/ );
+  return merge_with_render_regs($op, $res, $regs, 'FP16SIMD', 'FP16SIMD') if ( $op->[0] =~ /^(?:fhadd|fhfma)/ );
   return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'FLOAT') if ( $op->[0] =~ /^(?:uf2f|ufmul|ufsel|uffma|ufset_|ufsetp_|ufmnmx_)/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /^uiabs/ );
-  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /iadd/ );
-  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /imul/ );
+  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /^(?:iadd|imul|imnm)/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /mov.*imm/ );
-  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /imnm/ );
+  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /^uiadd3_umov64/ );
   # must be last
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'GENERIC') if ( $op->[0] =~ /2i/ );
   0;
