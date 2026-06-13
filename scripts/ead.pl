@@ -3341,6 +3341,8 @@ my %s_setp = (
  'SHFL' => 1,
  'ELECT' => 1, # see details https://patricktoulme.substack.com/p/cutile-on-blackwell-nvidias-compiler
  'UTCATOMSWS' => 1,
+ 'USETMAXREG' => 1,
+ 'VOTEU' => 1,
  'R2P' => 3,
  'UR2UP' => 3,
 # 'AL2P' => 1,
@@ -4819,6 +4821,7 @@ sub hack_props
        return 1;
     }
   }
+  # shit, sticks and blue duck tape
   # this horror should be loaded from text file
   if ( 'uimnmx_64__UUU_URURUR' eq $i->[0] or 'mnmx__UUU_URURUR' eq $i->[0] ) {
     my %u = (
@@ -4843,10 +4846,23 @@ sub hack_props
     );
     $i->[22] = \%u;
     return 1;
-  } elsif ( 'ui2fp__URuIR' eq $i->[0] ) {
+  } elsif ( 'ui2fp__URuIR' eq $i->[0] || 'ui2f__IS_32b' eq $i->[0] || 'ui2f__IU_32b' eq $i->[0] ) {
     my %u = (
      'IDEST' => [ 'FLOAT', [ 'URd' ] ],
      'ISRC_B' => [ 'INTEGER',[ 'Sb' ] ],
+    );
+    $i->[22] = \%u;
+    return 1;
+  } elsif ( 'uiabs__URsIUR_I' eq $i->[0] ) {
+    my %u = (
+     'IDEST' => [ 'INTEGER', [ 'URd' ] ],
+    );
+    $i->[22] = \%u;
+    return 1;
+  } elsif ( 'uiabs__URURUR_UR' eq $i->[0] ) {
+    my %u = (
+     'IDEST' => [ 'INTEGER', [ 'URd' ] ],
+     'ISRC_B' => [ 'INTEGER',[ 'URb' ] ],
     );
     $i->[22] = \%u;
     return 1;
