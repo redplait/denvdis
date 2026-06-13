@@ -4125,7 +4125,10 @@ sub gen_c_gtab
   # name
   printf($fh "\"%s\",\n", $t->[0]);
   # connector
-  printf($fh "\"%s\",\n", $t->[1]);
+  my $con = $t->[1];
+  $con =~ s/^\s+//;
+  $con =~ s/\s+$//;
+  printf($fh "\"%s\",\n", $con);
   # true/output/anti tables for (U)PRED
   my $is_row_pred = ($t->[0] eq 'TRUE' || $t->[0] eq 'OUTPUT') && (uc($t->[1]) eq 'PRED' || uc($t->[1]) eq 'UPRED');
   my $is_col_pred = ($t->[0] eq 'ANTI' || $t->[0] eq 'OUTPUT') && (uc($t->[1]) eq 'PRED' || uc($t->[1]) eq 'UPRED');
@@ -4874,26 +4877,6 @@ sub hack_props
     );
     $i->[22] = \%u;
     return 1;
-  } elsif ( 'ui2fp__URuIR' eq $i->[0] || 'ui2f__IS_32b' eq $i->[0] || 'ui2f__IU_32b' eq $i->[0] ) {
-    my %u = (
-     'IDEST' => [ 'FLOAT', [ 'URd' ] ],
-     'ISRC_B' => [ 'INTEGER',[ 'Sb' ] ],
-    );
-    $i->[22] = \%u;
-    return 1;
-  } elsif ( 'uiabs__URsIUR_I' eq $i->[0] ) {
-    my %u = (
-     'IDEST' => [ 'INTEGER', [ 'URd' ] ],
-    );
-    $i->[22] = \%u;
-    return 1;
-  } elsif ( 'uiabs__URURUR_UR' eq $i->[0] ) {
-    my %u = (
-     'IDEST' => [ 'INTEGER', [ 'URd' ] ],
-     'ISRC_B' => [ 'INTEGER',[ 'URb' ] ],
-    );
-    $i->[22] = \%u;
-    return 1;
   }
   # as last resort we can extract at least complex props from renderer
   my $from_rend = try_hack_render($i);
@@ -5013,9 +4996,12 @@ sub heur_rend
     return merge_with_render_regs($op, $res, $regs, 'FLOAT128', 'FLOAT128') if ( $op->[0] =~ /qadd/ );
   }
   return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'INTEGER') if ( $op->[0] =~ /i2fp/ );
+  return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'INTEGER') if ( $op->[0] =~ /^ui2f/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'FLOAT') if ( $op->[0] =~ /fp2i/ );
   return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'GENERIC') if ( $op->[0] =~ /2fp/ );
   return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'FLOAT') if ( $op->[0] =~ /fadd/ );
+  return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'FLOAT') if ( $op->[0] =~ /^(?:uf2f|ufmul|ufsel|uffma|ufset_|ufsetp_|ufmnmx_)/ );
+  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /^uiabs/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /iadd/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /imul/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /mov.*imm/ );
