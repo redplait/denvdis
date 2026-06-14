@@ -4759,6 +4759,9 @@ sub hack_props
 {
   my($i, $hr) = @_;
   my $alias = $i->[0];
+  # some instructions have empty op list
+  my $op0 = extract_efirst($i);
+  return 1 unless defined($op0);
   # try to find some similar instr i in retrieved db %$hr
   if ( $i->[0] =~ /_64/ ) {
     $alias =~ s/_64//;
@@ -4874,6 +4877,18 @@ sub hack_props
     my %u = (
      'IDEST' => [ 'GENERIC', [ 'URd' ] ],
      'ISRC_A' => [ 'GENERIC',[ 'SRa' ] ],
+    );
+    $i->[22] = \%u;
+    return 1;
+  } elsif ( 'mxqmma_scale_' eq $i->[0] ) {
+    my %u = (
+     'IDEST' => [ 'FLOAT128', [ 'Rd' ] ],
+     'ISRC_A' => [ 'FLOAT128',[ 'Ra' ] ],
+     'ISRC_B' => [ 'FLOAT',[ 'Rb' ] ],
+     'ISRC_C' => [ 'FLOAT128',[ 'Rc' ] ],
+     'ISRC_E' => [ 'FLOAT',[ 'Re' ] ],
+     'ISRC_H' => [ 'FLOAT',[ 'Rh' ] ],
+     'ISRC_I' => [ 'FLOAT',[ 'URi' ] ],
     );
     $i->[22] = \%u;
     return 1;
@@ -5003,8 +5018,8 @@ sub heur_rend
   return merge_with_render_regs($op, $res, $regs, 'FP16SIMD', 'FP16SIMD') if ( $op->[0] =~ /^(?:ufhadd|ufhfma)/ );
   return merge_with_render_regs($op, $res, $regs, 'FP16SIMD', 'FP16SIMD') if ( $op->[0] =~ /^(?:fhadd|fhfma)/ );
   return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'FLOAT') if ( $op->[0] =~ /^(?:uf2f|ufmul|ufsel|uffma|ufset_|ufsetp_|ufmnmx_)/ );
-  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /^uiabs/ );
-  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /^(?:iadd|imul|imnm)/ );
+  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /^(?:uiabs|uviadd|uvimnmx)/ );
+  return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /^(?:iadd|imul|imnm|uimnmx_|mov64iur_ur_)/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /mov.*imm/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /^uiadd3_umov64/ );
   # must be last
