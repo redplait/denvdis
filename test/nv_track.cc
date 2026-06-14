@@ -26,7 +26,7 @@ const NV_Prop *NV_renderer::find_compound_prop(const nv_instr *i, const T* ct) c
 }
 
 static const std::string_view s_tkey_gpr("GPR"), s_tkey_ugpr("UGPR"),
- s_tkey_pred("PRED"), s_tkey_upred("UPRED"), s_tkey_cc("CC"),
+ s_tkey_pred("PRED"), s_tkey_upred("UPRED"),
  s_cc_prop("DOES_READ_CC"); // pred name for cc reading
 
 // for write is_col = 0
@@ -40,6 +40,23 @@ static int fill_tab_chains(const NV_renderer::NV_pair &p, const std::string_view
     if ( wi.filter && !wi.filter(p.first, p.second) ) continue;
     // filter by connection
     if ( key != wi.tab->connection ) continue;
+    tlist->push_back( { wi.tab, wi.idx } );
+    res++;
+  }
+  return res;
+}
+
+// for CC we need check prefix
+static int fill_tab_chain_CC(const NV_renderer::NV_pair &p, RegTabChains *tlist, int is_col) {
+  if ( !tlist ) return 0;
+  auto what = is_col ? p.first->cols : p.first->rows;
+  if ( !what ) return 0;
+  int res = 0;
+  for ( auto &wi: *what ) {
+    // filter out if presents
+    if ( wi.filter && !wi.filter(p.first, p.second) ) continue;
+    // filter by connection
+    if ( wi.tab->connection[0] != 'C' || wi.tab->connection[1] != 'C' ) continue;
     tlist->push_back( { wi.tab, wi.idx } );
     res++;
   }
@@ -537,13 +554,13 @@ printf("check_ve %s %d\n", ve.arg, psize);
     auto cci = p.first->predicated->find(s_cc_prop);
     if ( cci != p.first->predicated->end() ) {
       int read_cc = cci->second(p.second);
-      if ( read_cc ) fill_tab_chains(p, s_tkey_cc, rtdb->rcc(off), 1);
+      if ( read_cc ) fill_tab_chain_CC(p, rtdb->rcc(off), 1);
     }
   }
   // track writeCC
   auto ccki = p.second.find("writeCC");
   if ( ccki != p.second.end() && ccki->second )
-    fill_tab_chains(p, s_tkey_cc, rtdb->wcc(off), 0);
+    fill_tab_chain_CC(p, rtdb->wcc(off), 0);
 
   return res;
 }
