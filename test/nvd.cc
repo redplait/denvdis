@@ -6,6 +6,7 @@ int opt_c = 0,
     opt_g = 0,
     opt_h = 0,
     opt_l = 0,
+    opt_L = 0,
     opt_m = 0,
     opt_M = 0,
     opt_t = 0,
@@ -578,7 +579,7 @@ void nv_dis::try_dis(Elf_Word idx)
   }
   if ( m_rtdb ) {
     finalize_rt(m_rtdb);
-    dump_rt(m_rtdb);
+    dump_rt(m_rtdb, opt_L);
   }
 }
 
@@ -907,6 +908,7 @@ void usage(const char *prog)
   printf("-e - dump attributes\n");
   printf("-h - hex dump\n");
   printf("-l - dump latency from ptxas\n");
+  printf("-L - dump reg track tabs\n");
   printf("-m - dump missed fields\n");
   printf("-M - dump cword mask\n");
   printf("-N - dump not found masks\n");
@@ -929,7 +931,7 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "ceghlmMqrtTNOpPSs:o:");
+    c = getopt(argc, argv, "ceghLlmMqrtTNOpPSs:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'c': opt_c = 1; break;
@@ -937,6 +939,7 @@ int main(int argc, char **argv)
       case 'g': opt_g = 1; break;
       case 'h': opt_h = 1; break;
       case 'l': opt_l = 1; break;
+      case 'L': opt_L = 1; break;
       case 'm': opt_m = 1; break;
       case 'M': opt_M = 1; break;
       case 't': opt_t = 1; break;

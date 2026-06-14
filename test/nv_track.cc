@@ -547,3 +547,154 @@ printf("check_ve %s %d\n", ve.arg, psize);
 
   return res;
 }
+
+void NV_renderer::finalize_rt(reg_pad *rtdb) {
+ if ( !rtdb ) return;
+ // why we need to sort all those vectors? they already processed by ascending offsets
+ // well, bcs we processing operands from left to right
+ // so for example: 'imad regZ, regZ' will produce assign first
+ //  regZ <- off
+ //  regZ off
+ // therefore we must sort by mask 0x8000 for the same offsets
+ auto srt = [](const reg_history &a, const reg_history &b) -> bool {
+   if ( a.off == b.off ) {
+     bool res = ((a.kind & 0x8000) < (b.kind & 0x8000));
+#ifdef DEBUG
+ printf("a %lX %X <-> b %lX %X %d\n", a.off, a.kind, b.off, b.kind, res);
+#endif
+     return res;
+   }
+   return a.off < b.off;
+ };
+ if ( !rtdb->gpr.empty() )
+  for ( auto &r: rtdb->gpr ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !rtdb->ugpr.empty() )
+  for ( auto &r: rtdb->ugpr ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !rtdb->pred.empty() )
+  for ( auto &r: rtdb->pred ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !rtdb->upred.empty() )
+  for ( auto &r: rtdb->upred ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !rtdb->cc.empty() )
+  std::sort(rtdb->cc.begin(), rtdb->cc.end(), srt);
+ if ( !rtdb->cbs.empty() ) {
+  std::sort(rtdb->cbs.begin(), rtdb->cbs.end(), [](const cbank_history &a, const cbank_history &b) { return a.off < b.off; });
+ }
+}
+
+void NV_renderer::dump_rchains(const RegTabChains &rc, int is_col) const {
+  if ( rc.empty() ) return;
+  const NV_tab *old_tab = nullptr;
+  for ( auto &pair: rc ) {
+    if ( old_tab != pair.first ) {
+      // dump table
+      fprintf(m_out, "\ttab_%s(%s)", pair.first->name, pair.first->connection);
+      old_tab = pair.first;
+    }
+    fprintf(m_out, " %c%d(%s)", is_col ? 'c' : 'r', pair.second,
+     get_it(is_col ? pair.first->cols : pair.first->rows, pair.second).first);
+  }
+}
+
+void NV_renderer::dump_rt(reg_pad *rtdb, int rc) const {
+  if ( !rtdb ) return;
+  if ( !rtdb->gpr.empty() ) {
+    fprintf(m_out, ";;; %ld GPR\n", rtdb->gpr.size());
+    dump_trset(rtdb->gpr, "R", rc);
+  }
+  if ( !rtdb->ugpr.empty() ) {
+    fprintf(m_out, ";;; %ld UGPR\n", rtdb->ugpr.size());
+    dump_trset(rtdb->ugpr, "UR", rc);
+  }
+  if ( !rtdb->pred.empty() ) {
+    fprintf(m_out, ";;; %ld PRED\n", rtdb->pred.size());
+    dump_rset(rtdb->pred, "P", rc);
+  }
+  if ( !rtdb->upred.empty() ) {
+    fprintf(m_out, ";;; %ld UPRED\n", rtdb->upred.size());
+    dump_rset(rtdb->upred, "UP", rc);
+  }
+  if ( !rtdb->cc.empty() ) {
+   fprintf(m_out, ";;; %ld CC\n", rtdb->cc.size());
+   constexpr int mask = (1 << 11) - 1;
+   for ( auto &c: rtdb->cc ) {
+      // truncated version of dump_rset
+      int pred = 0;
+      bool is_pred = c.has_pred(pred);
+      if ( c.kind & 0x8000 )
+      {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX <- %X %d", c.off, c.kind & mask, pred);
+        else
+          fprintf(m_out, " ;   %lX <- %X", c.off, c.kind & mask);
+      } else {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX %X %d", c.off, c.kind & mask, pred);
+        else
+          fprintf(m_out, " ;   %lX %X", c.off, c.kind & mask);
+      }
+      if ( rc ) dump_rchains(c.tab_chain, !(c.kind & 0x8000));
+      fputc('\n', m_out);
+   }
+  }
+  if ( !rtdb->cbs.empty() ) {
+   fprintf(m_out, ";;; %ld CBanks\n", rtdb->cbs.size());
+   for ( auto &c: rtdb->cbs )
+     fprintf(m_out, " ;   %lX: %X %lX size %d\n", c.off, c.cb_num, c.cb_off, c.kind & 0xf);
+  }
+}
+
+void NV_renderer::dump_rset(const reg_pad::RSet &rs, const char *pfx, int rc) const
+{
+  constexpr int mask = (1 << 11) - 1;
+  for ( auto r: rs ) {
+    fprintf(m_out, " ;  %s%d %ld:\n", pfx, r.first, r.second.size());
+    for ( auto &tr: r.second ) {
+      int pred = 0;
+      bool is_pred = tr.has_pred(pred);
+      if ( tr.kind & 0x8000 )
+      {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX <- %X %s%d", tr.off, tr.kind & mask, tr.kind & 0x4000 ? "UP" : "P", pred);
+        else
+          fprintf(m_out, " ;   %lX <- %X", tr.off, tr.kind & mask);
+      } else {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX %X %s%d", tr.off, tr.kind & mask, tr.kind & 0x4000 ? "UP" : "P", pred);
+        else
+          fprintf(m_out, " ;   %lX %X", tr.off, tr.kind & mask);
+      }
+      if ( rc ) dump_rchains(tr.tab_chain, !(tr.kind & 0x8000));
+      fputc('\n', m_out);
+    }
+  }
+}
+
+void NV_renderer::dump_trset(const reg_pad::TRSet &rs, const char *pfx, int rc) const
+{
+  constexpr int mask = (1 << 11) - 1;
+  for ( auto r: rs ) {
+    fprintf(m_out, " ;  %s%d %ld:\n", pfx, r.first, r.second.size());
+    for ( auto &tr: r.second ) {
+      int pred = 0;
+      const char *tname = nullptr;
+      if ( tr.type != GENERIC ) tname = get_prop_type_name(tr.type);
+      bool is_pred = tr.has_pred(pred);
+      if ( tr.kind & 0x8000 )
+      {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX <- %X %s%d", tr.off, tr.kind & mask, tr.kind & 0x4000 ? "UP" : "P", pred);
+        else
+          fprintf(m_out, " ;   %lX <- %X", tr.off, tr.kind & mask);
+      } else {
+        if ( is_pred )
+          fprintf(m_out, " ;   %lX %X %s%d", tr.off, tr.kind & mask, tr.kind & 0x4000 ? "UP" : "P", pred);
+        else
+          fprintf(m_out, " ;   %lX %X", tr.off, tr.kind & mask);
+      }
+      if ( tr.is_reuse() ) fprintf(m_out, " reuse");
+      if ( tname ) fprintf(m_out, " %s", tname);
+      if ( rc ) dump_rchains(tr.tab_chain, !(tr.kind & 0x8000));
+      fputc('\n', m_out);
+    }
+  }
+}

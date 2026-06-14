@@ -452,9 +452,10 @@ class NV_renderer {
    template <typename T> requires std::is_base_of_v<render_base, T>
    const NV_Prop *find_compound_prop(const nv_instr *i, const T*) const;
    int track_regs(reg_pad *, const NV_rlist *, const NV_pair &p, unsigned long off);
-   void dump_rt(reg_pad *) const;
-   void dump_rset(const reg_pad::RSet &, const char *pfx) const;
-   void dump_trset(const reg_pad::TRSet &, const char *pfx) const;
+   void dump_rt(reg_pad *, int rc = 0) const;
+   void dump_rchains(const RegTabChains &rc, int is_col) const;
+   void dump_rset(const reg_pad::RSet &, const char *pfx, int rc) const;
+   void dump_trset(const reg_pad::TRSet &, const char *pfx, int rc) const;
    inline bool is_pred(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
      return !strcmp(ea->ename, "Predicate") && 7 != kvi->second;
    }
