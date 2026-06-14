@@ -47,7 +47,7 @@ static int fill_tab_chains(const NV_renderer::NV_pair &p, const std::string_view
 }
 
 // for CC we need check prefix
-static int fill_tab_chain_CC(const NV_renderer::NV_pair &p, RegTabChains *tlist, int is_col) {
+static int fill_tab_chain_CC(const NV_renderer::NV_pair &p, RegTabChains *tlist, int is_col, int64_t cval = 0) {
   if ( !tlist ) return 0;
   auto what = is_col ? p.first->cols : p.first->rows;
   if ( !what ) return 0;
@@ -57,6 +57,16 @@ static int fill_tab_chain_CC(const NV_renderer::NV_pair &p, RegTabChains *tlist,
     if ( wi.filter && !wi.filter(p.first, p.second) ) continue;
     // filter by connection
     if ( wi.tab->connection[0] != 'C' || wi.tab->connection[1] != 'C' ) continue;
+    if ( cval ) {
+      // check for CSM
+      bool c0 = cval >= 0x18 && cval <= 0x1d;
+      bool c1 = nullptr != strstr(wi.tab->connection + 2, "CSM");
+      if ( c0 != c1 ) continue;
+      // SF
+      bool s0 = cval == 18 || cval == 21;
+      bool s1 = nullptr != strstr(wi.tab->connection + 2, "SF");
+      if ( s0 != s1 ) continue;
+    }
     tlist->push_back( { wi.tab, wi.idx } );
     res++;
   }
@@ -559,8 +569,9 @@ printf("check_ve %s %d\n", ve.arg, psize);
   }
   // track writeCC
   auto ccki = p.second.find("writeCC");
+  if ( ccki == p.second.end() ) ccki = p.second.find("fcomp");
   if ( ccki != p.second.end() && ccki->second )
-    fill_tab_chain_CC(p, rtdb->wcc(off), 0);
+    fill_tab_chain_CC(p, rtdb->wcc(off), 0, ccki->second);
 
   return res;
 }
