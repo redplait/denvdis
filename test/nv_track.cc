@@ -29,6 +29,23 @@ static const std::string_view s_tkey_gpr("GPR"), s_tkey_ugpr("UGPR"),
  s_tkey_pred("PRED"), s_tkey_upred("UPRED"),
  s_cc_prop("DOES_READ_CC"); // pred name for cc reading
 
+std::optional<found_tab_cross> find_tab_cross(const RegTabChains &rows, const RegTabChains &cols) {
+  std::optional<found_tab_cross> res;
+  short max_val = 0;
+  if ( rows.empty() || cols.empty() ) return res;
+  for ( auto &r: rows ) {
+    for ( auto &c: cols ) {
+      if ( r.first != c.first ) continue;
+      auto tmp = r.first->get(c.second, r.second);
+      if ( !tmp.has_value() ) continue;
+      if ( tmp.value() <= max_val ) continue;
+      max_val = tmp.value();
+      res.emplace( r.first, r.second, c.second, max_val );
+    }
+  }
+  return res;
+}
+
 // for write is_col = 0
 static int fill_tab_chains(const NV_renderer::NV_pair &p, const std::string_view &key, RegTabChains *tlist, int is_col) {
   if ( !tlist ) return 0;

@@ -20,8 +20,16 @@ struct reg_reuse {
   inline int kb() const { return keep & 2; }
 };
 
+struct found_tab_cross {
+  const NV_tab *tab = nullptr;
+  int row = 0, col = 0;
+  short value = 0;
+};
+
 typedef std::pair<const NV_tab *, int> RegTabChain;
 typedef std::list<RegTabChain> RegTabChains;
+
+std::optional<found_tab_cross> find_tab_cross(const RegTabChains &rows, const RegTabChains &cols);
 
 struct reg_history {
   unsigned long off;
