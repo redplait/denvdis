@@ -743,3 +743,80 @@ void NV_renderer::dump_trset(const reg_pad::TRSet &rs, const char *pfx, int rc) 
     }
   }
 }
+
+// try to get from reg_pad history where some resource was updated
+template <typename T>
+static std::optional<unsigned long> get_last_upd(const std::vector<T> &hist, unsigned long curr, const RegTabChains **out_rtc) {
+  std::optional<unsigned long> res;
+  if ( hist.empty() ) return res;
+  // skip curr
+  auto hit = hist.crbegin();
+  while( hit != hist.crend() ) {
+    if ( curr != hit->off ) break;
+    ++hit;
+  }
+  if ( hit == hist.crend() ) return res;
+  while( hit != hist.crend() ) {
+    if ( hit->kind & 0x8000 ) {
+      res.emplace(hit->off);
+      if ( out_rtc ) *out_rtc = &hit->tab_chain;
+      break;
+    }
+    ++hit;
+  }
+  return res;
+}
+
+template <typename T>
+static int find_notify(unsigned char kind, unsigned char what, const std::vector<T> &hist, unsigned long curr, TLTrackCB *cb) {
+  const RegTabChains *dst_rt = nullptr;
+  auto dst = get_last_upd(hist, curr, &dst_rt);
+  if ( !dst.has_value() ) return 0;
+  const RegTabChains *src_rt = nullptr;
+  // find current regtab
+  auto hit = hist.crbegin();
+  while( hit != hist.crend() ) {
+    if ( hit->off != curr ) break;
+    if ( !(hit->kind & 0x8000) ) {
+      src_rt = &hit->tab_chain;
+      break;
+    }
+    ++hit;
+  }
+  if ( src_rt == nullptr ) return 0; // wtf? can't wait current track for read?
+  auto res = find_tab_cross(*dst_rt, *src_rt);
+  if ( !res.has_value() ) return 0;
+  // yep, found something
+  (*cb)(kind, what, dst.value(), curr, res.value());
+  return 1;
+}
+
+int NV_renderer::track_lat(reg_pad *rtdb, unsigned long off, TLTrackCB *cb) const {
+  if ( !rtdb || !rtdb->snap ) return 0;
+  int res = 0;
+  // gpr
+  for ( auto &rpair: rtdb->snap->gpr ) {
+    if ( rpair.second & 0x80 ) continue;
+    int is_uni = rpair.first & 0x8000;
+    int reg = rpair.first & 0xff;
+    res += find_notify(is_uni ? 0x80 : 0, reg,
+      is_uni ? rtdb->gpr[reg] : rtdb->ugpr[reg],
+      off, cb
+    );
+  }
+  // pred
+  for ( int i = 0; i < track_snap::pr_size; ++i ) {
+    if ( rtdb->snap->pr[i] & 1 )
+      res += find_notify(1, i, rtdb->pred[i], off, cb);
+  }
+  // upred
+  for ( int i = 0; i < track_snap::pr_size; ++i ) {
+    if ( rtdb->snap->upr[i] & 1 )
+      res += find_notify(0x81, i, rtdb->upred[i], off, cb);
+  }
+  // cc
+  if ( rtdb->snap->cc.has_value() && 2 != rtdb->snap->cc.value() ) {
+    res += find_notify(2, 0, rtdb->cc, off, cb);
+  }
+  return res;
+}

@@ -101,7 +101,7 @@ struct track_snap {
   char pr[pr_size] = { 0, 0, 0, 0, 0, 0, 0 },
       upr[pr_size] = { 0, 0, 0, 0, 0, 0, 0 };
   // cc
-  std::optional<int> cc;
+  std::optional<unsigned char> cc;
   void reset() {
     gpr.clear(); cc.reset();
     memset(pr, 0, pr_size); memset(upr, 0, pr_size);
@@ -180,12 +180,12 @@ struct reg_pad {
     }
   }
   RegTabChains* rcc(unsigned long off) {
-    if ( snap ) snap->cc.emplace(0);
+    if ( snap ) snap->cc.emplace(1);
     cc.push_back( { off, pred_mask } );
     return &cc.back().tab_chain;
   }
   RegTabChains* wcc(unsigned long off) {
-    if ( snap ) snap->cc.emplace(0x8000);
+    if ( snap ) snap->cc.emplace(2);
     reg_history::RH kind = 0x8000 | pred_mask;
     cc.push_back( { off, kind } );
     return &cc.back().tab_chain;
@@ -264,3 +264,11 @@ struct reg_pad {
      cc.clear();
   }
 };
+
+// interface for latency tracking
+// type is
+// 0 for gpr
+// 1 for predicates
+// 2 for cc
+// | 0x80 for uni
+typedef std::function<void(unsigned char type, unsigned char what, unsigned long dst, unsigned long src, const found_tab_cross &)> TLTrackCB;
