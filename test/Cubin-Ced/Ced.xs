@@ -1359,6 +1359,20 @@ static MGVTBL ca_magic_vt = {
         TAB_TAIL
 };
 
+// magic table for Cubin::Ced::LatCross
+static const char *s_ca_latcross = "Cubin::Ced::LatCross";
+static HV *s_ca_latcross_pkg = nullptr;
+static MGVTBL ca_latcross_magic_vt = {
+        0, /* get */
+        0, /* write */
+        0, /* length */
+        0, /* clear */
+        magic_del<found_tab_cross>,
+        0, /* copy */
+        0 /* dup */
+        TAB_TAIL
+};
+
 // magic table for Cubin::Ced::LatIndex
 static const char *s_ca_latindex = "Cubin::Ced::LatIndex";
 static HV *s_ca_latindex_pkg = nullptr;
@@ -1372,6 +1386,7 @@ static MGVTBL ca_latindex_magic_vt = {
         0 /* dup */
         TAB_TAIL
 };
+
 
 bool Ced_perl::get_lxx(std::vector<SV *> &res, int is_col) const {
   if ( !has_ins() ) return false;
@@ -2864,6 +2879,57 @@ INIT:
     }
   }
 
+MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::LatCross
+
+IV
+col(SV *obj)
+ ALIAS:
+  Cubin::Ced::LatCross::row = 1
+ INIT:
+    found_tab_cross *ftl = get_magic_ext<found_tab_cross>(obj, &ca_latcross_magic_vt);
+ CODE:
+   RETVAL = (ix == 1) ? ftl->row : ftl->col;
+ OUTPUT:
+  RETVAL
+
+const char *
+name(SV *obj)
+ ALIAS:
+  Cubin::Ced::LatCross::conn = 1
+ INIT:
+    found_tab_cross *ftl = get_magic_ext<found_tab_cross>(obj, &ca_latcross_magic_vt);
+ CODE:
+   RETVAL = (ix == 1) ? ftl->tab->connection : ftl->tab->name;
+ OUTPUT:
+  RETVAL
+
+int
+val(SV *obj)
+ INIT:
+    found_tab_cross *ftl = get_magic_ext<found_tab_cross>(obj, &ca_latcross_magic_vt);
+ CODE:
+   RETVAL = ftl->value;
+ OUTPUT:
+  RETVAL
+
+SV *
+col_name(SV *obj)
+ ALIAS:
+  Cubin::Ced::LatCross::row_name = 1
+ INIT:
+    found_tab_cross *ftl = get_magic_ext<found_tab_cross>(obj, &ca_latcross_magic_vt);
+ CODE:
+   const NV_gnames &what = (1 == ix) ? ftl->tab->rows : ftl->tab->cols;
+   auto idx = (ix == 1) ? ftl->row : ftl->col;
+   if ( idx >= what.size() ) RETVAL = &PL_sv_undef;
+   else {
+     auto &sv = *(what.begin() + idx);
+     RETVAL = newSVpv(sv.first, strlen(sv.first));
+   }
+ OUTPUT:
+  RETVAL
+
+
 MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::LatIndex
 
 IV
@@ -3190,6 +3256,10 @@ BOOT:
  s_ca_latindex_pkg = gv_stashpv(s_ca_latindex, 0);
  if ( !s_ca_latindex_pkg )
     croak("Package %s does not exists", s_ca_latindex);
+ s_ca_latcross_pkg = gv_stashpv(s_ca_latcross, 0);
+ if ( !s_ca_latcross_pkg )
+    croak("Package %s does not exists", s_ca_latcross);
+
  // add enums from nv_types.h
  HV *stash = gv_stashpvn(s_ca, 10, 1);
  EXPORT_ENUM(NVP_ops, IDEST)
