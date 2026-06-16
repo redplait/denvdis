@@ -26,8 +26,13 @@ while( $str = <$fh> ) {
       ++$bad;
     }
   } else {
-    ++$num_ops if ( $str =~ /\b[0-9]+$/ );
-    printf("--- %s\n", $str);
+    printf("--- %s", $str);
+    if ( $str =~ /\b([0-9]+)$/ ) {
+      printf(" %X\n", int($1));
+      ++$num_ops
+    } else {
+      printf("\n");
+    }
     ++$ops;
   }
 }
