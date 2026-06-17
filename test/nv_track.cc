@@ -820,3 +820,16 @@ int NV_renderer::track_lat(reg_pad *rtdb, unsigned long off, TLTrackCB *cb) cons
   }
   return res;
 }
+
+std::string lt_what(unsigned char type, unsigned char what) {
+  if ( 2 == type ) {
+    return "CC";
+  }
+  std::string res;
+  if ( type & 0x80 ) res.push_back('U');
+  type &= 0x7f;
+  if ( !type ) res.push_back('R');
+  else res.push_back('P');
+  res += std::to_string(what);
+  return res;
+}

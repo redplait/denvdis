@@ -272,3 +272,5 @@ struct reg_pad {
 // 2 for cc
 // | 0x80 for uni
 typedef std::function<void(unsigned char type, unsigned char what, unsigned long dst, unsigned long src, const found_tab_cross &)> TLTrackCB;
+
+std::string lt_what(unsigned char type, unsigned char what);
