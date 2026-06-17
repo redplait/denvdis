@@ -796,13 +796,19 @@ int NV_renderer::track_lat(reg_pad *rtdb, unsigned long off, TLTrackCB *cb) cons
   int res = 0;
   // gpr
   for ( auto &rpair: rtdb->snap->gpr ) {
-    if ( rpair.second & 0x80 ) continue;
+    if ( 0x80 == (rpair.second & 0xa0) ) continue;
     int is_uni = rpair.first & 0x8000;
     int reg = rpair.first & 0xff;
-    res += find_notify(is_uni ? 0x80 : 0, reg,
-      is_uni ? rtdb->gpr[reg] : rtdb->ugpr[reg],
-      off, cb
-    );
+    std::vector<typed_reg_history> *trh = nullptr;
+    if ( is_uni ) {
+      auto ugi = rtdb->ugpr.find(reg);
+      if ( ugi != rtdb->ugpr.end() ) trh = &ugi->second;
+    } else {
+      auto gi = rtdb->gpr.find(reg);
+      if ( gi != rtdb->gpr.end() ) trh = &gi->second;
+    }
+    if ( !trh ) continue;
+    res += find_notify(is_uni ? 0x80 : 0, reg, *trh, off, cb);
   }
   // pred
   for ( int i = 0; i < track_snap::pr_size; ++i ) {

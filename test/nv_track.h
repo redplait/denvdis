@@ -111,7 +111,7 @@ struct track_snap {
   static constexpr int pr_size = 7;
   char pr[pr_size] = { 0, 0, 0, 0, 0, 0, 0 },
       upr[pr_size] = { 0, 0, 0, 0, 0, 0, 0 };
-  // cc
+  // cc - 1 - read, 2 - write
   std::optional<unsigned char> cc;
   void reset() {
     gpr.clear(); cc.reset();
@@ -125,7 +125,7 @@ struct track_snap {
   }
   bool empty() const {
     if ( !gpr.empty() ) return false;
-    return empty_pr() && empty_upr();
+    return empty_pr() && empty_upr() && !cc.has_value();
   }
 };
 
@@ -231,7 +231,7 @@ struct reg_pad {
      return _add(gpr, r, off, k | reuse, t);
   }
   RegTabChains* wgpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
-     if ( snap ) snap->gpr[r] = 0x80;
+     if ( snap ) snap->gpr[r] |= 0x80;
      return _add(gpr, r, off, k | 0x8000, t);
   }
   RegTabChains* rugpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {
@@ -247,7 +247,7 @@ struct reg_pad {
      return _add(ugpr, r, off, k | reuse, t);
   }
   RegTabChains* wugpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
-     if ( snap ) snap->gpr[r | 0x8000] = 0x80;
+     if ( snap ) snap->gpr[r | 0x8000] |= 0x80;
      return _add(ugpr, r, off, k | 0x8000, t);
   }
   inline RegTabChains* rpred(int r, unsigned long off, reg_history::RH k) {
@@ -263,7 +263,7 @@ struct reg_pad {
     return _add(upred, r, off, k | 0x8000);
   }
   bool empty() const {
-    return gpr.empty() && pred.empty() && ugpr.empty() && upred.empty() && cbs.empty();
+    return gpr.empty() && pred.empty() && ugpr.empty() && upred.empty() && cbs.empty() && cc.empty();
   }
   void clear() {
      pred_mask = 0;
