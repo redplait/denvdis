@@ -4880,6 +4880,13 @@ sub hack_props
     );
     $i->[22] = \%u;
     return 1;
+  } elsif ( $i->[0] =~ /^uvirtcount/ ) {
+    return 1 if ( $i->[0] =~ /imm$/ );
+    my %u = (
+     'ISRC_A' => [ 'INTEGER',[ 'URa' ] ],
+    );
+    $i->[22] = \%u;
+    return 1;
   } elsif ( 'mxqmma_scale_' eq $i->[0] ) {
     my %u = (
      'IDEST' => [ 'FLOAT128', [ 'Rd' ] ],
@@ -5018,6 +5025,7 @@ sub heur_rend
   return merge_with_render_regs($op, $res, $regs, 'FP16SIMD', 'FP16SIMD') if ( $op->[0] =~ /^(?:ufhadd|ufhfma)/ );
   return merge_with_render_regs($op, $res, $regs, 'FP16SIMD', 'FP16SIMD') if ( $op->[0] =~ /^(?:fhadd|fhfma)/ );
   return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'FLOAT') if ( $op->[0] =~ /^(?:uf2f|ufmul|ufsel|uffma|ufset_|ufsetp_|ufmnmx_)/ );
+  return merge_with_render_regs($op, $res, $regs, 'FLOAT', 'FLOAT') if ( $op->[0] =~ /^qfma4/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /^(?:uiabs|uviadd|uvimnmx)/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /^(?:iadd|imul|imnm|uimnmx_|mov64iur_ur_)/ );
   return merge_with_render_regs($op, $res, $regs, 'INTEGER', 'INTEGER') if ( $op->[0] =~ /mov.*imm/ );
