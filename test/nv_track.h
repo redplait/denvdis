@@ -24,6 +24,17 @@ struct found_tab_cross {
   const NV_tab *tab = nullptr;
   int row = 0, col = 0;
   short value = 0;
+  // couple comfortable methods to avoid code duplication
+  const char *row_name() const {
+    if ( !tab || size_t(row) >= tab->rows.size() ) return nullptr;
+    auto &sv = *(tab->rows.begin() + row);
+    return sv.first;
+  }
+  const char *col_name() const {
+    if ( !tab || size_t(col) >= tab->cols.size() ) return nullptr;
+    auto &sv = *(tab->cols.begin() + col);
+    return sv.first;
+  }
 };
 
 typedef std::pair<const NV_tab *, int> RegTabChain;

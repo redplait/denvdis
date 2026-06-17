@@ -217,6 +217,13 @@ class nv_dis: public CElf<NV_renderer>
    std::unordered_map<Elf_Word, cbank_per_section *> m_cbanks;
    // regs track db
    reg_pad *m_rtdb = nullptr;
+   inline bool has_snap() const {
+     return (m_rtdb != nullptr) && (m_rtdb->snap != nullptr);
+   }
+   void clear_snap() {
+     if ( !has_snap() ) return;
+     m_rtdb->snap->reset();
+   }
    // no properties instructions
    std::unordered_map<const nv_instr *, unsigned long> m_nopi;
    void add_nopi(const nv_instr *i) {
@@ -453,8 +460,14 @@ void nv_dis::try_dis(Elf_Word idx)
   }
   if ( opt_c ) grab_syms_for_section(idx);
   if ( opt_T ) {
-    if ( !m_rtdb ) m_rtdb = new reg_pad;
-    else m_rtdb->clear();
+    if ( !m_rtdb ) {
+      m_rtdb = new reg_pad;
+      if ( opt_L )
+        m_rtdb->snap = new track_snap();
+    } else {
+      m_rtdb->clear();
+      clear_snap();
+    }
   }
   dual_first = dual_last = false;
   while(1) {
@@ -561,8 +574,24 @@ void nv_dis::try_dis(Elf_Word idx)
       bool skip_false = false;
       if ( m_rtdb ) {
         skip_false = always_false(res[res_idx].first, rend, res[res_idx].second);
-        if ( !skip_false )
+        if ( !skip_false ) {
+          clear_snap();
           track_regs(m_rtdb, rend, res[res_idx], off);
+          if ( opt_L && has_snap() ) {
+            auto dump = [&](unsigned char type, unsigned char what, unsigned long dst, unsigned long src, const found_tab_cross &ft) {
+              fprintf(m_out, " ; %s dst %lX src %lX val %d", lt_what(type, what).c_str(), dst, src, ft.value);
+              auto cn = ft.col_name();
+              auto rn = ft.row_name();
+              fprintf(m_out, " tab_%s(%s) c%d", ft.tab->name, ft.tab->connection, ft.col);
+              if ( cn ) fprintf(m_out, "(%s)", cn);
+              fprintf(m_out, " r%d", ft.row);
+              if ( rn ) fprintf(m_out, "(%s)", rn);
+              fputc('\n', m_out);
+            };
+            TLTrackCB cb(dump);
+            track_lat(m_rtdb, off, &cb);
+          }
+        }
       }
       if ( !skip_false && opt_P && !res[res_idx].first->props )
         add_nopi(res[res_idx].first);

@@ -2919,12 +2919,10 @@ col_name(SV *obj)
  INIT:
     found_tab_cross *ftl = get_magic_ext<found_tab_cross>(obj, &ca_latcross_magic_vt);
  CODE:
-   const NV_gnames &what = (1 == ix) ? ftl->tab->rows : ftl->tab->cols;
-   auto idx = (ix == 1) ? ftl->row : ftl->col;
-   if ( idx >= what.size() ) RETVAL = &PL_sv_undef;
+   auto sv = (1 == ix) ? ftl->row_name() : ftl->col_name();
+   if ( !sv ) RETVAL = &PL_sv_undef;
    else {
-     auto &sv = *(what.begin() + idx);
-     RETVAL = newSVpv(sv.first, strlen(sv.first));
+     RETVAL = newSVpv(sv, strlen(sv));
    }
  OUTPUT:
   RETVAL
