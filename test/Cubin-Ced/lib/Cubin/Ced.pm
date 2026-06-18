@@ -560,7 +560,7 @@ Describe construction from convertFloatType in hash where key is field name and 
 
 =head4 render method
 
-returns tied array of rendering items - you can fetch them with simple $r->[index], format is array where indexes
+returns tied array of rendering items - you can fetch them with simple $r->[index], format is array where indices
 
 =over
 
@@ -584,7 +584,7 @@ returns tied array of rendering items - you can fetch them with simple $r->[inde
 
 =back
 
-left & right are ref to array where indexes
+left & right are ref to array where indices
 
 =over
 
@@ -655,7 +655,7 @@ To get details track use following properties
 
 =back
 
-They return array of refs to array where indexes
+They return array of refs to array where indices
 
 =over
 
@@ -671,7 +671,7 @@ They return array of refs to array where indexes
 
 =back
 
-To get list of used const banks use 'cbs' method - it support wantarray and return list of array where indexes
+To get list of used const banks use 'cbs' method - it support wantarray and return list of array where indices
 
 =over
 
@@ -700,6 +700,44 @@ You can also extract only snapshot data for currently processed instruction with
 =item snap - main method, returns [ gprs, predicates ]
 
 =back
+
+=head4 Latency tracking
+
+main method is track_lat(Cubin::Ced::RegTrack, ref to out hash, is_debug)
+
+output hash keys are offset of instruction where some register/predicate/CC and value is array of arrays where indices
+
+=over
+
+=item 0 - instruction offset - where register/predicate/CC consumed
+
+=item 1 - latency value
+
+=item 2 - name of resourse
+
+=item 3 - in is_debug mode ref to Cubin::Ced::LatCross object
+
+=back
+
+this Cubin::Ced::LatCross has the following methods
+
+=over
+
+=item col - index of columt
+
+=item row - index of row
+
+=item col_name/row_name - name of corresponding col/row
+
+=item val - value of latency
+
+=item name - table name
+
+=item conn - table connection name
+
+=back
+
+to dump them use function dump_ftc
 
 =head3 Gathering details about currently loaded SM
 
@@ -744,11 +782,11 @@ base module Elf::Reader: L<https://github.com/redplait/dwarfdump/tree/main/perl/
 
 =head1 AUTHOR
 
-redp, E<lt>redp@E<gt>
+redp, E<lt>redp@mail.ruE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2025 by redp
+Copyright (C) 2025-2026 by redp
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.30.0 or,
