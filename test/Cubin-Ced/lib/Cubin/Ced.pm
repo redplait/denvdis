@@ -229,6 +229,14 @@ sub rel2foff
   undef;
 }
 
+# dump ftc, args: file, ref to ftc object
+sub dump_ftc
+{
+  my($fh, $ftc) = @_;
+  printf($fh "tab_%s(%s) c%d(%s) r%d(%s) %d", $ftc->name(), $ftc->conn(), $ftc->col(), $ftc->col_name(), 
+    $ftc->row(), $ftc->row_name(), $ftc->val() );
+}
+
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
@@ -241,6 +249,7 @@ our @EXPORT = qw(
  PType_name
  RTypes
  RType_name
+ dump_ftc
  reg_sfx
  rel_off_map
  rkey

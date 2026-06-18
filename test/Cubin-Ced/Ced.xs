@@ -630,6 +630,10 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return;
     tab_fields(ins(), key, res);
   }
+  int track_lat(reg_pad *rp, TLTrackCB *cb) {
+    return NV_renderer::track_lat(rp, (unsigned long)m_dis->offset(), cb);
+  }
+  SV *gen_ftc(const std::string &, unsigned long src, const found_tab_cross &, int) const;
  protected:
   template <typename T>
   int patch_int(const nv_vattr *va, T value) {
@@ -675,6 +679,7 @@ int Ced_perl::try_swap(UV off) {
   if ( !has_ins() ) return 0;
   return swap_with(off);
 }
+
 
 int Ced_perl::replace(const char *s)
 {
@@ -1372,6 +1377,28 @@ static MGVTBL ca_latcross_magic_vt = {
         0 /* dup */
         TAB_TAIL
 };
+
+// layout of array:
+// [0] - src address
+// [1] - latency value
+// [2] - resource name
+// [3] - LatCross object if is_debug
+SV *Ced_perl::gen_ftc(const std::string &what, unsigned long src, const found_tab_cross &ftc, int is_debug) const {
+  AV *res = newAV();
+  av_push(res, newSVuv(src));
+  av_push(res, newSViv(ftc.value));
+  av_push(res, newSVpv(what.c_str(), what.size()));
+  if ( is_debug ) {
+    SV *msv = newSViv(0);
+    SV *objref= newRV_noinc(msv);
+    sv_bless(objref, s_ca_latcross_pkg);
+    // attach magic
+    found_tab_cross *cp = new found_tab_cross(ftc);
+    sv_magicext(msv, NULL, PERL_MAGIC_ext, &ca_latcross_magic_vt, (const char*)cp, 0);
+    av_push(res, objref);
+  }
+  return newRV_noinc((SV*)res);
+}
 
 // magic table for Cubin::Ced::LatIndex
 static const char *s_ca_latindex = "Cubin::Ced::LatIndex";
@@ -2591,6 +2618,51 @@ track(SV *obj, SV *rt)
  OUTPUT:
   RETVAL
 
+int
+track_lat(SV *obj, SV *rp, HV *hm, int debug = 0)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   reg_pad *r= get_magic_ext<reg_pad>(rp, &ca_regtrack_magic_vt);
+ CODE:
+   if ( !r->snap || !e->has_ins() ) RETVAL = -1;
+   else {
+     TLTrackCB cb = [&](unsigned char type, unsigned char what, unsigned long dst, unsigned long src, const found_tab_cross &ft) {
+       // check if we already have hm[dst]
+       SV *key = newSVuv(dst);
+       if ( hv_exists_ent(hm, key, 0) ) {
+         U32 hash_value = 0;
+         HE *he = hv_fetch_ent(hm, key, 0, hash_value);
+         if ( !he ) { // wtf?
+           SvREFCNT_dec(key);
+           return;
+         }
+         SV *val = HeVAL(he);
+         // check what we have
+         if ( !SvROK(val) ) {
+           SvREFCNT_dec(key);
+           croak("not ref value at key %lX", dst);
+           return;
+         }
+         auto vtype = SvTYPE(SvRV(val));
+         if ( vtype != SVt_PVAV ) {
+           SvREFCNT_dec(key);
+           croak("bad ref type %d value at key %lX", vtype, dst);
+           return;
+         }
+         AV *array = (AV*)SvRV(val);
+         av_push(array, e->gen_ftc( lt_what(type, what), src, ft, debug ));
+       } else { // not in map yet
+         AV *array = newAV();
+         av_push(array, e->gen_ftc( lt_what(type, what), src, ft, debug ));
+         hv_store_ent(hm, key, newRV_noinc((SV*)array), 0);
+       }
+       SvREFCNT_dec(key);
+     };
+     RETVAL = e->track_lat(r, &cb);
+   }
+ OUTPUT:
+  RETVAL
+
 SV *
 has_comp(SV *obj)
  INIT:
@@ -2811,6 +2883,7 @@ PPCODE:
     ST(0) = &PL_sv_undef;
   }
   XSRETURN(1);
+
 
 MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::Render
 
@@ -3237,6 +3310,7 @@ p(SV *obj, IV key, unsigned long from = 0)
   else RETVAL = fill_reg(rs_iter->second, from);
  OUTPUT:
   RETVAL
+
 
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);

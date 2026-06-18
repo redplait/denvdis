@@ -102,7 +102,12 @@ ok( exists($regs->{20}), 'must be track for R20');
 my $r20 = $rt->r(20);
 ok( defined($r20), 'r test');
 ok( $r20->[0]->[2], 'r20 updated');
-$t_num+=8;
+# track_lat
+my %lt;
+my $tl_res = $cub->track_lat($rt, \%lt);
+ok( $tl_res == 0, 'track_lat'); # for MOV R20,c[0][0x140] there are no src refs
+
+$t_num+=9;
 
 # by_name
 my $tx = $cub->by_name('TXA');
