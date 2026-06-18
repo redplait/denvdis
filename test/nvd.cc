@@ -558,7 +558,8 @@ void nv_dis::try_dis(Elf_Word idx)
             fprintf(m_out, " ; cb in section %d, offset %lX - %X = %lX\n",
               cbank->section, off, cbank->offset, off - cbank->offset);
           } else {
-            fprintf(m_out, " ; unknown cb off %lX\n", off);
+            if ( !m_rtdb ) // if we track cb then they will be dumped at end of block
+             fprintf(m_out, " ; unknown cb off %lX\n", off);
           }
         }
         // check non-zero const bank
@@ -578,7 +579,7 @@ void nv_dis::try_dis(Elf_Word idx)
           clear_snap();
           track_regs(m_rtdb, rend, res[res_idx], off);
           if ( opt_L && has_snap() ) {
-            auto dump = [&](unsigned char type, unsigned char what, unsigned long dst, unsigned long src, const found_tab_cross &ft) {
+            TLTrackCB cb = [&](unsigned char type, unsigned char what, unsigned long dst, unsigned long src, const found_tab_cross &ft) {
               fprintf(m_out, " ; %s dst %lX src %lX val %d", lt_what(type, what).c_str(), dst, src, ft.value);
               auto cn = ft.col_name();
               auto rn = ft.row_name();
@@ -588,7 +589,6 @@ void nv_dis::try_dis(Elf_Word idx)
               if ( rn ) fprintf(m_out, "(%s)", rn);
               fputc('\n', m_out);
             };
-            TLTrackCB cb(dump);
             track_lat(m_rtdb, off, &cb);
           }
         }

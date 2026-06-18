@@ -684,7 +684,7 @@ void NV_renderer::dump_rt(reg_pad *rtdb, int rc) const {
   if ( !rtdb->cbs.empty() ) {
    fprintf(m_out, ";;; %ld CBanks\n", rtdb->cbs.size());
    for ( auto &c: rtdb->cbs )
-     fprintf(m_out, " ;   %lX: %X %lX size %d\n", c.off, c.cb_num, c.cb_off, c.kind & 0xf);
+     fprintf(m_out, " ;   %lX: [%d][%lX] size %d\n", c.off, c.cb_num, c.cb_off, c.kind & 0xf);
   }
 }
 
