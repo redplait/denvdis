@@ -4472,10 +4472,13 @@ sub read_groups
   my $state = 0; # 1 - process op set, 2 - table, 3 - table rows
    # 4 - CONNECTOR CONDITION
    # 5 - CONNECTOR SETS
+   # 6 - CONNECTOR NAME
+  my $con_name;
   my $line = 0;
   my $opened = 0; # has non-closed }
   my $reset = sub {
    undef $ctab;
+   undef $con_name;
    $state = 0;
   };
   while( $str = <$fh> ) {
@@ -4496,7 +4499,10 @@ sub read_groups
     if ( $str =~ /CONNECTOR CONDITION(?:S?)/ ) {
         $state = 4; next;
     }
-    $state = 0 if ( $state > 3 && $str =~ /^TABLE_/ );
+    if ( $str =~ /CONNECTOR NAME$/ ) {
+        $state = 6; next;
+    }
+    $state = 0 if ( (defined($con_name) || $state > 3) && $str =~ /^TABLE_/ );
 # printf("%d %s\n", $state, substr($str, 0, 80)) if ( $state );
     if ( !$state ) {
       # table can be just table_type(connector): or
@@ -4521,6 +4527,10 @@ sub read_groups
         $state = 0;
         next;
       }
+    }
+    if ( 6 == $state ) {
+      $con_name = $str;
+      next;
     }
     if ( 5 == $state ) {
       if ( $str =~ /(\w+)\s*=\s*(.*)\s*;$/ ) {
