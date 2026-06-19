@@ -276,6 +276,15 @@ struct reg_pad {
   }
 };
 
+// couple of functions to filter connector by row/col
+const NV_tabref *check_tconn_col(const nv_instr *, const char *);
+const NV_tabref *check_tconn_col(const nv_instr *, const std::string_view &);
+const NV_tabref *check_tconn_row(const nv_instr *, const char *);
+const NV_tabref *check_tconn_row(const nv_instr *, const std::string_view &);
+// and batch version
+std::vector<std::pair<const NV_tabref *, int> > check_tconn_col(const nv_instr *, const std::vector<std::string_view> &);
+std::vector<std::pair<const NV_tabref *, int> > check_tconn_row(const nv_instr *, const std::vector<std::string_view> &);
+
 // interface for latency tracking
 // type is
 // 0 for gpr
