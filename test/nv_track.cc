@@ -33,9 +33,27 @@ const NV_tabref *check_tconn_col(const nv_instr *op, const char *what) {
   return nullptr;
 }
 
+const NV_tabref *check_tconn_col(const nv_instr *op, const char *what, const std::string_view &tab_name) {
+  if ( !op->cols ) return nullptr;
+  for ( auto &cr: *op->cols ) {
+    if ( tab_name != cr.tab->name ) continue;
+    if ( !strcmp(cr.tab->connection, what) ) return &cr;
+  }
+  return nullptr;
+}
+
 const NV_tabref *check_tconn_col(const nv_instr *op, const std::string_view &what) {
   if ( !op->cols ) return nullptr;
   for ( auto &cr: *op->cols ) {
+    if ( what == cr.tab->connection ) return &cr;
+  }
+  return nullptr;
+}
+
+const NV_tabref *check_tconn_col(const nv_instr *op, const std::string_view &what, const std::string_view &tab_name) {
+  if ( !op->cols ) return nullptr;
+  for ( auto &cr: *op->cols ) {
+    if ( tab_name != cr.tab->name ) continue;
     if ( what == cr.tab->connection ) return &cr;
   }
   return nullptr;
@@ -49,6 +67,15 @@ const NV_tabref *check_tconn_row(const nv_instr *op, const char *what) {
   return nullptr;
 }
 
+const NV_tabref *check_tconn_row(const nv_instr *op, const char *what, const std::string_view &tab_name) {
+  if ( !op->rows ) return nullptr;
+  for ( auto &cr: *op->rows ) {
+    if ( tab_name != cr.tab->name ) continue;
+    if ( !strcmp(cr.tab->connection, what) ) return &cr;
+  }
+  return nullptr;
+}
+
 const NV_tabref *check_tconn_row(const nv_instr *op, const std::string_view &what) {
   if ( !op->rows ) return nullptr;
   for ( auto &cr: *op->rows ) {
@@ -57,8 +84,17 @@ const NV_tabref *check_tconn_row(const nv_instr *op, const std::string_view &wha
   return nullptr;
 }
 
-std::vector<std::pair<const NV_tabref *, int> > check_tconn_col(const nv_instr *op, const std::vector<std::string_view> &batch) {
- std::vector<std::pair<const NV_tabref *, int> > res;
+const NV_tabref *check_tconn_row(const nv_instr *op, const std::string_view &what, const std::string_view &tab_name) {
+  if ( !op->rows ) return nullptr;
+  for ( auto &cr: *op->rows ) {
+    if ( tab_name != cr.tab->name ) continue;
+    if ( what == cr.tab->connection ) return &cr;
+  }
+  return nullptr;
+}
+
+TabRIdx check_tconn_col(const nv_instr *op, const std::vector<std::string_view> &batch) {
+ TabRIdx res;
   if ( !op->cols ) return res;
   if ( batch.empty() ) return res; // srsly?
   for ( auto &cr: *op->cols ) {
@@ -71,14 +107,42 @@ std::vector<std::pair<const NV_tabref *, int> > check_tconn_col(const nv_instr *
   return res;
 }
 
-std::vector<std::pair<const NV_tabref *, int> > check_tconn_row(const nv_instr *op, const std::vector<std::string_view> &batch) {
- std::vector<std::pair<const NV_tabref *, int> > res;
+TabRIdx check_tconn_col(const nv_instr *op, const std::vector<std::string_view> &batch, const std::string_view &tab_name) {
+ TabRIdx res;
+  if ( !op->cols ) return res;
+  if ( batch.empty() ) return res; // srsly?
+  for ( auto &cr: *op->cols ) {
+    int idx = 0;
+    for ( auto &what: batch ) {
+      if ( tab_name == cr.tab->name && what == cr.tab->connection ) res.push_back( { &cr, idx } );
+      ++idx;
+    }
+  }
+  return res;
+}
+
+TabRIdx check_tconn_row(const nv_instr *op, const std::vector<std::string_view> &batch) {
+ TabRIdx res;
   if ( !op->rows ) return res;
   if ( batch.empty() ) return res; // srsly?
   for ( auto &cr: *op->rows ) {
     int idx = 0;
     for ( auto &what: batch ) {
       if ( what == cr.tab->connection ) res.push_back( { &cr, idx } );
+      ++idx;
+    }
+  }
+  return res;
+}
+
+TabRIdx check_tconn_row(const nv_instr *op, const std::vector<std::string_view> &batch, const std::string_view &tab_name) {
+ TabRIdx res;
+  if ( !op->rows ) return res;
+  if ( batch.empty() ) return res; // srsly?
+  for ( auto &cr: *op->rows ) {
+    int idx = 0;
+    for ( auto &what: batch ) {
+      if ( tab_name == cr.tab->name && what == cr.tab->connection ) res.push_back( { &cr, idx } );
       ++idx;
     }
   }
