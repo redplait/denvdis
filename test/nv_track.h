@@ -99,7 +99,17 @@ struct cbank_history {
   unsigned short cb_num, kind;
 };
 
-// snapshot of registers acessed/patched for current single instruction
+/* snapshot of registers acessed/patched for current single instruction
+   there are many of resources in latency tables besides gpr/predicates
+   run grep TAB *_2.txt | grep -v GPR | grep -v PRED
+   Hovewer most of them ORDERED_ZERO like SCOREBOARD
+   There are severa sm90 (H100) specific tables:
+    - CGABARRIER but connection field CgaBar not presented in MD
+    - GMMA_SCOREBOARD
+    - GMMA_GROUP_SCOREBOARD - connected by field gsb:
+ OPTIONAL_GSB "gsb0"=0 , "nooptional_gsb"=7 , "INVALID1"=1 , "INVALID2"=2 , "INVALID3"=3 , "INVALID4"=4 , "INVALID5"=5 , "INVALID6"=6;
+     so it's enough to have only gsb0 & gsb7
+*/
 struct track_snap {
   // key: GPR has prefix 0, UGPR 0x8000
   // value: 0x80 - write
@@ -113,8 +123,10 @@ struct track_snap {
       upr[pr_size] = { 0, 0, 0, 0, 0, 0, 0 };
   // cc - 1 - read, 2 - write
   std::optional<unsigned char> cc;
+  // gsb0 & gsb7: like cc, 1 - read, 2 - write
+  std::optional<unsigned char> gsb0, gsb7;
   void reset() {
-    gpr.clear(); cc.reset();
+    gpr.clear(); cc.reset(); gsb0.reset(); gsb7.reset();
     memset(pr, 0, pr_size); memset(upr, 0, pr_size);
   }
   bool empty_pr() const {
@@ -123,9 +135,12 @@ struct track_snap {
   bool empty_upr() const {
     return std::all_of(upr, upr + pr_size, [](char c) -> bool { return !c; });
   }
-  bool empty() const {
+  inline bool gsb_empty() const {
+    return !gsb0.has_value() && !gsb7.has_value();
+  }
+  inline bool empty() const {
     if ( !gpr.empty() ) return false;
-    return empty_pr() && empty_upr() && !cc.has_value();
+    return empty_pr() && empty_upr() && !cc.has_value() && gsb_empty();
   }
 };
 
@@ -141,6 +156,8 @@ struct reg_pad {
   typedef std::unordered_map<int, std::vector<reg_history> > RSet;
   typedef std::unordered_map<int, std::vector<typed_reg_history> > TRSet;
   std::vector<reg_history> cc;
+  // gsb for sm90
+  std::vector<reg_history> gsb0, gsb7;
   TRSet gpr, ugpr;
   RSet pred, upred;
   std::vector<cbank_history> cbs;
@@ -262,8 +279,11 @@ struct reg_pad {
   inline RegTabChains* wupred(int r, unsigned long off, reg_history::RH k) {
     return _add(upred, r, off, k | 0x8000);
   }
+  bool gsb_empty() const {
+    return gsb0.empty() && gsb7.empty();
+  }
   bool empty() const {
-    return gpr.empty() && pred.empty() && ugpr.empty() && upred.empty() && cbs.empty() && cc.empty();
+    return gpr.empty() && pred.empty() && ugpr.empty() && upred.empty() && cbs.empty() && cc.empty() && gsb_empty();
   }
   void clear() {
      pred_mask = 0;
@@ -273,6 +293,7 @@ struct reg_pad {
      upred.clear();
      cbs.clear();
      cc.clear();
+     gsb0.clear(); gsb7.clear();
   }
 };
 

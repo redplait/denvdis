@@ -156,6 +156,9 @@ class NV_renderer {
       if ( !va ) return false;
       return is_inf(va->kind, res, minus);
     }
+    inline bool is_sm90() const {
+      return m_sm == 0x5a;
+    }
     // latency methods
     int check_lat_set(const NV_sorted *) const;
     std::optional<int> calc_latency(const struct nv_instr *, const NV_extracted &) const;
@@ -483,6 +486,7 @@ class NV_renderer {
    INV_disasm *m_dis = nullptr;
    Dvq_name m_vq = nullptr;
    int m_width;
+   int m_sm = 0; // sm number
    int m_block_mask = 0;
    // convert offset to start of block
    unsigned long to_block_start(unsigned long loff) const {
