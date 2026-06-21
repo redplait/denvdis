@@ -1,6 +1,29 @@
 #include "decuda.h"
 #include "ahocor.h"
 
+uint32_t adler32(const uint8_t* data, size_t length) {
+    const uint32_t MOD_ADLER = 65521;
+    const size_t NMAX = 5552; // Max bytes before s1 or s2 can overflow
+
+    uint32_t s1 = 1;
+    uint32_t s2 = 0;
+
+    while (length > 0) {
+        size_t tlen = (length > NMAX) ? NMAX : length;
+        length -= tlen;
+
+        for (size_t i = 0; i < tlen; ++i) {
+            s1 += data[i];
+            s2 += s1;
+        }
+
+        s1 %= MOD_ADLER;
+        s2 %= MOD_ADLER;
+    }
+
+    return (s2 << 16) | s1;
+}
+
 void decuda_base::dump_syms() const {
   for ( auto &s: m_syms )
     printf("%lX %s %d sec %d\n", s.second.addr, s.first.c_str(), s.second.type, s.second.section);

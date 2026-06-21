@@ -69,6 +69,8 @@ struct tlg_item {
 
 using Tlg = std::vector<tlg_item>;
 
+uint32_t adler32(const uint8_t* data, size_t length);
+
 class decuda_base {
  public:
    decuda_base(ELFIO::elfio *rdr):

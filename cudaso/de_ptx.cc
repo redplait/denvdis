@@ -1,6 +1,7 @@
 #include "de_ptx.h"
 #include "x64arch.h"
 #include <queue>
+#include <regex>
 
 extern int opt_d;
 
@@ -632,7 +633,7 @@ void de_ptx::hack_dumpers(uint64_t start, uint64_t reg_func) {
   }
 }
 
-int de_ptx::extr_sw_str(diter &di, size_t idx) {
+int de_ptx::extr_sw_str(diter &di, size_t idx, std::regex &re) {
   // states:
   // mov edi, imm - size
   // then lea rsi, [.rodata]
@@ -648,7 +649,14 @@ int de_ptx::extr_sw_str(diter &di, size_t idx) {
       auto saddr = di.get_addr(1);
       std::string_view res;
       if ( read_str(s_rodata.value(), saddr, res) ) {
-        printf("|%d %X| %*s\n", idx, size, res.size(), res.data());
+        std::match_results<std::string_view::const_iterator> matches;
+        printf("|%d %X", idx, size);
+        if ( std::regex_search(res.begin(), res.end(), matches, re) ) {
+          std::string_view mname{matches[1].first, matches[1].second};
+          auto crc = adler32((const uint8_t*)mname.data(), mname.size());
+          printf(" %X %.*s| %.*s\n", crc, mname.size(), mname.data(), res.size(), res.data());
+        } else
+          printf("| %.*s\n", res.size(), res.data());
         return 1;
       }
     }
@@ -658,6 +666,7 @@ int de_ptx::extr_sw_str(diter &di, size_t idx) {
 
 int de_ptx::extr_sw_strs(uint64_t start, size_t count) {
   diter di(*s_text);
+  std::regex pattern(R"(\(.*\)\s+\b(\S+)\s*)");
   int32_t *tab = (int32_t *)sdata(s_rodata, start);
   if ( !tab ) return 0;
   int res = 0;
@@ -665,7 +674,7 @@ int de_ptx::extr_sw_strs(uint64_t start, size_t count) {
     auto addr = start + tab[idx];
     if ( !di.setup(addr) ) continue;
 // printf("%d %p\n", idx, addr);
-    res += extr_sw_str(di, idx);
+    res += extr_sw_str(di, idx, pattern);
   }
   return res;
 }
