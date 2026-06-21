@@ -54,6 +54,8 @@ class de_ptx: public decuda_base {
    typedef std::pair<uint32_t, const char *> kw_type;
  protected:
    virtual int _read();
+   int extr_sw_strs(uint64_t start, size_t);
+   int extr_sw_str(diter &, size_t);
    void hack_dumpers(uint64_t start, uint64_t reg_func);
    int hack_dumpers(diter &, uint64_t reg_func, dump_map &);
    int collect(diter &, one_dump &);

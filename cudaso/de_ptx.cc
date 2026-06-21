@@ -632,10 +632,50 @@ void de_ptx::hack_dumpers(uint64_t start, uint64_t reg_func) {
   }
 }
 
+int de_ptx::extr_sw_str(diter &di, size_t idx) {
+  // states:
+  // mov edi, imm - size
+  // then lea rsi, [.rodata]
+  int size = 0;
+  while(1) {
+    if ( !di.next() ) break;
+    di.dasm();
+    if ( !size ) {
+      if ( di.is_mov_rimm(UD_R_EDI) ) size = di.ud_obj.operand[1].lval.sdword;
+      continue;
+    }
+    if ( di.is_lea(UD_R_RSI) && di.is_r1() ) {
+      auto saddr = di.get_addr(1);
+      std::string_view res;
+      if ( read_str(s_rodata.value(), saddr, res) ) {
+        printf("|%d %X| %*s\n", idx, size, res.size(), res.data());
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+int de_ptx::extr_sw_strs(uint64_t start, size_t count) {
+  diter di(*s_text);
+  int32_t *tab = (int32_t *)sdata(s_rodata, start);
+  if ( !tab ) return 0;
+  int res = 0;
+  for ( size_t idx = 0; idx < count; ++idx ) {
+    auto addr = start + tab[idx];
+    if ( !di.setup(addr) ) continue;
+// printf("%d %p\n", idx, addr);
+    res += extr_sw_str(di, idx);
+  }
+  return res;
+}
+
 int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
   // ptxas V13.1.80 md5 f38e5732c94163b96cf797eef252b4cb
-  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0, 0x2971260 + 8, 0x2971AD0);
+  // string from get_pseudo_prototype switch case, size 1078
+  extr_sw_strs(0x1E66DB8, 1078);
+//  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0, 0x2971260 + 8, 0x2971AD0);
  // yet another couple of latency tables, totally identical to c17.txt
   // hack_ops(0x7357B7, 0x1E01480, "ops1.txt");
   // hack_ops(0xEE17A7, 0x1E01480, "ops2.txt");
