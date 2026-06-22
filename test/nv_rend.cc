@@ -416,6 +416,22 @@ bool NV_renderer::is_nan(NV_Format f, uint64_t res) {
   return false;
 }
 
+static const char *s_param_kind_names[] = {
+/* 0 */ "None",
+/* 1 */ "LocalPtr",
+/* 2 */ "SharedPtr",
+/* 3 */ "ConstPtr",
+/* 4 */ "GlobalPtr",
+/* 5 */ "GenericPtr",
+/* 6 */ "Tex",
+/* 7 */ "Surface",
+/* 8 */ "TexSampler",
+};
+const char *NV_renderer::param_kind_name(int k) {
+  if ( (size_t)k >= sizeof(s_param_kind_names) / sizeof(s_param_kind_names[0]) || k < 0 ) return nullptr;
+  return s_param_kind_names[k];
+}
+
 static const char *s_ins_type_names[] = {
 /* 0 */ "MATH",
 /* 1 */ "MIO_RD_SCBD",

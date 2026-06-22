@@ -703,12 +703,21 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             kp += 2;
             uint32_t tmp = *(uint32_t *)kp;
             if ( tmp & 0xff ) fprintf(m_out, " align %d\n", tmp & 0xff);
+            // space 4 bit shift 8
             unsigned space = (tmp >> 0x8) & 0xf;
             if ( space ) fprintf(m_out, " space %X\n", space);
-            int is_cbank = ((tmp >> 0x10) & 2) == 0;
+            // kind is not bitmask - it is 5 bit shift 8 + 4 = 12
+            int kind = ((tmp >> 12) & 0x1f);
+            auto kind_name = param_kind_name(kind);
+            if ( kind_name )
+              fprintf(m_out, " %s", kind_name);
+            else
+              fprintf(m_out, " kind%d", kind);
+            // in cb if 0 at bit 17
+            int not_cb = (tmp >> 17) & 1;
             uint32_t csize = (((tmp >> 0x10) & 0xffff) >> 2);
-            fprintf(m_out, " size %X %s\n", csize, is_cbank ? "cbank" : "");
-            if ( is_cbank ) add_cparam(sidx, ord, csize, off);
+            fprintf(m_out, " size %X%s\n", csize, !not_cb ? " cbank" : "");
+            if ( !not_cb ) add_cparam(sidx, ord, csize, off);
           }
         } else if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
           ltype = NVLType::Coop_grp;

@@ -159,6 +159,7 @@ class NV_renderer {
     inline bool is_sm90() const {
       return m_sm == 0x5a;
     }
+    static const char *param_kind_name(int);
     // latency methods
     int check_lat_set(const NV_sorted *) const;
     std::optional<int> calc_latency(const struct nv_instr *, const NV_extracted &) const;
