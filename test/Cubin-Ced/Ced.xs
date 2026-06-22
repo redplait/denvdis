@@ -3229,6 +3229,21 @@ cc(SV *obj)
   RETVAL
 
 SV *
+gsb0(SV *obj)
+ ALIAS:
+  Cubin::Ced::RegTrack::gsb7 = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &gsb = ix ? r->snap->gsb7 : r->snap->gsb0;
+ CODE:
+   if ( !gsb.has_value() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = newSViv(gsb.value());
+ OUTPUT:
+  RETVAL
+
+SV *
 cbs(SV *obj)
  PREINIT:
   U8 gimme = GIMME_V;

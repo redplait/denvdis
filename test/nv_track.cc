@@ -982,12 +982,26 @@ int NV_renderer::track_lat(reg_pad *rtdb, unsigned long off, TLTrackCB *cb) cons
   if ( rtdb->snap->cc.has_value() && 2 != rtdb->snap->cc.value() ) {
     res += find_notify(2, 0, rtdb->cc, off, cb);
   }
+  // gsb - sm90 only
+  if ( is_sm90() ) {
+    if ( rtdb->snap->gsb0.has_value() && 2 != rtdb->snap->gsb0.value() ) {
+      res += find_notify(3, 0, rtdb->gsb0, off, cb);
+    }
+    if ( rtdb->snap->gsb7.has_value() && 2 != rtdb->snap->gsb7.value() ) {
+      res += find_notify(3, 7, rtdb->gsb7, off, cb);
+    }
+  }
   return res;
 }
 
 std::string lt_what(unsigned char type, unsigned char what) {
   if ( 2 == type ) {
     return "CC";
+  }
+  if ( 3 == type ) {
+    std::string res = "GSB";
+    res += std::to_string(what);
+    return res;
   }
   std::string res;
   if ( type & 0x80 ) res.push_back('U');
