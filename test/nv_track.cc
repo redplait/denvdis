@@ -151,7 +151,9 @@ TabRIdx check_tconn_row(const nv_instr *op, const std::vector<std::string_view> 
 
 static const std::string_view s_tkey_gpr("GPR"), s_tkey_ugpr("UGPR"),
  s_tkey_pred("PRED"), s_tkey_upred("UPRED"),
- s_cc_prop("DOES_READ_CC"); // pred name for cc reading
+ s_cc_prop("DOES_READ_CC"), // pred name for cc reading
+ s_true_tab("TRUE"),
+ s_ggs("GMMA_GROUP_SCOREBOARD"); // GMMA_GROUP_SCOREBOARD for sm90
 
 std::optional<found_tab_cross> find_tab_cross(const RegTabChains &rows, const RegTabChains &cols) {
   std::optional<found_tab_cross> res;
@@ -713,6 +715,23 @@ printf("check_ve %s %d\n", ve.arg, psize);
   if ( ccki == p.second.end() ) ccki = p.second.find("fcomp");
   if ( ccki != p.second.end() && ccki->second )
     fill_tab_chain_CC(p, rtdb->wcc(off), 0, ccki->second);
+
+  // track GMMA_GROUP_SCOREBOARD - sm90 only
+  if ( is_sm90() ) {
+    auto gi = p.second.find("gsb");
+    if ( gi != p.second.end() && (gi->second == 7 || !gi->second) ) {
+      // if we have column - this is read
+      auto gcol = check_tconn_col(p.first, s_ggs, s_true_tab);
+      if ( gcol && (!gcol->filter || gcol->filter(p.first, p.second)) ) {
+        fill_tab_chains(p, s_ggs, rtdb->rgsb(gi->second, off), 1); // add column from s_ggs
+      }
+      // else if we have row - this is write
+      auto grow = check_tconn_row(p.first, s_ggs, s_true_tab);
+      if ( grow && (!grow->filter || grow->filter(p.first, p.second)) ) {
+        fill_tab_chains(p, s_ggs, rtdb->wgsb(gi->second, off), 0); // add row from s_ggs
+      }
+    }
+  }
 
   return res;
 }

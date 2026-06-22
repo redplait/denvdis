@@ -207,6 +207,29 @@ struct reg_pad {
      return &et.first->second.back().tab_chain;
     }
   }
+  RegTabChains* rgsb(int v, unsigned long off) {
+    if ( snap ) {
+      if ( v )
+        snap->gsb7.emplace(1);
+      else
+        snap->gsb0.emplace(1);
+    }
+    auto &gsb = v ? gsb7 : gsb0;
+    gsb.push_back( { off, pred_mask } );
+    return &gsb.back().tab_chain;
+  }
+  RegTabChains* wgsb(int v, unsigned long off) {
+    if ( snap ) {
+      if ( v )
+        snap->gsb7.emplace(2);
+      else
+        snap->gsb0.emplace(2);
+    }
+    auto &gsb = v ? gsb7 : gsb0;
+    reg_history::RH kind = 0x8000 | pred_mask;
+    gsb.push_back( { off, kind } );
+    return &gsb.back().tab_chain;
+  }
   RegTabChains* rcc(unsigned long off) {
     if ( snap ) snap->cc.emplace(1);
     cc.push_back( { off, pred_mask } );
