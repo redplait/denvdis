@@ -764,6 +764,10 @@ void NV_renderer::finalize_rt(reg_pad *rtdb) {
   for ( auto &r: rtdb->upred ) std::sort(r.second.begin(), r.second.end(), srt);
  if ( !rtdb->cc.empty() )
   std::sort(rtdb->cc.begin(), rtdb->cc.end(), srt);
+ if ( !rtdb->gsb0.empty() )
+  std::sort(rtdb->gsb0.begin(), rtdb->gsb0.end(), srt);
+ if ( !rtdb->gsb7.empty() )
+  std::sort(rtdb->gsb7.begin(), rtdb->gsb7.end(), srt);
  if ( !rtdb->cbs.empty() ) {
   std::sort(rtdb->cbs.begin(), rtdb->cbs.end(), [](const cbank_history &a, const cbank_history &b) { return a.off < b.off; });
  }
@@ -801,29 +805,40 @@ void NV_renderer::dump_rt(reg_pad *rtdb, int rc) const {
     fprintf(m_out, ";;; %ld UPRED\n", rtdb->upred.size());
     dump_rset(rtdb->upred, "UP", rc);
   }
+  auto dump_rh = [&](const reg_history &c) {
+    constexpr int mask = (1 << 11) - 1;
+    // truncated version of dump_rset
+    int pred = 0;
+    bool is_pred = c.has_pred(pred);
+    if ( c.kind & 0x8000 )
+    {
+      if ( is_pred )
+       fprintf(m_out, " ;   %lX <- %X %d", c.off, c.kind & mask, pred);
+      else
+       fprintf(m_out, " ;   %lX <- %X", c.off, c.kind & mask);
+    } else {
+      if ( is_pred )
+       fprintf(m_out, " ;   %lX %X %d", c.off, c.kind & mask, pred);
+      else
+       fprintf(m_out, " ;   %lX %X", c.off, c.kind & mask);
+    }
+    if ( rc ) dump_rchains(c.tab_chain, !(c.kind & 0x8000));
+    fputc('\n', m_out);
+  };
   if ( !rtdb->cc.empty() ) {
    fprintf(m_out, ";;; %ld CC\n", rtdb->cc.size());
-   constexpr int mask = (1 << 11) - 1;
-   for ( auto &c: rtdb->cc ) {
-      // truncated version of dump_rset
-      int pred = 0;
-      bool is_pred = c.has_pred(pred);
-      if ( c.kind & 0x8000 )
-      {
-        if ( is_pred )
-          fprintf(m_out, " ;   %lX <- %X %d", c.off, c.kind & mask, pred);
-        else
-          fprintf(m_out, " ;   %lX <- %X", c.off, c.kind & mask);
-      } else {
-        if ( is_pred )
-          fprintf(m_out, " ;   %lX %X %d", c.off, c.kind & mask, pred);
-        else
-          fprintf(m_out, " ;   %lX %X", c.off, c.kind & mask);
-      }
-      if ( rc ) dump_rchains(c.tab_chain, !(c.kind & 0x8000));
-      fputc('\n', m_out);
-   }
+   for ( auto &c: rtdb->cc ) dump_rh(c);
   }
+  // dump GSB
+  if ( !rtdb->gsb0.empty() ) {
+   fprintf(m_out, ";;; %ld GSB0\n", rtdb->gsb0.size());
+   for ( auto &c: rtdb->gsb0 ) dump_rh(c);
+  }
+  if ( !rtdb->gsb7.empty() ) {
+   fprintf(m_out, ";;; %ld GSB7\n", rtdb->gsb7.size());
+   for ( auto &c: rtdb->gsb7 ) dump_rh(c);
+  }
+  // const banks
   if ( !rtdb->cbs.empty() ) {
    fprintf(m_out, ";;; %ld CBanks\n", rtdb->cbs.size());
    for ( auto &c: rtdb->cbs )
