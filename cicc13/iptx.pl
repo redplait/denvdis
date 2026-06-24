@@ -491,6 +491,7 @@ table for bits decoding
 my %gk_tabs = (
 # idx 0
   0 => 'tab282FC80', # BoolOp
+  1 => 'bsel',
   2 => 'tab282FBC0', # CmpOp
   3 => 'keeprefcount',  # test    byte ptr [r12], 8
   4 => 'no_atexit',
