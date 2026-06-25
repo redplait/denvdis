@@ -77,7 +77,9 @@ tab282EB40 = [ ".L2.64B" | ".L2.128B" | ".L2.256B" ]
 
 ld4 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 tab282EB40 ] ; ld	0M	B128
 
-ld5 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 tab282EB40 ] ; ld	0MU	B128
+cache_hint = [ ".L2::cache_hint" ]
+
+ld5 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 tab282EB40 cache_hint ] ; ld	0MU	B128
 
 ld6 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 mmio tab282EB80 tab282EC40 tab282F2D0 tab282EB40 ] ; ld	0M	F
 
@@ -85,11 +87,11 @@ ld7 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 mmio tab282EB80 tab282E
 
 ld8 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 mmio tab282EB80 tab282EC40 tab282F2D0 tab282EB40 ] ; ld	0M	B[8|16|32|64]
 
-ld9 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 tab282EB40 ] ; ld	0MU	F
+ld9 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 tab282EB40 cache_hint ] ; ld	0MU	F
 
-ld10 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 tab282EB40 ] ; ld	0MU	I[8|16|32|64]
+ld10 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 tab282EB40 cache_hint ] ; ld	0MU	I[8|16|32|64]
 
-ld11 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 tab282EB40 ] ; ld	0MU	B[8|16|32|64]
+ld11 = "ld" [ tab282F560 tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 tab282EB40 cache_hint ] ; ld	0MU	B[8|16|32|64]
 
 desc = [ ".desc" ]
 
@@ -109,13 +111,13 @@ st2 = "st" [ tab282EC40 tab282E960 tab282E900 mmio tab282EB80 tab282EC40 tab282F
 
 st3 = "st" [ tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 ] ; st	M0	B128
 
-st4 = "st" [ tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 ] ; st	M0U	B128
+st4 = "st" [ tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 cache_hint ] ; st	M0U	B128
 
-st5 = "st" [ tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 ] ; st	M0U	F
+st5 = "st" [ tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 cache_hint ] ; st	M0U	F
 
-st6 = "st" [ tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 ] ; st	M0U	I[8|16|32|64]
+st6 = "st" [ tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 cache_hint ] ; st	M0U	I[8|16|32|64]
 
-st7 = "st" [ tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 ] ; st	M0U	B[8|16|32|64]
+st7 = "st" [ tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 cache_hint ] ; st	M0U	B[8|16|32|64]
 
 st8 = "st" [ tab282EC40 tab282E960 tab282E900 tab282EB80 tab282EC40 tab282F2D0 desc ] ; st	M0U	F
 
@@ -327,15 +329,17 @@ _mma7 = "_mma" [ tab282F560 tab282E820 tab282F2D0 tab282ECE0 ] ; _mma	0123	F64F6
 
 tab282ECA0 = [ ".thread" | ".pair" | ".quad" ]
 
-_mma8 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	hhhhdC	F16F16F16F16
+layout = [ ".alayout" | ".blayout" ]
 
-_mma9 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	dhhddC	F32F16F16F32
+_mma8 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	hhhhdC	F16F16F16F16
 
-_mma10 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	dddddC	F32F32
+_mma9 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	dhhddC	F32F16F16F32
 
-_mma11 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	sddsdC	I32I8I8I32
+_mma10 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	dddddC	F32F32
 
-_mma12 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	sddsdC	I32I32
+_mma11 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	sddsdC	I32I8I8I32
+
+_mma12 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	sddsdC	I32I32
 
 _mma13 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 ] ; _mma	sdds	I32I8I8I32
 
@@ -345,9 +349,9 @@ _mma15 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 ] ; _mma	hddh	F16Q8Q8F16
 
 _mma16 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 ] ; _mma	fddf	F32Q8Q8F32
 
-_mma17 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	hddhdC	F16Q8Q8F16
+_mma17 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	hddhdC	F16Q8Q8F16
 
-_mma18 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	fddfdC	F32Q8Q8F32
+_mma18 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdC	F32Q8Q8F32
 
 _mma19 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 ] ; _mma	hddh	F16R4Q8F16
 
@@ -361,21 +365,21 @@ _mma23 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 ] ; _mma	hddh	F16R4R4F16
 
 _mma24 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 ] ; _mma	fddf	F32R4R4F32
 
-_mma25 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	hddhdC	F16R4Q8F16
+_mma25 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	hddhdC	F16R4Q8F16
 
-_mma26 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	fddfdC	F32R4Q8F32
+_mma26 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdC	F32R4Q8F32
 
-_mma27 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	hddhdC	F16Q8R4F16
+_mma27 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	hddhdC	F16Q8R4F16
 
-_mma28 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	fddfdC	F32Q8R4F32
+_mma28 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdC	F32Q8R4F32
 
-_mma29 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	hddhdC	F16R4R4F16
+_mma29 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	hddhdC	F16R4R4F16
 
-_mma30 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	fddfdC	F32R4R4F32
+_mma30 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdC	F32R4R4F32
 
 _mma31 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 ] ; _mma	fddfdxdx	F32R4R4F32Q8
 
-_mma32 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	fddfdCdxdx	F32R4R4F32Q8
+_mma32 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdCdxdx	F32R4R4F32Q8
 
 _mma33 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 ] ; _mma	fddfdxdx	F32Q8Q8F32Q8
 
@@ -385,13 +389,13 @@ _mma35 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 ] ; _mm
 
 _mma36 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 ] ; _mma	fddfdxdx	F32R4R4F32Q8
 
-_mma37 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	fddfdCdxdx	F32Q8Q8F32Q8
+_mma37 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdCdxdx	F32Q8Q8F32Q8
 
-_mma38 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	fddfdCdxdx	F32R4Q8F32Q8
+_mma38 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdCdxdx	F32R4Q8F32Q8
 
-_mma39 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	fddfdCdxdx	F32Q8R4F32Q8
+_mma39 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdCdxdx	F32Q8R4F32Q8
 
-_mma40 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	fddfdCdxdx	F32R4R4F32Q8
+_mma40 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdCdxdx	F32R4R4F32Q8
 
 _mma41 = "_mma" [ tab282F560 sat satfinite tab282F2D0 tab282ECE0 ] ; _mma	hhhh	F16F16
 
@@ -409,15 +413,15 @@ _mma47 = "_mma" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ] ; _mma	sdds	I32I
 
 _mma48 = "_mma" [ tab282F560 tab282E820 tab282F2D0 tab282ECE0 ] ; _mma	0123	F64F64F64F64
 
-_mma49 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	hhhhdC	F16F16F16F16
+_mma49 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	hhhhdC	F16F16F16F16
 
-_mma50 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	dhhddC	F32F16F16F32
+_mma50 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	dhhddC	F32F16F16F32
 
-_mma51 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	dddddC	F32F32
+_mma51 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	dddddC	F32F32
 
-_mma52 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	sddsdC	I32I8I8I32
+_mma52 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	sddsdC	I32I8I8I32
 
-_mma53 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	sddsdC	I32I32
+_mma53 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	sddsdC	I32I32
 
 _mma54 = "_mma" [ tab282F560 satfinite tab282F2D0 tab282ECE0 ] ; _mma	sdds	I32I8I8I32
 
@@ -427,9 +431,9 @@ _mma56 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 ] ; _mma	hddh	F16Q8Q8F16
 
 _mma57 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 ] ; _mma	fddf	F32Q8Q8F32
 
-_mma58 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	hddhdC	F16Q8Q8F16
+_mma58 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	hddhdC	F16Q8Q8F16
 
-_mma59 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp ] ; _mma	fddfdC	F32Q8Q8F32
+_mma59 = "_mma" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdC	F32Q8Q8F32
 
 transA = [ ".transA" ]
 
@@ -515,77 +519,77 @@ _mma_warpgroup34 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 transA ne
 
 _mma_warpgroup35 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 negA transB negB ignoreC ] ; _mma.warpgroup	fdUfu	F32T32T32F32
 
-_mma_warpgroup36 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	hUUhdC	F16F16F16F16
+_mma_warpgroup36 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	hUUhdC	F16F16F16F16
 
-_mma_warpgroup37 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32F16F16F32
+_mma_warpgroup37 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32F16F16F32
 
-_mma_warpgroup38 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	hUhhdC	F16F16F16F16
+_mma_warpgroup38 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	hUhhdC	F16F16F16F16
 
-_mma_warpgroup39 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUhfdC	F32F16F16F32
+_mma_warpgroup39 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUhfdC	F32F16F16F32
 
-_mma_warpgroup40 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	hhUhdC	F16F16F16F16
+_mma_warpgroup40 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	hhUhdC	F16F16F16F16
 
-_mma_warpgroup41 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fhUfdC	F32F16F16F32
+_mma_warpgroup41 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fhUfdC	F32F16F16F32
 
-_mma_warpgroup42 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	hUUhdCP	F16F16F16F16
+_mma_warpgroup42 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	hUUhdCP	F16F16F16F16
 
-_mma_warpgroup43 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32F16F16F32
+_mma_warpgroup43 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32F16F16F32
 
-_mma_warpgroup44 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC_pred ] ; _mma.warpgroup	hUhhdCP	F16F16F16F16
+_mma_warpgroup44 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC_pred ] ; _mma.warpgroup	hUhhdCP	F16F16F16F16
 
-_mma_warpgroup45 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUhfdCP	F32F16F16F32
+_mma_warpgroup45 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUhfdCP	F32F16F16F32
 
-_mma_warpgroup46 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC_pred ] ; _mma.warpgroup	hhUhdCP	F16F16F16F16
+_mma_warpgroup46 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC_pred ] ; _mma.warpgroup	hhUhdCP	F16F16F16F16
 
-_mma_warpgroup47 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC_pred ] ; _mma.warpgroup	fhUfdCP	F32F16F16F32
+_mma_warpgroup47 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC_pred ] ; _mma.warpgroup	fhUfdCP	F32F16F16F32
 
-_mma_warpgroup48 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	hUUhdCu	F16F16F16F16
+_mma_warpgroup48 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	hUUhdCu	F16F16F16F16
 
-_mma_warpgroup49 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32F16F16F32
+_mma_warpgroup49 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32F16F16F32
 
-_mma_warpgroup50 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	hUhhdCu	F16F16F16F16
+_mma_warpgroup50 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	hUhhdCu	F16F16F16F16
 
-_mma_warpgroup51 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUhfdCu	F32F16F16F32
+_mma_warpgroup51 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUhfdCu	F32F16F16F32
 
-_mma_warpgroup52 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	hhUhdCu	F16F16F16F16
+_mma_warpgroup52 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	hhUhdCu	F16F16F16F16
 
-_mma_warpgroup53 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fhUfdCu	F32F16F16F32
+_mma_warpgroup53 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fhUfdCu	F32F16F16F32
 
-_mma_warpgroup54 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32E16E16F32
+_mma_warpgroup54 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32E16E16F32
 
-_mma_warpgroup55 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdC	F32E16E16F32
+_mma_warpgroup55 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdC	F32E16E16F32
 
-_mma_warpgroup56 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdC	F32E16E16F32
+_mma_warpgroup56 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdC	F32E16E16F32
 
-_mma_warpgroup57 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32T32T32F32
+_mma_warpgroup57 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32T32T32F32
 
-_mma_warpgroup58 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdC	F32T32T32F32
+_mma_warpgroup58 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdC	F32T32T32F32
 
-_mma_warpgroup59 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdC	F32T32T32F32
+_mma_warpgroup59 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdC	F32T32T32F32
 
-_mma_warpgroup60 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32E16E16F32
+_mma_warpgroup60 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32E16E16F32
 
-_mma_warpgroup61 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32E16E16F32
+_mma_warpgroup61 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32E16E16F32
 
-_mma_warpgroup62 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32E16E16F32
+_mma_warpgroup62 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32E16E16F32
 
-_mma_warpgroup63 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32T32T32F32
+_mma_warpgroup63 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32T32T32F32
 
-_mma_warpgroup64 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32T32T32F32
+_mma_warpgroup64 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32T32T32F32
 
-_mma_warpgroup65 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32T32T32F32
+_mma_warpgroup65 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32T32T32F32
 
-_mma_warpgroup66 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32E16E16F32
+_mma_warpgroup66 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32E16E16F32
 
-_mma_warpgroup67 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdCu	F32E16E16F32
+_mma_warpgroup67 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdCu	F32E16E16F32
 
-_mma_warpgroup68 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdCu	F32E16E16F32
+_mma_warpgroup68 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdCu	F32E16E16F32
 
-_mma_warpgroup69 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32T32T32F32
+_mma_warpgroup69 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32T32T32F32
 
-_mma_warpgroup70 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdCu	F32T32T32F32
+_mma_warpgroup70 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdCu	F32T32T32F32
 
-_mma_warpgroup71 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdCu	F32T32T32F32
+_mma_warpgroup71 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdCu	F32T32T32F32
 
 _mma_warpgroup72 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 negA negB ignoreC ] ; _mma.warpgroup	hUUh	F16Q8Q8F16
 
@@ -623,41 +627,41 @@ _mma_warpgroup88 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 negA negB
 
 _mma_warpgroup89 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 negA negB ignoreC ] ; _mma.warpgroup	fhUfu	F32Q8Q8F32
 
-_mma_warpgroup90 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hUUhd	F16Q8Q8F16
+_mma_warpgroup90 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hUUhd	F16Q8Q8F16
 
-_mma_warpgroup91 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fUUfd	F32Q8Q8F32
+_mma_warpgroup91 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fUUfd	F32Q8Q8F32
 
-_mma_warpgroup92 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hUhhd	F16Q8Q8F16
+_mma_warpgroup92 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hUhhd	F16Q8Q8F16
 
-_mma_warpgroup93 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fUhfd	F32Q8Q8F32
+_mma_warpgroup93 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fUhfd	F32Q8Q8F32
 
-_mma_warpgroup94 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hhUhd	F16Q8Q8F16
+_mma_warpgroup94 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hhUhd	F16Q8Q8F16
 
-_mma_warpgroup95 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fhUfd	F32Q8Q8F32
+_mma_warpgroup95 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fhUfd	F32Q8Q8F32
 
-_mma_warpgroup96 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	hUUhdP	F16Q8Q8F16
+_mma_warpgroup96 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	hUUhdP	F16Q8Q8F16
 
-_mma_warpgroup97 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	fUUfdP	F32Q8Q8F32
+_mma_warpgroup97 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	fUUfdP	F32Q8Q8F32
 
-_mma_warpgroup98 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	hUhhdP	F16Q8Q8F16
+_mma_warpgroup98 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	hUhhdP	F16Q8Q8F16
 
-_mma_warpgroup99 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	fUhfdP	F32Q8Q8F32
+_mma_warpgroup99 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	fUhfdP	F32Q8Q8F32
 
-_mma_warpgroup100 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	hhUhdP	F16Q8Q8F16
+_mma_warpgroup100 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	hhUhdP	F16Q8Q8F16
 
-_mma_warpgroup101 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	fhUfdP	F32Q8Q8F32
+_mma_warpgroup101 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	fhUfdP	F32Q8Q8F32
 
-_mma_warpgroup102 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hUUhdu	F16Q8Q8F16
+_mma_warpgroup102 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hUUhdu	F16Q8Q8F16
 
-_mma_warpgroup103 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fUUfdu	F32Q8Q8F32
+_mma_warpgroup103 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fUUfdu	F32Q8Q8F32
 
-_mma_warpgroup104 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hUhhdu	F16Q8Q8F16
+_mma_warpgroup104 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hUhhdu	F16Q8Q8F16
 
-_mma_warpgroup105 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fUhfdu	F32Q8Q8F32
+_mma_warpgroup105 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fUhfdu	F32Q8Q8F32
 
-_mma_warpgroup106 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hhUhdu	F16Q8Q8F16
+_mma_warpgroup106 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hhUhdu	F16Q8Q8F16
 
-_mma_warpgroup107 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fhUfdu	F32Q8Q8F32
+_mma_warpgroup107 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fhUfdu	F32Q8Q8F32
 
 _mma_warpgroup108 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUs	I32I8I8I32
 
@@ -677,23 +681,23 @@ _mma_warpgroup115 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE
 
 _mma_warpgroup116 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sdUsu	I32I8I8I32
 
-_mma_warpgroup117 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sUUsd	I32I8I8I32
+_mma_warpgroup117 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sUUsd	I32I8I8I32
 
-_mma_warpgroup118 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sUdsd	I32I8I8I32
+_mma_warpgroup118 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sUdsd	I32I8I8I32
 
-_mma_warpgroup119 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sdUsd	I32I8I8I32
+_mma_warpgroup119 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sdUsd	I32I8I8I32
 
-_mma_warpgroup120 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC_pred ] ; _mma.warpgroup	sUUsdP	I32I8I8I32
+_mma_warpgroup120 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC_pred ] ; _mma.warpgroup	sUUsdP	I32I8I8I32
 
-_mma_warpgroup121 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC_pred ] ; _mma.warpgroup	sUdsdP	I32I8I8I32
+_mma_warpgroup121 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC_pred ] ; _mma.warpgroup	sUdsdP	I32I8I8I32
 
-_mma_warpgroup122 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC_pred ] ; _mma.warpgroup	sdUsdP	I32I8I8I32
+_mma_warpgroup122 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC_pred ] ; _mma.warpgroup	sdUsdP	I32I8I8I32
 
-_mma_warpgroup123 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sUUsdu	I32I8I8I32
+_mma_warpgroup123 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sUUsdu	I32I8I8I32
 
-_mma_warpgroup124 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sUdsdu	I32I8I8I32
+_mma_warpgroup124 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sUdsdu	I32I8I8I32
 
-_mma_warpgroup125 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sdUsdu	I32I8I8I32
+_mma_warpgroup125 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sdUsdu	I32I8I8I32
 
 _mma_warpgroup126 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUs	I32B1B1I32
 
@@ -785,77 +789,77 @@ _mma_warpgroup169 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 transA n
 
 _mma_warpgroup170 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 negA transB negB ignoreC ] ; _mma.warpgroup	fdUfu	F32T32T32F32
 
-_mma_warpgroup171 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	hUUhdC	F16F16F16F16
+_mma_warpgroup171 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	hUUhdC	F16F16F16F16
 
-_mma_warpgroup172 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32F16F16F32
+_mma_warpgroup172 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32F16F16F32
 
-_mma_warpgroup173 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	hUhhdC	F16F16F16F16
+_mma_warpgroup173 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	hUhhdC	F16F16F16F16
 
-_mma_warpgroup174 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUhfdC	F32F16F16F32
+_mma_warpgroup174 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUhfdC	F32F16F16F32
 
-_mma_warpgroup175 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	hhUhdC	F16F16F16F16
+_mma_warpgroup175 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	hhUhdC	F16F16F16F16
 
-_mma_warpgroup176 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fhUfdC	F32F16F16F32
+_mma_warpgroup176 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fhUfdC	F32F16F16F32
 
-_mma_warpgroup177 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	hUUhdCP	F16F16F16F16
+_mma_warpgroup177 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	hUUhdCP	F16F16F16F16
 
-_mma_warpgroup178 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32F16F16F32
+_mma_warpgroup178 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32F16F16F32
 
-_mma_warpgroup179 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC_pred ] ; _mma.warpgroup	hUhhdCP	F16F16F16F16
+_mma_warpgroup179 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC_pred ] ; _mma.warpgroup	hUhhdCP	F16F16F16F16
 
-_mma_warpgroup180 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUhfdCP	F32F16F16F32
+_mma_warpgroup180 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUhfdCP	F32F16F16F32
 
-_mma_warpgroup181 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC_pred ] ; _mma.warpgroup	hhUhdCP	F16F16F16F16
+_mma_warpgroup181 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC_pred ] ; _mma.warpgroup	hhUhdCP	F16F16F16F16
 
-_mma_warpgroup182 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC_pred ] ; _mma.warpgroup	fhUfdCP	F32F16F16F32
+_mma_warpgroup182 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC_pred ] ; _mma.warpgroup	fhUfdCP	F32F16F16F32
 
-_mma_warpgroup183 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	hUUhdCu	F16F16F16F16
+_mma_warpgroup183 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	hUUhdCu	F16F16F16F16
 
-_mma_warpgroup184 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32F16F16F32
+_mma_warpgroup184 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32F16F16F32
 
-_mma_warpgroup185 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	hUhhdCu	F16F16F16F16
+_mma_warpgroup185 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	hUhhdCu	F16F16F16F16
 
-_mma_warpgroup186 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUhfdCu	F32F16F16F32
+_mma_warpgroup186 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUhfdCu	F32F16F16F32
 
-_mma_warpgroup187 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	hhUhdCu	F16F16F16F16
+_mma_warpgroup187 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	hhUhdCu	F16F16F16F16
 
-_mma_warpgroup188 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fhUfdCu	F32F16F16F32
+_mma_warpgroup188 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fhUfdCu	F32F16F16F32
 
-_mma_warpgroup189 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32E16E16F32
+_mma_warpgroup189 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32E16E16F32
 
-_mma_warpgroup190 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdC	F32E16E16F32
+_mma_warpgroup190 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdC	F32E16E16F32
 
-_mma_warpgroup191 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdC	F32E16E16F32
+_mma_warpgroup191 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdC	F32E16E16F32
 
-_mma_warpgroup192 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32T32T32F32
+_mma_warpgroup192 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdC	F32T32T32F32
 
-_mma_warpgroup193 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdC	F32T32T32F32
+_mma_warpgroup193 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdC	F32T32T32F32
 
-_mma_warpgroup194 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdC	F32T32T32F32
+_mma_warpgroup194 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdC	F32T32T32F32
 
-_mma_warpgroup195 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32E16E16F32
+_mma_warpgroup195 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32E16E16F32
 
-_mma_warpgroup196 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32E16E16F32
+_mma_warpgroup196 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32E16E16F32
 
-_mma_warpgroup197 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32E16E16F32
+_mma_warpgroup197 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32E16E16F32
 
-_mma_warpgroup198 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32T32T32F32
+_mma_warpgroup198 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC_pred ] ; _mma.warpgroup	fUUfdCP	F32T32T32F32
 
-_mma_warpgroup199 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32T32T32F32
+_mma_warpgroup199 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC_pred ] ; _mma.warpgroup	fUdfdCP	F32T32T32F32
 
-_mma_warpgroup200 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32T32T32F32
+_mma_warpgroup200 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC_pred ] ; _mma.warpgroup	fdUfdCP	F32T32T32F32
 
-_mma_warpgroup201 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32E16E16F32
+_mma_warpgroup201 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32E16E16F32
 
-_mma_warpgroup202 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdCu	F32E16E16F32
+_mma_warpgroup202 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdCu	F32E16E16F32
 
-_mma_warpgroup203 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdCu	F32E16E16F32
+_mma_warpgroup203 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdCu	F32E16E16F32
 
-_mma_warpgroup204 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32T32T32F32
+_mma_warpgroup204 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA transB negB ignoreC ] ; _mma.warpgroup	fUUfdCu	F32T32T32F32
 
-_mma_warpgroup205 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdCu	F32T32T32F32
+_mma_warpgroup205 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout transA negA negB ignoreC ] ; _mma.warpgroup	fUdfdCu	F32T32T32F32
 
-_mma_warpgroup206 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdCu	F32T32T32F32
+_mma_warpgroup206 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA transB negB ignoreC ] ; _mma.warpgroup	fdUfdCu	F32T32T32F32
 
 _mma_warpgroup207 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 negA negB ignoreC ] ; _mma.warpgroup	hUUh	F16Q8Q8F16
 
@@ -893,41 +897,41 @@ _mma_warpgroup223 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 negA neg
 
 _mma_warpgroup224 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 negA negB ignoreC ] ; _mma.warpgroup	fhUfu	F32Q8Q8F32
 
-_mma_warpgroup225 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hUUhd	F16Q8Q8F16
+_mma_warpgroup225 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hUUhd	F16Q8Q8F16
 
-_mma_warpgroup226 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fUUfd	F32Q8Q8F32
+_mma_warpgroup226 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fUUfd	F32Q8Q8F32
 
-_mma_warpgroup227 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hUhhd	F16Q8Q8F16
+_mma_warpgroup227 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hUhhd	F16Q8Q8F16
 
-_mma_warpgroup228 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fUhfd	F32Q8Q8F32
+_mma_warpgroup228 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fUhfd	F32Q8Q8F32
 
-_mma_warpgroup229 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hhUhd	F16Q8Q8F16
+_mma_warpgroup229 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hhUhd	F16Q8Q8F16
 
-_mma_warpgroup230 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fhUfd	F32Q8Q8F32
+_mma_warpgroup230 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fhUfd	F32Q8Q8F32
 
-_mma_warpgroup231 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	hUUhdP	F16Q8Q8F16
+_mma_warpgroup231 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	hUUhdP	F16Q8Q8F16
 
-_mma_warpgroup232 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	fUUfdP	F32Q8Q8F32
+_mma_warpgroup232 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	fUUfdP	F32Q8Q8F32
 
-_mma_warpgroup233 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	hUhhdP	F16Q8Q8F16
+_mma_warpgroup233 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	hUhhdP	F16Q8Q8F16
 
-_mma_warpgroup234 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	fUhfdP	F32Q8Q8F32
+_mma_warpgroup234 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	fUhfdP	F32Q8Q8F32
 
-_mma_warpgroup235 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	hhUhdP	F16Q8Q8F16
+_mma_warpgroup235 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	hhUhdP	F16Q8Q8F16
 
-_mma_warpgroup236 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC_pred ] ; _mma.warpgroup	fhUfdP	F32Q8Q8F32
+_mma_warpgroup236 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC_pred ] ; _mma.warpgroup	fhUfdP	F32Q8Q8F32
 
-_mma_warpgroup237 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hUUhdu	F16Q8Q8F16
+_mma_warpgroup237 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hUUhdu	F16Q8Q8F16
 
-_mma_warpgroup238 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fUUfdu	F32Q8Q8F32
+_mma_warpgroup238 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fUUfdu	F32Q8Q8F32
 
-_mma_warpgroup239 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hUhhdu	F16Q8Q8F16
+_mma_warpgroup239 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hUhhdu	F16Q8Q8F16
 
-_mma_warpgroup240 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fUhfdu	F32Q8Q8F32
+_mma_warpgroup240 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fUhfdu	F32Q8Q8F32
 
-_mma_warpgroup241 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	hhUhdu	F16Q8Q8F16
+_mma_warpgroup241 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	hhUhdu	F16Q8Q8F16
 
-_mma_warpgroup242 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp negA negB ignoreC ] ; _mma.warpgroup	fhUfdu	F32Q8Q8F32
+_mma_warpgroup242 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 tab282ECA0 sp layout negA negB ignoreC ] ; _mma.warpgroup	fhUfdu	F32Q8Q8F32
 
 _mma_warpgroup243 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUs	I32I8I8I32
 
@@ -947,23 +951,23 @@ _mma_warpgroup250 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE
 
 _mma_warpgroup251 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sdUsu	I32I8I8I32
 
-_mma_warpgroup252 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sUUsd	I32I8I8I32
+_mma_warpgroup252 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sUUsd	I32I8I8I32
 
-_mma_warpgroup253 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sUdsd	I32I8I8I32
+_mma_warpgroup253 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sUdsd	I32I8I8I32
 
-_mma_warpgroup254 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sdUsd	I32I8I8I32
+_mma_warpgroup254 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sdUsd	I32I8I8I32
 
-_mma_warpgroup255 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC_pred ] ; _mma.warpgroup	sUUsdP	I32I8I8I32
+_mma_warpgroup255 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC_pred ] ; _mma.warpgroup	sUUsdP	I32I8I8I32
 
-_mma_warpgroup256 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC_pred ] ; _mma.warpgroup	sUdsdP	I32I8I8I32
+_mma_warpgroup256 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC_pred ] ; _mma.warpgroup	sUdsdP	I32I8I8I32
 
-_mma_warpgroup257 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC_pred ] ; _mma.warpgroup	sdUsdP	I32I8I8I32
+_mma_warpgroup257 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC_pred ] ; _mma.warpgroup	sdUsdP	I32I8I8I32
 
-_mma_warpgroup258 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sUUsdu	I32I8I8I32
+_mma_warpgroup258 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sUUsdu	I32I8I8I32
 
-_mma_warpgroup259 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sUdsdu	I32I8I8I32
+_mma_warpgroup259 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sUdsdu	I32I8I8I32
 
-_mma_warpgroup260 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp ignoreC ] ; _mma.warpgroup	sdUsdu	I32I8I8I32
+_mma_warpgroup260 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sdUsdu	I32I8I8I32
 
 _mma_warpgroup261 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUs	I32B1B1I32
 
@@ -982,14 +986,14 @@ _mma_warpgroup267 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282EC
 _mma_warpgroup268 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUdsu	I32B1B1I32
 
 _mma_warpgroup269 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sdUsu	I32B1B1I32
-_warpgroup.arrive		F32F16F16F32
-_warpgroup.arrive		(null)
-_warpgroup.commit_batch		F32F16F16F32
-_warpgroup.commit_batch		(null)
-_warpgroup.wait		F32F16F16F32
-_warpgroup.wait	u	
-_warpgroup.wait		(null)
-_warpgroup.wait	u	
+_warpgroup_arrive0 = "_warpgroup.arrive" ; _warpgroup.arrive		F32F16F16F32
+_warpgroup_arrive1 = "_warpgroup.arrive" ; _warpgroup.arrive		(null)
+_warpgroup_commit_batch0 = "_warpgroup.commit_batch" ; _warpgroup.commit_batch		F32F16F16F32
+_warpgroup_commit_batch1 = "_warpgroup.commit_batch" ; _warpgroup.commit_batch		(null)
+_warpgroup_wait0 = "_warpgroup.wait" ; _warpgroup.wait		F32F16F16F32
+_warpgroup_wait1 = "_warpgroup.wait" ; _warpgroup.wait	u	
+_warpgroup_wait2 = "_warpgroup.wait" ; _warpgroup.wait		(null)
+_warpgroup_wait3 = "_warpgroup.wait" ; _warpgroup.wait	u	
 
 tab282E6A0 = [ ".im2col" | ".im2col_no_offs" | ".im2col::w" | ".im2col::w::128" | ".im2col_no_offs::w" | ".tile" | ".w128" | ".w" | ".scatter4" | ".gather4" | ".tile::scatter4" | ".tile::gather4" ]
 
@@ -1011,11 +1015,11 @@ cp_async.bulk.tensor1 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab28
 
 cp_async.bulk.tensor2 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 ] ; cp.async.bulk.tensor	MsM	
 
-cp_async.bulk.tensor3 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 tab282E520 ] ; cp.async.bulk.tensor	MMsMU	
+cp_async.bulk.tensor3 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 tab282E520 cache_hint ] ; cp.async.bulk.tensor	MMsMU	
 
-cp_async.bulk.tensor4 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 packed_offsets tab282E520 ] ; cp.async.bulk.tensor	MMsMxU	
+cp_async.bulk.tensor4 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 packed_offsets tab282E520 cache_hint ] ; cp.async.bulk.tensor	MMsMxU	
 
-cp_async.bulk.tensor5 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 ] ; cp.async.bulk.tensor	MsMU	
+cp_async.bulk.tensor5 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 cache_hint ] ; cp.async.bulk.tensor	MsMU	
 
 multicast_cluster = [ ".multicast::cluster" | ".multicast::cluster::all" | ".multicast::cluster::16b" | ".multicast::cluster::32b" ]
 
@@ -1023,9 +1027,9 @@ cp_async.bulk.tensor6 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab28
 
 cp_async.bulk.tensor7 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 packed_offsets multicast_cluster tab282E520 ] ; cp.async.bulk.tensor	MMsMxx	
 
-cp_async.bulk.tensor8 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 multicast_cluster tab282E520 ] ; cp.async.bulk.tensor	MMsMxU	
+cp_async.bulk.tensor8 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 multicast_cluster tab282E520 cache_hint ] ; cp.async.bulk.tensor	MMsMxU	
 
-cp_async.bulk.tensor9 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 packed_offsets multicast_cluster tab282E520 ] ; cp.async.bulk.tensor	MMsMxxU	
+cp_async.bulk.tensor9 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 packed_offsets multicast_cluster tab282E520 cache_hint ] ; cp.async.bulk.tensor	MMsMxxU	
 
 cp_async.bulk.tensor10 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 tab282E520 ] ; cp.async.bulk.tensor	MMsM	
 
@@ -1039,57 +1043,57 @@ cp_async.bulk.tensor13 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab2
 
 cp_async.bulk.tensor14 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 ] ; cp.async.bulk.tensor	MsM	
 
-cp_async.bulk.tensor15 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 tab282E520 ] ; cp.async.bulk.tensor	MMsMU	
+cp_async.bulk.tensor15 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 tab282E520 cache_hint ] ; cp.async.bulk.tensor	MMsMU	
 
-cp_async.bulk.tensor16 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 packed_offsets tab282E520 ] ; cp.async.bulk.tensor	MMsMxU	
+cp_async.bulk.tensor16 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 tab282E620 packed_offsets tab282E520 cache_hint ] ; cp.async.bulk.tensor	MMsMxU	
 
-cp_async.bulk.tensor17 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 multicast tab282E520 ] ; cp.async.bulk.tensor	MMsMxU	
+cp_async.bulk.tensor17 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 multicast tab282E520 cache_hint ] ; cp.async.bulk.tensor	MMsMxU	
 
-cp_async.bulk.tensor18 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 packed_offsets multicast tab282E520 ] ; cp.async.bulk.tensor	MMsMxxU	
+cp_async.bulk.tensor18 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E640 packed_offsets multicast tab282E520 cache_hint ] ; cp.async.bulk.tensor	MMsMxxU	
 
-cp_async.bulk.tensor19 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 ] ; cp.async.bulk.tensor	MsMU	
+cp_async.bulk.tensor19 = "cp.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 cache_hint ] ; cp.async.bulk.tensor	MsMU	
 
 tab282F3A0 = [ ".and" | ".xor" | ".popc" ]
 
 cp_reduce.async.bulk.tensor0 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsM	
 
-cp_reduce.async.bulk.tensor1 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsMU	
+cp_reduce.async.bulk.tensor1 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk.tensor	MsMU	
 
 cp_reduce.async.bulk.tensor2 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsM	
 
-cp_reduce.async.bulk.tensor3 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsMU	
+cp_reduce.async.bulk.tensor3 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 vec tab282E720 tab282E520 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk.tensor	MsMU	
 
 tab282E550 = [ ".asc::b32" | ".asc::b64" ]
 
 cp_async.bulk0 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 ] ; cp.async.bulk	MMuM	
 
-cp_async.bulk1 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 ] ; cp.async.bulk	MMuMU	
+cp_async.bulk1 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 cache_hint ] ; cp.async.bulk	MMuMU	
 
 cp_async.bulk2 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 ] ; cp.async.bulk	MMu	
 
-cp_async.bulk3 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 ] ; cp.async.bulk	MMuU	
+cp_async.bulk3 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 cache_hint ] ; cp.async.bulk	MMuU	
 
 cp_async.bulk4 = "cp.async.bulk" [ tab282E6A0 tab282EC40 multicast_cluster tab282E550 tab282E520 ] ; cp.async.bulk	MMuMx	
 
-cp_async.bulk5 = "cp.async.bulk" [ tab282E6A0 tab282EC40 multicast_cluster tab282E550 tab282E520 ] ; cp.async.bulk	MMuMxU	
+cp_async.bulk5 = "cp.async.bulk" [ tab282E6A0 tab282EC40 multicast_cluster tab282E550 tab282E520 cache_hint ] ; cp.async.bulk	MMuMxU	
 
 cp_mask = [ ".cp_mask" ]
 
 cp_async.bulk6 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 cp_mask ] ; cp.async.bulk	MMux	
 
-cp_async.bulk7 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 cp_mask ] ; cp.async.bulk	MMuUx	
+cp_async.bulk7 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 cache_hint cp_mask ] ; cp.async.bulk	MMuUx	
 
 cp_async.bulk8 = "cp.async.bulk" [ tab282E6A0 multicast tab282E520 ] ; cp.async.bulk	MMuMx	
 
-cp_async.bulk9 = "cp.async.bulk" [ tab282E6A0 multicast tab282E520 ] ; cp.async.bulk	MMuMxU	
+cp_async.bulk9 = "cp.async.bulk" [ tab282E6A0 multicast tab282E520 cache_hint ] ; cp.async.bulk	MMuMxU	
 
 cp_async.bulk10 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 ] ; cp.async.bulk	MMuM	
 
-cp_async.bulk11 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 ] ; cp.async.bulk	MMuMU	
+cp_async.bulk11 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 cache_hint ] ; cp.async.bulk	MMuMU	
 
 cp_async.bulk12 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 ] ; cp.async.bulk	MMu	
 
-cp_async.bulk13 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 ] ; cp.async.bulk	MMuU	
+cp_async.bulk13 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 cache_hint ] ; cp.async.bulk	MMuU	
 
 cp_reduce.async.bulk0 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 ] ; cp.reduce.async.bulk	MMuM	I[32|64]
 
@@ -1101,11 +1105,11 @@ cp_reduce.async.bulk3 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A
 
 cp_reduce.async.bulk4 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMu	F[32|64]
 
-cp_reduce.async.bulk5 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 ] ; cp.reduce.async.bulk	MMuU	I[32|64]
+cp_reduce.async.bulk5 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 cache_hint ] ; cp.reduce.async.bulk	MMuU	I[32|64]
 
-cp_reduce.async.bulk6 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk	MMuU	B[32|64]
+cp_reduce.async.bulk6 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk	MMuU	B[32|64]
 
-cp_reduce.async.bulk7 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMuU	F[32|64]
+cp_reduce.async.bulk7 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282FC80 cache_hint ] ; cp.reduce.async.bulk	MMuU	F[32|64]
 
 noftz = [ ".noftz" ]
 
@@ -1113,9 +1117,9 @@ cp_reduce.async.bulk8 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab
 
 cp_reduce.async.bulk9 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMu	E16
 
-cp_reduce.async.bulk10 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMuU	F16
+cp_reduce.async.bulk10 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 cache_hint ] ; cp.reduce.async.bulk	MMuU	F16
 
-cp_reduce.async.bulk11 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMuU	E16
+cp_reduce.async.bulk11 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 cache_hint ] ; cp.reduce.async.bulk	MMuU	E16
 
 cp_reduce.async.bulk12 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 ] ; cp.reduce.async.bulk	MMuM	I[32|64]
 
@@ -1127,21 +1131,21 @@ cp_reduce.async.bulk15 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3
 
 cp_reduce.async.bulk16 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMu	F[32|64]
 
-cp_reduce.async.bulk17 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 ] ; cp.reduce.async.bulk	MMuU	I[32|64]
+cp_reduce.async.bulk17 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 cache_hint ] ; cp.reduce.async.bulk	MMuU	I[32|64]
 
-cp_reduce.async.bulk18 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk	MMuU	B[32|64]
+cp_reduce.async.bulk18 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk	MMuU	B[32|64]
 
-cp_reduce.async.bulk19 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMuU	F[32|64]
+cp_reduce.async.bulk19 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282FC80 cache_hint ] ; cp.reduce.async.bulk	MMuU	F[32|64]
 
 cp_reduce.async.bulk20 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMu	F16
 
 cp_reduce.async.bulk21 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMu	E16
 
-cp_reduce.async.bulk22 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMuU	F16
+cp_reduce.async.bulk22 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 cache_hint ] ; cp.reduce.async.bulk	MMuU	F16
 
-cp_reduce.async.bulk23 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMuU	E16
-cp.async.bulk.commit_group		E16
-cp.async.bulk.commit_group		(null)
+cp_reduce.async.bulk23 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 cache_hint ] ; cp.reduce.async.bulk	MMuU	E16
+cp_async.bulk.commit_group0 = "cp.async.bulk.commit_group" ; cp.async.bulk.commit_group		E16
+cp_async.bulk.commit_group1 = "cp.async.bulk.commit_group" ; cp.async.bulk.commit_group		(null)
 
 tab282F480 = [ ".read" | ".write" ]
 
@@ -1149,27 +1153,27 @@ cp_async.bulk.wait_group0 = "cp.async.bulk.wait_group" [ tab282F480 ] ; cp.async
 
 cp_async.bulk.wait_group1 = "cp.async.bulk.wait_group" [ tab282F480 ] ; cp.async.bulk.wait_group	C	
 
-cp_async.bulk.prefetch0 = "cp.async.bulk.prefetch" [ tab282EC40 tab282EC20 ] ; cp.async.bulk.prefetch	MuU	
+cp_async.bulk.prefetch0 = "cp.async.bulk.prefetch" [ tab282EC40 tab282EC20 cache_hint ] ; cp.async.bulk.prefetch	MuU	
 
 cp_async.bulk.prefetch1 = "cp.async.bulk.prefetch" [ tab282EC40 tab282EC20 tab282EB80 ] ; cp.async.bulk.prefetch	Mu	
 
-cp_async.bulk.prefetch2 = "cp.async.bulk.prefetch" [ tab282EC40 tab282EC20 ] ; cp.async.bulk.prefetch	MuU	
+cp_async.bulk.prefetch2 = "cp.async.bulk.prefetch" [ tab282EC40 tab282EC20 cache_hint ] ; cp.async.bulk.prefetch	MuU	
 
 cp_async.bulk.prefetch3 = "cp.async.bulk.prefetch" [ tab282EC40 tab282EC20 tab282EB80 ] ; cp.async.bulk.prefetch	Mu	
 
-cp_async.bulk.prefetch.tensor0 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 vec tab282E720 ] ; cp.async.bulk.prefetch.tensor	MsxU	
+cp_async.bulk.prefetch.tensor0 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 vec tab282E720 cache_hint ] ; cp.async.bulk.prefetch.tensor	MsxU	
 
 cp_async.bulk.prefetch.tensor1 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 tab282EB80 vec tab282E720 ] ; cp.async.bulk.prefetch.tensor	Msx	
 
-cp_async.bulk.prefetch.tensor2 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 vec tab282E720 ] ; cp.async.bulk.prefetch.tensor	MsU	
+cp_async.bulk.prefetch.tensor2 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 vec tab282E720 cache_hint ] ; cp.async.bulk.prefetch.tensor	MsU	
 
 cp_async.bulk.prefetch.tensor3 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 tab282EB80 vec tab282E720 ] ; cp.async.bulk.prefetch.tensor	Ms	
 
-cp_async.bulk.prefetch.tensor4 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 vec tab282E720 ] ; cp.async.bulk.prefetch.tensor	MsxU	
+cp_async.bulk.prefetch.tensor4 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 vec tab282E720 cache_hint ] ; cp.async.bulk.prefetch.tensor	MsxU	
 
 cp_async.bulk.prefetch.tensor5 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 tab282EB80 vec tab282E720 ] ; cp.async.bulk.prefetch.tensor	Msx	
 
-cp_async.bulk.prefetch.tensor6 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 vec tab282E720 ] ; cp.async.bulk.prefetch.tensor	MsU	
+cp_async.bulk.prefetch.tensor6 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 vec tab282E720 cache_hint ] ; cp.async.bulk.prefetch.tensor	MsU	
 
 cp_async.bulk.prefetch.tensor7 = "cp.async.bulk.prefetch.tensor" [ tab282EC40 tab282EC20 tab282EB80 vec tab282E720 ] ; cp.async.bulk.prefetch.tensor	Ms	
 
@@ -1209,11 +1213,11 @@ cp_async1 = "cp.async" [ tab282E6A0 tab282E960 tab282EB40 ] ; cp.async	MMC
 
 cp_async2 = "cp.async" [ tab282E6A0 tab282E960 tab282EB40 ] ; cp.async	MMCP	
 
-cp_async3 = "cp.async" [ tab282E6A0 tab282E960 tab282EB40 ] ; cp.async	MMCuU	
+cp_async3 = "cp.async" [ tab282E6A0 tab282E960 tab282EB40 cache_hint ] ; cp.async	MMCuU	
 
-cp_async4 = "cp.async" [ tab282E6A0 tab282E960 tab282EB40 ] ; cp.async	MMCU	
+cp_async4 = "cp.async" [ tab282E6A0 tab282E960 tab282EB40 cache_hint ] ; cp.async	MMCU	
 
-cp_async5 = "cp.async" [ tab282E6A0 tab282E960 tab282EB40 ] ; cp.async	MMCPU	
+cp_async5 = "cp.async" [ tab282E6A0 tab282E960 tab282EB40 cache_hint ] ; cp.async	MMCPU	
 
 cp_async6 = "cp.async" [ tab282E6A0 tab282E960 desc ] ; cp.async	MMCuU	
 
@@ -1293,31 +1297,31 @@ atom6 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; atom
 
 atom7 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; atom	0M00	B128
 
-atom8 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; atom	0M0U	B128
+atom8 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 cache_hint ] ; atom	0M0U	B128
 
 atom9 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; atom	0M0	F16
 
 atom10 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; atom	0M00	B16
 
-atom11 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; atom	0M0U	H32
+atom11 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 cache_hint ] ; atom	0M0U	H32
 
-atom12 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; atom	0M0U	F16
+atom12 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 cache_hint ] ; atom	0M0U	F16
 
-atom13 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; atom	0M0U	F32
+atom13 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 cache_hint ] ; atom	0M0U	F32
 
-atom14 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282FC80 ] ; atom	0M0U	F64
+atom14 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282FC80 cache_hint ] ; atom	0M0U	F64
 
-atom15 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; atom	0M0U	I[32|64]
+atom15 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 cache_hint ] ; atom	0M0U	I[32|64]
 
-atom16 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; atom	0M0U	B[32|64]
+atom16 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 cache_hint ] ; atom	0M0U	B[32|64]
 
 atom17 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; atom	0M0	E16
 
 atom18 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; atom	0M0	E32
 
-atom19 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; atom	0M0U	E16
+atom19 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 cache_hint ] ; atom	0M0U	E16
 
-atom20 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; atom	0M0U	E32
+atom20 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 cache_hint ] ; atom	0M0U	E32
 
 atom21 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 desc ] ; atom	0M0U	H32
 
@@ -1343,25 +1347,25 @@ red4 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; red	M0	B[32|64]
 
 red5 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; red	M0	F16
 
-red6 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; red	M0U	H32
+red6 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 cache_hint ] ; red	M0U	H32
 
-red7 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; red	M0U	F16
+red7 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 cache_hint ] ; red	M0U	F16
 
-red8 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; red	M0U	F32
+red8 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 cache_hint ] ; red	M0U	F32
 
-red9 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282FC80 ] ; red	M0U	F64
+red9 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282FC80 cache_hint ] ; red	M0U	F64
 
-red10 = "red" [ tab282EC40 tab282E900 tab282EC40 ] ; red	M0U	I[32|64]
+red10 = "red" [ tab282EC40 tab282E900 tab282EC40 cache_hint ] ; red	M0U	I[32|64]
 
-red11 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; red	M0U	B[32|64]
+red11 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282F3A0 cache_hint ] ; red	M0U	B[32|64]
 
 red12 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; red	M0	E16
 
 red13 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; red	M0	E32
 
-red14 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; red	M0U	E16
+red14 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 cache_hint ] ; red	M0U	E16
 
-red15 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; red	M0U	E32
+red15 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 cache_hint ] ; red	M0U	E32
 
 red16 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 desc ] ; red	M0U	H32
 
@@ -1398,7 +1402,7 @@ setmaxreg_dealloc0 = "setmaxreg.dealloc" [ sync ] ; setmaxreg.dealloc	C	I32
 setsmemsize0 = "setsmemsize" [ sync ] ; setsmemsize	C	I32
 
 setsmemsize_flush0 = "setsmemsize.flush" [ sync ] ; setsmemsize.flush		I32
-setsmemsize.flush		I32
+setsmemsize_flush1 = "setsmemsize.flush" ; setsmemsize.flush		I32
 
 elect_one0 = "elect.one" [ tab282F560 sync aligned ] ; elect.one	uu	
 
@@ -2153,8 +2157,8 @@ tcgen05_alloc0 = "tcgen05.alloc" [ tab282EC40 tab282E620 sync aligned ] ; tcgen0
 tcgen05_dealloc0 = "tcgen05.dealloc" [ tab282E620 sync aligned ] ; tcgen05.dealloc	uu	B32
 
 tcgen05_relinquish_alloc_permit0 = "tcgen05.relinquish_alloc_permit" [ tab282E620 sync aligned ] ; tcgen05.relinquish_alloc_permit		B32
-_tcgen05.guardrails.is_phase_valid	d	
-_tcgen05.guardrails.is_current_warp_valid_owner	duC	
+_tcgen05_guardrails.is_phase_valid0 = "_tcgen05.guardrails.is_phase_valid" ; _tcgen05.guardrails.is_phase_valid	d	
+_tcgen05_guardrails.is_current_warp_valid_owner0 = "_tcgen05.guardrails.is_current_warp_valid_owner" ; _tcgen05.guardrails.is_current_warp_valid_owner	duC	
 
 tab282F360 = [ ".lower::16b" | ".pack::16b" | ".unpack::16b" ]
 
@@ -2169,7 +2173,7 @@ _tcgen05_guardrails.are_columns_allocated1 = "_tcgen05.guardrails.are_columns_al
 _tcgen05_guardrails.in_physical_bounds0 = "_tcgen05.guardrails.in_physical_bounds" [ tab282ECE0 tab282F7A0 tab282F360 tab282E2C0 ] ; _tcgen05.guardrails.in_physical_bounds	du	
 
 _tcgen05_guardrails.in_physical_bounds1 = "_tcgen05.guardrails.in_physical_bounds" [ tab282E620 sp tab282E2C0 tab282E280 ] ; _tcgen05.guardrails.in_physical_bounds	duu	
-_tcgen05.guardrails.allocation_granularity	du	
+_tcgen05_guardrails.allocation_granularity0 = "_tcgen05.guardrails.allocation_granularity" ; _tcgen05.guardrails.allocation_granularity	du	
 
 _tcgen05_guardrails.datapath_alignment0 = "_tcgen05.guardrails.datapath_alignment" [ tab282E620 sp tab282E2C0 tab282E280 ] ; _tcgen05.guardrails.datapath_alignment	duuC	
 
@@ -2190,7 +2194,7 @@ tcgen05_shift0 = "tcgen05.shift" [ tab282E620 down ] ; tcgen05.shift	M
 tab282E600 = [ ".warpx2::02_13" | ".warpx2::01_23" | ".warpx4" ]
 
 tcgen05_cp0 = "tcgen05.cp" [ tab282E620 tab282E600 tab282E5E0 tab282ECE0 ] ; tcgen05.cp	MU	
-tcgen05.fence		
+tcgen05_fence0 = "tcgen05.fence" ; tcgen05.fence		
 
 wait = [ "::ld" | "::st" ]
 
@@ -2275,9 +2279,9 @@ b1024 = [ ".b1024" ]
 tensormap_replace0 = "tensormap.replace" [ tab282EC40 tab282F3E0 b1024 ] ; tensormap.replace	M0	B[32|64]
 
 tensormap_replace1 = "tensormap.replace" [ tab282EC40 tab282F3E0 b1024 ] ; tensormap.replace	MC0	B[32|64]
-cp.async.wait_all		
-cp.async.commit_group		
-cp.async.wait_group	C	
+cp_async.wait_all0 = "cp.async.wait_all" ; cp.async.wait_all		
+cp_async.commit_group0 = "cp.async.commit_group" ; cp.async.commit_group		
+cp_async.wait_group0 = "cp.async.wait_group" ; cp.async.wait_group	C	
 
 noinc = [ ".noinc" ]
 
@@ -2758,7 +2762,7 @@ _sulea_p0 = "_sulea.p" [ tab282F560 vec tab282E760 tab282E480 ] ; _sulea.p	Uis
 _sulea_p1 = "_sulea.p" [ tab282F560 vec tab282E760 tab282E480 ] ; _sulea.p	Pis	
 
 _checkfp_divide0 = "_checkfp.divide" [ tab282F560 ] ; _checkfp.divide	P00	F32
-_warpsync	u	
+_warpsync0 = "_warpsync" ; _warpsync	u	
 
 tab282E7E0 = [ ".unanimous" | ".conv" | ".div" ]
 
@@ -2839,7 +2843,7 @@ bar_cta1 = "bar.cta" [ sync ] ; bar.cta	uu
 barrier_cta0 = "barrier.cta" [ sync aligned ] ; barrier.cta	u	
 
 barrier_cta1 = "barrier.cta" [ sync aligned ] ; barrier.cta	uu	
-bar.cta.arrive	uu	
+bar_cta.arrive0 = "bar.cta.arrive" ; bar.cta.arrive	uu	
 
 barrier_cta.arrive0 = "barrier.cta.arrive" [ aligned ] ; barrier.cta.arrive	uu	
 
@@ -2874,7 +2878,7 @@ tab282E8D0 = [ ".async::generic" | ".tensormap::generic" ]
 fence_proxy0 = "fence.proxy" [ tab282EC40 tab282E900 tab282E8D0 tab282EC40 tab282F4E0 ] ; fence.proxy		P
 
 fence_proxy1 = "fence.proxy" [ tab282E900 tab282E8D0 tab282EC40 ] ; fence.proxy	MC	
-membar.proxy		
+membar_proxy0 = "membar.proxy" ; membar.proxy		
 
 tensormap_cp_fenceproxy0 = "tensormap.cp_fenceproxy" [ tab282E6A0 tab282E900 tab282E8D0 tab282EC40 sync aligned ] ; tensormap.cp_fenceproxy	MMC	
 
@@ -2933,14 +2937,14 @@ setmaxnreg_inc0 = "setmaxnreg.inc" [ sync aligned ] ; setmaxnreg.inc	C	I32
 setmaxnreg_dec0 = "setmaxnreg.dec" [ sync aligned ] ; setmaxnreg.dec	C	I32
 
 elect0 = "elect" [ tab282F560 sync aligned ] ; elect	uu	
-trap		
-brkpt		
+trap0 = "trap" ; trap		
+brkpt0 = "brkpt" ; brkpt		
 
 tab282E1E0 = [ "-1" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11" | "12" | "13" | "14" | "15" ]
 
 pmevent0 = "pmevent" [ tab282E1E0 ] ; pmevent	C	
-pmevent.mask	C	
-nanosleep	u	I32
+pmevent_mask0 = "pmevent.mask" ; pmevent.mask	C	
+nanosleep0 = "nanosleep" ; nanosleep	u	I32
 
 clusterlaunchcontrol_try_cancel.async0 = "clusterlaunchcontrol.try_cancel.async" [ tab282EC40 multicast_cluster tab282E520 ] ; clusterlaunchcontrol.try_cancel.async	MM	B128
 
@@ -3474,6 +3478,14 @@ insn = mad_fused.hi0
  | _mma_warpgroup267
  | _mma_warpgroup268
  | _mma_warpgroup269
+ | _warpgroup_arrive0
+ | _warpgroup_arrive1
+ | _warpgroup_commit_batch0
+ | _warpgroup_commit_batch1
+ | _warpgroup_wait0
+ | _warpgroup_wait1
+ | _warpgroup_wait2
+ | _warpgroup_wait3
  | cp_async.bulk.tensor0
  | cp_async.bulk.tensor1
  | cp_async.bulk.tensor2
@@ -3536,6 +3548,8 @@ insn = mad_fused.hi0
  | cp_reduce.async.bulk21
  | cp_reduce.async.bulk22
  | cp_reduce.async.bulk23
+ | cp_async.bulk.commit_group0
+ | cp_async.bulk.commit_group1
  | cp_async.bulk.wait_group0
  | cp_async.bulk.wait_group1
  | cp_async.bulk.prefetch0
@@ -3657,6 +3671,7 @@ insn = mad_fused.hi0
  | setmaxreg_dealloc0
  | setsmemsize0
  | setsmemsize_flush0
+ | setsmemsize_flush1
  | elect_one0
  | testp0
  | copysign0
@@ -4021,10 +4036,13 @@ insn = mad_fused.hi0
  | tcgen05_alloc0
  | tcgen05_dealloc0
  | tcgen05_relinquish_alloc_permit0
+ | _tcgen05_guardrails.is_phase_valid0
+ | _tcgen05_guardrails.is_current_warp_valid_owner0
  | _tcgen05_guardrails.are_columns_allocated0
  | _tcgen05_guardrails.are_columns_allocated1
  | _tcgen05_guardrails.in_physical_bounds0
  | _tcgen05_guardrails.in_physical_bounds1
+ | _tcgen05_guardrails.allocation_granularity0
  | _tcgen05_guardrails.datapath_alignment0
  | _tcgen05_guardrails.sp_consistency_across_idesc_mod0
  | _tcgen05_guardrails.check_sparse_usage0
@@ -4032,6 +4050,7 @@ insn = mad_fused.hi0
  | tcgen05_commit1
  | tcgen05_shift0
  | tcgen05_cp0
+ | tcgen05_fence0
  | tcgen05_wait0
  | tcgen05_ld0
  | tcgen05_ld1
@@ -4067,6 +4086,9 @@ insn = mad_fused.hi0
  | tcgen05_mma.ws7
  | tensormap_replace0
  | tensormap_replace1
+ | cp_async.wait_all0
+ | cp_async.commit_group0
+ | cp_async.wait_group0
  | cp_async.mbarrier.arrive0
  | stacksave0
  | stackrestore0
@@ -4300,6 +4322,7 @@ insn = mad_fused.hi0
  | _sulea_p0
  | _sulea_p1
  | _checkfp_divide0
+ | _warpsync0
  | bra0
  | bra1
  | griddepcontrol0
@@ -4335,6 +4358,7 @@ insn = mad_fused.hi0
  | bar_cta1
  | barrier_cta0
  | barrier_cta1
+ | bar_cta.arrive0
  | barrier_cta.arrive0
  | bar_cta.red0
  | bar_cta.red1
@@ -4350,6 +4374,7 @@ insn = mad_fused.hi0
  | fence0
  | fence_proxy0
  | fence_proxy1
+ | membar_proxy0
  | tensormap_cp_fenceproxy0
  | _match0
  | match0
@@ -4378,7 +4403,11 @@ insn = mad_fused.hi0
  | setmaxnreg_inc0
  | setmaxnreg_dec0
  | elect0
+ | trap0
+ | brkpt0
  | pmevent0
+ | pmevent_mask0
+ | nanosleep0
  | clusterlaunchcontrol_try_cancel.async0
  | clusterlaunchcontrol_query_cancel0
  | clusterlaunchcontrol_query_cancel1
