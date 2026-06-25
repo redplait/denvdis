@@ -2,7 +2,7 @@ ELFIO_PATH=../../../../../ELFIO/
 UDIS_PATH=/home/redp/disc/udis86
 CEREAL_PATH=cereal/include
 DE_BG_OBJS = bm_search.o decuda_base.o de_bg.o x64arch.o rtmem.o mylog.o
-AR_OBJS = $(DE_BG_OBJS) de_cupti.o decuda.o de_ptx.o
+AR_OBJS = $(DE_BG_OBJS) de_cupti.o decuda.o de_ptx.o de_merc.o
 LIBS=-L $(UDIS_PATH)/libudis86 -ludis86 -lstdc++ -ldl
 
 .cc.o:

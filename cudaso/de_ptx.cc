@@ -99,7 +99,7 @@ int de_ptx::check(lat_res &r, uint64_t off) {
 
 extern int opt_d;
 
-static void report(diter &di, const char *pfx) {
+void report(diter &di, const char *pfx) {
   printf("%s at %lX\n", pfx, ud_insn_off(&di.ud_obj));
 }
 

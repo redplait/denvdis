@@ -1,6 +1,7 @@
 #include "decuda.h"
 #include "de_bg.h"
 #include "de_cupti.h"
+#include "de_merc.h"
 #include "de_ptx.h"
 #include <unistd.h>
 #ifdef WITH_CEREAL
@@ -17,6 +18,8 @@ void usage(const char *prog)
   printf("%s usage: [options] libcubin.so\n", prog);
   printf("Options:\n");
   printf("-d - show disasm\n");
+  printf("-m - run de_merc\n");
+  printf("-p - hack ptxas\n");
   printf("-s - dump in json via cereal\n");
   printf("-t - dump symbols\n");
   printf("-v - verbose mode\n");
@@ -40,16 +43,18 @@ void process(T *dc) {
 int main(int argc, char **argv) {
   int c;
   int do_dbg = 0,
+      hack_merc = 0,
       do_cupti = 0,
       hack_ptx = 0;
   while(1) {
-    c = getopt(argc, argv, "s:CDdtpv");
+    c = getopt(argc, argv, "s:CDdmtpv");
     if ( c == -1 ) break;
     switch(c) {
       case 's': s_arg = optarg; break;
       case 'd': opt_d = 1; break;
       case 'C': do_cupti = 1; break;
       case 'D': do_dbg = 1; break;
+      case 'm': hack_merc = 1; break;
       case 'p': hack_ptx = 1; break;
       case 't': opt_t = 1; break;
       case 'v': opt_v = 1; break;
@@ -60,7 +65,7 @@ int main(int argc, char **argv) {
     usage(argv[0]);
     return 6;
   }
-  if ( do_dbg || do_cupti || hack_ptx ) {
+  if ( do_dbg || do_cupti || hack_ptx || hack_merc ) {
     ELFIO::elfio *rdr = new ELFIO::elfio;
     if ( !rdr->load(argv[optind]) ) {
       delete rdr;
@@ -70,6 +75,9 @@ int main(int argc, char **argv) {
     if ( hack_ptx ) {
       de_ptx p(rdr);
       process(&p);
+    } else if ( hack_merc ) {
+      de_merc m(rdr);
+      process(&m);
     } else if ( do_cupti ) {
       de_cupti dg(rdr);
       process(&dg);
