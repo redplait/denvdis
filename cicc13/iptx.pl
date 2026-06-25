@@ -495,7 +495,7 @@ my %gk_tabs = (
   2 => 'tab282FBC0', # CmpOp
   3 => 'keeprefcount',  # test    byte ptr [r12], 8
   4 => 'no_atexit',
-  5 => 'tab282F560',
+  5 => 'tab282F560', # dst type
   7 => 'approx',
   1 * 8 + 0 => 'relu', # cvt/fma/min/max, test    byte ptr [r12+1], 1
   1 * 8 + 1 => 'ftz',
@@ -556,12 +556,13 @@ my %gk_tabs = (
 #  9 * 8 + 7 => 'tab282E460', # scale = { .shr7, .shr15 }
   9 * 8 + 7 => 'tab282E440',
  10 * 8 + 0 => 'prmt',
- 10 * 8 + 1 => 'tab282E400', # bfly
+ 10 * 8 + 1 => 'tab282E400', # bfly - shfl mode
  10 * 8 + 2 => 'down', # for tcgen05.shift
- 10 * 8 + 3 => 'noComplete', # test    byte ptr [rbx+161h], 4
+ 10 * 8 + 3 => 'nc',
  10 * 8 + 4 => 'rand', # movzx   eax, byte ptr [r12+0Ah]/test al, 10h
  10 * 8 + 5 => 'sync', # from setmaxnreg.inc
  10 * 8 + 6 => 'noinc',      # movzx   eax, byte ptr [r12+0Ah]/test al, 40h
+ 10 * 8 + 3 => 'noComplete',
  11 * 8 + 0 => 'tab282F800', # isspacep/cvta/cvt.to
  11 * 8 + 1 => 'tab282F310', # test    byte ptr [r12+0Bh], 2
  11 * 8 + 2 => 'aligned',
@@ -644,10 +645,21 @@ sub gen_ebpf
     my $op_name = $op->[3];
     next if ( defined($ih) && !exists($ih->{$op_name}) );
     next if ( is_mpi($op_name) );
+     my $add_alias = sub {
+       # compose ins alias
+       my $alias = $op->[3];
+       $alias =~ s/\./_/;
+       $alias .= $nums{$alias}++;
+       # and push to total
+       push @total, $alias;
+       $alias;
+    };
+# printf("line %d %s\n", $op->[0], $op->[3]);
     # yep, our client
     my $tr = gather_tabs($op);
     unless( defined $tr ) {
-      printf("%s\n", $op->[2]);
+      my $an = $add_alias->();
+      printf("%s = \"%s\" ; %s\n", $an, $op->[3], $op->[2]);
       next;
     }
     # and we have some tables
@@ -664,14 +676,9 @@ sub gen_ebpf
       my $or_str = join ' | ', map { '"' . $_ . '"'; } @$ar;
       printf("%s ]\n", $or_str);
     }
-    # compose ins alias
-    my $alias = $op->[3];
-    $alias =~ s/\./_/;
-    $alias .= $nums{$alias}++;
-    # and push to total
-    push @total, $alias;
+    my $an = $add_alias->();
     # finally dump instruction name = [ | ]
-    printf("\n%s = \"%s\" [ ", $alias, $op->[3]);
+    printf("\n%s = \"%s\" [ ", $an, $op->[3]);
     my $tabs = join ' ', @$tr;
     printf("%s ] ; %s\n", $tabs, $op->[2]);
   }
