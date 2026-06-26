@@ -560,6 +560,7 @@ my %gk_tabs = (
 # 9
   9 * 8 + 0 => 'tab282FC80', # redOp
   9 * 8 + 2 => 'tab282F3A0', # redOp with popc
+  9 * 8 + 3 => 'tab282FC80', # .add, .min, .max
   9 * 8 + 4 => 'cas', # atom with 0M00
   9 * 8 + 5 => 'tab282E480', # clamp
   9 * 8 + 6 => 'po',
@@ -574,13 +575,14 @@ my %gk_tabs = (
  10 * 8 + 5 => 'sync', # from setmaxnreg.inc
  10 * 8 + 6 => 'noinc',      # movzx   eax, byte ptr [r12+0Ah]/test al, 40h
  10 * 8 + 7 => 'noComplete', # mbarrier.arrive & mbarrier.arrive_drop
-# 11
+# 11 - full
  11 * 8 + 0 => 'tab282F800', # isspacep/cvta/cvt.to
  11 * 8 + 1 => 'tab282F310', # test    byte ptr [r12+0Bh], 2
  11 * 8 + 2 => 'aligned',
+ 11 * 8 + 3 => 'tab282F830', # just speculation - tcgen05.alloc is only good place for it
  11 * 8 + 4 => 'dual',       # test    byte ptr [r12+0Bh], 10h
  11 * 8 + 5 => 'close',      # test    byte ptr [r12+0Bh], 20h
- 11 * 8 + 6 => 'tab282ECE0', # test byte ptr [r12+0Bh], 40h
+ 11 * 8 + 6 => 'tab282ECE0', # test byte ptr [r12+0Bh], 40h - shape
  11 * 8 + 7 => 'tab282EB40', # ld/cp.async .level::prefetch_size
 # 12 - full
  12 * 8 + 0 => 'tab282EB60', # test    byte ptr [r12+0Ch], 1

@@ -237,7 +237,7 @@ mma8 = "mma" [ tab282F560 tab282F2D0 sync aligned tab282ECE0 ] ; mma	VVVV	F16F16
 
 tab282FC80 = [ "<" | "<=" | ">" | ">=" | "==" | "!=" | ".or" | "||" | ".and" | "&&" | ".xor" | ".add" | ".sub" | "<<" | ">>" | "*" | "/" | "%" | "!" | "~" | ".min" | ".max" | ".maxabs" | ".inc" | ".dec" | ".popc" | ".cas" | ".exch" | ".safeadd" ]
 
-mma9 = "mma" [ tab282FC80 tab282F560 tab282F2D0 sync aligned tab282ECE0 ] ; mma	sdds	I32I32
+mma9 = "mma" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 sync aligned tab282ECE0 ] ; mma	sdds	I32I32
 
 mma10 = "mma" [ tab282F560 satfinite tab282F2D0 sync aligned tab282ECE0 ] ; mma	sdds	I32I8I8I32
 
@@ -323,7 +323,7 @@ _mma4 = "_mma" [ tab282F560 sat satfinite tab282F2D0 tab282ECE0 ] ; _mma	ssss	I8
 
 _mma5 = "_mma" [ tab282F560 sat satfinite tab282F2D0 tab282ECE0 ] ; _mma	sdds	
 
-_mma6 = "_mma" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ] ; _mma	sdds	I32I32
+_mma6 = "_mma" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ] ; _mma	sdds	I32I32
 
 _mma7 = "_mma" [ tab282F560 tab282E820 tab282F2D0 tab282ECE0 ] ; _mma	0123	F64F64F64F64
 
@@ -409,7 +409,7 @@ _mma45 = "_mma" [ tab282F560 sat satfinite tab282F2D0 tab282ECE0 ] ; _mma	ssss	I
 
 _mma46 = "_mma" [ tab282F560 sat satfinite tab282F2D0 tab282ECE0 ] ; _mma	sdds	
 
-_mma47 = "_mma" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ] ; _mma	sdds	I32I32
+_mma47 = "_mma" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ] ; _mma	sdds	I32I32
 
 _mma48 = "_mma" [ tab282F560 tab282E820 tab282F2D0 tab282ECE0 ] ; _mma	0123	F64F64F64F64
 
@@ -699,23 +699,23 @@ _mma_warpgroup124 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE
 
 _mma_warpgroup125 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sdUsdu	I32I8I8I32
 
-_mma_warpgroup126 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUs	I32B1B1I32
+_mma_warpgroup126 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUs	I32B1B1I32
 
-_mma_warpgroup127 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUds	I32B1B1I32
+_mma_warpgroup127 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUds	I32B1B1I32
 
-_mma_warpgroup128 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sdUs	I32B1B1I32
+_mma_warpgroup128 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sdUs	I32B1B1I32
 
-_mma_warpgroup129 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sUUsP	I32B1B1I32
+_mma_warpgroup129 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sUUsP	I32B1B1I32
 
-_mma_warpgroup130 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sUdsP	I32B1B1I32
+_mma_warpgroup130 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sUdsP	I32B1B1I32
 
-_mma_warpgroup131 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sdUsP	I32B1B1I32
+_mma_warpgroup131 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sdUsP	I32B1B1I32
 
-_mma_warpgroup132 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUsu	I32B1B1I32
+_mma_warpgroup132 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUsu	I32B1B1I32
 
-_mma_warpgroup133 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUdsu	I32B1B1I32
+_mma_warpgroup133 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUdsu	I32B1B1I32
 
-_mma_warpgroup134 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sdUsu	I32B1B1I32
+_mma_warpgroup134 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sdUsu	I32B1B1I32
 
 _mma_warpgroup135 = "_mma.warpgroup" [ tab282F560 tab282F2D0 tab282ECE0 transA negA transB negB ignoreC ] ; _mma.warpgroup	hUUh	F16F16F16F16
 
@@ -969,23 +969,23 @@ _mma_warpgroup259 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE
 
 _mma_warpgroup260 = "_mma.warpgroup" [ tab282F560 satfinite tab282F2D0 tab282ECE0 tab282ECA0 sp layout ignoreC ] ; _mma.warpgroup	sdUsdu	I32I8I8I32
 
-_mma_warpgroup261 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUs	I32B1B1I32
+_mma_warpgroup261 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUs	I32B1B1I32
 
-_mma_warpgroup262 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUds	I32B1B1I32
+_mma_warpgroup262 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUds	I32B1B1I32
 
-_mma_warpgroup263 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sdUs	I32B1B1I32
+_mma_warpgroup263 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sdUs	I32B1B1I32
 
-_mma_warpgroup264 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sUUsP	I32B1B1I32
+_mma_warpgroup264 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sUUsP	I32B1B1I32
 
-_mma_warpgroup265 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sUdsP	I32B1B1I32
+_mma_warpgroup265 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sUdsP	I32B1B1I32
 
-_mma_warpgroup266 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sdUsP	I32B1B1I32
+_mma_warpgroup266 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC_pred ] ; _mma.warpgroup	sdUsP	I32B1B1I32
 
-_mma_warpgroup267 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUsu	I32B1B1I32
+_mma_warpgroup267 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUUsu	I32B1B1I32
 
-_mma_warpgroup268 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUdsu	I32B1B1I32
+_mma_warpgroup268 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sUdsu	I32B1B1I32
 
-_mma_warpgroup269 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282ECE0 ignoreC ] ; _mma.warpgroup	sdUsu	I32B1B1I32
+_mma_warpgroup269 = "_mma.warpgroup" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 tab282ECE0 ignoreC ] ; _mma.warpgroup	sdUsu	I32B1B1I32
 _warpgroup_arrive0 = "_warpgroup.arrive" ; _warpgroup.arrive		F32F16F16F32
 _warpgroup_arrive1 = "_warpgroup.arrive" ; _warpgroup.arrive		(null)
 _warpgroup_commit_batch0 = "_warpgroup.commit_batch" ; _warpgroup.commit_batch		F32F16F16F32
@@ -1275,11 +1275,11 @@ gather0 = "gather" [ tab282F560 grp ] ; gather	uuuuC	B[4|8|16]B[2|4|8]
 
 frd = [ ".frd" ]
 
-genmetadata0 = "genmetadata" [ tab282F560 frd grp ] ; genmetadata	uuuCCu	F16B[2|4|8]
+genmetadata0 = "genmetadata" [ tab282F560 tab282FC80 frd grp ] ; genmetadata	uuuCCu	F16B[2|4|8]
 
-genmetadata1 = "genmetadata" [ tab282F560 frd grp ] ; genmetadata	uuuCCu	E16B[2|4|8]
+genmetadata1 = "genmetadata" [ tab282F560 tab282FC80 frd grp ] ; genmetadata	uuuCCu	E16B[2|4|8]
 
-genmetadata2 = "genmetadata" [ tab282F560 frd grp ] ; genmetadata	uuuCCu	I[4|8]B[2|4|8]
+genmetadata2 = "genmetadata" [ tab282F560 tab282FC80 frd grp ] ; genmetadata	uuuCCu	I[4|8]B[2|4|8]
 
 atom0 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; atom	0M0	F32
 
@@ -1291,17 +1291,19 @@ atom3 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; atom	0M0	I[32|6
 
 atom4 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; atom	0M0	B[32|64]
 
-atom5 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; atom	0M00	B[32|64]
+cas = [ ".cas" ]
+
+atom5 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 cas ] ; atom	0M00	B[32|64]
 
 atom6 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; atom	0M0	B128
 
-atom7 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; atom	0M00	B128
+atom7 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 cas ] ; atom	0M00	B128
 
 atom8 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 cache_hint ] ; atom	0M0U	B128
 
 atom9 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 ] ; atom	0M0	F16
 
-atom10 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; atom	0M00	B16
+atom10 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 cas ] ; atom	0M00	B16
 
 atom11 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 tab282F2D0 tab282FC80 cache_hint ] ; atom	0M0U	H32
 
@@ -1986,9 +1988,9 @@ wmma_mma2 = "wmma.mma" [ tab282F560 satfinite tab282F2D0 sync aligned tab282ECE0
 
 wmma_mma3 = "wmma.mma" [ tab282F560 satfinite tab282F2D0 sync aligned tab282ECE0 ] ; wmma.mma	hhhf	F16F32
 
-wmma_mma4 = "wmma.mma" [ tab282FC80 tab282F560 satfinite tab282F2D0 sync aligned tab282ECE0 ] ; wmma.mma	ssss	I32B1B1I32
+wmma_mma4 = "wmma.mma" [ tab282FC80 tab282F560 satfinite tab282F2D0 tab282FC80 sync aligned tab282ECE0 ] ; wmma.mma	ssss	I32B1B1I32
 
-wmma_mma5 = "wmma.mma" [ tab282FC80 tab282F560 satfinite tab282F2D0 sync aligned tab282ECE0 ] ; wmma.mma	ssss	I32I4I4I32
+wmma_mma5 = "wmma.mma" [ tab282FC80 tab282F560 satfinite tab282F2D0 tab282FC80 sync aligned tab282ECE0 ] ; wmma.mma	ssss	I32I4I4I32
 
 wmma_mma6 = "wmma.mma" [ tab282F560 satfinite tab282F2D0 sync aligned tab282ECE0 ] ; wmma.mma	ssss	I32I8I8I32
 
@@ -2106,9 +2108,9 @@ wgmma_mma_async12 = "wgmma.mma_async" [ tab282F560 satfinite tab282F2D0 sync ali
 
 wgmma_mma_async13 = "wgmma.mma_async" [ tab282F560 satfinite tab282F2D0 sync aligned tab282ECE0 ] ; wgmma.mma_async	sdUP	I32I8I8
 
-wgmma_mma_async14 = "wgmma.mma_async" [ tab282FC80 tab282F560 tab282F2D0 sync aligned tab282ECE0 ] ; wgmma.mma_async	sUUP	I32B1B1
+wgmma_mma_async14 = "wgmma.mma_async" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 sync aligned tab282ECE0 ] ; wgmma.mma_async	sUUP	I32B1B1
 
-wgmma_mma_async15 = "wgmma.mma_async" [ tab282FC80 tab282F560 tab282F2D0 sync aligned tab282ECE0 ] ; wgmma.mma_async	sdUP	I32B1B1
+wgmma_mma_async15 = "wgmma.mma_async" [ tab282FC80 tab282F560 tab282F2D0 tab282FC80 sync aligned tab282ECE0 ] ; wgmma.mma_async	sdUP	I32B1B1
 
 wgmma_mma_async16 = "wgmma.mma_async" [ tab282F560 tab282F2D0 sync aligned tab282ECE0 sp ] ; wgmma.mma_async	hUUdCPCCCC	F16F16F16
 
@@ -2152,7 +2154,9 @@ tcgen05_ld.red2 = "tcgen05.ld.red" [ tab282F560 sync aligned tab282ECE0 tab282F7
 
 tcgen05_ld.red3 = "tcgen05.ld.red" [ tab282F560 sync aligned tab282ECE0 tab282F7A0 ] ; tcgen05.ld.red	ddMC	I32
 
-tcgen05_alloc0 = "tcgen05.alloc" [ tab282EC40 tab282E620 sync aligned ] ; tcgen05.alloc	Mu	B32
+tab282F830 = [ ".self" | ".clustershared" ]
+
+tcgen05_alloc0 = "tcgen05.alloc" [ tab282EC40 tab282E620 sync aligned tab282F830 ] ; tcgen05.alloc	Mu	B32
 
 tcgen05_dealloc0 = "tcgen05.dealloc" [ tab282E620 sync aligned ] ; tcgen05.dealloc	uu	B32
 
@@ -2896,11 +2900,11 @@ vote2 = "vote" [ tab282F560 tab282E7C0 tab282E360 sync aligned ] ; vote	00u	P
 
 vote3 = "vote" [ tab282F560 tab282E7C0 tab282E360 sync aligned ] ; vote	0Pu	B32
 
-redux0 = "redux" [ tab282FC80 tab282F560 tab282E7C0 sync aligned ] ; redux	uuu	B32
+redux0 = "redux" [ tab282FC80 tab282F560 tab282E7C0 tab282FC80 sync aligned ] ; redux	uuu	B32
 
-redux1 = "redux" [ tab282FC80 tab282F560 tab282E7C0 sync aligned ] ; redux	uuu	I32
+redux1 = "redux" [ tab282FC80 tab282F560 tab282E7C0 tab282FC80 sync aligned ] ; redux	uuu	I32
 
-redux2 = "redux" [ tab282FC80 tab282F560 tab282E7C0 sync aligned nan abs ] ; redux	00u	F32
+redux2 = "redux" [ tab282FC80 tab282F560 tab282E7C0 tab282FC80 sync aligned nan abs ] ; redux	00u	F32
 
 activemask0 = "activemask" [ tab282F560 ] ; activemask	0	B32
 
@@ -2910,13 +2914,15 @@ mbarrier_inval0 = "mbarrier.inval" [ tab282EC40 ] ; mbarrier.inval	M	B64
 
 mbarrier_arrive0 = "mbarrier.arrive" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; mbarrier.arrive	UM	B64
 
-mbarrier_arrive1 = "mbarrier.arrive" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; mbarrier.arrive	UMs	B64
+noComplete = [ ".noComplete" ]
+
+mbarrier_arrive1 = "mbarrier.arrive" [ tab282F560 tab282EC40 tab282E900 tab282EC40 noComplete ] ; mbarrier.arrive	UMs	B64
 
 mbarrier_test_wait0 = "mbarrier.test_wait" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; mbarrier.test_wait	PMU	B64
 
 mbarrier_arrive_drop0 = "mbarrier.arrive_drop" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; mbarrier.arrive_drop	UM	B64
 
-mbarrier_arrive_drop1 = "mbarrier.arrive_drop" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; mbarrier.arrive_drop	UMs	B64
+mbarrier_arrive_drop1 = "mbarrier.arrive_drop" [ tab282F560 tab282EC40 tab282E900 tab282EC40 noComplete ] ; mbarrier.arrive_drop	UMs	B64
 
 mbarrier_pending_count0 = "mbarrier.pending_count" [ tab282F560 ] ; mbarrier.pending_count	uU	B64
 
@@ -2956,31 +2962,31 @@ clusterlaunchcontrol_query_cancel1 = "clusterlaunchcontrol.query_cancel" [ tab28
 
 vadd0 = "vadd" [ sat ] ; vadd	012	I32I32I32
 
-vadd1 = "vadd" [ sat ] ; vadd	0120	I32I32I32
+vadd1 = "vadd" [ sat tab282FC80 ] ; vadd	0120	I32I32I32
 
 vsub0 = "vsub" [ sat ] ; vsub	012	I32I32I32
 
-vsub1 = "vsub" [ sat ] ; vsub	0120	I32I32I32
+vsub1 = "vsub" [ sat tab282FC80 ] ; vsub	0120	I32I32I32
 
 vabsdiff0 = "vabsdiff" [ sat ] ; vabsdiff	012	I32I32I32
 
-vabsdiff1 = "vabsdiff" [ sat ] ; vabsdiff	0120	I32I32I32
+vabsdiff1 = "vabsdiff" [ sat tab282FC80 ] ; vabsdiff	0120	I32I32I32
 
 vmin0 = "vmin" [ sat ] ; vmin	012	I32I32I32
 
-vmin1 = "vmin" [ sat ] ; vmin	0120	I32I32I32
+vmin1 = "vmin" [ sat tab282FC80 ] ; vmin	0120	I32I32I32
 
 vmax0 = "vmax" [ sat ] ; vmax	012	I32I32I32
 
-vmax1 = "vmax" [ sat ] ; vmax	0120	I32I32I32
+vmax1 = "vmax" [ sat tab282FC80 ] ; vmax	0120	I32I32I32
 
 vshl0 = "vshl" [ sat tab282E480 ] ; vshl	012	I32I32I32
 
-vshl1 = "vshl" [ sat tab282E480 ] ; vshl	0120	I32I32I32
+vshl1 = "vshl" [ sat tab282FC80 tab282E480 ] ; vshl	0120	I32I32I32
 
 vshr0 = "vshr" [ sat tab282E480 ] ; vshr	012	I32I32I32
 
-vshr1 = "vshr" [ sat tab282E480 ] ; vshr	0120	I32I32I32
+vshr1 = "vshr" [ sat tab282FC80 tab282E480 ] ; vshr	0120	I32I32I32
 
 po = [ ".po" ]
 
@@ -2992,35 +2998,35 @@ vmad0 = "vmad" [ sat po tab282E440 tab282E460 ] ; vmad	0120	I32I32I32
 
 vset0 = "vset" [ tab282FBC0 ] ; vset	u01	I32I32
 
-vset1 = "vset" [ tab282FBC0 ] ; vset	u01u	I32I32
+vset1 = "vset" [ tab282FBC0 tab282FC80 ] ; vset	u01u	I32I32
 
-vadd20 = "vadd2" [ sat ] ; vadd2	0120	I32I32I32
+vadd20 = "vadd2" [ sat tab282FC80 ] ; vadd2	0120	I32I32I32
 
-vsub20 = "vsub2" [ sat ] ; vsub2	0120	I32I32I32
+vsub20 = "vsub2" [ sat tab282FC80 ] ; vsub2	0120	I32I32I32
 
-vavrg20 = "vavrg2" [ sat ] ; vavrg2	0120	I32I32I32
+vavrg20 = "vavrg2" [ sat tab282FC80 ] ; vavrg2	0120	I32I32I32
 
-vabsdiff20 = "vabsdiff2" [ sat ] ; vabsdiff2	0120	I32I32I32
+vabsdiff20 = "vabsdiff2" [ sat tab282FC80 ] ; vabsdiff2	0120	I32I32I32
 
-vmin20 = "vmin2" [ sat ] ; vmin2	0120	I32I32I32
+vmin20 = "vmin2" [ sat tab282FC80 ] ; vmin2	0120	I32I32I32
 
-vmax20 = "vmax2" [ sat ] ; vmax2	0120	I32I32I32
+vmax20 = "vmax2" [ sat tab282FC80 ] ; vmax2	0120	I32I32I32
 
-vset20 = "vset2" [ tab282FBC0 ] ; vset2	u01u	I32I32
+vset20 = "vset2" [ tab282FBC0 tab282FC80 ] ; vset2	u01u	I32I32
 
-vadd40 = "vadd4" [ sat ] ; vadd4	0120	I32I32I32
+vadd40 = "vadd4" [ sat tab282FC80 ] ; vadd4	0120	I32I32I32
 
-vsub40 = "vsub4" [ sat ] ; vsub4	0120	I32I32I32
+vsub40 = "vsub4" [ sat tab282FC80 ] ; vsub4	0120	I32I32I32
 
-vavrg40 = "vavrg4" [ sat ] ; vavrg4	0120	I32I32I32
+vavrg40 = "vavrg4" [ sat tab282FC80 ] ; vavrg4	0120	I32I32I32
 
-vabsdiff40 = "vabsdiff4" [ sat ] ; vabsdiff4	0120	I32I32I32
+vabsdiff40 = "vabsdiff4" [ sat tab282FC80 ] ; vabsdiff4	0120	I32I32I32
 
-vmin40 = "vmin4" [ sat ] ; vmin4	0120	I32I32I32
+vmin40 = "vmin4" [ sat tab282FC80 ] ; vmin4	0120	I32I32I32
 
-vmax40 = "vmax4" [ sat ] ; vmax4	0120	I32I32I32
+vmax40 = "vmax4" [ sat tab282FC80 ] ; vmax4	0120	I32I32I32
 
-vset40 = "vset4" [ tab282FBC0 ] ; vset4	u01u	I32I32
+vset40 = "vset4" [ tab282FBC0 tab282FC80 ] ; vset4	u01u	I32I32
 
 insn = mad_fused.hi0
  | madc_fused.hi0
