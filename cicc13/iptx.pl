@@ -373,7 +373,7 @@ sub read_ops2
     printf("length of mask %d\n", bcnt(\@mask));
     printf("%d uniq ins\n", scalar keys %g_ins);
     if ( $max_op ) {
-      printf("longest mask: %d\n", $max_mask);
+      printf("longest mask: %d ", $max_mask);
       printf("at %d %s\n", $max_op->[0], $max_op->[2]);
     }
   }
@@ -497,12 +497,14 @@ my %gk_tabs = (
   4 => 'no_atexit',
   5 => 'tab282F560', # dst type
   7 => 'approx',
+# 1
   1 * 8 + 0 => 'relu', # cvt/fma/min/max, test    byte ptr [r12+1], 1
   1 * 8 + 1 => 'ftz',
   1 * 8 + 2 => 'noftz',
   1 * 8 + 4 => 'sat',        # test    byte ptr [r12+1], 10h
   1 * 8 + 5 => 'satfinite',  # test    byte ptr [r12+1], 20h
   1 * 8 + 7 => 'tab282F2A0', # mma/tcgen05.mma .sp/.sp::ordered_metadata
+# 2
   2 * 8 + 0 => 'tab282FA00', # test    byte ptr [r12+2], 1
   2 * 8 + 1 => 'ashift',
   2 * 8 + 2 => 'tab282F9C0', # .collector::a - test    byte ptr [r12+2], 4
@@ -510,15 +512,18 @@ my %gk_tabs = (
   2 * 8 + 4 => 'tab282F8E0', # scale_vectorsize
   2 * 8 + 5 => 'tab282F8B0', # test    byte ptr [r12+2], 20h
   2 * 8 + 7 => 'tab282F890',
+# 3
   3 * 8 + 0 => 'sat',
   3 * 8 + 1 => 'cc',
   3 * 8 + 2 => 'shiftamt',
   3 * 8 + 3 => 'tab282E820', # (f)rnd
   3 * 8 + 6 => 'uni',
   3 * 8 + 7 => 'tab282E7E0', # cmp     byte ptr [r12+3], 0/js
+# 4
   4 * 8 + 0 => 'tab282E7C0', # test    byte ptr [r12+4], 1
   4 * 8 + 6 => 'tab282DFE0', # mov.type & cvt 01 - type with .pred
   4 * 8 + 7 => 'tab282EC40', # scope/ss like .gpu .cluster
+# 5 - full
   5 * 8 + 0 => 'tab282E6A0', # load_mode
   5 * 8 + 1 => 'testp',
   5 * 8 + 2 => 'tab282E960', # .cop
@@ -527,6 +532,7 @@ my %gk_tabs = (
   5 * 8 + 5 => 'mmio',       # ld/st/red.async
   5 * 8 + 6 => 'tab282EC20', # cache level like .l1
   5 * 8 + 7 => 'tab282EB80', # eviction, since v7.4 also for ld/st/prefetch
+# 6
   6 * 8 + 0 => 'tab282EC40', # test    byte ptr [r12+6], 1
   6 * 8 + 1 => 'tab282F2D0', # just speculation for _col/_row
   6 * 8 + 2 => 'vec',
@@ -534,6 +540,7 @@ my %gk_tabs = (
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
   6 * 8 + 6 => 'tab282E640', # occurs only in print handler for cp.async.bulk.tensor
   6 * 8 + 7 => 'tab282E620', # cta_group
+# 7 - full
   7 * 8 + 0 => 'tab282E600', # multicast for tcgen05.cp
   7 * 8 + 1 => 'tab282E5E0', # src_fmt/dst_fmt for tcgen05.cp & ldmatrix
   7 * 8 + 2 => 'packed_offsets', # test    byte ptr [rdx+7], 4
@@ -542,6 +549,7 @@ my %gk_tabs = (
   7 * 8 + 5 => 'tab282E680', # test    byte ptr [rdx+7], 20h
   7 * 8 + 6 => 'tab282E660', # test    byte ptr [rdx+7], 40
   7 * 8 + 7 => 'tab282E550', # occurs only in print handler for cp.async.bulk
+# 8
   8 * 8 + 0 => 'tab282E520', # .completion_mechanism
   8 * 8 + 1 => 'footprint',
   8 * 8 + 2 => 'coarse',
@@ -549,12 +557,15 @@ my %gk_tabs = (
   8 * 8 + 4 => 'squery',     # common for txq & suq
   8 * 8 + 6 => 'tquery',     # tlquery is first 3 row from tquery
   8 * 8 + 7 => 'tab282E360', # vote mode
+# 9
   9 * 8 + 0 => 'tab282FC80', # redOp
   9 * 8 + 2 => 'tab282F3A0', # redOp with popc
+  9 * 8 + 4 => 'cas', # atom with 0M00
   9 * 8 + 5 => 'tab282E480', # clamp
   9 * 8 + 6 => 'po',
 #  9 * 8 + 7 => 'tab282E460', # scale = { .shr7, .shr15 }
   9 * 8 + 7 => 'tab282E440',
+# 10 - full
  10 * 8 + 0 => 'prmt',
  10 * 8 + 1 => 'tab282E400', # bfly - shfl mode
  10 * 8 + 2 => 'down', # for tcgen05.shift
@@ -562,7 +573,8 @@ my %gk_tabs = (
  10 * 8 + 4 => 'rand', # movzx   eax, byte ptr [r12+0Ah]/test al, 10h
  10 * 8 + 5 => 'sync', # from setmaxnreg.inc
  10 * 8 + 6 => 'noinc',      # movzx   eax, byte ptr [r12+0Ah]/test al, 40h
- 10 * 8 + 3 => 'noComplete',
+ 10 * 8 + 7 => 'noComplete', # mbarrier.arrive & mbarrier.arrive_drop
+# 11
  11 * 8 + 0 => 'tab282F800', # isspacep/cvta/cvt.to
  11 * 8 + 1 => 'tab282F310', # test    byte ptr [r12+0Bh], 2
  11 * 8 + 2 => 'aligned',
@@ -570,6 +582,7 @@ my %gk_tabs = (
  11 * 8 + 5 => 'close',      # test    byte ptr [r12+0Bh], 20h
  11 * 8 + 6 => 'tab282ECE0', # test byte ptr [r12+0Bh], 40h
  11 * 8 + 7 => 'tab282EB40', # ld/cp.async .level::prefetch_size
+# 12 - full
  12 * 8 + 0 => 'tab282EB60', # test    byte ptr [r12+0Ch], 1
  12 * 8 + 1 => 'trans',
  12 * 8 + 2 => 'tab282F7A0', # num for tcgen05.ld/tcgen05.st
@@ -578,6 +591,7 @@ my %gk_tabs = (
  12 * 8 + 5 => 'tab282F360', # test    byte ptr [r12+0Ch], 20h
  12 * 8 + 6 => 'expand',     # test    byte ptr [r12+0Ch], 40
  12 * 8 + 7 => 'tab282ECA0', # cmp byte ptr [r12+0Ch], 0/js good - thread_group
+# 13 - no 13:3
  13 * 8 + 0 => 'sp',
  13 * 8 + 1 => 'layout',     # this is pure guess - layouta/layoutb called from parse_mma
  13 * 8 + 2 => 'tab282F280', # movzx edx, byte ptr [r12+0Dh]/test dl, 2
@@ -585,6 +599,7 @@ my %gk_tabs = (
  13 * 8 + 5 => 'nan',        # test    byte ptr [r12+0Dh], 20h
  13 * 8 + 6 => 'xorsign',    # test    byte ptr [r12+0Dh], 40h
  13 * 8 + 7 => 'transA',
+# 14 - full
  14 * 8 + 0 => 'negA',       # test    byte ptr [r12+0Eh], 1
  14 * 8 + 1 => 'transB',
  14 * 8 + 2 => 'negB',       # test    byte ptr [r12+0Eh], 4
@@ -593,6 +608,7 @@ my %gk_tabs = (
  14 * 8 + 5 => 'frel',       # movzx   edx, byte ptr [r12+0Eh]/and     edx, 20h - addr type
  14 * 8 + 6 => 'abs',
  14 * 8 + 7 => 'cache_hint', # cmp     byte ptr [r12+0Eh], 0/jns
+# 15
  15 * 8 + 0 => 'oob', # fma only
  15 * 8 + 2 => 'tab282F510', # test    byte ptr [r12+0Fh], 2 - proxy kind
  15 * 8 + 3 => 'mbarrier_init', # test    byte ptr [r12+0Fh], 8
@@ -600,6 +616,7 @@ my %gk_tabs = (
  15 * 8 + 5 => 'tab282F460', # launch_dependents
  15 * 8 + 6 => 'tab282F4A0', # get_first_ctaid{::dimension}
  15 * 8 + 7 => 'tab282F480',
+# 16
  16 * 8 + 0 => 'tab282F440', # test    byte ptr [r14+10h], 1
  16 * 8 + 1 => 'tab282F3E0',
  16 * 8 + 2 => 'b1024',
@@ -1044,6 +1061,7 @@ if ( defined $opt_k ) {
   for my $i ( 0 .. MaskSize ) { $still_unk[$i] = $g_total_mask->[$i] & $kn[$i]; }
   printf("unknown mask:  ");
   dump_mask(\@still_unk);
+  printf("unk size %d\n", bcnt(\@still_unk));
 }
 
 my %ins;
