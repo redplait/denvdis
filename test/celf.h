@@ -4,6 +4,12 @@
 #include "nv_rend.h"
 #include "elfio/elfio.hpp"
 
+// custom nvidia stt
+#define STT_CUDA_TEXTURE	0xa
+#define STT_CUDA_SAMPLER	0xb
+#define STT_CUDA_SURFACE	0xc
+#define STT_CUDA_OBJECT		0xd
+
 using namespace ELFIO;
 
 struct asymbol
@@ -198,7 +204,7 @@ class CElf: public T {
    void dump_csym(const asymbol *as) const {
     if ( as->bind == STB_GLOBAL )
       fprintf(this->m_out, "\t.global %s\n", as->name.c_str());
-    if ( as->type == STT_OBJECT )
+    if ( as->type == STT_OBJECT || as->type == STT_CUDA_OBJECT )
       fprintf(this->m_out, "\t.type %s,@object\n", as->name.c_str());
     else if ( as->type == STT_FUNC )
       fprintf(this->m_out, "\t.type %s,@function\n", as->name.c_str());

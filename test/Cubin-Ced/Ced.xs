@@ -235,7 +235,7 @@ class Ced_perl: public CEd_base {
     return m_dis->rz;
   }
   int sm_num() const {
-    return m_sm;
+    return NV_renderer::m_sm;
   }
   const char *sm_name() const {
     return m_sm_name;
@@ -3428,6 +3428,14 @@ BOOT:
    auto name = get_cuda_reloc_name(rt);
    if ( !name ) break;
    SV *rel_v = newSViv(rt);
+   SvREADONLY_on(rel_v);
+   newCONSTSUB(stash, name, rel_v);
+ }
+ // STT_CUDA
+ static const char *stt[4] = { "STT_CUDA_TEXTURE", "STT_CUDA_SAMPLER", "STT_CUDA_SURFACE", "STT_CUDA_OBJECT" };
+ for ( int i = 0; i < 4; ++i ) {
+   auto name = stt[i];
+   SV *rel_v = newSViv(i + 0xa);
    SvREADONLY_on(rel_v);
    newCONSTSUB(stash, name, rel_v);
  }
