@@ -65,12 +65,12 @@ class de_ptx: public decuda_base {
    void gather_string(diter &, ptx_op &);
    template <typename G, typename T, typename A>
    int cmn_ptx_op(diter &, ptx_op &, G&, T t, A add);
-   void hack_ctor(uint64_t, const char *fname);
+   void hack_ctor(uint64_t, const char *fname, int in_bss = 1);
    void hack_ops(uint64_t, uint64_t, const char *fname);
    void hack_cicc_intr(uint64_t, const char *fname);
    void hack_sp(uint64_t, const char *fname);
    int hack_sp(diter &, res_map &);
-   int hack(diter &, res_map &);
+   int hack(diter &, res_map &, int in_bss = 1);
    int hack_ops(diter &, uint64_t, res_map &);
    template <typename T>
    int hack_cicc(diter &, T &);

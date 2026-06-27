@@ -45,11 +45,11 @@ void de_ptx::hack_cicc_intr(uint64_t off, const char *fname) {
   if ( hack_cicc(di, res) ) dump_cicc(fname, res);
 }
 
-void de_ptx::hack_ctor(uint64_t off, const char *fname) {
+void de_ptx::hack_ctor(uint64_t off, const char *fname, int in_bss) {
   diter di(*s_text);
   if ( !di.setup(off) ) return;
   res_map res;
-  if ( hack(di, res) ) dump_deres(fname, res);
+  if ( hack(di, res, in_bss) ) dump_deres(fname, res);
 }
 
 void de_ptx::hack_ops(uint64_t off, uint64_t croot, const char *fname) {
@@ -132,7 +132,7 @@ int de_ptx::hack_cicc(diter &di, T &cn) {
  return !cn.empty();
 }
 
-int de_ptx::hack(diter &di, res_map &rm) {
+int de_ptx::hack(diter &di, res_map &rm, int in_bss) {
   used_regs<uint64_t> regs;
   while(1) {
     if ( !di.next() ) break;
@@ -148,8 +148,36 @@ int de_ptx::hack(diter &di, res_map &rm) {
       regs.add(di.ud_obj.operand[0].base, res);
       continue;
     }
+    if ( !in_bss && di.is_lea() ) continue;
+    if ( !in_bss && di.ud_obj.mnemonic == UD_Imov && di.ud_obj.operand[0].type == UD_OP_MEM ) {
+      auto res = di.get_addr(0);
+      if ( di.ud_obj.operand[1].type == UD_OP_IMM ) {
+        auto val = di.ud_obj.operand[1].lval.sdword;
+        if ( in_sec(s_rodata, val) ) {
+          lat_res what{ 0};
+          if ( check(what, val) ) {
+            rm[res] = what;
+            continue;
+          }
+        }
+        lat_res what{ 0, val };
+        rm[res] = what;
+        continue;
+      }
+      // mov [rip], reg
+      if ( di.ud_obj.operand[1].type == UD_OP_REG ) {
+        uint64_t val = 0;
+        if ( !regs.asgn(di.ud_obj.operand[1].base, val) ) {
+          report(di, "bad asgn");
+          continue;
+        }
+        lat_res what{ 0};
+        if ( check(what, val) ) rm[res] = what;
+        continue;
+      }
+    }
     // mov [rip], imm
-    if ( di.is_mrip(0) && di.ud_obj.mnemonic == UD_Imov ) {
+    if ( in_bss && di.is_mrip(0) && di.ud_obj.mnemonic == UD_Imov ) {
       auto res = di.get_addr(0);
       if ( !in_sec(s_bss, res) ) { report(di, "not in bss"); return 0; }
       if ( di.ud_obj.operand[1].type == UD_OP_IMM ) {
@@ -178,7 +206,9 @@ int de_ptx::hack(diter &di, res_map &rm) {
       }
     }
     if ( di.is_end() ) return 1;
+    if ( !in_bss && di.is_mov_rimm() ) continue;
     report(di, "unknown instr");
+    if ( !in_bss ) return 1;
     break;
   }
   return 0;
@@ -683,7 +713,7 @@ int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
   // ptxas V13.1.80 md5 f38e5732c94163b96cf797eef252b4cb
   // string from get_pseudo_prototype switch case, size 1078
-  extr_sw_strs(0x1E66DB8, 1078);
+//  extr_sw_strs(0x1E66DB8, 1078);
 //  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0, 0x2971260 + 8, 0x2971AD0);
  // yet another couple of latency tables, totally identical to c17.txt
   // hack_ops(0x7357B7, 0x1E01480, "ops1.txt");
@@ -698,6 +728,7 @@ int de_ptx::_read() {
   // for 12.8 md5 14dc7bbb0bafae1313489c389e9486eb - NPDOHYX
 //  hack_ctor(0x582500, "c15.txt");
 //  hack_ctor(0x598620, "c17.txt");
+    hack_ctor(0xEE17A7, "c17_2.txt", 0);
 //  hack_ctor(0x59D4A0, "c18.txt");
 //  hack_ctor(0x41A8E0, "c5.txt");
 //  hack_sp(0x11BCB51, "c1.txt");
