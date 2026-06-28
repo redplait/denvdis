@@ -38,6 +38,25 @@ int de_ptx::dump_deres(const char *fname, const res_map &rm) {
   return 1;
 }
 
+int de_ptx::dump_objoff(const char *fname, const res_map &rm) {
+  FILE *fp = fopen(fname, "w");
+  if ( !fp ) {
+    fprintf(stderr, "cannot open %s, error %d (%s)\n", fname, errno, strerror(errno));
+    return 0;
+  }
+  for ( auto fi = rm.begin(); fi != rm.cend(); ++fi ) {
+    fprintf(fp, "%lX: ", fi->first);
+    if ( fi->second.what == 1 )
+      fprintf(fp, "-\n");
+    else if ( fi->second.what == 2 )
+      fprintf(fp, "%s\n", fi->second.dec.c_str());
+    else
+      fprintf(fp, "%d\n", fi->second.num);
+  }
+  fclose(fp);
+  return 1;
+}
+
 void de_ptx::hack_cicc_intr(uint64_t off, const char *fname) {
   diter di(*s_text);
   if ( !di.setup(off) ) return;
@@ -49,7 +68,12 @@ void de_ptx::hack_ctor(uint64_t off, const char *fname, int in_bss) {
   diter di(*s_text);
   if ( !di.setup(off) ) return;
   res_map res;
-  if ( hack(di, res, in_bss) ) dump_deres(fname, res);
+  if ( hack(di, res, in_bss) ) {
+    if ( in_bss )
+      dump_deres(fname, res);
+    else
+      dump_objoff(fname, res);
+  }
 }
 
 void de_ptx::hack_ops(uint64_t off, uint64_t croot, const char *fname) {
@@ -150,7 +174,7 @@ int de_ptx::hack(diter &di, res_map &rm, int in_bss) {
     }
     if ( !in_bss && di.is_lea() ) continue;
     if ( !in_bss && di.ud_obj.mnemonic == UD_Imov && di.ud_obj.operand[0].type == UD_OP_MEM ) {
-      auto res = di.get_addr(0);
+      auto res = di.ud_obj.operand[0].lval.uqword;
       if ( di.ud_obj.operand[1].type == UD_OP_IMM ) {
         auto val = di.ud_obj.operand[1].lval.sdword;
         if ( in_sec(s_rodata, val) ) {
@@ -729,6 +753,7 @@ int de_ptx::_read() {
 //  hack_ctor(0x582500, "c15.txt");
 //  hack_ctor(0x598620, "c17.txt");
     hack_ctor(0xEE17A7, "c17_2.txt", 0);
+    hack_ctor(0x7357B7, "c17_l.txt", 0);
 //  hack_ctor(0x59D4A0, "c18.txt");
 //  hack_ctor(0x41A8E0, "c5.txt");
 //  hack_sp(0x11BCB51, "c1.txt");

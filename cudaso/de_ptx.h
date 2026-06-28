@@ -78,5 +78,6 @@ class de_ptx: public decuda_base {
    void dump_ptx_ops(std::list<ptx_op> &) const;
    void dump_dumpers(const dump_map &) const;
    int dump_deres(const char *fname, const res_map &);
+   int dump_objoff(const char *fname, const res_map &);
    int dump_cicc(const char *fname, const cicc_names &);
 };
