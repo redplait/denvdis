@@ -633,6 +633,10 @@ class Ced_perl: public CEd_base {
   int track_lat(reg_pad *rp, TLTrackCB *cb) {
     return NV_renderer::track_lat(rp, (unsigned long)m_dis->offset(), cb);
   }
+  int track_waw(reg_pad *rp, WaWTrackCB *cb) {
+    return NV_renderer::track_waw(rp, cb);
+  }
+  SV *gen_waw(const std::string &, unsigned long dst, unsigned long dst2) const;
   SV *gen_ftc(const std::string &, unsigned long src, const found_tab_cross &, int) const;
  protected:
   template <typename T>
@@ -1377,6 +1381,18 @@ static MGVTBL ca_latcross_magic_vt = {
         0 /* dup */
         TAB_TAIL
 };
+
+// layout of array:
+// [0] - dst address
+// [1] - dst2 address
+// [2] - resource name
+SV *Ced_perl::gen_waw(const std::string &what, unsigned long dst, unsigned long dst2) const {
+  AV *res = newAV();
+  av_push(res, newSVuv(dst));
+  av_push(res, newSVuv(dst2));
+  av_push(res, newSVpv(what.c_str(), what.size()));
+  return newRV_noinc((SV*)res);
+}
 
 // layout of array:
 // [0] - src address
@@ -2619,6 +2635,51 @@ track(SV *obj, SV *rt)
   RETVAL
 
 int
+track_waw(SV *obj, SV *rp, HV *hm)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   reg_pad *r= get_magic_ext<reg_pad>(rp, &ca_regtrack_magic_vt);
+ CODE:
+   if ( !r->snap || !e->has_ins() ) RETVAL = -1;
+   else {
+     WaWTrackCB cb = [&](unsigned char type, unsigned char what, unsigned long dst, unsigned long dst2) {
+       // check if we already have hm[dst]
+       SV *key = newSVuv(dst);
+       if ( hv_exists_ent(hm, key, 0) ) {
+         U32 hash_value = 0;
+         HE *he = hv_fetch_ent(hm, key, 0, hash_value);
+         if ( !he ) { // wtf?
+           SvREFCNT_dec(key);
+           return;
+         }
+         SV *val = HeVAL(he);
+         // check what we have
+         if ( !SvROK(val) ) {
+           SvREFCNT_dec(key);
+           croak("track_waw: not ref value at key %lX", dst);
+           return;
+         }
+         auto vtype = SvTYPE(SvRV(val));
+         if ( vtype != SVt_PVAV ) {
+           SvREFCNT_dec(key);
+           croak("track_waw: bad ref type %d value at key %lX", vtype, dst);
+           return;
+         }
+         AV *array = (AV*)SvRV(val);
+         av_push(array, e->gen_waw( lt_what(type, what), dst, dst2 ));
+       } else { // not in map yet
+         AV *array = newAV();
+         av_push(array, e->gen_waw( lt_what(type, what), dst, dst2 ));
+         hv_store_ent(hm, key, newRV_noinc((SV*)array), 0);
+       }
+       SvREFCNT_dec(key);
+     };
+     RETVAL = e->track_waw(r, &cb);
+   }
+ OUTPUT:
+  RETVAL
+
+int
 track_lat(SV *obj, SV *rp, HV *hm, int debug = 0)
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
@@ -2640,13 +2701,13 @@ track_lat(SV *obj, SV *rp, HV *hm, int debug = 0)
          // check what we have
          if ( !SvROK(val) ) {
            SvREFCNT_dec(key);
-           croak("not ref value at key %lX", dst);
+           croak("track_lat: not ref value at key %lX", dst);
            return;
          }
          auto vtype = SvTYPE(SvRV(val));
          if ( vtype != SVt_PVAV ) {
            SvREFCNT_dec(key);
-           croak("bad ref type %d value at key %lX", vtype, dst);
+           croak("track_lat: bad ref type %d value at key %lX", vtype, dst);
            return;
          }
          AV *array = (AV*)SvRV(val);
