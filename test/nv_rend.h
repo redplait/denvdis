@@ -456,6 +456,8 @@ class NV_renderer {
    template <typename T> requires std::is_base_of_v<render_base, T>
    const NV_Prop *find_compound_prop(const nv_instr *i, const T*) const;
    int track_lat(reg_pad *, unsigned long off, TLTrackCB *) const;
+   // must be called after reg_pad finalize_rt
+   int track_waw(reg_pad *, WaWTrackCB *) const;
    int track_regs(reg_pad *, const NV_rlist *, const NV_pair &p, unsigned long off);
    void dump_rt(reg_pad *, int rc = 0) const;
    void dump_rchains(const RegTabChains &rc, int is_col) const;

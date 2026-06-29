@@ -994,6 +994,51 @@ int NV_renderer::track_lat(reg_pad *rtdb, unsigned long off, TLTrackCB *cb) cons
   return res;
 }
 
+template <typename T>
+static int find_waw(unsigned char kind, unsigned char what, const std::vector<T> &hist, WaWTrackCB *cb) {
+  std::optional<uint64_t> state;
+  int res = 0;
+  for ( auto &ch: hist ) {
+    if ( !(ch.kind & 0x8000) )
+      state.reset();
+    else {
+      if ( state.has_value() ) {
+        (*cb)(kind, what, state.value(), ch.off);
+        res++;
+      }
+      state.emplace(ch.off);
+    }
+  }
+  return res;
+}
+
+int NV_renderer::track_waw(reg_pad *rp, WaWTrackCB *cb) const {
+  if ( !rp ) return 0;
+  int res = 0;
+  // check all gpr
+  if ( !rp->gpr.empty() ) {
+    for ( auto gi: rp->gpr ) res += find_waw(0, gi.first, gi.second, cb);
+  }
+  if ( !rp->ugpr.empty() ) {
+    for ( auto gi: rp->ugpr ) res += find_waw(0x80, gi.first, gi.second, cb);
+  }
+  // preds
+  if ( !rp->pred.empty() ) {
+    for ( auto pi: rp->pred ) res += find_waw(1, pi.first, pi.second, cb);
+  }
+  if ( !rp->upred.empty() ) {
+    for ( auto pi: rp->upred ) res += find_waw(0x81, pi.first, pi.second, cb);
+  }
+  // cc
+  if ( !rp->cc.empty() ) res += find_waw(0x2, 0, rp->cc, cb);
+  // gsb0 & gsb7 - kind 3
+  if ( is_sm90() ) {
+    if ( !rp->gsb0.empty() ) res += find_waw(3, 0, rp->gsb0, cb);
+    if ( !rp->gsb7.empty() ) res += find_waw(3, 7, rp->gsb7, cb);
+  }
+  return res;
+}
+
 std::string lt_what(unsigned char type, unsigned char what) {
   if ( 2 == type ) {
     return "CC";

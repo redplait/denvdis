@@ -344,5 +344,7 @@ TabRIdx check_tconn_row(const nv_instr *, const std::vector<std::string_view> &,
 // 2 for cc
 // | 0x80 for uni
 typedef std::function<void(unsigned char type, unsigned char what, unsigned long dst, unsigned long src, const found_tab_cross &)> TLTrackCB;
+// WaW callback
+typedef std::function<void(unsigned char type, unsigned char what, unsigned long dst, unsigned long dst_later)> WaWTrackCB;
 
 std::string lt_what(unsigned char type, unsigned char what);

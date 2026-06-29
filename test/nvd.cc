@@ -877,7 +877,7 @@ void nv_dis::process()
     fprintf(stderr, "no sections\n");
   }
   auto et = m_reader->get_type();
-  fprintf(m_out, "type %X, %d sections\n", et, n_sec);
+  fprintf(m_out, "type %X, %d sections, flags %X\n", et, n_sec, m_reader->get_flags());
   if ( opt_t || opt_r )
     read_symbols();
   if ( opt_q )
