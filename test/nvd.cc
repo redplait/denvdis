@@ -224,6 +224,7 @@ class nv_dis: public CElf<NV_renderer>
      if ( !has_snap() ) return;
      m_rtdb->snap->reset();
    }
+   void dump_waw(reg_pad *) const;
    // no properties instructions
    std::unordered_map<const nv_instr *, unsigned long> m_nopi;
    void add_nopi(const nv_instr *i) {
@@ -267,6 +268,18 @@ void nv_dis::add_cbank(Elf_Word idx, Elf_Word s, unsigned short off, unsigned sh
     cps->size = size;
     m_cbanks[idx] = cps;
   }
+}
+
+void nv_dis::nv_dis::dump_waw(reg_pad *rp) const {
+  bool latch = false;
+  WaWTrackCB cb = [&](unsigned char type, unsigned char what, unsigned long dst, unsigned long dst_later) {
+   if ( !latch ) {
+    fprintf(m_out, ";;; WaW\n");
+    latch = true;
+   }
+   fprintf(m_out, "; %lX %s %lX\n", dst, lt_what(type, what).c_str(), dst_later);
+  };
+  track_waw(rp, &cb);
 }
 
 // ripped from gdb/cuda/cuda-regmap.c, function regmap_parse_ondisc_func
@@ -609,6 +622,7 @@ void nv_dis::try_dis(Elf_Word idx)
   if ( m_rtdb ) {
     finalize_rt(m_rtdb);
     dump_rt(m_rtdb, opt_L);
+    if ( opt_L ) dump_waw(m_rtdb);
   }
 }
 
