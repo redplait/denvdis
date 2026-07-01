@@ -646,6 +646,7 @@ int NV_renderer::load(const char *sm_name)
        if ( m_width == 88 ) m_block_mask = 32 - 1;
        else if ( m_width == 64 ) m_block_mask = 64 - 1;
      }
+     asgn_cb0();
      return (m_dis != nullptr);
 }
 

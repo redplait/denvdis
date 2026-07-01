@@ -638,6 +638,11 @@ class Ced_perl: public CEd_base {
   }
   SV *gen_waw(const std::string &, unsigned long dst, unsigned long dst2) const;
   SV *gen_ftc(const std::string &, unsigned long src, const found_tab_cross &, int) const;
+  SV *cb0_name(unsigned short idx) const {
+    auto res = NV_renderer::cb0_name(idx);
+    if ( !res ) return &PL_sv_undef;
+    return newSVpv(res, strlen(res));
+  }
  protected:
   template <typename T>
   int patch_int(const nv_vattr *va, T value) {
@@ -2258,6 +2263,15 @@ SV *tab_count(SV *obj)
    RETVAL = e->tab_count();
  OUTPUT:
   RETVAL
+
+SV *cb0_name(SV *obj, unsigned short idx)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->cb0_name(idx);
+ OUTPUT:
+  RETVAL
+
 
 void
 ins_cbank(SV *obj)
