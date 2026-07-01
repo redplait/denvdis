@@ -564,6 +564,7 @@ void nv_dis::try_dis(Elf_Word idx)
         // check param in cb_idx 0
         if ( cbank && !cb_idx && cb.has_value() ) {
           auto off = cb.value();
+          auto cb_name = cb0_name(off);
           auto cp = cbank->find_param(off);
           if ( cp )
             fprintf(m_out, " ; cb param %d off %X size %X\n", cp->ordinal, cp->offset, cp->size);
@@ -571,7 +572,9 @@ void nv_dis::try_dis(Elf_Word idx)
             fprintf(m_out, " ; cb in section %d, offset %lX - %X = %lX\n",
               cbank->section, off, cbank->offset, off - cbank->offset);
           } else {
-            if ( !m_rtdb ) // if we track cb then they will be dumped at end of block
+            if ( cb_name )
+              fprintf(m_out, " ; cb0 param %s\n", cb_name);
+            else if ( !m_rtdb ) // if we track cb then they will be dumped at end of block
              fprintf(m_out, " ; unknown cb off %lX\n", off);
           }
         }
