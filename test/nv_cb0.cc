@@ -1,0 +1,533 @@
+#include "nv_rend.h"
+
+// seems that second part (for Cnp functions) has only 2 variants
+// one for maxler & pascal
+static NvCBParamNames s_maxler_dbg = {
+// unknown what is at offset 0 - 64bit, base of kernel?
+ { 0x8, "entry_addr" }, // 32bit !!!
+ { 0xC, "bar_cnt" },
+ { 0x10, "trap_table" },
+ { 0x18, "pause_table" },
+ { 0x20, "smem_size" }, // I don't know if this is the same as %total_smem_size
+};
+
+// and this since volta
+static NvCBParamNames s_volta_dbg = {
+ { 0x0, "entry_addr" }, // 64 bit
+ { 0x8, "trap_table" },
+ { 0x10, "pause_table" },
+ { 0x18, "bar_cnt" },
+ { 0x1c, "smem_size" }, // I don't know if this is the same as %total_smem_size
+};
+
+// maxler - sm50, sm52, sm53
+static NvCBParamNames s_maxler = {
+{ 0x0, "shared_base" }, // 32bit
+{ 0x4, "local_base" }, // 32bit
+{ 0x8, "%ntid_x" },
+{ 0xC, "%ntid_y" },
+{ 0x10, "%ntid_z" },
+{ 0x14, "%nctaid_x" },
+{ 0x18, "%nctaid_y" },
+{ 0x1C, "%nctaid_z" },
+{ 0x20, "stack_ptr" },
+{ 0x24, "%total_smem_size" },
+{ 0x28, "%gridid" }, // 64 bit
+{ 0x30, "%envreg_0" },
+{ 0x34, "%envreg_1" },
+{ 0x38, "%envreg_2" },
+{ 0x3C, "%envreg_3" },
+{ 0x40, "%envreg_4" },
+{ 0x44, "%envreg_5" },
+{ 0x48, "%envreg_6" },
+{ 0x4C, "%envreg_7" },
+{ 0x50, "%envreg_8" },
+{ 0x54, "%envreg_9" },
+{ 0x58, "%envreg_10" },
+{ 0x5C, "%envreg_11" },
+{ 0x60, "%envreg_12" },
+{ 0x64, "%envreg_13" },
+{ 0x68, "%envreg_14" },
+{ 0x6C, "%envreg_15" },
+{ 0x70, "%envreg_16" },
+{ 0x74, "%envreg_17" },
+{ 0x78, "%envreg_18" },
+{ 0x7C, "%envreg_19" },
+{ 0x80, "%envreg_20" },
+{ 0x84, "%envreg_21" },
+{ 0x88, "%envreg_22" },
+{ 0x8C, "%envreg_23" },
+{ 0x90, "%envreg_24" },
+{ 0x94, "%envreg_25" },
+{ 0x98, "%envreg_26" },
+{ 0x9C, "%envreg_27" },
+{ 0xa0, "%envreg_28" },
+{ 0xa4, "%envreg_29" },
+{ 0xa8, "%envreg_30" },
+{ 0xaC, "%envreg_31" },
+{ 0xB0, "txq_desc_table" },
+{ 0xB8, "samp_desc_table" },
+{ 0xC0, "surf_desc_table" },
+{ 0xC8, "cb0_ptr" }, // ptr to const bank 0, don't ask me where they hide cb2, cb1 below
+{ 0xD0, "cb3_ptr" }, // ptr to const bank 3 - user_consts
+{ 0xD8, "cb4_ptr" }, // ptr to const bank 4
+{ 0xE0, "cb5_ptr" }, // ptr to const bank 5
+{ 0xE8, "cb5_ptr" }, // ptr to const bank 6
+{ 0xF0, "cb1_ptr" }, // ptr to const bank 1
+{ 0xF8, "%nsmid" },
+{ 0xFC, "%dynamic_smem_size" },
+};
+
+// pascal - sm60, sm61, sm62 - till 0x100 the same as maxler
+static NvCBParamNames s_pascal = {
+{ 0x0, "shared_base" }, // 32bit
+{ 0x4, "local_base" }, // 32bit
+{ 0x8, "%ntid_x" },
+{ 0xC, "%ntid_y" },
+{ 0x10, "%ntid_z" },
+{ 0x14, "%nctaid_x" },
+{ 0x18, "%nctaid_y" },
+{ 0x1C, "%nctaid_z" },
+{ 0x20, "stack_ptr" },
+{ 0x24, "%total_smem_size" },
+{ 0x28, "%gridid" }, // 64 bit
+{ 0x30, "%envreg_0" },
+{ 0x34, "%envreg_1" },
+{ 0x38, "%envreg_2" },
+{ 0x3C, "%envreg_3" },
+{ 0x40, "%envreg_4" },
+{ 0x44, "%envreg_5" },
+{ 0x48, "%envreg_6" },
+{ 0x4C, "%envreg_7" },
+{ 0x50, "%envreg_8" },
+{ 0x54, "%envreg_9" },
+{ 0x58, "%envreg_10" },
+{ 0x5C, "%envreg_11" },
+{ 0x60, "%envreg_12" },
+{ 0x64, "%envreg_13" },
+{ 0x68, "%envreg_14" },
+{ 0x6C, "%envreg_15" },
+{ 0x70, "%envreg_16" },
+{ 0x74, "%envreg_17" },
+{ 0x78, "%envreg_18" },
+{ 0x7C, "%envreg_19" },
+{ 0x80, "%envreg_20" },
+{ 0x84, "%envreg_21" },
+{ 0x88, "%envreg_22" },
+{ 0x8C, "%envreg_23" },
+{ 0x90, "%envreg_24" },
+{ 0x94, "%envreg_25" },
+{ 0x98, "%envreg_26" },
+{ 0x9C, "%envreg_27" },
+{ 0xa0, "%envreg_28" },
+{ 0xa4, "%envreg_29" },
+{ 0xa8, "%envreg_30" },
+{ 0xaC, "%envreg_31" },
+{ 0xB0, "txq_desc_table" },
+{ 0xB8, "samp_desc_table" },
+{ 0xC0, "surf_desc_table" },
+{ 0xC8, "cb0_ptr" }, // ptr to const bank 0, don't ask me where they hide cb2, cb1 below
+{ 0xD0, "cb3_ptr" }, // ptr to const bank 3 - user_consts
+{ 0xD8, "cb4_ptr" }, // ptr to const bank 4
+{ 0xE0, "cb5_ptr" }, // ptr to const bank 5
+{ 0xE8, "cb5_ptr" }, // ptr to const bank 6
+{ 0xF0, "cb1_ptr" }, // ptr to const bank 1
+{ 0xF8, "%nsmid" },
+{ 0xFC, "%dynamic_smem_size" },
+{ 0x100, "shared_base_hi" }, // 32bit
+{ 0x104, "local_base_hi" }, // 32bit
+{ 0x108, "num_sm" }, // ???
+// 0x10c - unknown
+{ 0x110, "is_coop_mode" },
+};
+
+// volta - sm70, sm72
+static NvCBParamNames s_volta = {
+{ 0x0, "%ntid_x" },
+{ 0x4, "%ntid_y" },
+{ 0x8, "%ntid_z" },
+{ 0xc, "%nctaid_x" },
+{ 0x10, "%nctaid_y" },
+{ 0x14, "%nctaid_z" },
+{ 0x18, "shared_base" }, // 32bit
+{ 0x1c, "shared_base_hi" }, // 32bit
+{ 0x20, "local_base" }, // 32bit
+{ 0x24, "local_base_hi" }, // 32bit
+{ 0x28, "stack_ptr" }, // 32bit
+{ 0x2c, "%dynamic_smem_size" },
+{ 0x30, "%gridid" }, // 64 bit
+// 0x38 - unknown ptr 64bit
+{ 0x40, "cb0_ptr" }, // ptr to const bank 0
+{ 0x48, "cb1_ptr" }, // ptr to const bank 1
+{ 0x50, "cb3_ptr" }, // ptr to const bank 3 - user_consts
+{ 0x58, "cb4_ptr" }, // ptr to const bank 4
+{ 0x60, "cb5_ptr" }, // ptr to const bank 5
+{ 0x68, "cb5_ptr" }, // ptr to const bank 6
+{ 0x70, "txq_desc_table" },
+{ 0x78, "samp_desc_table" },
+{ 0x80, "surf_desc_table" },
+{ 0x88, "%envreg_0" },
+{ 0x8c, "%envreg_1" },
+{ 0x90, "%envreg_2" },
+{ 0x94, "%envreg_3" },
+{ 0x98, "%envreg_4" },
+{ 0x9c, "%envreg_5" },
+{ 0xa0, "%envreg_6" },
+{ 0xa4, "%envreg_7" },
+{ 0xa8, "%envreg_8" },
+{ 0xac, "%envreg_9" },
+{ 0xb0, "%envreg_10" },
+{ 0xb4, "%envreg_11" },
+{ 0xb8, "%envreg_12" },
+{ 0xbc, "%envreg_13" },
+{ 0xc0, "%envreg_14" },
+{ 0xc4, "%envreg_15" },
+{ 0xc8, "%envreg_16" },
+{ 0xcc, "%envreg_17" },
+{ 0xd0, "%envreg_18" },
+{ 0xd4, "%envreg_19" },
+{ 0xd8, "%envreg_20" },
+{ 0xdc, "%envreg_21" },
+{ 0xe0, "%envreg_22" },
+{ 0xe4, "%envreg_23" },
+{ 0xe8, "%envreg_24" },
+{ 0xec, "%envreg_25" },
+{ 0xf0, "%envreg_26" },
+{ 0xf4, "%envreg_27" },
+{ 0xf8, "%envreg_28" },
+{ 0xfc, "%envreg_29" },
+{ 0x100, "%envreg_30" },
+{ 0x104, "%envreg_31" },
+{ 0x108, "%nsmid" }, // 264
+{ 0x10C, "num_sm" },
+{ 0x110, "is_coop_mode" },
+{ 0x114, "kparams_end" }, // ptr 32 bit
+{ 0x118, "cb2_ptr" }, // ptr to const bank 2 - suddenly
+};
+
+// turing sm75 - like volta but they removed cb2
+static NvCBParamNames s_turing = {
+{ 0x0, "%ntid_x" },
+{ 0x4, "%ntid_y" },
+{ 0x8, "%ntid_z" },
+{ 0xc, "%nctaid_x" },
+{ 0x10, "%nctaid_y" },
+{ 0x14, "%nctaid_z" },
+{ 0x18, "shared_base" }, // 32bit
+{ 0x1c, "shared_base_hi" }, // 32bit
+{ 0x20, "local_base" }, // 32bit
+{ 0x24, "local_base_hi" }, // 32bit
+{ 0x28, "stack_ptr" }, // 32bit
+{ 0x2c, "%dynamic_smem_size" },
+{ 0x30, "%gridid" }, // 64 bit
+// 0x38 - unknown ptr 64bit
+{ 0x40, "cb0_ptr" }, // ptr to const bank 0
+{ 0x48, "cb1_ptr" }, // ptr to const bank 1
+{ 0x50, "cb3_ptr" }, // ptr to const bank 3 - user_consts
+{ 0x58, "cb4_ptr" }, // ptr to const bank 4
+{ 0x60, "cb5_ptr" }, // ptr to const bank 5
+{ 0x68, "cb5_ptr" }, // ptr to const bank 6
+{ 0x70, "txq_desc_table" },
+{ 0x78, "samp_desc_table" },
+{ 0x80, "surf_desc_table" },
+{ 0x88, "%envreg_0" },
+{ 0x8c, "%envreg_1" },
+{ 0x90, "%envreg_2" },
+{ 0x94, "%envreg_3" },
+{ 0x98, "%envreg_4" },
+{ 0x9c, "%envreg_5" },
+{ 0xa0, "%envreg_6" },
+{ 0xa4, "%envreg_7" },
+{ 0xa8, "%envreg_8" },
+{ 0xac, "%envreg_9" },
+{ 0xb0, "%envreg_10" },
+{ 0xb4, "%envreg_11" },
+{ 0xb8, "%envreg_12" },
+{ 0xbc, "%envreg_13" },
+{ 0xc0, "%envreg_14" },
+{ 0xc4, "%envreg_15" },
+{ 0xc8, "%envreg_16" },
+{ 0xcc, "%envreg_17" },
+{ 0xd0, "%envreg_18" },
+{ 0xd4, "%envreg_19" },
+{ 0xd8, "%envreg_20" },
+{ 0xdc, "%envreg_21" },
+{ 0xe0, "%envreg_22" },
+{ 0xe4, "%envreg_23" },
+{ 0xe8, "%envreg_24" },
+{ 0xec, "%envreg_25" },
+{ 0xf0, "%envreg_26" },
+{ 0xf4, "%envreg_27" },
+{ 0xf8, "%envreg_28" },
+{ 0xfc, "%envreg_29" },
+{ 0x100, "%envreg_30" },
+{ 0x104, "%envreg_31" },
+{ 0x108, "%nsmid" },
+{ 0x10C, "num_sm" },
+{ 0x110, "is_coop_mode" },
+{ 0x114, "kparams_end" }, // ptr 32 bit
+};
+
+// ampere - sm80, sm86 - like turing + some additional fields
+static NvCBParamNames s_ampere = {
+{ 0x0, "%ntid_x" },
+{ 0x4, "%ntid_y" },
+{ 0x8, "%ntid_z" },
+{ 0xc, "%nctaid_x" },
+{ 0x10, "%nctaid_y" },
+{ 0x14, "%nctaid_z" },
+{ 0x18, "shared_base" }, // 32bit
+{ 0x1c, "shared_base_hi" }, // 32bit
+{ 0x20, "local_base" }, // 32bit
+{ 0x24, "local_base_hi" }, // 32bit
+{ 0x28, "stack_ptr" }, // 32bit
+{ 0x2c, "%dynamic_smem_size" },
+{ 0x30, "%gridid" }, // 64 bit
+// 0x38 - unknown ptr 64bit
+{ 0x40, "cb0_ptr" }, // ptr to const bank 0
+{ 0x48, "cb1_ptr" }, // ptr to const bank 1
+{ 0x50, "cb3_ptr" }, // ptr to const bank 3 - user_consts
+{ 0x58, "cb4_ptr" }, // ptr to const bank 4
+{ 0x60, "cb5_ptr" }, // ptr to const bank 5
+{ 0x68, "cb5_ptr" }, // ptr to const bank 6
+{ 0x70, "txq_desc_table" },
+{ 0x78, "samp_desc_table" },
+{ 0x80, "surf_desc_table" },
+{ 0x88, "%envreg_0" },
+{ 0x8c, "%envreg_1" },
+{ 0x90, "%envreg_2" },
+{ 0x94, "%envreg_3" },
+{ 0x98, "%envreg_4" },
+{ 0x9c, "%envreg_5" },
+{ 0xa0, "%envreg_6" },
+{ 0xa4, "%envreg_7" },
+{ 0xa8, "%envreg_8" },
+{ 0xac, "%envreg_9" },
+{ 0xb0, "%envreg_10" },
+{ 0xb4, "%envreg_11" },
+{ 0xb8, "%envreg_12" },
+{ 0xbc, "%envreg_13" },
+{ 0xc0, "%envreg_14" },
+{ 0xc4, "%envreg_15" },
+{ 0xc8, "%envreg_16" },
+{ 0xcc, "%envreg_17" },
+{ 0xd0, "%envreg_18" },
+{ 0xd4, "%envreg_19" },
+{ 0xd8, "%envreg_20" },
+{ 0xdc, "%envreg_21" },
+{ 0xe0, "%envreg_22" },
+{ 0xe4, "%envreg_23" },
+{ 0xe8, "%envreg_24" },
+{ 0xec, "%envreg_25" },
+{ 0xf0, "%envreg_26" },
+{ 0xf4, "%envreg_27" },
+{ 0xf8, "%envreg_28" },
+{ 0xfc, "%envreg_29" },
+{ 0x100, "%envreg_30" },
+{ 0x104, "%envreg_31" },
+{ 0x108, "%nsmid" },
+{ 0x10C, "num_sm" },
+{ 0x110, "is_coop_mode" },
+{ 0x114, "%total_smem_size" },
+{ 0x118, "policy_default" },
+{ 0x120, "%reserved_smem_offset_end" },
+{ 0x124, "%reserved_smem_offset_1" },
+// 0x128 is unknown - we could assume this is kparams_start but IT IS'NT
+{ 0x12c, "kparams_end" },
+};
+
+// ada - sm89 - like ampere but last field kparams_end was removed
+static NvCBParamNames s_ada = {
+{ 0x0, "%ntid_x" },
+{ 0x4, "%ntid_y" },
+{ 0x8, "%ntid_z" },
+{ 0xc, "%nctaid_x" },
+{ 0x10, "%nctaid_y" },
+{ 0x14, "%nctaid_z" },
+{ 0x18, "shared_base" }, // 32bit
+{ 0x1c, "shared_base_hi" }, // 32bit
+{ 0x20, "local_base" }, // 32bit
+{ 0x24, "local_base_hi" }, // 32bit
+{ 0x28, "stack_ptr" }, // 32bit
+{ 0x2c, "%dynamic_smem_size" },
+{ 0x30, "%gridid" }, // 64 bit
+// 0x38 - unknown ptr 64bit
+{ 0x40, "cb0_ptr" }, // ptr to const bank 0
+{ 0x48, "cb1_ptr" }, // ptr to const bank 1
+{ 0x50, "cb3_ptr" }, // ptr to const bank 3 - user_consts
+{ 0x58, "cb4_ptr" }, // ptr to const bank 4
+{ 0x60, "cb5_ptr" }, // ptr to const bank 5
+{ 0x68, "cb5_ptr" }, // ptr to const bank 6
+{ 0x70, "txq_desc_table" },
+{ 0x78, "samp_desc_table" },
+{ 0x80, "surf_desc_table" },
+{ 0x88, "%envreg_0" },
+{ 0x8c, "%envreg_1" },
+{ 0x90, "%envreg_2" },
+{ 0x94, "%envreg_3" },
+{ 0x98, "%envreg_4" },
+{ 0x9c, "%envreg_5" },
+{ 0xa0, "%envreg_6" },
+{ 0xa4, "%envreg_7" },
+{ 0xa8, "%envreg_8" },
+{ 0xac, "%envreg_9" },
+{ 0xb0, "%envreg_10" },
+{ 0xb4, "%envreg_11" },
+{ 0xb8, "%envreg_12" },
+{ 0xbc, "%envreg_13" },
+{ 0xc0, "%envreg_14" },
+{ 0xc4, "%envreg_15" },
+{ 0xc8, "%envreg_16" },
+{ 0xcc, "%envreg_17" },
+{ 0xd0, "%envreg_18" },
+{ 0xd4, "%envreg_19" },
+{ 0xd8, "%envreg_20" },
+{ 0xdc, "%envreg_21" },
+{ 0xe0, "%envreg_22" },
+{ 0xe4, "%envreg_23" },
+{ 0xe8, "%envreg_24" },
+{ 0xec, "%envreg_25" },
+{ 0xf0, "%envreg_26" },
+{ 0xf4, "%envreg_27" },
+{ 0xf8, "%envreg_28" },
+{ 0xfc, "%envreg_29" },
+{ 0x100, "%envreg_30" },
+{ 0x104, "%envreg_31" },
+{ 0x108, "%nsmid" },
+{ 0x10C, "num_sm" },
+{ 0x110, "is_coop_mode" },
+{ 0x114, "%total_smem_size" },
+{ 0x118, "policy_default" },
+{ 0x120, "%reserved_smem_offset_end" },
+{ 0x124, "%reserved_smem_offset_1" },
+// 0x128 is unknown
+};
+
+// hopper - sm90
+static NvCBParamNames s_hopper = {
+{ 0x0, "%ntid_x" },
+{ 0x4, "%ntid_y" },
+{ 0x8, "%ntid_z" },
+{ 0xC, "%nctaid_x" },
+{ 0x10, "%nctaid_y" },
+{ 0x14, "%nctaid_z" },
+{ 0x28, "stack_ptr" },
+{ 0x2C, "%dynamic_smem_size" },
+{ 0x30, "%gridid" },
+{ 0x40, "%envreg_0" },
+{ 0x44, "%envreg_1" },
+{ 0x48, "%envreg_2" },
+{ 0x4C, "%envreg_3" },
+{ 0x50, "%envreg_4" },
+{ 0x54, "%envreg_5" },
+{ 0x58, "%envreg_6" },
+{ 0x5C, "%envreg_7" },
+{ 0x60, "%envreg_8" },
+{ 0x64, "%envreg_9" },
+{ 0x68, "%envreg_10" },
+{ 0x6C, "%envreg_11" },
+{ 0x70, "%envreg_12" },
+{ 0x74, "%envreg_13" },
+{ 0x78, "%envreg_14" },
+{ 0x7C, "%envreg_15" },
+{ 0x80, "%envreg_16" },
+{ 0x84, "%envreg_17" },
+{ 0x88, "%envreg_18" },
+{ 0x8C, "%envreg_19" },
+{ 0x90, "%envreg_20" },
+{ 0x94, "%envreg_21" },
+{ 0x98, "%envreg_22" },
+{ 0x9C, "%envreg_23" },
+{ 0xA0, "%envreg_24" },
+{ 0xA4, "%envreg_25" },
+{ 0xA8, "%envreg_26" },
+{ 0xAC, "%envreg_27" },
+{ 0xB0, "%envreg_28" },
+{ 0xB4, "%envreg_29" },
+{ 0xB8, "%envreg_30" },
+{ 0xBC, "%envreg_31" },
+{ 0xC0, "cb0_ptr" }, // ptr to const bank 0
+{ 0xC8, "cb1_ptr" }, // ptr to const bank 1, don't ask me where they hide cb2
+{ 0xD0, "cb3_ptr" }, // ptr to const bank 3 - user_consts
+{ 0xD8, "cb4_ptr" }, // ptr to const bank 4
+{ 0xE0, "cb5_ptr" }, // ptr to const bank 5
+{ 0xE8, "cb5_ptr" }, // ptr to const bank 6
+{ 0xF0, "txq_desc_table" },
+{ 0xF8, "samp_desc_table" },
+{ 0x100, "surf_desc_table" },
+{ 0x108, "%nsmid" },
+{ 0x10C, "num_sm" },
+{ 0x110, "is_coop_mode" },
+{ 0x114, "%total_smem_size" },
+{ 0x120, "tools_table" }, // 8 32bit dwords
+{ 0x140, "%is_explicit_cluster" },
+{ 0x144, "%cluster_nctaid_x" },
+{ 0x148, "%cluster_nctaid_y" },
+{ 0x14C, "%cluster_nctaid_z" },
+{ 0x15C, "%nclusterid_x" },
+{ 0x160, "%nclusterid_y" },
+{ 0x164, "%nclusterid_z" },
+{ 0x188, "%cluster_nctarank" },
+{ 0x198, "kparams_start" }, // ptr 64 bit
+{ 0x1A0, "kparams_end" }, // ptr 64 bit
+{ 0x208, "policy_default" },
+};
+
+const char *NV_renderer::cb0_name(unsigned short idx) const {
+  NvCBParamNames::const_iterator what;
+  if ( m_cb0.cnp_off && idx >= m_cb0.cnp_off && m_cb0.cnp ) {
+    what = m_cb0.cnp->find(idx - m_cb0.cnp_off);
+    if ( what == m_cb0.cnp->cend() ) return nullptr;
+    return what->second;
+  } else if ( m_cb0.bank0 ) {
+    what = m_cb0.bank0->find(idx);
+    if ( what == m_cb0.bank0->cend() ) return nullptr;
+    return what->second;
+  }
+  return nullptr;
+}
+
+int NV_renderer::asgn_cb0() {
+ // maxler - sm50, sm52, sm53
+ if ( m_sm >= 0x32 && m_sm <= 0x35 ) {
+   m_cb0.bank0 = &s_maxler;
+   m_cb0.cnp_off = 0x1840;
+   m_cb0.cnp = &s_maxler_dbg;
+   return 1;
+ }
+ // pascal - sm60, sm61, sm62
+ if ( m_sm >= 0x3c && m_sm <= 0x3e ) {
+   m_cb0.bank0 = &s_pascal;
+   m_cb0.cnp_off = 0x1840;
+   m_cb0.cnp = &s_maxler_dbg;
+   return 1;
+ }
+ m_cb0.cnp_off = 0x1860;
+ m_cb0.cnp = &s_volta_dbg;
+ // volta - sm70, sm72
+ if ( m_sm >= 0x46 && m_sm <= 0x48 ) {
+   m_cb0.bank0 = &s_volta;
+   return 1;
+ }
+ // turing sm75
+ if ( m_sm == 0x4b ) {
+   m_cb0.bank0 = &s_turing;
+   return 1;
+ }
+ // ampere - sm80, sm86 & sm87
+ if ( m_sm >= 0x50 && m_sm <= 0x57 ) {
+   m_cb0.bank0 = &s_ampere;
+   return 1;
+ }
+ // ada - sm89
+ if ( m_sm == 0x59 ) {
+   m_cb0.bank0 = &s_ada;
+   return 1;
+ }
+ // hopper - sm90
+ if ( m_sm == 0x5a ) {
+   m_cb0.bank0 = &s_hopper;
+   return 1;
+ }
+ return 0;
+}

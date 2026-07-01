@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include <type_traits>
 #include "include/nv_types.h"
+#include "nv_cb0.h"
 #include "nv_track.h"
 
 template <typename T>
@@ -210,6 +211,9 @@ class NV_renderer {
      }
      return nullptr;
    }
+   // cb0 names
+   int asgn_cb0(); // must be called from ::load
+   const char *cb0_name(unsigned short idx) const;
    // fields types
    template <typename S>
    const NV_field *find_field(const struct nv_instr *ins, const S& fn) const {
@@ -513,6 +517,8 @@ class NV_renderer {
    // dual issues
    bool dual_first = false;
    bool dual_last = false;
+   // cb0 params - must be assigned in load method
+   NvCBParams m_cb0;
    // scheduling tracking, value - list of column indexes
    std::unordered_map<const NV_tab *, std::list< std::pair<short, NV_Tabset *> > > m_sched;
    std::list<NV_Tabset> m_cached_tabsets;
