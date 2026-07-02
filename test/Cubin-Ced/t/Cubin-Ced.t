@@ -127,6 +127,11 @@ foreach my $ig ( @bni ) {
   $t_num++;
 }
 
+# cb0_names
+my $cb0h = $cub->cb0_names();
+ok( scalar(keys %$cb0h), 'cb0_names' );
+$t_num++;
+
 # latency
 my @lcs = $cub->lcols();
 ok( scalar @lcs, 'lcols');

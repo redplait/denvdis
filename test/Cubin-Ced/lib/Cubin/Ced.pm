@@ -537,6 +537,10 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * print_cword - render CWord in form similar to official nvdisasm
 
+=item * cb0_name(idx) - get name of const bank0 parameter for idx
+
+=item * cb0_names - get hashmap of const bank0 parameters names
+
 =back
 
 =head4 float conversion

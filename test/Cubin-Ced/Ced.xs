@@ -643,7 +643,15 @@ class Ced_perl: public CEd_base {
     if ( !res ) return &PL_sv_undef;
     return newSVpv(res, strlen(res));
   }
+  SV *cb0_names() const {
+    if ( !m_cb0.bank0 && !m_cb0.cnp ) return &PL_sv_undef;
+    HV *hv = newHV();
+    if ( m_cb0.bank0 ) add_cb0(hv, 0, m_cb0.bank0);
+    if ( m_cb0.cnp )   add_cb0(hv, m_cb0.cnp_off, m_cb0.cnp);
+    return newRV_noinc((SV*)hv);
+  }
  protected:
+  int add_cb0(HV *, unsigned short, const NvCBParamNames *) const;
   template <typename T>
   int patch_int(const nv_vattr *va, T value) {
     int fmt = va ? va->kind : (std::is_signed_v<T> ? NV_SImm : NV_UImm);
@@ -688,7 +696,6 @@ int Ced_perl::try_swap(UV off) {
   if ( !has_ins() ) return 0;
   return swap_with(off);
 }
-
 
 int Ced_perl::replace(const char *s)
 {
@@ -959,6 +966,16 @@ int Ced_perl::patch_field(const char *fname, SV *v)
   }
   Err("dont know how to patch %s, offset %lX\n", fname, m_dis->offset());
   return 0;
+}
+
+int Ced_perl::add_cb0(HV *hv, unsigned short base_off, const NvCBParamNames *ns) const
+{
+  int res = 0;
+  for ( auto ei: *ns ) {
+    SV *name = newSVpv( ei.second, strlen(ei.second) );
+    hv_store_ent(hv, newSViv(ei.first), name, 0);
+  }
+  return res;
 }
 
 SV *Ced_perl::check_tab(const char *fname, int do_filter) const
@@ -2269,6 +2286,14 @@ SV *cb0_name(SV *obj, unsigned short idx)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->cb0_name(idx);
+ OUTPUT:
+  RETVAL
+
+SV *cb0_names(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->cb0_names();
  OUTPUT:
   RETVAL
 
