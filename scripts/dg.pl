@@ -1503,7 +1503,12 @@ sub dump_ins
   if ( defined $cb0 ) {
     printf("; CB %X", $cb0);
     my $cp = find_cparam($cb0);
-    printf(" param off %X ord %d size %X", $cp->{'off'}, $cp->{'ord'}, $cp->{'size'}) if defined($cp);
+    if ( defined $cp ) {
+      printf(" param off %X ord %d size %X", $cp->{'off'}, $cp->{'ord'}, $cp->{'size'});
+    } else {
+      my $name = $g_ced->cb0_name($cb0);
+      printf(" %s", $name) if ( defined $name );
+    }
     printf("\n");
   }
   if ( defined($opt_p) ) {
@@ -1767,8 +1772,9 @@ sub traverse_lat
   # call/ret/indirect branches are joints
   # - for themself
   # - for all preceeding instructions
-  # so lets collect them first into @cj [ address, index ]
+  # so lets collect them first into @cj as [ address, index ]
   # bcs we process by offsets @cj also already ordered by instruction offsets too
+  # it means that for iteration we can use single index $curr_cj
   my @cj;
   for ( my $i = 0; $i < $lsize; ++$i ) {
     my $ins = $il->[$i]->[0];
@@ -1842,7 +1848,7 @@ sub traverse_lat
     # so it applied to several next instructions - push it in tails for later processing
     $g_bl[5]++;
     push @tails, [ $i, $cl_lim ];
-    # mark tail witn -1
+    # mark instruction in tail witn -1
     $curr->[2] = -1;
   }
   # second pass - try resolve tails
