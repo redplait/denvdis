@@ -203,6 +203,7 @@ static NvCBParamNames s_volta = {
 { 0x110, "is_coop_mode" },
 { 0x114, "kparams_end" }, // ptr 32 bit
 { 0x118, "cb2_ptr" }, // ptr to const bank 2 - suddenly
+{ 0x120, "%current_graph_exec" },
 };
 
 // turing sm75 - like volta but they removed cb2
@@ -266,6 +267,7 @@ static NvCBParamNames s_turing = {
 { 0x10C, "num_sm" },
 { 0x110, "is_coop_mode" },
 { 0x114, "kparams_end" }, // ptr 32 bit
+{ 0x120, "%current_graph_exec" },
 };
 
 // ampere - sm80, sm86 - like turing + some additional fields
@@ -334,6 +336,7 @@ static NvCBParamNames s_ampere = {
 { 0x124, "%reserved_smem_offset_1" },
 // 0x128 is unknown - we could assume this is kparams_start but IT IS'NT
 { 0x12c, "kparams_end" },
+{ 0x130, "%current_graph_exec" },
 };
 
 // ada - sm89 - like ampere but last field kparams_end was removed
@@ -401,6 +404,7 @@ static NvCBParamNames s_ada = {
 { 0x120, "%reserved_smem_offset_end" },
 { 0x124, "%reserved_smem_offset_1" },
 // 0x128 is unknown
+{ 0x130, "%current_graph_exec" },
 };
 
 // hopper - sm90
@@ -457,7 +461,7 @@ static NvCBParamNames s_hopper = {
 { 0x100, "surf_desc_table" },
 { 0x108, "%nsmid" },
 { 0x10C, "num_sm" },
-{ 0x110, "is_coop_mode" },
+{ 0x110, "is_coop_mode" }, // from CGS_get_intrinsic_handle
 { 0x114, "%total_smem_size" },
 { 0x120, "tools_table" }, // 8 32bit dwords
 { 0x13C, "%aggr_smem_size" },
@@ -469,6 +473,7 @@ static NvCBParamNames s_hopper = {
 { 0x160, "%nclusterid.y" },
 { 0x164, "%nclusterid.z" },
 { 0x188, "%cluster_nctarank" },
+{ 0x190, "%current_graph_exec" },
 { 0x198, "kparams_start" }, // ptr 64 bit
 { 0x1A0, "kparams_end" }, // ptr 64 bit
 { 0x208, "policy_default" },
@@ -494,6 +499,9 @@ static NvCBParamNames s_sm100 = {
 { 0x10c, "%envreg31" },
 { 0x140, "%gridid" },
 { 0x16c, "%total_smem_size" },
+{ 0x190, "%current_graph_exec" },
+{ 0x198, "kparams_start" }, // ptr 64 bit
+{ 0x1A0, "kparams_end" }, // ptr 64 bit
 { 0x250, "%envreg0" },
 { 0x254, "%envreg1" },
 { 0x258, "%envreg2" },
@@ -523,12 +531,15 @@ static NvCBParamNames s_sm100 = {
 { 0x2C8, "%nclusterid.z" },
 { 0x2cc, "%cluster_nctarank" },
 { 0x2d0, "%nsmid" },
+{ 0x2d4, "is_coop_mode" }, // from CGS_get_intrinsic_handle
+{ 0x358, "policy_default" },
 { 0x360, "%ntid.x" },
 { 0x364, "%ntid.y" },
 { 0x368, "%ntid.z" },
 { 0x370, "%nctaid.x" },
 { 0x374, "%nctaid,y" },
 { 0x378, "%nctaid.z" },
+{ 0x37c, "stack_ptr" },
 };
 
 const char *NV_renderer::cb0_name(unsigned short idx) const {
