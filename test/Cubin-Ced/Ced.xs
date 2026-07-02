@@ -973,7 +973,7 @@ int Ced_perl::add_cb0(HV *hv, unsigned short base_off, const NvCBParamNames *ns)
   int res = 0;
   for ( auto ei: *ns ) {
     SV *name = newSVpv( ei.second, strlen(ei.second) );
-    hv_store_ent(hv, newSViv(ei.first), name, 0);
+    hv_store_ent(hv, newSVuv(ei.first + base_off), name, 0);
   }
   return res;
 }
