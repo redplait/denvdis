@@ -1119,6 +1119,29 @@ bool NV_renderer::check_lut(const struct nv_instr *ins, const NV_rlist *rend, co
   return false;
 }
 
+static NVP_ops get_rf_op(const std::string_view &what) {
+ if ( what.starts_with("IDEST") ) return IDEST;
+ if ( what.starts_with("ISRC_A") ) return ISRC_A;
+ if ( what.starts_with("ISRC_B") ) return ISRC_B;
+ if ( what.starts_with("ISRC_C") ) return ISRC_C;
+ if ( what.starts_with("ISRC_E") ) return ISRC_E;
+ if ( what.starts_with("ISRC_H") ) return ISRC_H;
+ return ISRC_I;
+}
+
+// check if instruction has ref to RF
+bool NV_renderer::is_rf(const struct nv_instr *ins, std::pair<nv_pred, NVP_ops> &res) const {
+  if ( !ins || !ins->predicated ) return false;
+  res.first = nullptr;
+  for ( auto pi: *ins->predicated ) {
+    if ( !pi.first.ends_with("INDEX_RF_SIZE"sv) ) continue;
+    res.first = pi.second;
+    res.second = get_rf_op(pi.first);
+    return true;
+  }
+  return false;
+}
+
 int reg_reuse::apply(const struct nv_instr *ins, const NV_extracted &kv) {
   mask = mask2 = 0;
   keep = keep2 = 0;
