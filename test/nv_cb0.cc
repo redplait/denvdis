@@ -499,7 +499,6 @@ static NvCBParamNames s_sm100 = {
 { 0x10c, "%envreg31" },
 { 0x140, "%gridid" },
 { 0x16c, "%total_smem_size" },
-{ 0x190, "%current_graph_exec" },
 { 0x198, "kparams_start" }, // ptr 64 bit
 { 0x1A0, "kparams_end" }, // ptr 64 bit
 { 0x250, "%envreg0" },
@@ -512,7 +511,7 @@ static NvCBParamNames s_sm100 = {
 { 0x26c, "%envreg7" },
 { 0x270, "%envreg8" },
 { 0x274, "%envreg9" },
-{ 0x278, "%envreg10" },
+{ 0x278, "%envreg10" }, // %reserved_smem_offset_end
 { 0x27c, "%envreg11" },
 { 0x280, "%envreg12" },
 { 0x284, "%envreg13" },
@@ -532,10 +531,12 @@ static NvCBParamNames s_sm100 = {
 { 0x2cc, "%cluster_nctarank" },
 { 0x2d0, "%nsmid" },
 { 0x2d4, "is_coop_mode" }, // from CGS_get_intrinsic_handle
+{ 0x2e8, "%current_graph_exec" },
 { 0x358, "policy_default" },
 { 0x360, "%ntid.x" },
 { 0x364, "%ntid.y" },
 { 0x368, "%ntid.z" },
+{ 0x36c, "%is_explicit_cluster" },
 { 0x370, "%nctaid.x" },
 { 0x374, "%nctaid,y" },
 { 0x378, "%nctaid.z" },
