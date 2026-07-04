@@ -2682,8 +2682,8 @@ track_waw(SV *obj, SV *rp, HV *hm)
    if ( !r->snap || !e->has_ins() ) RETVAL = -1;
    else {
      WaWTrackCB cb = [&](unsigned char type, unsigned char what, unsigned long dst, unsigned long dst2) {
-       // check if we already have hm[dst]
-       SV *key = newSVuv(dst);
+       // check if we already have hm[dst2]
+       SV *key = newSVuv(dst2);
        if ( hv_exists_ent(hm, key, 0) ) {
          U32 hash_value = 0;
          HE *he = hv_fetch_ent(hm, key, 0, hash_value);
@@ -2695,13 +2695,13 @@ track_waw(SV *obj, SV *rp, HV *hm)
          // check what we have
          if ( !SvROK(val) ) {
            SvREFCNT_dec(key);
-           croak("track_waw: not ref value at key %lX", dst);
+           croak("track_waw: not ref value at key %lX", dst2);
            return;
          }
          auto vtype = SvTYPE(SvRV(val));
          if ( vtype != SVt_PVAV ) {
            SvREFCNT_dec(key);
-           croak("track_waw: bad ref type %d value at key %lX", vtype, dst);
+           croak("track_waw: bad ref type %d value at key %lX", vtype, dst2);
            return;
          }
          AV *array = (AV*)SvRV(val);
