@@ -8,6 +8,12 @@
 #include <queue>
 #include "simple_api.h"
 
+// #define HAS_DUIDS
+
+#ifdef HAS_DUIDS
+#include "duid.h"
+#endif
+
 int decuda::_read() {
   find_intf_tab();
   resolve_flag_sztab();
@@ -389,8 +395,13 @@ void decuda::dump_res() const {
        *(uint32_t *)(oi.uuid), *(unsigned short *)(oi.uuid + 4), *(unsigned short *)(oi.uuid + 6),
        oi.uuid[8], oi.uuid[9], oi.uuid[10], oi.uuid[11], oi.uuid[12], oi.uuid[13], oi.uuid[14], oi.uuid[15]);
       printf(" %lX", oi.addr);
-      if ( oi.size ) printf(" size %X\n", oi.size);
-      else printf("\n");
+      if ( oi.size ) printf(" size %X", oi.size);
+#ifdef HAS_DUIDS
+      auto dname = get_duid(oi.uuid);
+      if ( dname ) printf(" %s\n", dname);
+      else
+#endif
+      printf("\n");
     }
   }
   // flag_sztab
