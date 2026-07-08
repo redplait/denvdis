@@ -185,6 +185,23 @@ sub dump_tracked_lat
   }
 }
 
+# dump waw hash, arg - block
+sub dump_waw_hash
+{
+  my $bl = shift;
+  my $hr = $bl->[12];
+  return unless( defined $hr);
+  return unless( scalar keys %$hr ); # no keys - empty
+  printf(";;; WaWs\n");
+  foreach my $addr ( sort { $a <=> $b } keys %$hr ) {
+    my $ar = $hr->{$addr};
+    printf("; dst %X:\n", $addr);
+    foreach my $rec ( @$ar ) {
+      printf(";   old %X %s\n", $rec->[0], $rec->[2]);
+    }
+  }
+}
+
 # args: block, off, regs from snap
 sub add_ruc
 {
@@ -2335,6 +2352,7 @@ sub gdisasm
         if ( $lsize ) {
           if ( defined $opt_d ) {
             dump_tracked_lat($block);
+            dump_waw_hash($block);
           }
           traverse_lat($block, $lsize);
         }
