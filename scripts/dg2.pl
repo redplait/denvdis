@@ -165,6 +165,26 @@ sub dump_rU
   printf("\n");
 }
 
+# dump tracked latency
+# arg - block
+sub dump_tracked_lat
+{
+  my $bl = shift;
+  my $hr = $bl->[11];
+  return unless( defined $hr);
+  return unless( scalar keys %$hr ); # no keys - empty
+  printf(";;; tracked latency\n");
+  foreach my $addr ( sort { $a <=> $b } keys %$hr ) {
+    my $ar = $hr->{$addr};
+    printf("; dst %X:\n", $addr);
+    foreach my $rec ( @$ar ) {
+      printf(";    src %X v %d %s ", $rec->[0], $rec->[1], $rec->[2]);
+      dump_ftc(\*STDOUT, $rec->[3]) if ( defined $rec->[3] );
+      printf("\n");
+    }
+  }
+}
+
 # args: block, off, regs from snap
 sub add_ruc
 {
@@ -2259,7 +2279,10 @@ sub gdisasm
         my($g, $pr) = $rt->snap();
         if ( defined($g) || defined($pr) ) {
           dump_snap($g, $pr);
-          track2lat($block->[16], $g, $pr) if ( defined $opt_l );
+          if ( defined $opt_l ) {
+            $g_ced->track_lat($rt, $block->[11], defined $opt_d);
+            track2lat($block->[16], $g, $pr);
+          }
         }
         add_ruc($block, $off, $g) if ( defined($g) && defined($opt_u) );
         if ( $in_lm ) {
@@ -2309,7 +2332,12 @@ sub gdisasm
       if ( $in_lm ) {
         $g_ced->track_waw($rt, $block->[12]);
         my $lsize = scalar @{ $block->[18] };
-        traverse_lat($block, $lsize) if ( $lsize );
+        if ( $lsize ) {
+          if ( defined $opt_d ) {
+            dump_tracked_lat($block);
+          }
+          traverse_lat($block, $lsize);
+        }
       } elsif ( defined($opt_P) && defined($block->[15]) && !block_with_exit($block) ) {
         # try to swap
         my $do_swap = 1;
