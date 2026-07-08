@@ -904,7 +904,7 @@ void NV_renderer::dump_trset(const reg_pad::TRSet &rs, const char *pfx, int rc) 
 
 // try to get from reg_pad history where some resource was updated
 template <typename T>
-static std::optional<unsigned long> get_last_upd(const std::vector<T> &hist, unsigned long curr, const RegTabChains **out_rtc) {
+static std::optional<unsigned long> get_prev_upd(const std::vector<T> &hist, unsigned long curr, const RegTabChains **out_rtc) {
   std::optional<unsigned long> res;
   if ( hist.empty() ) return res;
   // skip curr
@@ -925,6 +925,26 @@ static std::optional<unsigned long> get_last_upd(const std::vector<T> &hist, uns
   return res;
 }
 
+// try to get from reg_pad history where some resource was updated before this read at curr
+template <typename T>
+static std::optional<unsigned long> get_last_upd(const std::vector<T> &hist, unsigned long curr, const RegTabChains **out_rtc) {
+  std::optional<unsigned long> res;
+  if ( hist.empty() ) return res;
+  // skip curr
+  auto hit = hist.crbegin();
+  while( hit != hist.crend() ) {
+    if ( curr != hit->off ) break;
+    ++hit;
+  }
+  if ( hit == hist.crend() ) return res;
+  if ( hit->kind & 0x8000 ) {
+    res.emplace(hit->off);
+    if ( out_rtc ) *out_rtc = &hit->tab_chain;
+    return res;
+  }
+  return res;
+}
+
 template <typename T>
 static int find_notify(unsigned char kind, unsigned char what, const std::vector<T> &hist, unsigned long curr, TLTrackCB *cb) {
   const RegTabChains *dst_rt = nullptr;
@@ -941,7 +961,7 @@ static int find_notify(unsigned char kind, unsigned char what, const std::vector
     }
     ++hit;
   }
-  if ( src_rt == nullptr ) return 0; // wtf? can't wait current track for read?
+  if ( src_rt == nullptr ) return 0; // wtf? can't find current track for read?
   auto res = find_tab_cross(*dst_rt, *src_rt);
   if ( !res.has_value() ) return 0;
   // yep, found something
