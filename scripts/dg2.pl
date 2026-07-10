@@ -1685,14 +1685,14 @@ sub fill_rl_interval
     last if ( $curr_i->[0]->[0] >= $ftc->[0] );
     # check what we have
     unless( defined $rl->[$i] ) {
-      $rl->[$i] = [ $val, $ftc->[2] ]; # put on index array [ value, what from ftc ]
+      $rl->[$i] = [ $val, $ftc ]; # put on index array [ value, ftc ]
       ++$res;
       next;
     }
     next if ( !$rl->[$i]->[0] ); # skip zeroes
     next if ( $rl->[$i]->[0] < $val );
     # update
-    $rl->[$i] = [ $val, $ftc->[2] ];
+    $rl->[$i] = [ $val, $ftc ];
     ++$res;
   }
   $res;
@@ -1711,7 +1711,7 @@ sub dump_rl
       printf(";; RL:\n");
       ++$latch;
     }
-    printf("; off %X %d %s\n", $il->[$i]->[0]->[0], $rl->[$i]->[0], $rl->[$i]->[1]);
+    printf("; off %X %d %s to %X\n", $il->[$i]->[0]->[0], $rl->[$i]->[0], $rl->[$i]->[1]->[2], $rl->[$i]->[1]->[0]);
   }
 }
 
