@@ -1668,6 +1668,54 @@ sub fit_minwait
   return $ci->[7]->[0] <= $ci->[11];
 }
 
+# fill rl array for some interval
+# args:
+#  rl ref
+#  start index
+#  value
+#  ftc from track_lat
+#  il from block->[18]
+sub fill_rl_interval
+{
+  my($rl, $start, $val, $ftc, $il) = @_;
+  my $rl_len = scalar @$rl;
+  my $res = 0;
+  for my $i ( $start .. $rl_len - 1 ) {
+    my $curr_i = $il->[$i];
+    last if ( $curr_i->[0]->[0] >= $ftc->[0] );
+    # check what we have
+    unless( defined $rl->[$i] ) {
+      $rl->[$i] = [ $val, $ftc->[2] ]; # put on index array [ value, what from ftc ]
+      ++$res;
+      next;
+    }
+    next if ( !$rl->[$i]->[0] ); # skip zeroes
+    next if ( $rl->[$i]->[0] < $val );
+    # update
+    $rl->[$i] = [ $val, $ftc->[2] ];
+    ++$res;
+  }
+  $res;
+}
+
+# dump rl for debugging
+# args: rl, il from block->[18]
+sub dump_rl
+{
+  my($rl, $il) = @_;
+  my $latch = 0;
+  my $rl_len = scalar @$rl;
+  for my $i ( 0 .. $rl_len - 1 ) {
+    next unless( defined $rl->[$i] );
+    unless($latch) {
+      printf(";; RL:\n");
+      ++$latch;
+    }
+    printf("; off %X %d %s\n", $il->[$i]->[0]->[0], $rl->[$i]->[0], $rl->[$i]->[1]);
+  }
+}
+
+# args: block, size of instructions array in block->[18]
 sub traverse_lat
 {
   my($bl, $lsize) = @_;
@@ -1675,12 +1723,39 @@ sub traverse_lat
   # update stat
   $g_bl[0] += $lsize;
   $g_bl[1] += $ld->[0];
+  my $il = $bl->[18]; # pairs of [ instr, lat ]
+  # lets build array of redundant stall counts
+  # undef means no value yet, else [ latency diff (0 - can't reduce latency), what for debugging ]
+  my @rl = ( undef ) x $lsize;
+  my $lrt = $bl->[11];
+  for my $i ( 0 .. $lsize - 1 ) {
+    my $caddr = $il->[$i]->[0]->[0];
+    next unless( exists $lrt->{$caddr} );
+    # array from track_latency - in't inherently already sorted by jounts addresses
+    my $lar = $lrt->{$caddr};
+    my $lar_size = scalar(@$lar);
+    my $lar_idx = 0;
+    my $start_lat = $il->[$i]->[1]->[0];
+    my $must_be = $lar->[$lar_idx]->[1];
+    for my $j ( $i + 1 .. $lsize - 1 ) {
+      next unless( $lar->[$lar_idx]->[0] == $il->[$j]->[0]->[0] );
+# printf("%X start %d must_be %d fact %d off %X\n", $caddr, $start_lat, $must_be, $il->[$j]->[1]->[0], $lar->[$lar_idx]->[0]);
+      if ( $start_lat + $must_be >= $il->[$j]->[1]->[0] ) {
+        fill_rl_interval(\@rl, $i, 0, $lar->[$lar_idx], $il);
+      } else {
+        fill_rl_interval(\@rl, $i, $il->[$j]->[1]->[0] - ($start_lat + $must_be), $lar->[$lar_idx], $il);
+      }
+      last if ( ++$lar_idx >= $lar_size );
+      $start_lat = $il->[$j]->[1]->[0];
+      $must_be = $lar->[$lar_idx]->[1];
+    }
+  }
+  dump_rl(\@rl, $il) if defined($opt_d);
   # check if this block had bad latency
   if ( $ld->[2] ) {
     $g_bl[2]++;
     return 0;
   }
-  my $il = $bl->[18]; # pairs of [ instr, lat ]
   # call/ret/indirect branches are joints
   # - for themself
   # - for all preceeding instructions
