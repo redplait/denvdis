@@ -1732,21 +1732,42 @@ sub traverse_lat
   $g_bl[0] += $lsize;
   $g_bl[1] += $ld->[0];
   my $il = $bl->[18]; # pairs of [ instr, lat ]
+  # call/ret/indirect branches are joints
+  # - for themself
+  # - for all preceeding instructions
+  # so lets collect them first into @cj as [ address, index ]
+  # bcs we process by offsets @cj also already ordered by instruction offsets too
+  # it means that for iteration we can use single index $cj_idx
+  my @cj;
+  for my $i ( 0 .. $lsize - 1 ) {
+    my $ins = $il->[$i]->[0];
+    if ( $ins->[5] ) {
+printf("cj %X %d\n", $ins->[0], $ins->[5]) if ( defined $opt_d );
+      push @cj, [ $ins->[0], $i ];
+    }
+  }
+  # data for cj tracking
+  my $cj_size = scalar @cj;
+  my $cj_idx = 0;
   # lets build array of redundant stall counts
   # undef means no value yet, else [ latency diff (0 - can't reduce latency), what for debugging ]
   my @rl = ( undef ) x $lsize;
   my $lrt = $bl->[11];
   for my $i ( 0 .. $lsize - 1 ) {
     my $caddr = $il->[$i]->[0]->[0];
+    ++$cj_idx if ( $cj_size && $cj_idx < $cj_size && $caddr == $cj[$cj_idx]->[0] );
     next unless( exists $lrt->{$caddr} );
-    # array from track_latency - in't inherently already sorted by jounts addresses
+    # array from track_latency - is inherently already sorted by joints addresses
     my $lar = $lrt->{$caddr};
     my $lar_size = scalar(@$lar);
     my $lar_idx = 0;
     my $start_lat = $il->[$i]->[1]->[0];
     my $must_be = $lar->[$lar_idx]->[1];
     for my $j ( $i + 1 .. $lsize - 1 ) {
-      next unless( $lar->[$lar_idx]->[0] == $il->[$j]->[0]->[0] );
+      my $in_cj = 0;
+      $in_cj = ($il->[$j]->[0]->[0] == $cj[$cj_idx]->[0] ) if ( $cj_size && $cj_idx < $cj_size );
+printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined($opt_d) );
+      next if (!$in_cj && $lar->[$lar_idx]->[0] != $il->[$j]->[0]->[0] );
 # printf("%X start %d must_be %d fact %d off %X\n", $caddr, $start_lat, $must_be, $il->[$j]->[1]->[0], $lar->[$lar_idx]->[0]);
       if ( $start_lat + $must_be >= $il->[$j]->[1]->[0] ) {
         fill_rl_interval(\@rl, $i, 0, $lar->[$lar_idx], $il);
@@ -1764,22 +1785,7 @@ sub traverse_lat
     $g_bl[2]++;
     return 0;
   }
-  # call/ret/indirect branches are joints
-  # - for themself
-  # - for all preceeding instructions
-  # so lets collect them first into @cj as [ address, index ]
-  # bcs we process by offsets @cj also already ordered by instruction offsets too
-  # it means that for iteration we can use single index $curr_cj
-  my @cj;
-  for ( my $i = 0; $i < $lsize; ++$i ) {
-    my $ins = $il->[$i]->[0];
-    if ( defined $ins->[5] ) {
-      push @cj, [ $ins->[0], $i ];
-    }
-  }
-  # make closure to get brt joint
-  my $cj_size = scalar @cj;
-  my $get_cj;
+  my $get_cj = sub { return undef; };
   if ( $cj_size ) {
     my $curr_cj = 0; # current index in @cj
     $get_cj = sub {
@@ -1789,8 +1795,6 @@ sub traverse_lat
       $curr_cj++ if ( $off == $cj[$curr_cj]->[0] );
       $res;
     };
-  } else { # @cj is empty
-    $get_cj = sub { return undef; };
   }
   my @tails;
   # first pass - apply latency

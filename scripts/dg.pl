@@ -1778,7 +1778,7 @@ sub traverse_lat
   my @cj;
   for ( my $i = 0; $i < $lsize; ++$i ) {
     my $ins = $il->[$i]->[0];
-    if ( defined $ins->[5] ) {
+    if ( $ins->[5] ) {
       push @cj, [ $ins->[0], $i ];
     }
   }
