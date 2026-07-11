@@ -882,17 +882,25 @@ sub store_s_idx($$$)
   1;
 }
 
+# works only with -l option
+# arg - item from block->[18]
+sub lat_stall
+{
+  my $il = shift;
+  $il->[1]->[3];
+}
+
 # args: block, current stall, current latency, is_dual
 sub store_lat($$$$)
 {
   my($block, $stall, $lat, $is_d) = @_;
   my $ld = $block->[16]; # latency data
   # $ld->[0] += $stall unless($is_d);
-  if ( defined($lat) && defined($opt_l) ) {
-    my @curl = ( $ld->[0], $lat, $ld->[3] );
+  if ( defined($opt_l) ) {
+    my @curl = ( $ld->[0], $lat, $ld->[3], $stall );
     $ld->[4] = \@curl; # store current pair
     # store in ld->[5], key is instruction offset in ld->[3]
-    $ld->[5]->{ $ld->[3] } = \@curl;
+    $ld->[5]->{ $ld->[3] } = \@curl if defined($lat);
   }
   # dump
   printf("; %d ", $ld->[0]);
@@ -1594,19 +1602,19 @@ sub has_enough_lat
   my $i1_eob = 0;
   my $i2_eob = 0;
   # find limit for i1
-  if ( defined $il1->[3] ) {
-    $i1_lim = $il1->[3]->[0]->[0];
-  } elsif ( defined $il1->[4] ) {
+  if ( defined $il1->[4] ) {
     $i1_lim = $il1->[4]->[0]->[0];
+  } elsif ( defined $il1->[5] ) {
+    $i1_lim = $il1->[5]->[0]->[0];
   } else {
     $i1_lim = $ld->[0];
     $i1_eob = 1;
   }
   # find limit for i2
-  if ( defined $il2->[3] ) {
-    $i2_lim = $il2->[3]->[0]->[0];
-  } elsif ( defined $il2->[4] ) {
+  if ( defined $il2->[4] ) {
     $i2_lim = $il2->[4]->[0]->[0];
+  } elsif ( defined $il2->[5] ) {
+    $i2_lim = $il2->[5]->[0]->[0];
   } else {
     $i2_lim = $ld->[0];
     $i2_eob = 1;
@@ -1803,12 +1811,12 @@ sub traverse_lat
     next if ( defined($il->[$i]->[15]) && 3 == $il->[$i]->[15] );
     # find limit for current latency
     my $cl_lim; # defalt EoB
-    if ( defined $cl->[3] ) {
-      $cl_lim = $cl->[3]->[0]->[0];
+    if ( defined $cl->[4] ) {
+      $cl_lim = $cl->[4]->[0]->[0];
       # check if brt joint is lesser current joint
       $cl_lim = $cj_lim if ( defined($cj_lim) && $cj_lim < $cl_lim );
-    } elsif ( defined $cl->[4] ) {
-      $cl_lim = $cl->[4]->[0]->[0];
+    } elsif ( defined $cl->[5] ) {
+      $cl_lim = $cl->[5]->[0]->[0];
       # check if brt joint is lesser current joint
       $cl_lim = $cj_lim if ( defined($cj_lim) && $cj_lim < $cl_lim );
     } elsif ( defined $cj_lim ) {
@@ -1988,7 +1996,7 @@ sub track2lat
         my $pl = $ld->[6]->{$r};
         # bcs we processing instruction in ascending order of their addresses
         # we should mark instruction only if it not marked yet
-        $pl->[3] = [ $ld->[4], $r ] if ( !defined($pl->[3]) && !defined($pl->[4]) );
+        $pl->[4] = [ $ld->[4], $r ] if ( !defined($pl->[4]) && !defined($pl->[5]) );
       }
     }
     # 2) update writes to current instruction in ld->[4]
@@ -2007,7 +2015,7 @@ sub track2lat
         my $pl = $ld->[7]->{$r};
         # bcs we processing instruction in ascending order of their addresses
         # we should mark instruction only if it not marked yet
-        $pl->[4] = [ $ld->[4], $r ] if ( !defined($pl->[3]) && !defined($pl->[4]) );
+        $pl->[5] = [ $ld->[4], $r ] if ( !defined($pl->[4]) && !defined($pl->[5]) );
       }
     }
     # 4) update predicates updating to current instruction in ld->[4]
@@ -2023,10 +2031,10 @@ sub track2lat
 sub dump_who
 {
   my $who = shift;
-  if ( defined $who->[3] ) {
-    printf(" by reg at %X", $who->[3]->[0]->[2]);
-  } elsif ( defined $who->[4] ) {
-    printf(" by pred at %X", $who->[4]->[0]->[2]);
+  if ( defined $who->[4] ) {
+    printf(" by reg at %X", $who->[4]->[0]->[2]);
+  } elsif ( defined $who->[5] ) {
+    printf(" by pred at %X", $who->[5]->[0]->[2]);
   }
   printf("\n");
 }
@@ -2039,14 +2047,24 @@ sub dump_t2l
   if ( defined($ld->[6]) && keys %{$ld->[6]} ) {
     printf("; t2l registers:\n");
     while( my($r, $who) = each(%{$ld->[6]}) ) {
-      printf(";  %sR%d: at %X lat %d", $r & 0x8000 ? 'U' : '', $r & 0xff, $who->[2], $who->[1]);
+      next unless defined($who);
+      if ( defined $who->[1] ) {
+        printf(";  %sR%d: at %X lat %d", $r & 0x8000 ? 'U' : '', $r & 0xff, $who->[2], $who->[1]);
+      } else {
+        printf(";  %sR%d: at %X UNK lat", $r & 0x8000 ? 'U' : '', $r & 0xff, $who->[2]);
+      }
       dump_who($who);
     }
   }
   if ( defined($ld->[7]) && keys %{$ld->[7]} ) {
     printf("; t2l predicates:\n");
     while( my($r, $who) = each(%{$ld->[7]}) ) {
-      printf(";  %sP%d at %X lat %d", $r & 0x8000 ? 'U' : '', $r & 0x7, $who->[2], $who->[1]);
+      next unless defined($who);
+      if ( defined $who->[1] ) {
+        printf(";  %sP%d at %X lat %d", $r & 0x8000 ? 'U' : '', $r & 0x7, $who->[2], $who->[1]);
+      } else {
+        printf(";  %sP%d at %X UNK lat", $r & 0x8000 ? 'U' : '', $r & 0x7, $who->[2]);
+      }
       dump_who($who);
     }
   }
@@ -2768,7 +2786,8 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
-  [16] - latency data [ current stall count, current latency, had bad, instr off ]
+  [16] - latency data state [ current stall count, current latency, had bad, instr off ]
+    with -l 4th item is latency_data [ current stall, latency from ins_lat, instr_off, ins_stall ]
   [17] - if this block contains unconditional EXIT
   [18] - array of [ instr_prop, latency_data, ...]
 =cut
