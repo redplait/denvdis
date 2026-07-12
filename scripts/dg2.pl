@@ -82,7 +82,7 @@ my $gsp_patched = 0;
 my $gsp_bad = 0;
 my $gsp_bad_attrs = 0;
 # lmode stat
-# indexes: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3], [5] - with tail
+# indexes: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3], [5] - with range
 # with -P [6] - count of patched, [7] - sum of decreased stalls
 my @g_bl = ( 0, 0, 0, 0, 0, 0, 0, 0 );
 # config data
@@ -98,7 +98,7 @@ sub in_lmode { defined($opt_l) && !defined($opt_s); }
 sub dump_lmode_stat
 {
   printf("%d blocks with bad latency\n", $g_bl[2]) if ( $g_bl[2] );
-  printf("total %d instrs, %d with tail, %d stalls\n", $g_bl[0], $g_bl[5], $g_bl[1]);
+  printf("total %d instrs, %d with range, %d stalls\n", $g_bl[0], $g_bl[5], $g_bl[1]);
   printf("%d stalls gain: %f\n", $g_bl[3], 1.0 * $g_bl[3] / $g_bl[1]);
   printf("%d instrs with gain: %f\n", $g_bl[4], 1.0 * $g_bl[4] / $g_bl[0]);
   printf("%d patched, %f\n", $g_bl[6], 1.0 * $g_bl[6] / $g_bl[4]) if ( $g_bl[6] && $g_bl[4]);
@@ -1786,7 +1786,8 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     $bl->[12]->{$cji->[0]} = 'CJ';
   }
   undef @cj;
-  # traverse rl
+  # traverse rl and collect instructions to patch stall in @patch_list [ $idx, $stall_diff ]
+  my @patch_list;
   # visited - key is rl item, value [ rl_item, lat_limit ]
   my(%visited, $rl_item, $lat_lim);
   for my $i ( 0 .. $lsize - 1 ) {
@@ -1814,6 +1815,9 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
         $visited{ $rl_item } = [ $rl_item, $rl_item->[0] ];
       }
     }
+    next unless($lat_lim);
+    # update count of instrs with range
+    $g_bl[5]++;
     # check instruction in WaW/CJ
     next if ( exists $bl->[12]->{$caddr} );
     # skip brt
@@ -1833,9 +1837,30 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     next if ( defined($il->[$i]->[15]) && 3 == $il->[$i]->[15] );
     # apply config
     next unless( $gcdf->($il->[$i]->[0]) );
-    # ok, can patch
-    $g_bl[5]++;
-    printf("; can dec %d at %X %s\n", lat_stall($il->[$i]), $il->[$i]->[0]->[0], $il->[$i]->[0]->[2]) if defined($opt_d);
+    # ok, probably can patch - check limits
+    my $curr_dec;
+    if ( defined $il->[$i]->[0]->[11] ) {
+      $curr_dec = $st - $il->[$i]->[0]->[11];
+    } else {
+      $curr_dec = $st - 2;
+    }
+    next if ( $curr_dec < 0 );
+    $curr_dec = limit_stall($curr_dec, $st);
+    next unless($curr_dec);
+    $curr_dec = $lat_lim if ( $curr_dec > $lat_lim );
+    $g_bl[3] += $curr_dec;
+    $g_bl[4]++;
+    $lat_lim -= $curr_dec;
+    $visited{ $rl_item }->[1] -= $curr_dec;
+    printf("; can dec %d-%d at %X lat_lim %d %s\n", lat_stall($il->[$i]), $curr_dec, $il->[$i]->[0]->[0], $lat_lim, $il->[$i]->[0]->[2]) if defined($opt_d);
+    push @patch_list, [ $il->[$i], $curr_dec ] if ( defined $opt_P );
+  }
+  # check if this block had bad latency
+  $g_bl[2]++ if ( $ld->[2] );
+  if ( defined $opt_P ) { # patch if we need to
+    foreach my $pair ( @patch_list ) {
+      dec_stall($pair->[0], $pair->[1]);
+    }
   }
 }
 

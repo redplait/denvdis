@@ -2794,7 +2794,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
       my(%lm, %ru, %pu);
       push @la, undef;# 4 - current pair
       push @la, \%lm; # 5 - map instruction offset -> [ rolling stall, latency, regs usage offset, predicates usage offset ]
-      push @la, \%ru; # 6 - map fpr regs usage
+      push @la, \%ru; # 6 - map for regs usage
       push @la, \%pu; # 7 - map for predicates usage
     }
     $res[16] = \@la;
