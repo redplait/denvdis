@@ -1923,7 +1923,7 @@ printf("rest %d old_rest %d\n", $rest, $old_rest) if defined($opt_d);
        # update stat
       $g_bl[3] += $ci->[2];
       $g_bl[4]++;
-      dec_stall($ci, $ci->[2]);
+      dec_stall($ci, $ci->[2]) if defined($opt_P);
       next;
     }
     next if ( $ci->[2]->[0] > $ci->[0]->[7]->[0] );
