@@ -1780,160 +1780,62 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     }
   }
   dump_rl(\@rl, $il) if defined($opt_d);
-  # check if this block had bad latency
-  if ( $ld->[2] ) {
-    $g_bl[2]++;
-    return 0;
+  # move cj to $block->[12] into WaW hash
+  foreach my $cji ( @cj ) {
+    next if exists $bl->[12]->{$cji->[0]};
+    $bl->[12]->{$cji->[0]} = 'CJ';
   }
-  my $get_cj = sub { return undef; };
-  if ( $cj_size ) {
-    my $curr_cj = 0; # current index in @cj
-    $get_cj = sub {
-      my $off = shift;
-      return if ( $curr_cj >= $cj_size );
-      my $res = $cj[$curr_cj]->[0];
-      $curr_cj++ if ( $off == $cj[$curr_cj]->[0] );
-      $res;
-    };
-  }
-  my @tails;
-  # first pass - apply latency
-  for ( my $i = 0; $i < $lsize; ++$i ) {
-    my $curr = $il->[$i];
-    my $cl = $curr->[1];
-    my $cj_lim = $get_cj->($curr->[0]->[0]);
+  undef @cj;
+  # traverse rl
+  # visited - key is rl item, value [ rl_item, lat_limit ]
+  my(%visited, $rl_item, $lat_lim);
+  for my $i ( 0 .. $lsize - 1 ) {
+     # skip empty
+    if ( !defined($rl[$i]) || !$rl[$i]->[0] ) {
+       $rl_item = undef;
+       next;
+    }
+    my $caddr = $il->[$i]->[0]->[0];
+    # check if this is the same range
+    if ( !defined $rl_item ) {
+      $rl_item = $rl[$i];
+      if ( exists $visited{ $rl_item } ) {
+        $lat_lim = $visited{ $rl_item }->[1];
+      } else {
+        $lat_lim = $rl_item->[0];
+        $visited{ $rl_item } = [ $rl_item, $rl_item->[0] ];
+      }
+    } elsif ( $rl_item != $rl[$i] ) { # new range
+      $rl_item = $rl[$i];
+      if ( exists $visited{ $rl_item } ) {
+        $lat_lim = $visited{ $rl_item }->[1];
+      } else {
+        $lat_lim = $rl_item->[0];
+        $visited{ $rl_item } = [ $rl_item, $rl_item->[0] ];
+      }
+    }
+    # check instruction in WaW/CJ
+    next if ( exists $bl->[12]->{$caddr} );
+    # skip brt
+    next if ( $il->[$i]->[5] );
     # check if this instruction has wait index - then latency is unpredictable
     next if ( defined $il->[$i]->[0]->[17] );
     # check dual
     next if ( $il->[$i]->[0]->[8] );
+    my $st = lat_stall($il->[$i]);
+    next if ( $st <= 2 );
     # min wait
     if ( defined $opt_m ) {
       next if defined($il->[$i]->[0]->[11]);
+      next if ( $st <= $il->[$i]->[0]->[11] );
     }
-    next if denied_swap($il->[$i]->[0]);
     # check if scbd is SINK
     next if ( defined($il->[$i]->[15]) && 3 == $il->[$i]->[15] );
-    # find limit for current latency
-    my $cl_lim; # defalt EoB
-    if ( defined $cl->[4] ) {
-      $cl_lim = $cl->[4]->[0]->[0];
-      # check if brt joint is lesser current joint
-      $cl_lim = $cj_lim if ( defined($cj_lim) && $cj_lim < $cl_lim );
-    } elsif ( defined $cl->[5] ) {
-      $cl_lim = $cl->[5]->[0]->[0];
-      # check if brt joint is lesser current joint
-      $cl_lim = $cj_lim if ( defined($cj_lim) && $cj_lim < $cl_lim );
-    } elsif ( defined $cj_lim ) {
-      $cl_lim = $cj_lim;
-    }
-    my $stall = $curr->[0]->[7]->[0];
-    # check if stall eq latency
-    if ( $stall == $cl->[1] ) {
-      $curr->[2] = 0 unless defined($curr->[2]);
-      next;
-    }
-    # if stall is > latency
-    if ( $stall > $cl->[1] ) {
-      next if fit_minwait($curr->[0]);
-      $curr->[2] = $stall - $cl->[1];
-      next;
-    }
-    next unless defined($cl_lim); # skip EoB
-    if ( $cl->[0] + $cl->[1] >= $cl_lim ) { # too tight - mark current instruction with zero
-      $curr->[2] = 0;
-      next;
-    }
-    # we have latency of current instruction > it's stall count
-    # so it applied to several next instructions - push it in tails for later processing
+    # apply config
+    next unless( $gcdf->($il->[$i]->[0]) );
+    # ok, can patch
     $g_bl[5]++;
-    push @tails, [ $i, $cl_lim ];
-    # mark instruction in tail witn -1
-    $curr->[2] = -1;
-  }
-  # second pass - try resolve tails
-  foreach my $t ( reverse @tails ) {
-    my $cl = $il->[$t->[0]];
-    my $rest = $cl->[1]->[1] - $cl->[0]->[7]->[0]; # latency - current stall
-    my $old_rest = $rest;
-printf("tail %X %s rest %d\n", $cl->[0]->[0], $cl->[0]->[2], $rest) if defined($opt_d);
-    for ( my $j = $t->[0] + 1; $rest > 0 && $j < $lsize; ++$j ) {
-      # check limit
-      my $nl = $il->[$j];
-      last if ( $t->[1] <= $nl->[1]->[0] );
-      # skip first in dual pair
-      next if ( defined($nl->[0]->[8]) && 1 == $nl->[0]->[8] );
-      # what we have
-      if ( !defined($nl->[2]) ) { $rest -= $nl->[0]->[7]->[0]; next; }
-      if ( 'ARRAY' ne ref $nl->[2] ) {
-        if ( !$nl->[2] ) { $rest -= $nl->[0]->[7]->[0]; next; }
-        # we already have decreased stall count, check if we can fit with new value
-        if ( $rest <= $nl->[2] ) { $rest -= $nl->[2]; last; }
-        # try with old stall count
-        if ( $rest <= $nl->[0]->[7]->[0] ) {
-          $nl->[2] = 0;
-          $rest -= $nl->[0]->[7]->[0];
-          last;
-        }
-        # this instruction has changed stall count in first pass but rest is bigger
-        # we could try 2 variants - leave it patched or with original value
-        # but this lead to O( 2 ^ n) where n is number of patched instructions in tail, so just
-        last;
-      } else { # this instruction has tail and was patched in this pass - remember that we process tails in reverse order
-        # check if we can fit with new value
-        if ( $rest <= $nl->[2]->[0] ) { $rest -= $nl->[2]->[0]; last; }
-        # try with old
-        if ( $rest <= $nl->[0]->[7]->[0] ) {
-          $nl->[2] = 0;
-          $rest -= $nl->[0]->[7]->[0];
-          last;
-        }
-        # again rest is too big so to avoid O( 2 ^ n)
-        last;
-      }
-    }
-    # check rest
-    if ( !$rest ) {
-      $cl->[2] = 0;
-      next;
-    }
-    if ( $rest < 0 ) {
-      $cl->[2] = [ -$rest, $t ];
-      next;
-    }
-printf("rest %d old_rest %d\n", $rest, $old_rest) if defined($opt_d);
-    # ops, we unable to decrease stalls for this tail - return everything to vanilla state
-    for ( my $i = $t->[0]; $old_rest > 0 && $i < $lsize; ++$i ) {
-      my $nl = $il->[$i];
-      undef $nl->[2];
-      $old_rest -= $nl->[0]->[7]->[0];
-    }
-  }
-  # final pass - check remained
-  for ( my $i = 0; $i < $lsize; ++$i ) {
-    my $ci = $il->[$i];
-    # apply filter
-    next unless $gcdf->($ci->[0]->[0]);
-    if ( defined $opt_d ) {
-      printf(";TLR %X ", $ci->[0]->[0]); dump_cl2($ci->[2]);
-    }
-    next unless defined($ci->[2]);
-    if ( 'ARRAY' ne ref $ci->[2] ) {
-      next if ($ci->[2] <= 0);
-       # update stat
-      $g_bl[3] += $ci->[2];
-      $g_bl[4]++;
-      dec_stall($ci, $ci->[2]);
-      next;
-    }
-    next if ( $ci->[2]->[0] > $ci->[0]->[7]->[0] );
-    next if fit_minwait($ci->[0]);
-    printf("; TL %X %s: diff %d\n", $ci->[0]->[0], $ci->[0]->[2], $ci->[2]->[0]);
-    # update stat
-    $g_bl[3] += $ci->[2]->[0];
-    $g_bl[4]++;
-    next unless defined($opt_P);
-    # patch usched_info
-    dec_stall($ci, $ci->[2]->[0]);
+    printf("; can dec %d at %X %s\n", lat_stall($il->[$i]), $il->[$i]->[0]->[0], $il->[$i]->[0]->[2]) if defined($opt_d);
   }
 }
 
