@@ -86,7 +86,9 @@ struct reg_history {
   inline int windex() const {
     return (kind >> 4) & 7;
   }
-  RegTabChains tab_chain;
+  // 0 - TRUE for RaW, row - write, col - read
+  // 1 - ANTI for WaR, col - write, row - read
+  RegTabChains tab_chain[2];
 };
 
 struct typed_reg_history: public reg_history {
@@ -199,12 +201,12 @@ struct reg_pad {
         if ( last.off == off && last.kind == k ) return nullptr;
       }
       ri->second.push_back( { off, k } );
-      return &ri->second.back().tab_chain;
+      return ri->second.back().tab_chain;
     } else {
      std::vector<reg_history> tmp;
      tmp.push_back( { off, k } );
      auto et = rs.emplace(idx, std::move(tmp) );
-     return &et.first->second.back().tab_chain;
+     return et.first->second.back().tab_chain;
     }
   }
   RegTabChains* rgsb(int v, unsigned long off) {
@@ -216,7 +218,7 @@ struct reg_pad {
     }
     auto &gsb = v ? gsb7 : gsb0;
     gsb.push_back( { off, pred_mask } );
-    return &gsb.back().tab_chain;
+    return gsb.back().tab_chain;
   }
   RegTabChains* wgsb(int v, unsigned long off) {
     if ( snap ) {
@@ -228,18 +230,18 @@ struct reg_pad {
     auto &gsb = v ? gsb7 : gsb0;
     reg_history::RH kind = 0x8000 | pred_mask;
     gsb.push_back( { off, kind } );
-    return &gsb.back().tab_chain;
+    return gsb.back().tab_chain;
   }
   RegTabChains* rcc(unsigned long off) {
     if ( snap ) snap->cc.emplace(1);
     cc.push_back( { off, pred_mask } );
-    return &cc.back().tab_chain;
+    return cc.back().tab_chain;
   }
   RegTabChains* wcc(unsigned long off) {
     if ( snap ) snap->cc.emplace(2);
     reg_history::RH kind = 0x8000 | pred_mask;
     cc.push_back( { off, kind } );
-    return &cc.back().tab_chain;
+    return cc.back().tab_chain;
   }
   RegTabChains* _add(TRSet &rs, int idx, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
     k |= pred_mask;
@@ -250,12 +252,12 @@ struct reg_pad {
         if ( last.off == off && last.kind == k ) return nullptr;
       }
       ri->second.push_back( { off, k, {}, t } );
-      return &ri->second.back().tab_chain;
+      return ri->second.back().tab_chain;
     } else {
      std::vector<typed_reg_history> tmp;
      tmp.push_back( { off, k, {}, t } );
      auto et = rs.emplace(idx, std::move(tmp) );
-     return &et.first->second.back().tab_chain;
+     return et.first->second.back().tab_chain;
     }
   }
   RegTabChains* rgpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {

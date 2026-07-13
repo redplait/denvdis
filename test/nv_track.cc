@@ -153,6 +153,7 @@ static const std::string_view s_tkey_gpr("GPR"), s_tkey_ugpr("UGPR"),
  s_tkey_pred("PRED"), s_tkey_upred("UPRED"),
  s_cc_prop("DOES_READ_CC"), // pred name for cc reading
  s_true_tab("TRUE"),
+ s_anti_tab("ANTI"),
  s_ggs("GMMA_GROUP_SCOREBOARD"); // GMMA_GROUP_SCOREBOARD for sm90
 
 std::optional<found_tab_cross> find_tab_cross(const RegTabChains &rows, const RegTabChains &cols) {
@@ -172,24 +173,43 @@ std::optional<found_tab_cross> find_tab_cross(const RegTabChains &rows, const Re
   return res;
 }
 
-// for write is_col = 0
+// for write is_col = 0 and hence row
+// but for ANTI table it must be col
 static int fill_tab_chains(const NV_renderer::NV_pair &p, const std::string_view &key, RegTabChains *tlist, int is_col) {
   if ( !tlist ) return 0;
   auto what = is_col ? p.first->cols : p.first->rows;
-  if ( !what ) return 0;
   int res = 0;
-  for ( auto &wi: *what ) {
-    // filter out if presents
-    if ( wi.filter && !wi.filter(p.first, p.second) ) continue;
-    // filter by connection
-    if ( key != wi.tab->connection ) continue;
-    tlist->push_back( { wi.tab, wi.idx } );
-    res++;
+  if ( what ) // fill output into tlist[0]
+  {
+    for ( auto &wi: *what ) {
+      // filter out ANTI table
+      if ( s_anti_tab == wi.tab->name ) continue;
+      // filter out if presents
+      if ( wi.filter && !wi.filter(p.first, p.second) ) continue;
+      // filter by connection
+      if ( key != wi.tab->connection ) continue;
+      tlist->push_back( { wi.tab, wi.idx } );
+      res++;
+    }
+  }
+  what = is_col ? p.first->rows : p.first->cols;
+  if ( what ) {
+    for ( auto &wi: *what ) {
+      // filter not ANTI table
+      if ( s_anti_tab != wi.tab->name ) continue;
+      // filter out if presents
+      if ( wi.filter && !wi.filter(p.first, p.second) ) continue;
+      // filter by connection
+      if ( key != wi.tab->connection ) continue;
+      tlist[1].push_back( { wi.tab, wi.idx } );
+      res++;
+    }
   }
   return res;
 }
 
 // for CC we need check prefix
+// seems that ANTI for CC is always ORDERED_ZERO
 static int fill_tab_chain_CC(const NV_renderer::NV_pair &p, RegTabChains *tlist, int is_col, int64_t cval = 0) {
   if ( !tlist ) return 0;
   auto what = is_col ? p.first->cols : p.first->rows;
@@ -822,7 +842,7 @@ void NV_renderer::dump_rt(reg_pad *rtdb, int rc) const {
       else
        fprintf(m_out, " ;   %lX %X", c.off, c.kind & mask);
     }
-    if ( rc ) dump_rchains(c.tab_chain, !(c.kind & 0x8000));
+    if ( rc ) dump_rchains(c.tab_chain[0], !(c.kind & 0x8000));
     fputc('\n', m_out);
   };
   if ( !rtdb->cc.empty() ) {
@@ -866,7 +886,7 @@ void NV_renderer::dump_rset(const reg_pad::RSet &rs, const char *pfx, int rc) co
         else
           fprintf(m_out, " ;   %lX %X", tr.off, tr.kind & mask);
       }
-      if ( rc ) dump_rchains(tr.tab_chain, !(tr.kind & 0x8000));
+      if ( rc ) dump_rchains(tr.tab_chain[0], !(tr.kind & 0x8000));
       fputc('\n', m_out);
     }
   }
@@ -896,7 +916,7 @@ void NV_renderer::dump_trset(const reg_pad::TRSet &rs, const char *pfx, int rc) 
       }
       if ( tr.is_reuse() ) fprintf(m_out, " reuse");
       if ( tname ) fprintf(m_out, " %s", tname);
-      if ( rc ) dump_rchains(tr.tab_chain, !(tr.kind & 0x8000));
+      if ( rc ) dump_rchains(tr.tab_chain[0], !(tr.kind & 0x8000));
       fputc('\n', m_out);
     }
   }
@@ -917,7 +937,7 @@ static std::optional<unsigned long> get_prev_upd(const std::vector<T> &hist, uns
   while( hit != hist.crend() ) {
     if ( hit->kind & 0x8000 ) {
       res.emplace(hit->off);
-      if ( out_rtc ) *out_rtc = &hit->tab_chain;
+      if ( out_rtc ) *out_rtc = hit->tab_chain;
       break;
     }
     ++hit;
@@ -939,7 +959,7 @@ static std::optional<unsigned long> get_last_upd(const std::vector<T> &hist, uns
   if ( hit == hist.crend() ) return res;
   if ( hit->kind & 0x8000 ) {
     res.emplace(hit->off);
-    if ( out_rtc ) *out_rtc = &hit->tab_chain;
+    if ( out_rtc ) *out_rtc = hit->tab_chain;
     return res;
   }
   return res;
@@ -956,7 +976,7 @@ static int find_notify(unsigned char kind, unsigned char what, const std::vector
   while( hit != hist.crend() ) {
     if ( hit->off != curr ) break;
     if ( !(hit->kind & 0x8000) ) {
-      src_rt = &hit->tab_chain;
+      src_rt = hit->tab_chain;
       break;
     }
     ++hit;
