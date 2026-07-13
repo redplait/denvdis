@@ -886,7 +886,10 @@ void NV_renderer::dump_rset(const reg_pad::RSet &rs, const char *pfx, int rc) co
         else
           fprintf(m_out, " ;   %lX %X", tr.off, tr.kind & mask);
       }
-      if ( rc ) dump_rchains(tr.tab_chain[0], !(tr.kind & 0x8000));
+      if ( rc ) {
+        dump_rchains(tr.tab_chain[0], !(tr.kind & 0x8000));
+        dump_rchains(tr.tab_chain[1], (tr.kind & 0x8000));
+      }
       fputc('\n', m_out);
     }
   }
@@ -916,7 +919,10 @@ void NV_renderer::dump_trset(const reg_pad::TRSet &rs, const char *pfx, int rc) 
       }
       if ( tr.is_reuse() ) fprintf(m_out, " reuse");
       if ( tname ) fprintf(m_out, " %s", tname);
-      if ( rc ) dump_rchains(tr.tab_chain[0], !(tr.kind & 0x8000));
+      if ( rc ) {
+        dump_rchains(tr.tab_chain[0], !(tr.kind & 0x8000));
+        dump_rchains(tr.tab_chain[1], (tr.kind & 0x8000));
+      }
       fputc('\n', m_out);
     }
   }
@@ -1048,6 +1054,50 @@ static int find_waw(unsigned char kind, unsigned char what, const std::vector<T>
       }
       state.emplace(ch.off);
     }
+  }
+  return res;
+}
+
+template <typename T>
+static int find_war(unsigned char kind, unsigned char what, const std::vector<T> &hist, TLTrackCB *cb) {
+  std::optional<std::pair<uint64_t, const RegTabChains *> > state;
+  int res = 0;
+  for ( auto &ch: hist ) {
+    // store read
+    if ( !(ch.kind & 0x8000) ) {
+      state.emplace(std::make_pair( ch.off, &ch.tab_chain[1]));
+      continue;
+    }
+    // write branch
+    if ( !state.has_value() ) continue;
+    // here we have col for write and row for read
+    // find_tab_cross args rows, cols
+    auto tc = find_tab_cross( *state.value().second, ch.tab_chain[1] );
+    if ( tc.has_value() ) {
+      (*cb)(kind, what, ch.off, state.value().first, tc.value());
+      res++;
+    }
+    state.reset();
+  }
+  return res;
+}
+
+int NV_renderer::track_war(reg_pad *rp, TLTrackCB *cb) const {
+  if ( !rp ) return 0;
+  int res = 0;
+  // check all gpr
+  if ( !rp->gpr.empty() ) {
+    for ( auto gi: rp->gpr ) res += find_war(0, gi.first, gi.second, cb);
+  }
+  if ( !rp->ugpr.empty() ) {
+    for ( auto gi: rp->ugpr ) res += find_war(0x80, gi.first, gi.second, cb);
+  }
+  // preds
+  if ( !rp->pred.empty() ) {
+    for ( auto pi: rp->pred ) res += find_war(1, pi.first, pi.second, cb);
+  }
+  if ( !rp->upred.empty() ) {
+    for ( auto pi: rp->upred ) res += find_war(0x81, pi.first, pi.second, cb);
   }
   return res;
 }

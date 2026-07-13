@@ -225,6 +225,7 @@ class nv_dis: public CElf<NV_renderer>
      m_rtdb->snap->reset();
    }
    void dump_waw(reg_pad *) const;
+   void dump_war(reg_pad *) const;
    // no properties instructions
    std::unordered_map<const nv_instr *, unsigned long> m_nopi;
    void add_nopi(const nv_instr *i) {
@@ -268,6 +269,20 @@ void nv_dis::add_cbank(Elf_Word idx, Elf_Word s, unsigned short off, unsigned sh
     cps->size = size;
     m_cbanks[idx] = cps;
   }
+}
+
+void nv_dis::nv_dis::dump_war(reg_pad *rp) const {
+  bool latch = false;
+  TLTrackCB cb = [&](unsigned char type, unsigned char what, unsigned long dst, unsigned long src, const found_tab_cross &ftc) {
+    if ( !latch ) {
+     fprintf(m_out, ";;; WaR\n");
+     latch = true;
+    }
+    fprintf(m_out, "; %lX %s src %lX %d tab(%s) r%d %s c%d %s\n", dst, lt_what(type, what).c_str(), src, ftc.value,
+      ftc.tab->name, ftc.row, ftc.row_name(), ftc.col, ftc.col_name()
+    );
+  };
+  track_war(rp, &cb);
 }
 
 void nv_dis::nv_dis::dump_waw(reg_pad *rp) const {
@@ -625,7 +640,10 @@ void nv_dis::try_dis(Elf_Word idx)
   if ( m_rtdb ) {
     finalize_rt(m_rtdb);
     dump_rt(m_rtdb, opt_L);
-    if ( opt_L ) dump_waw(m_rtdb);
+    if ( opt_L ) {
+      dump_waw(m_rtdb);
+      dump_war(m_rtdb);
+    }
   }
 }
 

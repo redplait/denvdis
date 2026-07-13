@@ -464,6 +464,7 @@ class NV_renderer {
    int track_lat(reg_pad *, unsigned long off, TLTrackCB *) const;
    // must be called after reg_pad finalize_rt
    int track_waw(reg_pad *, WaWTrackCB *) const;
+   int track_war(reg_pad *, TLTrackCB *) const;
    int track_regs(reg_pad *, const NV_rlist *, const NV_pair &p, unsigned long off);
    void dump_rt(reg_pad *, int rc = 0) const;
    void dump_rchains(const RegTabChains &rc, int is_col) const;
