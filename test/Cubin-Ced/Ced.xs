@@ -633,6 +633,9 @@ class Ced_perl: public CEd_base {
   int track_lat(reg_pad *rp, TLTrackCB *cb) {
     return NV_renderer::track_lat(rp, (unsigned long)m_dis->offset(), cb);
   }
+  int track_war(reg_pad *rp, TLTrackCB *cb) {
+    return NV_renderer::track_war(rp, cb);
+  }
   int track_waw(reg_pad *rp, WaWTrackCB *cb) {
     return NV_renderer::track_waw(rp, cb);
   }
@@ -2717,6 +2720,52 @@ track_waw(SV *obj, SV *rp, HV *hm)
    }
  OUTPUT:
   RETVAL
+
+int
+track_war(SV *obj, SV *rp, HV *hm, int debug = 0)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   reg_pad *r= get_magic_ext<reg_pad>(rp, &ca_regtrack_magic_vt);
+ CODE:
+   if ( !e->has_ins() ) RETVAL = -1;
+   else {
+     TLTrackCB cb = [&](unsigned char type, unsigned char what, unsigned long dst, unsigned long src, const found_tab_cross &ft) {
+       // check if we already have hm[dst]
+       SV *key = newSVuv(dst);
+       if ( hv_exists_ent(hm, key, 0) ) {
+         U32 hash_value = 0;
+         HE *he = hv_fetch_ent(hm, key, 0, hash_value);
+         if ( !he ) { // wtf?
+           SvREFCNT_dec(key);
+           return;
+         }
+         SV *val = HeVAL(he);
+         // check what we have
+         if ( !SvROK(val) ) {
+           SvREFCNT_dec(key);
+           croak("track_war: not ref value at key %lX", dst);
+           return;
+         }
+         auto vtype = SvTYPE(SvRV(val));
+         if ( vtype != SVt_PVAV ) {
+           SvREFCNT_dec(key);
+           croak("track_war: bad ref type %d value at key %lX", vtype, dst);
+           return;
+         }
+         AV *array = (AV*)SvRV(val);
+         av_push(array, e->gen_ftc( lt_what(type, what), src, ft, debug ));
+       } else { // not in map yet
+         AV *array = newAV();
+         av_push(array, e->gen_ftc( lt_what(type, what), src, ft, debug ));
+         hv_store_ent(hm, key, newRV_noinc((SV*)array), 0);
+       }
+       SvREFCNT_dec(key);
+     };
+     RETVAL = e->track_war(r, &cb);
+   }
+ OUTPUT:
+  RETVAL
+
 
 int
 track_lat(SV *obj, SV *rp, HV *hm, int debug = 0)
