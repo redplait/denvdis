@@ -185,11 +185,30 @@ sub dump_tracked_lat
   }
 }
 
+# dump war hash, arg - block
+sub dump_war_hash
+{
+  my $bl = shift;
+  my $hr = $bl->[12]->[1];
+  return unless( defined $hr);
+  return unless( scalar keys %$hr ); # no keys - empty
+  printf(";;; WaRs\n");
+  foreach my $addr ( sort { $a <=> $b } keys %$hr ) {
+    my $ar = $hr->{$addr};
+    printf("; dst %X:\n", $addr);
+    foreach my $rec ( @$ar ) {
+      printf(";    src %X v %d %s ", $rec->[0], $rec->[1], $rec->[2]);
+      dump_ftc(\*STDOUT, $rec->[3]) if ( defined $rec->[3] );
+      printf("\n");
+    }
+  }
+}
+
 # dump waw hash, arg - block
 sub dump_waw_hash
 {
   my $bl = shift;
-  my $hr = $bl->[12];
+  my $hr = $bl->[12]->[0];
   return unless( defined $hr);
   return unless( scalar keys %$hr ); # no keys - empty
   printf(";;; WaWs\n");
@@ -1781,9 +1800,10 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
   }
   dump_rl(\@rl, $il) if defined($opt_d);
   # move cj to $block->[12] into WaW hash
+  my $waw = $bl->[12]->[0];
   foreach my $cji ( @cj ) {
-    next if exists $bl->[12]->{$cji->[0]};
-    $bl->[12]->{$cji->[0]} = 'CJ';
+    next if exists $waw->{$cji->[0]};
+    $waw->{$cji->[0]} = 'CJ';
   }
   undef @cj;
   # traverse rl and collect instructions to patch stall in @patch_list [ $idx, $stall_diff ]
@@ -1817,11 +1837,13 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     }
     next unless($lat_lim);
     # check instruction in WaW/CJ
-    next if ( exists $bl->[12]->{$caddr} );
+    next if ( exists $waw->{$caddr} );
     # skip cf
     next if ( is_cf($il->[$i]->[0], $opt_v) );
     # skip brt
     next if ( $il->[$i]->[0]->[5] );
+    # skip bssy
+    next if ( $il->[$i]->[0]->[9] );
     # check if this instruction has wait index - then latency is unpredictable
     next if ( defined $il->[$i]->[0]->[17] );
     # check dual
@@ -2373,11 +2395,13 @@ sub gdisasm
     if ( defined $rt ) {
       $rt->finalize();
       if ( $in_lm ) {
-        $g_ced->track_waw($rt, $block->[12]);
+        $g_ced->track_waw($rt, $block->[12]->[0]);
+        $g_ced->track_war($rt, $block->[12]->[1]);
         my $lsize = scalar @{ $block->[18] };
         if ( $lsize ) {
           if ( defined $opt_d ) {
             dump_tracked_lat($block);
+            dump_war_hash($block);
             dump_waw_hash($block);
           }
           traverse_lat($block, $lsize);
@@ -2694,7 +2718,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
   [10] - map with currently reused registers - for -u option
    latency tables (-l option):
   [11] - hash for track_lat
-  [12] - hash for WaW - must be filled atrer rt finalize
+  [12] - [ hash for WaW, WaR ] - must be filled atrer rt finalize
    to find swappable instructions (-s option) we need more sophisticated data to keep some instructions properties
    I chose array, indexes (first 7 from dump_ins) are
     * 0 - offset
@@ -2741,9 +2765,9 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
     }
     my @la = ( 0, 0, 0, 0 );
     if ( defined $opt_l ) {
-      my(%lm, %ru, %pu, %tl, %waw);
+      my(%lm, %ru, %pu, %tl, %waw, %war);
       $res[11] = \%tl;
-      $res[12] = \%waw;
+      $res[12] = [ \%waw, \%war ];
       push @la, undef;# 4 - current pair
       push @la, \%lm; # 5 - map instruction offset -> [ rolling stall, latency, regs usage offset, predicates usage offset ]
       push @la, \%ru; # 6 - map for regs usage
