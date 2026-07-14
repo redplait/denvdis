@@ -707,9 +707,21 @@ You can also extract only snapshot data for currently processed instruction with
 
 =head4 Latency tracking
 
-main method is track_lat(Cubin::Ced::RegTrack, ref to out hash, is_debug)
+there are methods corresponding 3 latency tables
 
-output hash keys are offset of instruction where some register/predicate/CC and value is array of arrays where indices
+=over
+
+=item * for table TRUE (RaW) track_lat(Cubin::Ced::RegTrack, ref to out hash, is_debug)
+
+=item * for table OUTPUT (WaW) track_waw(Cubin::Ced::RegTrack, ref to out hash)
+
+=item * for table ANTI (WaR) track_war(Cubin::Ced::RegTrack, ref to out hash, is_debug)
+
+=back
+
+output hashes for I<track_lat/track_war>:
+
+keys are offset of instruction where some register/predicate/CC updating, value is array of arrays where indices
 
 =over
 
