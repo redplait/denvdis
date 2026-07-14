@@ -1725,17 +1725,49 @@ sub fill_rl_interval
   $res;
 }
 
+# dec intervals from WaR
+# args:
+#  rl ref
+#  start index
+#  end address
+#  dec value
+#  ftc from track_lat
+#  il from block->[18]
+sub dec_rl_interval
+{
+  my($rl, $start, $end_addr, $dec, $ftc, $il) = @_;
+  my $rl_len = scalar @$rl;
+  my $res = 0;
+  for my $i ( $start .. $rl_len - 1 ) {
+    my $curr_i = $il->[$i];
+    last if ( $curr_i->[0]->[0] >= $end_addr );
+    my $curr_rl = $rl->[$i];
+    next unless defined($curr_rl);
+    next if ( !$curr_rl->[0] );
+    # ok, some rl with positive value
+    ++$res;
+    if ( $curr_rl->[0] < $dec ) {
+      # just zero it
+      $rl->[$i] = [ 0, $ftc ];
+    } else {
+      $rl->[$i] = [ $curr_rl->[0] - $dec, $ftc ];
+    }
+  }
+  $res;
+}
+
 # dump rl for debugging
-# args: rl, il from block->[18]
+# args: rl, il from block->[18], header
 sub dump_rl
 {
-  my($rl, $il) = @_;
+  my($rl, $il, $hdr) = @_;
   my $latch = 0;
   my $rl_len = scalar @$rl;
+  return unless $rl_len;
   for my $i ( 0 .. $rl_len - 1 ) {
     next unless( defined $rl->[$i] );
     unless($latch) {
-      printf(";; RL:\n");
+      printf(";; RL %s:\n", $hdr);
       ++$latch;
     }
     printf("; off %X %d %s to %X\n", $il->[$i]->[0]->[0], $rl->[$i]->[0], $rl->[$i]->[1]->[2], $rl->[$i]->[1]->[0]);
@@ -1798,7 +1830,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
       $must_be = $lar->[$lar_idx]->[1];
     }
   }
-  dump_rl(\@rl, $il) if defined($opt_d);
+  dump_rl(\@rl, $il, 'initial') if defined($opt_d);
   # move cj to $block->[12] into WaW hash
   my $waw = $bl->[12]->[0];
   foreach my $cji ( @cj ) {
@@ -1806,6 +1838,26 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     $waw->{$cji->[0]} = 'CJ';
   }
   undef @cj;
+  # appy WaR
+  my $war = $bl->[12]->[1];
+  my $war_patches = 0;
+  foreach my $wark ( sort { $a <=> $b } keys %$war ) {
+    my $wara = $war->{$wark};
+    # wark - offset where write happens, wara - array of sources
+    foreach my $src ( @$wara ) {
+      if ( $wark == $src->[0] ) { # self-reference - put in in waw with tag Swar
+        $waw->{$wark} = 'Swar' unless exists ( $waw->{$wark} );
+      } else {
+        my $war_idx = 0; # index in rl
+        for ( ; $war_idx < $lsize; ++$war_idx ) {
+          last if ( $il->[$war_idx]->[0]->[0] == $src->[0] );
+        }
+ printf("apply WaR from %X (%d) till %X, v %d\n", $src->[0], $war_idx, $wark, $src->[1]) if defined($opt_d);
+        $war_patches += dec_rl_interval(\@rl, $war_idx, $wark, $src->[1], $src, $il);
+      }
+    }
+  }
+  dump_rl(\@rl, $il, 'after WaR') if ( defined($opt_d) && $war_patches );
   # traverse rl and collect instructions to patch stall in @patch_list [ $idx, $stall_diff ]
   my @patch_list;
   # visited - key is rl item, value [ rl_item, lat_limit ]
