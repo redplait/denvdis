@@ -1893,14 +1893,16 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     next unless($lat_lim);
     # check instruction in WaW/CJ
     next if ( exists $waw->{$caddr} );
-    # skip cf
-    next if ( is_cf($il->[$i]->[0], $opt_v) );
-    # skip brt
-    next if ( $il->[$i]->[0]->[5] );
-    # skip bssy
-    next if ( $il->[$i]->[0]->[9] );
-    # check if this instruction has wait index - then latency is unpredictable
-    next if ( defined $il->[$i]->[0]->[17] );
+    unless(defined $opt_a) {
+      # skip cf
+      next if ( is_cf($il->[$i]->[0], $opt_v) );
+      # skip brt
+      next if ( $il->[$i]->[0]->[5] );
+      # skip bssy
+      next if ( $il->[$i]->[0]->[9] );
+      # check if this instruction has wait index - then latency is unpredictable
+      next if ( defined $il->[$i]->[0]->[17] );
+    }
     # check dual
     next if ( $il->[$i]->[0]->[8] );
     # update count of instrs with range
