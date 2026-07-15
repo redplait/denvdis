@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v $opt_z/;
+use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -33,6 +33,7 @@ Usage: $0 [options] file.cubin
   -u - try detect register reuse cache
   -U - analyze possible registers reuse
   -v - verbose mode
+  -w - skip WaR pass
   -z - don't patch usched_info, for debugging only
 EOF
   exit(8);
@@ -1839,25 +1840,27 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
   }
   undef @cj;
   # appy WaR
-  my $war = $bl->[12]->[1];
-  my $war_patches = 0;
-  foreach my $wark ( sort { $a <=> $b } keys %$war ) {
-    my $wara = $war->{$wark};
-    # wark - offset where write happens, wara - array of sources
-    foreach my $src ( @$wara ) {
-      if ( $wark == $src->[0] ) { # self-reference - put in in waw with tag Swar
-        $waw->{$wark} = 'Swar' unless exists ( $waw->{$wark} );
-      } else {
-        my $war_idx = 0; # index in rl
-        for ( ; $war_idx < $lsize; ++$war_idx ) {
-          last if ( $il->[$war_idx]->[0]->[0] == $src->[0] );
-        }
+  unless( defined $opt_w ) {
+    my $war = $bl->[12]->[1];
+    my $war_patches = 0;
+    foreach my $wark ( sort { $a <=> $b } keys %$war ) {
+      my $wara = $war->{$wark};
+      # wark - offset where write happens, wara - array of sources
+      foreach my $src ( @$wara ) {
+        if ( $wark == $src->[0] ) { # self-reference - put it in waw with tag Swar
+          $waw->{$wark} = 'Swar' unless exists ( $waw->{$wark} );
+        } else {
+          my $war_idx = 0; # index in rl
+          for ( ; $war_idx < $lsize; ++$war_idx ) {
+            last if ( $il->[$war_idx]->[0]->[0] == $src->[0] );
+          }
  printf("apply WaR from %X (%d) till %X, v %d\n", $src->[0], $war_idx, $wark, $src->[1]) if defined($opt_d);
-        $war_patches += dec_rl_interval(\@rl, $war_idx, $wark, $src->[1], $src, $il);
+          $war_patches += dec_rl_interval(\@rl, $war_idx, $wark, $src->[1], $src, $il);
+        }
       }
     }
+    dump_rl(\@rl, $il, 'after WaR') if ( defined($opt_d) && $war_patches );
   }
-  dump_rl(\@rl, $il, 'after WaR') if ( defined($opt_d) && $war_patches );
   # traverse rl and collect instructions to patch stall in @patch_list [ $idx, $stall_diff ]
   my @patch_list;
   # visited - key is rl item, value [ rl_item, lat_limit ]
@@ -2942,7 +2945,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("abdGglmPprstUuvzC:");
+my $state = getopts("abdGglmPprstUuvwzC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
