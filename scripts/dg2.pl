@@ -1841,6 +1841,9 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
   undef @cj;
   # appy WaR
   unless( defined $opt_w ) {
+    # map offset -> index
+    my %oi;
+    $oi{ $il->[$_]->[0]->[0] } = $_ for ( 0 .. $lsize - 1 );
     my $war = $bl->[12]->[1];
     my $war_patches = 0;
     foreach my $wark ( sort { $a <=> $b } keys %$war ) {
@@ -1850,10 +1853,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
         if ( $wark == $src->[0] ) { # self-reference - put it in waw with tag Swar
           $waw->{$wark} = 'Swar' unless exists ( $waw->{$wark} );
         } else {
-          my $war_idx = 0; # index in rl
-          for ( ; $war_idx < $lsize; ++$war_idx ) {
-            last if ( $il->[$war_idx]->[0]->[0] == $src->[0] );
-          }
+          my $war_idx = $oi{$src->[0]}; # index in rl
  printf("apply WaR from %X (%d) till %X, v %d\n", $src->[0], $war_idx, $wark, $src->[1]) if defined($opt_d);
           $war_patches += dec_rl_interval(\@rl, $war_idx, $wark, $src->[1], $src, $il);
         }
