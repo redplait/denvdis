@@ -1798,6 +1798,7 @@ sub fill_rl_interval
 sub dec_rl_interval
 {
   my($rl, $start, $end_addr, $dec, $ftc, $il) = @_;
+  return 0 unless($start);
   my $rl_len = scalar @$rl;
   my $res = 0;
   for my $i ( $start .. $rl_len - 1 ) {
@@ -1909,7 +1910,8 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
   # move cj to $block->[12] into WaW hash
   my $waw = $bl->[12]->[0];
   # remove WaWs from config
-  if ( defined($gc_waw) && defined($waw) ) {
+  if ( defined($gc_waw) && defined($waw) && scalar(@$gc_waw) ) {
+    my @del;
     foreach my $wk ( keys %$waw ) {
       next unless in_ranges($gc_waw, $wk);
       my $war = $waw->{$wk};
@@ -1921,9 +1923,10 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
       if ( scalar @tmp ) {
         $waw->{$wk} = \@tmp;
       } else {
-        delete $waw->{$wk};
+        push @del, $wk;
       }
     }
+    delete $waw->{$_} for @del;
   }
   foreach my $cji ( @cj ) {
     next if exists $waw->{$cji->[0]};
@@ -1936,6 +1939,25 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     my %oi;
     $oi{ $il->[$_]->[0]->[0] } = $_ for ( 0 .. $lsize - 1 );
     my $war = $bl->[12]->[1];
+    # remove WaRs from config
+    if ( defined($gc_war) && scalar(@$gc_war) ) {
+      my @del;
+      foreach my $wk ( keys %$war ) {
+        next unless in_ranges($gc_war, $wk);
+        my $wa = $war->{$wk};
+        my @tmp;
+        foreach my $wr ( $wa ) {
+          next if in_ranges($gc_war, $wr->[0]);
+          push @tmp, $wr;
+        }
+        if ( scalar @tmp ) {
+          $war->{$wk} = \@tmp;
+        } else {
+          push @del, $wk;
+        }
+      }
+      delete $war->{$_} for @del;
+    }
     my $war_patches = 0;
     foreach my $wark ( sort { $a <=> $b } keys %$war ) {
       my $wara = $war->{$wark};
@@ -1945,6 +1967,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
           $waw->{$wark} = 'Swar' unless exists ( $waw->{$wark} );
         } else {
           my $war_idx = $oi{$src->[0]}; # index in rl
+          next unless defined($war_idx);
  printf("apply WaR from %X (%d) till %X, v %d\n", $src->[0], $war_idx, $wark, $src->[1]) if defined($opt_d);
           $war_patches += dec_rl_interval(\@rl, $war_idx, $wark, $src->[1], $src, $il);
         }
