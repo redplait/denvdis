@@ -1836,6 +1836,19 @@ sub dump_rl
   }
 }
 
+# probably would be better to employ interval tree from https://github.com/redplait/dwarfdump/tree/main/perl/Interval-Tree
+# but usually ranges is very limited amount so linear scan is ok here
+# args: ranges array from gc_war/$gc_waw, offset
+sub in_ranges
+{
+  my($ar, $off) = @_;
+  return 0 unless defined($ar);
+  foreach my $r ( @$ar ) {
+    return 1 if ( $off >= $r->[0] && $off < $r->[1] );
+  }
+  0;
+}
+
 # args: block, size of instructions array in block->[18]
 sub traverse_lat
 {
@@ -1895,6 +1908,23 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
   dump_rl(\@rl, $il, 'initial') if defined($opt_d);
   # move cj to $block->[12] into WaW hash
   my $waw = $bl->[12]->[0];
+  # remove WaWs from config
+  if ( defined($gc_waw) && defined($waw) ) {
+    foreach my $wk ( keys %$waw ) {
+      next unless in_ranges($gc_waw, $wk);
+      my $war = $waw->{$wk};
+      my @tmp;
+      foreach my $wr ( $war ) {
+        next if in_ranges($gc_waw, $wr->[0]);
+        push @tmp, $wr;
+      }
+      if ( scalar @tmp ) {
+        $waw->{$wk} = \@tmp;
+      } else {
+        delete $waw->{$wk};
+      }
+    }
+  }
   foreach my $cji ( @cj ) {
     next if exists $waw->{$cji->[0]};
     $waw->{$cji->[0]} = 'CJ';
