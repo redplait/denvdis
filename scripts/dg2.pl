@@ -91,6 +91,10 @@ my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
 # filled in read_config
 my %gcd;
+# war/waw ranges, key is section name, value [ array for war, array for waw ]
+my %gc_ranges;
+# war/waw ranges - assigned in filter_gcd
+my($gc_war, $gc_waw);
 # per-section filter, forms in filter_gcd, assigned in main sections loop
 my $gcdf;
 
@@ -265,6 +269,12 @@ section_name
 # to apply to regions from 0 till 0x100 and from 0x200 till 0x300
 another_section 0-100 200-300
 
+# remove war regions - after section
+-war 0-8 28-30
+
+# remove waw regions - after section
+-waw 3c-48
+
 =end text
 
 If no config file was provided - patching will be applied to all sections
@@ -284,12 +294,72 @@ sub read_config
   my $res = 0;
   my $line = 0;
   my($fh, $str, $sname);
+  my $get_range = sub {
+    my($idx, $what) = @_;
+    if ( !defined $sname ) {
+       carp("no section name for $what, line $line");
+      return undef;
+    }
+    my $two;
+    if ( exists $gc_ranges{$sname} ) {
+      $two = $gc_ranges{$sname};
+    } else {
+      my(@w1, @w2);
+      $two = [ \@w1, \@w2 ];
+      $gc_ranges{$sname} = $two;
+    }
+    return $two->[$idx];
+  };
+  # common code to parse tail
+  my $fill_range = sub {
+    my($ar, $tail, $what) = @_;
+    foreach my $item ( split /\s+/, $tail ) {
+      if ( $item !~ /([0-9a-f]+)-([0-9a-f]+)/i ) {
+        carp("bad $what syntax at line $line: $item");
+        next;
+      }
+      # some validation
+      my $s = hex($1);
+      my $e = hex($2);
+      if ( $s == $e ) {
+        carp("ignore empty $what at line $line: $item");
+        next;
+      }
+      if ( $e > $s ) { push @$ar, [ $s, $e ]; }
+      else { push @$ar, [ $e, $s ]; }
+    }
+  };
   open($fh, '<', $cname) or die("Cannot open config file $cname, $!");
   while( $str = <$fh> ) {
     chomp $str;
     $line++;
     next if ( $str eq '' ); # skip empty lines
     next if ( $str =~ /^\s*#/ ); # comment
+    # -war, index 0
+    if ( $str =~ /^\s*-war\s+(.*)\s*$/i ) {
+      my $ar = $get_range->(0, 'WaR');
+      next unless(defined $ar);
+      $fill_range->($ar, $1, 'WaR');
+      # dump for debugging
+      if ( defined $opt_d ) {
+        printf("%s wars:\n", $sname);
+        printf(" %X-%X\n", $_->[0], $_->[1]) for ( @$ar );
+      }
+      next;
+    }
+    # -waw, index 1
+    if ( $str =~ /^\s*-waw\s+(.*)\s*$/i ) {
+      my $ar = $get_range->(1, 'WaW');
+      next unless(defined $ar);
+      $fill_range->($ar, $1, 'WaW');
+      # dump for debugging
+      if ( defined $opt_d ) {
+        printf("%s waws:\n", $sname);
+        printf(" %X-%X\n", $_->[0], $_->[1]) for ( @$ar );
+      }
+      next;
+    }
+    # section without ranges
     if ( $str =~ /^\s*(\S+)\s*$/ ) {
       $res++;
       $gcd{$1} = undef;
@@ -297,24 +367,8 @@ sub read_config
     }
     if ( $str =~ /^\s*(\S+)\s*(.*)\s*$/ ) {
       $sname = $1;
-      my $tail = $2;
       my @tmp;
-      # parse tail
-      foreach my $item ( split /\s+/, $tail ) {
-        if ( $item !~ /([0-9a-f]+)-([0-9a-f]+)/i ) {
-          carp("bad range syntax at line $line: $item");
-          next;
-        }
-        # some validation
-        my $s = hex($1);
-        my $e = hex($2);
-        if ( $s == $e ) {
-          carp("ignore empty range at line $line: $item");
-          next;
-        }
-        if ( $e > $s ) { push @tmp, [ $s, $e ]; }
-        else { push @tmp, [ $e, $s ]; }
-      }
+      $fill_range->(\@tmp, $2, 'ranges');
       next if !scalar(@tmp);
       # dump for debugging
       if ( defined $opt_d ) {
@@ -342,6 +396,13 @@ sub dummy_no  { 0; }
 sub filter_gcd
 {
   my $sname = shift;
+  undef $gc_war;
+  undef $gc_waw;
+  if ( $has_gcd && exists $gc_ranges{$sname} ) {
+    my $two = $gc_ranges{$sname};
+    $gc_war = $two->[0];
+    $gc_waw = $two->[1];
+  }
   return \&dummy_no if ( $has_gcd < 0 ); # -C - means always no
   return \&dummy_yes if ( !$has_gcd ); # no config means always yes
   return \&dummy_no unless exists($gcd{$sname}); # no such section - always no
