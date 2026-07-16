@@ -1798,7 +1798,7 @@ sub fill_rl_interval
 sub dec_rl_interval
 {
   my($rl, $start, $end_addr, $dec, $ftc, $il) = @_;
-  return 0 unless($start);
+  return 0 unless defined($start);
   my $rl_len = scalar @$rl;
   my $res = 0;
   for my $i ( $start .. $rl_len - 1 ) {
