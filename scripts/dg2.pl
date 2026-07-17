@@ -1914,12 +1914,8 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     my @del;
     foreach my $wk ( keys %$waw ) {
       next unless in_ranges($gc_waw, $wk);
-      my $war = $waw->{$wk};
-      my @tmp;
-      foreach my $wr ( $war ) {
-        next if in_ranges($gc_waw, $wr->[0]);
-        push @tmp, $wr;
-      }
+      my $wra = $waw->{$wk};
+      my @tmp = grep { !in_ranges($gc_waw, $_->[0]); } @$wra;
       if ( scalar @tmp ) {
         $waw->{$wk} = \@tmp;
       } else {
@@ -1944,12 +1940,9 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
       my @del;
       foreach my $wk ( keys %$war ) {
         next unless in_ranges($gc_war, $wk);
-        my $wa = $war->{$wk};
-        my @tmp;
-        foreach my $wr ( $wa ) {
-          next if in_ranges($gc_war, $wr->[0]);
-          push @tmp, $wr;
-        }
+        my $wra = $war->{$wk};
+        # remove all items in config ranges
+        my @tmp = grep { !in_ranges($gc_war, $_->[0]); } @$wra;
         if ( scalar @tmp ) {
           $war->{$wk} = \@tmp;
         } else {
@@ -1966,8 +1959,12 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
         if ( $wark == $src->[0] ) { # self-reference - put it in waw with tag Swar
           $waw->{$wark} = 'Swar' unless exists ( $waw->{$wark} );
         } else {
-          my $war_idx = $oi{$src->[0]}; # index in rl
-          next unless defined($war_idx);
+          my $w_addr = $src->[0];
+          my $war_idx = $oi{$w_addr}; # index in rl
+          unless ( defined $war_idx ) {
+            croak("cant find war idx $w_addr in $wark");
+            next;
+          }
  printf("apply WaR from %X (%d) till %X, v %d\n", $src->[0], $war_idx, $wark, $src->[1]) if defined($opt_d);
           $war_patches += dec_rl_interval(\@rl, $war_idx, $wark, $src->[1], $src, $il);
         }
