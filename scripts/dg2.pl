@@ -170,15 +170,9 @@ sub dump_rU
   printf("\n");
 }
 
-# dump tracked latency
-# arg - block
-sub dump_tracked_lat
+sub dump_lat_cmn
 {
-  my $bl = shift;
-  my $hr = $bl->[11];
-  return unless( defined $hr);
-  return unless( scalar keys %$hr ); # no keys - empty
-  printf(";;; tracked latency\n");
+  my $hr = shift;
   foreach my $addr ( sort { $a <=> $b } keys %$hr ) {
     my $ar = $hr->{$addr};
     printf("; dst %X:\n", $addr);
@@ -190,6 +184,18 @@ sub dump_tracked_lat
   }
 }
 
+# dump tracked latency
+# arg - block
+sub dump_tracked_lat
+{
+  my $bl = shift;
+  my $hr = $bl->[11];
+  return unless( defined $hr);
+  return unless( scalar keys %$hr ); # no keys - empty
+  printf(";;; tracked latency\n");
+  dump_lat_cmn($hr);
+}
+
 # dump war hash, arg - block
 sub dump_war_hash
 {
@@ -198,15 +204,7 @@ sub dump_war_hash
   return unless( defined $hr);
   return unless( scalar keys %$hr ); # no keys - empty
   printf(";;; WaRs\n");
-  foreach my $addr ( sort { $a <=> $b } keys %$hr ) {
-    my $ar = $hr->{$addr};
-    printf("; dst %X:\n", $addr);
-    foreach my $rec ( @$ar ) {
-      printf(";    src %X v %d %s ", $rec->[0], $rec->[1], $rec->[2]);
-      dump_ftc(\*STDOUT, $rec->[3]) if ( defined $rec->[3] );
-      printf("\n");
-    }
-  }
+  dump_lat_cmn($hr);
 }
 
 # dump waw hash, arg - block
@@ -290,7 +288,6 @@ sub read_config
     $has_gcd = -1;
     return 1;
   }
-  # try open file
   my $res = 0;
   my $line = 0;
   my($fh, $str, $sname);
@@ -329,6 +326,7 @@ sub read_config
       else { push @$ar, [ $e, $s ]; }
     }
   };
+  # try open file
   open($fh, '<', $cname) or die("Cannot open config file $cname, $!");
   while( $str = <$fh> ) {
     chomp $str;
@@ -363,6 +361,7 @@ sub read_config
     if ( $str =~ /^\s*(\S+)\s*$/ ) {
       $res++;
       $gcd{$1} = undef;
+      $sname = $1; # store section name for possible -war/-waw
       next;
     }
     if ( $str =~ /^\s*(\S+)\s*(.*)\s*$/ ) {
@@ -373,7 +372,7 @@ sub read_config
       # dump for debugging
       if ( defined $opt_d ) {
         printf("%s:\n", $sname);
-        printf(" %X-%X\n", $_->[0], $_->[1]) for ( @tmp );
+        printf(" %X-%X\n", $_->[0], $_->[1]) for ( sort { $a->[0] <=> $b->[0] } @tmp );
       }
       $res++;
       $gcd{$sname} = \@tmp;
@@ -381,6 +380,7 @@ sub read_config
     }
     # bad syntax
     carp("bad syntax at line $line: $str");
+    undef $sname;
   }
   # setup has_gcd
   $has_gcd = $res ? $res : -1;
@@ -400,8 +400,7 @@ sub filter_gcd
   undef $gc_waw;
   if ( $has_gcd && exists $gc_ranges{$sname} ) {
     my $two = $gc_ranges{$sname};
-    $gc_war = $two->[0];
-    $gc_waw = $two->[1];
+    ($gc_war, $gc_waw) = @$two;
   }
   return \&dummy_no if ( $has_gcd < 0 ); # -C - means always no
   return \&dummy_yes if ( !$has_gcd ); # no config means always yes
@@ -2860,7 +2859,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
     foreach my $s (@sorted) {
       printf("%X:", $s->[0]);
       if ( 'ARRAY' eq ref $s->[1] ) {
-        printf(" %X", $_) for @{ $s->[1] };
+        printf(" %X", $_) for sort { $a <=> $b } @{ $s->[1] };
       } else {
         if ( 2 == ($s->[0] & 7) ) { printf(" symbol %d", $s->[1]); }
         else { printf(" marker %d", $s->[1]); }
