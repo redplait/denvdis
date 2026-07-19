@@ -1786,6 +1786,37 @@ sub fill_rl_interval
   $res;
 }
 
+# args:
+#  rl ref
+#  start index
+#  value
+#  end address
+#  ftc from track_lat
+#  il from block->[18]
+sub fill_rl_till
+{
+  my($rl, $start, $val, $end, $ftc, $il) = @_;
+  my $rl_len = scalar @$rl;
+  my $res = 0;
+  for my $i ( $start .. $rl_len - 1 ) {
+    my $curr_i = $il->[$i];
+    last if ( $curr_i->[0]->[0] >= $ftc->[0] );
+    last if ( $curr_i->[0]->[0] >= $end );
+    # check what we have
+    unless( defined $rl->[$i] ) {
+      $rl->[$i] = [ $val, $ftc ]; # put on index array [ value, ftc ]
+      ++$res;
+      next;
+    }
+    next if ( !$rl->[$i]->[0] ); # skip zeroes
+    next if ( $rl->[$i]->[0] < $val );
+    # update
+    $rl->[$i] = [ $val, $ftc ];
+    ++$res;
+  }
+  $res;
+}
+
 # dec intervals from WaR
 # args:
 #  rl ref
@@ -1898,7 +1929,11 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
       if ( $start_lat + $must_be >= $il->[$j]->[1]->[0] ) {
         fill_rl_interval(\@rl, $i, 0, $lar->[$lar_idx], $il);
       } else {
-        fill_rl_interval(\@rl, $i, $il->[$j]->[1]->[0] - ($start_lat + $must_be), $lar->[$lar_idx], $il);
+        if ( $in_cj ) {
+          fill_rl_till(\@rl, $i, $il->[$j]->[1]->[0] - ($start_lat + $must_be), $cj[$cj_idx]->[0], $lar->[$lar_idx], $il);
+        } else {
+          fill_rl_interval(\@rl, $i, $il->[$j]->[1]->[0] - ($start_lat + $must_be), $lar->[$lar_idx], $il);
+        }
       }
       last if ( ++$lar_idx >= $lar_size );
       $start_lat = $il->[$j]->[1]->[0];
