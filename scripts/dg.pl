@@ -2087,6 +2087,14 @@ sub dump_snap
   }
 }
 
+# dump CC for current instruction
+sub dump_snap_cc
+{
+  my $cc = shift;
+  return unless defined($cc);
+  printf("; CC %s\n", 1 == $cc ? 'read' : 'write');
+}
+
 # check if found instruction for reuse really has reusage mask
 # args:
 #  [ offset, mask ] from collect_reuse
@@ -2381,6 +2389,7 @@ sub gdisasm
       if ( $res && defined($rt) ) {
         printf("; mask %X mask2 %X\n", $rt->mask(), $rt->mask2()) if defined($opt_v);
         my($g, $pr) = $rt->snap();
+        dump_snap_cc($rt->cc());
         if ( defined($g) || defined($pr) ) {
           dump_snap($g, $pr);
           track2lat($block->[16], $g, $pr) if ( defined $opt_l );
