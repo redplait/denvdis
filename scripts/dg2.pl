@@ -708,7 +708,7 @@ sub bin_sa
 }
 
 # lame binary search in array
-# args: ref to array, sub with <=> like return, target
+# args: ref to array, sub with <=> like result, target
 sub bin_sac
 {
   my($ar, $cb, $what) = @_;
@@ -820,7 +820,7 @@ sub get_ins_cb0
 {
   my $res = $g_ced->ins_cbank();
   return unless defined($res);
-  return if ( $res->[0] );
+  return if ( $res->[0] ); # not const bank 0
   return unless defined($res->[1]);
   $res->[1];
 }
@@ -1748,14 +1748,6 @@ sub dump_cl2
   }
 }
 
-# check if current stall eq min_wait
-sub fit_minwait
-{
-  my $ci = shift;
-  return 0 unless defined($ci->[11]);
-  return $ci->[7]->[0] <= $ci->[11];
-}
-
 # fill rl array for some interval
 # args:
 #  rl ref
@@ -1941,7 +1933,6 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     }
   }
   dump_rl(\@rl, $il, 'initial') if defined($opt_d);
-  # move cj to $block->[12] into WaW hash
   my $waw = $bl->[12]->[0];
   # remove WaWs from config
   if ( defined($gc_waw) && defined($waw) && scalar(@$gc_waw) ) {
@@ -1958,6 +1949,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     }
     delete $waw->{$_} for @del;
   }
+  # move cj into WaW hash $block->[12]->[0]
   foreach my $cji ( @cj ) {
     next if exists $waw->{$cji->[0]};
     $waw->{$cji->[0]} = 'CJ';
@@ -2048,7 +2040,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
       # check if this instruction has wait index - then latency is unpredictable
       next if ( defined $il->[$i]->[0]->[17] );
     }
-    # check dual
+    # skip dual
     next if ( $il->[$i]->[0]->[8] );
     # update count of instrs with range
     $g_bl[5]++;
@@ -2247,6 +2239,14 @@ sub dump_snap
       printf(";  %sP%d: %d\n", $r & 0x8000 ? 'U' : '', $r & 0x7, $flag);
     }
   }
+}
+
+# dump CC for current instruction
+sub dump_snap_cc
+{
+  my $cc = shift;
+  return unless defined($cc);
+  printf("; CC %s\n", 1 == $cc ? 'read' : 'write');
 }
 
 # check if found instruction for reuse really has reusage mask
@@ -2530,8 +2530,6 @@ sub gdisasm
     do {
       my $may_swap = 0;
       $off = $g_ced->get_off();
-      # apply filter
-      # my $can = $gcdf->($off);
       my $res = dump_ins($off, $sctx, $block, $rt);
       # check shared barriers
       if ( defined $opt_b ) {
@@ -2543,6 +2541,7 @@ sub gdisasm
       # dump snap
       if ( $res && defined($rt) ) {
         printf("; mask %X mask2 %X\n", $rt->mask(), $rt->mask2()) if defined($opt_v);
+        dump_snap_cc($rt->cc());
         my($g, $pr) = $rt->snap();
         if ( defined($g) || defined($pr) ) {
           dump_snap($g, $pr);
