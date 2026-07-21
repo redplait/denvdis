@@ -8,6 +8,8 @@
 #include "simple_api.h"
 #include "cereal/archives/json.hpp"
 
+int opt_d = 0;
+
 // dummy pthread_rwlock_t RAII classes
 struct rd_raii {
   explicit rd_raii(pthread_rwlock_t *r) {
