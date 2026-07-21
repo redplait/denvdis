@@ -3,12 +3,17 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <iostream>
 #include "de_bg_data.h"
 #include "decuda_data.h"
 #include "simple_api.h"
 #include "cereal/archives/json.hpp"
 
 int opt_d = 0;
+
+#ifdef HAS_DUIDS
+extern const char *get_duid(const unsigned char *res);
+#endif
 
 // dummy pthread_rwlock_t RAII classes
 struct rd_raii {
@@ -67,6 +72,15 @@ static bool has_cudata = false;
 static void *sh_deb = NULL,
  *sh_cuda = NULL;
 
+static int log_head_cmd(FILE *fp) {
+  std::ifstream my_cmd("/proc/self/cmdline");
+  if ( !my_cmd.is_open() ) return 0;
+  std::string line;
+  if ( !std::getline(my_cmd, line) ) return 0;
+  fprintf(fp, "%s\n", line.c_str());
+  return 1;
+}
+
 /* resolve real dlsym, open log and read json from home dir */
 static void init_dlsym(void) {
   // stolen from https://github.com/kentstone84/APEX-GPU/blob/main/apex_dlsym_intercept.c
@@ -99,6 +113,8 @@ static void init_dlsym(void) {
     vlog("cannot create log %s\n", t_path.c_str());
     exit(1);
   }
+  // put cmd line from /proc/self/cmdline
+  log_head_cmd(s_log);
   set_logger_fp(s_log);
   // read json from home dir
   s = getenv("HOME");
@@ -152,16 +168,27 @@ void hook_de_bg() {
 long my_exp_tab(const void **tab, unsigned char *uuid) {
   if ( !tab || !uuid ) return real_exp_tab(tab, uuid);
   auto res = real_exp_tab(tab, uuid);
+#ifdef HAS_DUIDS
+  auto dname = get_duid(uuid);
+#endif
   if ( res ) // error
-    vlog("%8.8X-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X %d\n",
+    vlog("%8.8X-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X %d %s\n",
      *(uint32_t *)(uuid), *(unsigned short *)(uuid + 4), *(unsigned short *)(uuid + 6),
-     uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15], res
+     uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15], res,
+#ifdef HAS_DUIDS
+     dname ? dname :
+#endif
+      ""
     );
   else
-    vlog("%8.8X-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X %d %p\n",
+    vlog("%8.8X-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X %d %p %s\n",
      *(uint32_t *)(uuid), *(unsigned short *)(uuid + 4), *(unsigned short *)(uuid + 6),
      uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15],
-     res, *tab
+     res, *tab,
+#ifdef HAS_DUIDS
+     dname ? dname :
+#endif
+      ""
     );
   return res;
 }

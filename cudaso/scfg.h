@@ -12,3 +12,6 @@ constexpr const char *json_cuda = "cuda.json";
 
 // for nvPTX hooking
 #define HOOK_nvPTX
+
+// dump tables names
+#define HAS_DUIDS

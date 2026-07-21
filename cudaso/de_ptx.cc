@@ -756,8 +756,8 @@ int de_ptx::_read() {
     hack_ctor(0x7357B7, "c17_l.txt", 0);
 //  hack_ctor(0x59D4A0, "c18.txt");
 //  hack_ctor(0x41A8E0, "c5.txt");
-//  hack_sp(0x11BCB51, "c1.txt");
-//  hack_sp(0xA6C239, "c2.txt");
+  hack_sp(0x11BCB51, "c1.txt");
+  hack_sp(0xA6C239, "c2.txt");
   // offsets from V13.1.80
   // md5: f38e5732c94163b96cf797eef252b4cb
 //  hack_ctor(0x1BAC80, "c4.txt");

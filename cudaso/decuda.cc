@@ -8,8 +8,6 @@
 #include <queue>
 #include "simple_api.h"
 
-// #define HAS_DUIDS
-
 #ifdef HAS_DUIDS
 #include "duid.h"
 #endif
