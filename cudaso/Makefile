@@ -3,6 +3,7 @@ UDIS_PATH=/home/redp/disc/udis86
 CEREAL_PATH=cereal/include
 DE_BG_OBJS = bm_search.o decuda_base.o de_bg.o x64arch.o rtmem.o mylog.o
 AR_OBJS = $(DE_BG_OBJS) de_cupti.o decuda.o de_ptx.o de_merc.o
+SO_OBJS = $(DE_BG_OBJS) de_cupti.o decuda.o
 LIBS=-L $(UDIS_PATH)/libudis86 -ludis86 -lstdc++ -ldl
 
 .cc.o:
@@ -23,5 +24,5 @@ libdis.a: $(AR_OBJS)
 my_hook.o: my_hook.cc
 	gcc -std=c++20 -g -fpic -c -I$(ELFIO_PATH) -I$(CEREAL_PATH) $^
 
-libdis.so: $(AR_OBJS) my_hook.o
-	gcc -shared -o $@ my_hook.o $(AR_OBJS) $(LIBS) -lpthread
+libdis.so: $(SO_OBJS) my_hook.o
+	gcc -shared -o $@ my_hook.o $(SO_OBJS) $(LIBS) -lpthread
