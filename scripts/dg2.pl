@@ -2047,8 +2047,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     my $st = lat_stall($il->[$i]);
     next if ( $st <= 2 );
     # min wait
-    if ( defined $opt_m ) {
-      next unless defined($il->[$i]->[0]->[11]);
+    if ( defined($opt_m) && defined($il->[$i]->[0]->[11]) ) {
       next if ( $st <= $il->[$i]->[0]->[11] );
     }
     # check if scbd is SINK
