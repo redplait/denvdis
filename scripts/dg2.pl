@@ -2048,7 +2048,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     next if ( $st <= 2 );
     # min wait
     if ( defined $opt_m ) {
-      next if defined($il->[$i]->[0]->[11]);
+      next unless defined($il->[$i]->[0]->[11]);
       next if ( $st <= $il->[$i]->[0]->[11] );
     }
     # check if scbd is SINK
