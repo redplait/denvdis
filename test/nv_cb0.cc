@@ -1,8 +1,8 @@
 #include "nv_rend.h"
 
 // seems that second part (for Cnp functions) has only 2 variants
-// one for maxler & pascal
-static NvCBParamNames s_maxler_dbg = {
+// one for maxwell & pascal
+static NvCBParamNames s_maxwell_dbg = {
 // unknown what is at offset 0 - 64bit, base of kernel?
  { 0x8, "entry_addr" }, // 32bit !!!
  { 0xC, "bar_cnt" },
@@ -20,8 +20,8 @@ static NvCBParamNames s_volta_dbg = {
  { 0x1c, "smem_size" }, // I don't know if this is the same as %total_smem_size
 };
 
-// maxler - sm50, sm52, sm53
-static NvCBParamNames s_maxler = {
+// maxwell - sm50, sm52, sm53
+static NvCBParamNames s_maxwell = {
 { 0x0, "shared_base" }, // 32bit
 { 0x4, "local_base" }, // 32bit
 { 0x8, "%ntid.x" },
@@ -78,7 +78,7 @@ static NvCBParamNames s_maxler = {
 { 0xFC, "%dynamic_smem_size" },
 };
 
-// pascal - sm60, sm61, sm62 - till 0x100 the same as maxler
+// pascal - sm60, sm61, sm62 - till 0x100 the same as maxwell
 static NvCBParamNames s_pascal = {
 { 0x0, "shared_base" }, // 32bit
 { 0x4, "local_base" }, // 32bit
@@ -558,18 +558,18 @@ const char *NV_renderer::cb0_name(unsigned short idx) const {
 }
 
 int NV_renderer::asgn_cb0() {
- // maxler - sm50, sm52, sm53
+ // maxwell - sm50, sm52, sm53
  if ( m_sm >= 0x32 && m_sm <= 0x35 ) {
-   m_cb0.bank0 = &s_maxler;
+   m_cb0.bank0 = &s_maxwell;
    m_cb0.cnp_off = 0x1840;
-   m_cb0.cnp = &s_maxler_dbg;
+   m_cb0.cnp = &s_maxwell_dbg;
    return 1;
  }
  // pascal - sm60, sm61, sm62
  if ( m_sm >= 0x3c && m_sm <= 0x3e ) {
    m_cb0.bank0 = &s_pascal;
    m_cb0.cnp_off = 0x1840;
-   m_cb0.cnp = &s_maxler_dbg;
+   m_cb0.cnp = &s_maxwell_dbg;
    return 1;
  }
  m_cb0.cnp_off = 0x1860;
