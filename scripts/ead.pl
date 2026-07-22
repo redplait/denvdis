@@ -54,6 +54,27 @@ sub is_sm2
   defined($opt_C) && $opt_C eq 'sm2';
 }
 
+# stat for tables (option -g)
+my $gg_cols = 0;  # sum of columns
+my $gg_rows = 0;  # sum of rows
+my $gg_total = 0; # total of instructions
+# instruction with max cols/rows
+my($gg_cmax, $gg_col_instr, $gg_rmax, $gg_row_instr);
+
+sub dump_group_stat
+{
+  my $fh = shift;
+  return unless($gg_total);
+  printf($fh "// total %d cols, avg %f\n", $gg_cols, (1.0 * $gg_cols) / $gg_total);
+  printf($fh "// total %d rows, avg %f\n", $gg_rows, (1.0 * $gg_rows) / $gg_total);
+  if ( $gg_col_instr ) {
+    printf($fh "// max cols %d for %s\n", $gg_cmax, $gg_col_instr->[1]);
+  }
+  if ( $gg_row_instr ) {
+    printf($fh "// max rows %d for %s\n", $gg_rmax, $gg_row_instr->[1]);
+  }
+}
+
 # some hardcoded tabs
 my %pmode = (
  IDX => 0,
@@ -3422,6 +3443,7 @@ sub gen_instr
   while( my($m, $list) = each %g_masks) {
     printf($fh "//%s\n", $m);
     foreach my $op ( @$list ) {
+      $gg_total++;
       # collect enums
       foreach my $ae ( values %{ $op->[17] } ) {
         my $ename = c_ae($ae);
@@ -3586,6 +3608,7 @@ sub gen_C
     printf($fh "} },\n");
   }
   printf($fh "};\n");
+  dump_group_stat($fh) if defined($opt_g);
   # finally gen get_sm
   printf($fh "\nINV_disasm *get_sm() {\n");
   printf($fh " return new NV_disasm<nv%d>(%s, %d, %d, &%s, %s, %s); }\n", $g_size, $root, $g_rz, $n, $s_name, $ename, $dotted);
@@ -3979,6 +4002,12 @@ sub check_tab_cols
   my $res = 'tab_col_' . $i->[19];
   printf($fh "static const NV_tabrefs %s = {\n", $res);
   my $l = $g_gtcols{$i};
+  my $l_size = scalar @$l;
+  $gg_cols += $l_size;
+  if ( !defined($gg_cmax) || $l_size > $gg_cmax ) {
+    $gg_cmax = $l_size;
+    $gg_col_instr = $i;
+  }
   foreach my $i ( @$l ) {
     if ( scalar(@$i) > 3 ) {
       printf($fh " { &%s, &%s, %d }, // %s\n", c_gtab_name($i->[0]), $i->[3], $i->[1], $i->[2]);
@@ -3997,6 +4026,12 @@ sub check_tab_rows
   my $res = 'tab_row_' . $i->[19];
   printf($fh "static const NV_tabrefs %s = {\n", $res);
   my $l = $g_gtrows{$i};
+  my $l_size = scalar @$l;
+  $gg_rows += $l_size;
+  if ( !defined($gg_rmax) || $l_size > $gg_rmax ) {
+    $gg_rmax = $l_size;
+    $gg_row_instr = $i;
+  }
   foreach my $i ( @$l ) {
     if ( scalar(@$i) > 3 ) {
       printf($fh " { &%s, &%s, %d }, // %s\n", c_gtab_name($i->[0]), $i->[3], $i->[1], $i->[2]);
