@@ -224,6 +224,14 @@ struct reg_pad {
     what.push_back( { off, kind } );
     return what.back().tab_chain;
   }
+  template <typename T>
+  bool has_reads(const T& what) const {
+    return std::any_of(what.cbegin(), what.cend(), [](auto &c) { return !(c.kind & 0x8000); });
+  }
+  template <typename T>
+  bool has_writes(const T& what) const {
+    return std::any_of(what.cbegin(), what.cend(), [](auto &c) { return 0 != (c.kind & 0x8000); });
+  }
   RegTabChains* rgsb(int v, unsigned long off) {
     if ( snap ) {
       if ( v )

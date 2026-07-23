@@ -758,6 +758,7 @@ printf("check_ve %s %d\n", ve.arg, psize);
   if ( is_sm90plus() ) {
     if ( check_tconn_row(p.first, s_rpc, s_true_tab) ) {
      // dirty hack - in table_true(rpc) the only reader/column is USETMAXREG
+     // on other hand it also presents in rows, so passing check above
      if ( !strcmp(p.first->name, "USETMAXREG") )
        fill_tab_chains(p, s_rpc, rtdb->rrpc(off), 1);
      else
@@ -871,6 +872,11 @@ void NV_renderer::dump_rt(reg_pad *rtdb, int rc) const {
   if ( !rtdb->gsb7.empty() ) {
    fprintf(m_out, ";;; %ld GSB7\n", rtdb->gsb7.size());
    for ( auto &c: rtdb->gsb7 ) dump_rh(c);
+  }
+  // dump RPC
+  if ( !rtdb->rpc.empty() && rtdb->has_reads(rtdb->rpc) ) {
+   fprintf(m_out, ";;; %ld RPC\n", rtdb->rpc.size());
+   for ( auto &c: rtdb->rpc ) dump_rh(c);
   }
   // const banks
   if ( !rtdb->cbs.empty() ) {
