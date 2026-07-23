@@ -127,8 +127,10 @@ struct track_snap {
   std::optional<unsigned char> cc;
   // gsb0 & gsb7: like cc, 1 - read, 2 - write
   std::optional<unsigned char> gsb0, gsb7;
+  // sm90+ - RPC, 1 - read, 2 - write
+  std::optional<unsigned char> rpc;
   void reset() {
-    gpr.clear(); cc.reset(); gsb0.reset(); gsb7.reset();
+    gpr.clear(); cc.reset(); gsb0.reset(); gsb7.reset(); rpc.reset();
     memset(pr, 0, pr_size); memset(upr, 0, pr_size);
   }
   bool empty_pr() const {
@@ -160,6 +162,8 @@ struct reg_pad {
   std::vector<reg_history> cc;
   // gsb for sm90
   std::vector<reg_history> gsb0, gsb7;
+  // rpc for sm90+
+  std::vector<reg_history> rpc;
   TRSet gpr, ugpr;
   RSet pred, upred;
   std::vector<cbank_history> cbs;
@@ -209,6 +213,17 @@ struct reg_pad {
      return et.first->second.back().tab_chain;
     }
   }
+  template <typename T>
+  inline RegTabChains* r_gen(T &what, unsigned long off) {
+    what.push_back( { off, pred_mask } );
+    return what.back().tab_chain;
+  }
+  template <typename T>
+  inline RegTabChains* w_gen(T &what, unsigned long off) {
+    reg_history::RH kind = 0x8000 | pred_mask;
+    what.push_back( { off, kind } );
+    return what.back().tab_chain;
+  }
   RegTabChains* rgsb(int v, unsigned long off) {
     if ( snap ) {
       if ( v )
@@ -217,8 +232,7 @@ struct reg_pad {
         snap->gsb0.emplace(1);
     }
     auto &gsb = v ? gsb7 : gsb0;
-    gsb.push_back( { off, pred_mask } );
-    return gsb.back().tab_chain;
+    return r_gen(gsb, off);
   }
   RegTabChains* wgsb(int v, unsigned long off) {
     if ( snap ) {
@@ -228,20 +242,23 @@ struct reg_pad {
         snap->gsb0.emplace(2);
     }
     auto &gsb = v ? gsb7 : gsb0;
-    reg_history::RH kind = 0x8000 | pred_mask;
-    gsb.push_back( { off, kind } );
-    return gsb.back().tab_chain;
+    return w_gen(gsb, off);
+  }
+  RegTabChains* rrpc(unsigned long off) {
+    if ( snap ) snap->rpc.emplace(1);
+    return r_gen(rpc, off);
+  }
+  RegTabChains* wrpc(unsigned long off) {
+    if ( snap ) snap->rpc.emplace(2);
+    return w_gen(rpc, off);
   }
   RegTabChains* rcc(unsigned long off) {
     if ( snap ) snap->cc.emplace(1);
-    cc.push_back( { off, pred_mask } );
-    return cc.back().tab_chain;
+    return r_gen(cc, off);
   }
   RegTabChains* wcc(unsigned long off) {
     if ( snap ) snap->cc.emplace(2);
-    reg_history::RH kind = 0x8000 | pred_mask;
-    cc.push_back( { off, kind } );
-    return cc.back().tab_chain;
+    return w_gen(cc, off);
   }
   RegTabChains* _add(TRSet &rs, int idx, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
     k |= pred_mask;
@@ -317,7 +334,7 @@ struct reg_pad {
      ugpr.clear();
      upred.clear();
      cbs.clear();
-     cc.clear();
+     cc.clear(); rpc.clear();
      gsb0.clear(); gsb7.clear();
   }
 };
@@ -344,6 +361,8 @@ TabRIdx check_tconn_row(const nv_instr *, const std::vector<std::string_view> &,
 // 0 for gpr
 // 1 for predicates
 // 2 for cc
+// 3 - gsb
+// 4 - rpc
 // | 0x80 for uni
 typedef std::function<void(unsigned char type, unsigned char what, unsigned long dst, unsigned long src, const found_tab_cross &)> TLTrackCB;
 // WaW callback

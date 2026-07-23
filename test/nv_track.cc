@@ -154,7 +154,8 @@ static const std::string_view s_tkey_gpr("GPR"), s_tkey_ugpr("UGPR"),
  s_cc_prop("DOES_READ_CC"), // pred name for cc reading
  s_true_tab("TRUE"),
  s_anti_tab("ANTI"),
- s_ggs("GMMA_GROUP_SCOREBOARD"); // GMMA_GROUP_SCOREBOARD for sm90
+ s_ggs("GMMA_GROUP_SCOREBOARD"), // GMMA_GROUP_SCOREBOARD for sm90
+ s_rpc("RPC"); // sm90+
 
 std::optional<found_tab_cross> find_tab_cross(const RegTabChains &rows, const RegTabChains &cols) {
   std::optional<found_tab_cross> res;
@@ -753,6 +754,17 @@ printf("check_ve %s %d\n", ve.arg, psize);
     }
   }
 
+  // track RPC - sm90+
+  if ( is_sm90plus() ) {
+    if ( check_tconn_row(p.first, s_rpc, s_true_tab) ) {
+     // dirty hack - in table_true(rpc) the only reader/column is USETMAXREG
+     if ( !strcmp(p.first->name, "USETMAXREG") )
+       fill_tab_chains(p, s_rpc, rtdb->rrpc(off), 1);
+     else
+       fill_tab_chains(p, s_rpc, rtdb->wrpc(off), 0);
+    }
+  }
+
   return res;
 }
 
@@ -788,6 +800,8 @@ void NV_renderer::finalize_rt(reg_pad *rtdb) {
   std::sort(rtdb->gsb0.begin(), rtdb->gsb0.end(), srt);
  if ( !rtdb->gsb7.empty() )
   std::sort(rtdb->gsb7.begin(), rtdb->gsb7.end(), srt);
+ if ( !rtdb->rpc.empty() )
+  std::sort(rtdb->rpc.begin(), rtdb->rpc.end(), srt);
  if ( !rtdb->cbs.empty() ) {
   std::sort(rtdb->cbs.begin(), rtdb->cbs.end(), [](const cbank_history &a, const cbank_history &b) { return a.off < b.off; });
  }
@@ -1037,6 +1051,11 @@ int NV_renderer::track_lat(reg_pad *rtdb, unsigned long off, TLTrackCB *cb) cons
       res += find_notify(3, 7, rtdb->gsb7, off, cb);
     }
   }
+  // rpc - sm90+
+  if ( is_sm90plus() ) {
+    if ( rtdb->snap->rpc.has_value() && 2 != rtdb->snap->rpc.value() )
+      res += find_notify(4, 0, rtdb->rpc, off, cb);
+  }
   return res;
 }
 
@@ -1137,6 +1156,9 @@ std::string lt_what(unsigned char type, unsigned char what) {
     std::string res = "GSB";
     res += std::to_string(what);
     return res;
+  }
+  if ( 4 == type ) {
+    return "Rpc";
   }
   std::string res;
   if ( type & 0x80 ) res.push_back('U');

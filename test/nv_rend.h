@@ -160,6 +160,9 @@ class NV_renderer {
     inline bool is_sm90() const {
       return m_sm == 0x5a;
     }
+    inline bool is_sm90plus() const {
+      return m_sm >= 0x5a;
+    }
     static const char *param_kind_name(int);
     // latency methods
     int check_lat_set(const NV_sorted *) const;
