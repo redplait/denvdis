@@ -3378,6 +3378,18 @@ cc(SV *obj)
   RETVAL
 
 SV *
+rpc(SV *obj)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+   if ( !r->snap->rpc.has_value() )
+     RETVAL = &PL_sv_undef;
+   else
+     RETVAL = newSViv(r->snap->rpc.value());
+ OUTPUT:
+  RETVAL
+
+SV *
 gsb0(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::gsb7 = 1
