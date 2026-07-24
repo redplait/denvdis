@@ -765,11 +765,11 @@ printf("check_ve %s %d\n", ve.arg, psize);
      else
        fill_tab_chains(p, s_rpc, rtdb->wrpc(off), 0);
     }
-    // CgaBar - if row then this is read
-    if ( check_tconn_row(p.first, s_cgabar, s_true_tab) )
-      fill_tab_chains(p, s_cgabar, rtdb->rcgabar(off), 1);
-    // if column - this is write
+    // CgaBar - if col then this is read
     if ( check_tconn_col(p.first, s_cgabar, s_true_tab) )
+      fill_tab_chains(p, s_cgabar, rtdb->rcgabar(off), 1);
+    // if row - this is write
+    if ( check_tconn_row(p.first, s_cgabar, s_true_tab) )
       fill_tab_chains(p, s_cgabar, rtdb->wcgabar(off), 0);
   }
 
