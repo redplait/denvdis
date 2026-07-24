@@ -42,7 +42,7 @@ typedef std::list<RegTabChain> RegTabChains;
 
 std::optional<found_tab_cross> find_tab_cross(const RegTabChains &rows, const RegTabChains &cols);
 
-struct reg_history {
+struct _reg_history {
   unsigned long off;
   // 0x8000 - write, else read
   // 0x4000 - Uniform predicate, else just predicate
@@ -86,12 +86,16 @@ struct reg_history {
   inline int windex() const {
     return (kind >> 4) & 7;
   }
-  // 0 - TRUE for RaW, row - write, col - read
-  // 1 - ANTI for WaR, col - write, row - read
-  RegTabChains tab_chain[2];
 };
 
-struct typed_reg_history: public reg_history {
+template <int Size = 2>
+struct reg_history: _reg_history {
+  // 0 - TRUE for RaW, row - write, col - read
+  // 1 - ANTI for WaR, col - write, row - read
+  RegTabChains tab_chain[Size];
+};
+
+struct typed_reg_history: public reg_history<2> {
   NVP_type type = GENERIC;
 };
 
@@ -157,33 +161,33 @@ struct track_snap {
 // - uniform predicates
 // keys are register index
 struct reg_pad {
-  typedef std::unordered_map<int, std::vector<reg_history> > RSet;
+  typedef std::unordered_map<int, std::vector<reg_history<2> > > RSet;
   typedef std::unordered_map<int, std::vector<typed_reg_history> > TRSet;
-  std::vector<reg_history> cc;
+  std::vector<reg_history<2> > cc; // bcs CC has table_anti in sm3/sm4
   // gsb for sm90
-  std::vector<reg_history> gsb0, gsb7;
+  std::vector<reg_history<1> > gsb0, gsb7;
   // rpc for sm90+
-  std::vector<reg_history> rpc;
+  std::vector<reg_history<1> > rpc;
   TRSet gpr, ugpr;
   RSet pred, upred;
   std::vector<cbank_history> cbs;
   track_snap *snap = nullptr;
   reg_reuse m_reuse;
-  reg_history::RH pred_mask = 0;
+  _reg_history::RH pred_mask = 0;
   // if you want some inheritance - make destructor virtual
   ~reg_pad() {
     if ( snap ) delete snap;
   }
   // boring stuff
-  reg_history::RH check_reuse(int op) const {
+  _reg_history::RH check_reuse(int op) const {
     if ( op < ISRC_A) return 0;
-    if ( m_reuse.mask & (1 << (op - ISRC_A)) ) return reg_history::reuse;
+    if ( m_reuse.mask & (1 << (op - ISRC_A)) ) return _reg_history::reuse;
     return 0;
   }
   void add_cb(unsigned long off, unsigned long cb_off, unsigned short cb_num, unsigned short k) {
     cbs.push_back( { off, cb_off, cb_num, k });
   }
-  RegTabChains* _add(RSet &rs, int idx, unsigned long off, reg_history::RH k) {
+  RegTabChains* _add(RSet &rs, int idx, unsigned long off, _reg_history::RH k) {
     if ( snap ) {
       if ( &rs == &pred ) {
         if ( k & 0x8000 )
@@ -207,7 +211,7 @@ struct reg_pad {
       ri->second.push_back( { off, k } );
       return ri->second.back().tab_chain;
     } else {
-     std::vector<reg_history> tmp;
+     std::vector<reg_history<2> > tmp;
      tmp.push_back( { off, k } );
      auto et = rs.emplace(idx, std::move(tmp) );
      return et.first->second.back().tab_chain;
@@ -220,7 +224,7 @@ struct reg_pad {
   }
   template <typename T>
   inline RegTabChains* w_gen(T &what, unsigned long off) {
-    reg_history::RH kind = 0x8000 | pred_mask;
+    _reg_history::RH kind = 0x8000 | pred_mask;
     what.push_back( { off, kind } );
     return what.back().tab_chain;
   }
@@ -268,7 +272,7 @@ struct reg_pad {
     if ( snap ) snap->cc.emplace(2);
     return w_gen(cc, off);
   }
-  RegTabChains* _add(TRSet &rs, int idx, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+  RegTabChains* _add(TRSet &rs, int idx, unsigned long off, _reg_history::RH k, NVP_type t = GENERIC) {
     k |= pred_mask;
     auto ri = rs.find(idx);
     if ( ri != rs.end() ) {
@@ -285,7 +289,7 @@ struct reg_pad {
      return et.first->second.back().tab_chain;
     }
   }
-  RegTabChains* rgpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {
+  RegTabChains* rgpr(int r, unsigned long off, _reg_history::RH k, int op, NVP_type t = GENERIC) {
      auto reuse = check_reuse(op);
      if ( snap ) {
        std::unordered_map<unsigned short, unsigned char>::iterator si = snap->gpr.find(r);
@@ -297,11 +301,11 @@ struct reg_pad {
      }
      return _add(gpr, r, off, k | reuse, t);
   }
-  RegTabChains* wgpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+  RegTabChains* wgpr(int r, unsigned long off, _reg_history::RH k, NVP_type t = GENERIC) {
      if ( snap ) snap->gpr[r] |= 0x80;
      return _add(gpr, r, off, k | 0x8000, t);
   }
-  RegTabChains* rugpr(int r, unsigned long off, reg_history::RH k, int op, NVP_type t = GENERIC) {
+  RegTabChains* rugpr(int r, unsigned long off, _reg_history::RH k, int op, NVP_type t = GENERIC) {
      auto reuse = check_reuse(op);
      if ( snap ) {
        std::unordered_map<unsigned short, unsigned char>::iterator si = snap->gpr.find(r | 0x8000);
@@ -313,20 +317,20 @@ struct reg_pad {
      }
      return _add(ugpr, r, off, k | reuse, t);
   }
-  RegTabChains* wugpr(int r, unsigned long off, reg_history::RH k, NVP_type t = GENERIC) {
+  RegTabChains* wugpr(int r, unsigned long off, _reg_history::RH k, NVP_type t = GENERIC) {
      if ( snap ) snap->gpr[r | 0x8000] |= 0x80;
      return _add(ugpr, r, off, k | 0x8000, t);
   }
-  inline RegTabChains* rpred(int r, unsigned long off, reg_history::RH k) {
+  inline RegTabChains* rpred(int r, unsigned long off, _reg_history::RH k) {
     return _add(pred, r, off, k);
   }
-  inline RegTabChains* wpred(int r, unsigned long off, reg_history::RH k) {
+  inline RegTabChains* wpred(int r, unsigned long off, _reg_history::RH k) {
     return _add(pred, r, off, k | 0x8000);
   }
-  inline RegTabChains* rupred(int r, unsigned long off, reg_history::RH k) {
+  inline RegTabChains* rupred(int r, unsigned long off, _reg_history::RH k) {
     return _add(upred, r, off, k);
   }
-  inline RegTabChains* wupred(int r, unsigned long off, reg_history::RH k) {
+  inline RegTabChains* wupred(int r, unsigned long off, _reg_history::RH k) {
     return _add(upred, r, off, k | 0x8000);
   }
   bool gsb_empty() const {

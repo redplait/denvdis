@@ -435,7 +435,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     auto rgpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, int op_idx, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
-        reg_history::RH what = reg_history::windex(i);
+        _reg_history::RH what = _reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
         fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second + i, off, what, op_idx, _t), 1);
         res++;
@@ -445,7 +445,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     auto gpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
-        reg_history::RH what = reg_history::windex(i);
+        _reg_history::RH what = _reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
         fill_tab_chains(p, s_tkey_gpr, rtdb->wgpr(kvi->second + i, off, what, _t), 0);
         res++;
@@ -455,7 +455,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     auto rugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, int op_idx, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
-        reg_history::RH what = reg_history::windex(i);
+        _reg_history::RH what = _reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
         fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second + i, off, what, op_idx, _t), 1);
         res++;
@@ -465,7 +465,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
     auto ugpr_multi = [&](unsigned short dsize, NV_extracted::const_iterator kvi, NVP_type _t = GENERIC) {
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
-        reg_history::RH what = reg_history::windex(i);
+        _reg_history::RH what = _reg_history::windex(i);
         if ( (int)kvi->second + i >= m_dis->rz ) break;
         fill_tab_chains(p, s_tkey_ugpr, rtdb->wugpr(kvi->second + i, off, what, _t), 0);
         res++;
@@ -620,7 +620,7 @@ printf("%lX idx %d rtype %d\n", off, idx, r->type);
       if ( ve.arg[len - 1] == 'h' ) { out_size = h_size; return t_h; }
       return GENERIC;
     };
-    auto check_ve_t = [&](const ve_base &ve, reg_history::RH what, const nv_eattr *ea, const NV_Prop *pr) {
+    auto check_ve_t = [&](const ve_base &ve, _reg_history::RH what, const nv_eattr *ea, const NV_Prop *pr) {
         if ( ve.type == R_value ) return 0;
         auto kvi = p.second.find(ve.arg);
         if ( kvi == p.second.end() ) return 0;
@@ -646,7 +646,7 @@ printf("check_ve %s %d\n", ve.arg, psize);
             if ( psize > 32 )
               rgpr_multi(psize, kvi, pr ? pr->op : 0, type);
             else
-              fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type), 1);
+              fill_tab_chains(p, s_tkey_gpr, rtdb->rgpr(kvi->second, off, what | _reg_history::comp, pr ? pr->op : 0, type), 1);
           }
           return 1;
         }
@@ -666,7 +666,7 @@ printf("check_ve %s %d\n", ve.arg, psize);
             if ( psize > 32 )
               rugpr_multi(psize, kvi, pr ? pr->op : 0, type);
             else
-              fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second, off, what | reg_history::comp, pr ? pr->op : 0, type), 1);
+              fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second, off, what | _reg_history::comp, pr ? pr->op : 0, type), 1);
           }
           return 1;
         }
@@ -677,13 +677,13 @@ printf("check_ve %s %d\n", ve.arg, psize);
         { fill_tab_chains(p, s_tkey_upred, rtdb->rupred(kvi->second, off, what), 1); return 1; }
         return 0;
     };
-    auto check_ve = [&](const ve_base &ve, reg_history::RH what, const NV_Prop *pr) {
+    auto check_ve = [&](const ve_base &ve, _reg_history::RH what, const NV_Prop *pr) {
         if ( ve.type == R_value ) return 0;
         const nv_eattr *ea = find_ea(p.first, ve.arg);
         if ( !ea ) return 0;
         return check_ve_t(ve, what, ea, pr);
     };
-    auto check_ve_list = [&](const std::list<ve_base> &l, reg_history::RH what, const NV_Prop *pr) {
+    auto check_ve_list = [&](const std::list<ve_base> &l, _reg_history::RH what, const NV_Prop *pr) {
         int res = 0;
         for ( auto &ve: l ) {
           if ( ve.type == R_value ) continue;
@@ -702,16 +702,16 @@ printf("check_ve %s %d\n", ve.arg, psize);
       const render_C *rn = (const render_C *)r;
       auto ctype = find_compound_prop(p.first, rn);
       res += check_ve(rn->left, 0, ctype);
-      res += check_ve_list(rn->right, reg_history::in_list, ctype);
+      res += check_ve_list(rn->right, _reg_history::in_list, ctype);
     } else if ( r->type == R_desc ) {
       const render_desc *rd = (const render_desc *)r;
       auto ctype = find_compound_prop(p.first, rd);
       res += check_ve(rd->left, 0, ctype);
-      res += check_ve_list(rd->right, reg_history::in_list, ctype);
+      res += check_ve_list(rd->right, _reg_history::in_list, ctype);
     } else if ( r->type == R_mem ) {
       const render_mem *rm = (const render_mem *)r;
       auto ctype = find_compound_prop(p.first, rm);
-      res += check_ve_list(rm->right, reg_history::in_list, ctype);
+      res += check_ve_list(rm->right, _reg_history::in_list, ctype);
     } else if ( r->type == R_TTU ) {
       const render_TTU *rt = (const render_TTU *)r;
       auto ctype = find_compound_prop(p.first, rt);
@@ -777,7 +777,7 @@ void NV_renderer::finalize_rt(reg_pad *rtdb) {
  //  regZ <- off
  //  regZ off
  // therefore we must sort by mask 0x8000 for the same offsets
- auto srt = [](const reg_history &a, const reg_history &b) -> bool {
+ auto srt = [](const auto &a, const auto &b) -> bool {
    if ( a.off == b.off ) {
      bool res = ((a.kind & 0x8000) < (b.kind & 0x8000));
 #ifdef DEBUG
@@ -840,7 +840,7 @@ void NV_renderer::dump_rt(reg_pad *rtdb, int rc) const {
     fprintf(m_out, ";;; %ld UPRED\n", rtdb->upred.size());
     dump_rset(rtdb->upred, "UP", rc);
   }
-  auto dump_rh = [&](const reg_history &c) {
+  auto dump_rh = [&](const auto &c) {
     constexpr int mask = (1 << 11) - 1;
     // truncated version of dump_rset
     int pred = 0;
