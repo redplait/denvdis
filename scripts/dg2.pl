@@ -2551,6 +2551,8 @@ sub gdisasm
         }
         add_ruc($block, $off, $g) if ( defined($g) && defined($opt_u) );
         if ( $in_lm ) {
+          # store address of next instruction in previous - it is last in block->[18] before push
+          $block->[18]->[-1]->[0]->[18] = $block->[13]->[0] if ( scalar @{ $block->[18] } );
           # store pair [ current instr, current latency ] in block->[18]
           push @{ $block->[18] }, [ $block->[13], $block->[16]->[4] ];
           $block->[13] = [];
@@ -2939,7 +2941,8 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
     * 15 - scbd, should skip if it is SINK (3) - for strange instructions like UTMALDG
     * 16 - sidl has _CAS suffix
     * 17 - has wait
-    * 18 - TBC
+    * 18 - address of next instruction
+    * 19 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
