@@ -2501,7 +2501,7 @@ sub gdisasm
               if ( $may_swap && !$inter ) {
                 my $gain = can_swap($block); # applied config
                 if ( defined($gain) && $gain > 0) {
-                  my $scand = [ $idx - 1, $gain ];
+                  my $scand = [ $idx - 1, $gain, $block->[14], $block->[13] ];
                   # put pair of candidates to block->[19] list
                   if ( defined $block->[19] ) {
                     push @{$block->[19]}, $scand;
@@ -2509,7 +2509,7 @@ sub gdisasm
                     $block->[19] = [ $scand ];
                   }
                   upd_swap_stat($gain, get_old_pair_stall($block));
-                  printf("; Can swap %X (idx %d) to reduce %d\n", $block->[13]->[0], $idx, $gain,);
+                  printf("; Can swap %X (idx %d) to reduce %d\n", $block->[13]->[0], $idx, $gain);
                 }
               }
             }
@@ -2522,16 +2522,13 @@ sub gdisasm
       # swap -s data
       if ( defined $opt_s ) {
         if ( !$res ) {
-          $block->[13] = [];
           $block->[14] = [];
         } else {
           $gs_total++;
           $block->[14] = $block->[13];
-          $block->[13] = [];
         }
-      } else {
-        $block->[13] = [];
       }
+      $block->[13] = [];
       $rt->snap_clear() if ( defined $rt );
       $idx++;
     } while( $g_ced->next_off() < $block->[1] && $g_ced->next() );
@@ -2892,7 +2889,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
     with -l 4th item is latency_data [ current stall, latency from ins_lat, instr_off, ins_stall ]
   [17] - if this block contains unconditional EXIT
   [18] - array of [ instr_prop, latency_data, ...]
-  [19] - for -s array of swap candidates where each item is [ index of first first instruction, possible gain ]
+  [19] - for -s array of swap candidates where each item is [ index of first instruction, possible gain, prev, curr ]
 =cut
   my @bbs;
   my $add_block = sub {
