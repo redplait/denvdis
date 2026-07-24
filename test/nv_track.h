@@ -110,7 +110,7 @@ struct cbank_history {
    run grep TAB *_2.txt | grep -v GPR | grep -v PRED
    Hovewer most of them ORDERED_ZERO like SCOREBOARD
    There are severa sm90 (H100) specific tables:
-    - CGABARRIER but connection field CgaBar not presented in MD
+    - CGABARRIER but connection field CgaBar not presented in MD - stored in CgaBar with dirty hacks
     - GMMA_SCOREBOARD
     - GMMA_GROUP_SCOREBOARD - connected by field gsb:
  OPTIONAL_GSB "gsb0"=0 , "nooptional_gsb"=7 , "INVALID1"=1 , "INVALID2"=2 , "INVALID3"=3 , "INVALID4"=4 , "INVALID5"=5 , "INVALID6"=6;
@@ -131,10 +131,10 @@ struct track_snap {
   std::optional<unsigned char> cc;
   // gsb0 & gsb7: like cc, 1 - read, 2 - write
   std::optional<unsigned char> gsb0, gsb7;
-  // sm90+ - RPC, 1 - read, 2 - write
-  std::optional<unsigned char> rpc;
+  // sm90+ - RPC/CGABARRIER, 1 - read, 2 - write
+  std::optional<unsigned char> rpc, cgabar;
   void reset() {
-    gpr.clear(); cc.reset(); gsb0.reset(); gsb7.reset(); rpc.reset();
+    gpr.clear(); cc.reset(); gsb0.reset(); gsb7.reset(); rpc.reset(); cgabar.reset();
     memset(pr, 0, pr_size); memset(upr, 0, pr_size);
   }
   bool empty_pr() const {
@@ -166,8 +166,8 @@ struct reg_pad {
   std::vector<reg_history<2> > cc; // bcs CC has table_anti in sm3/sm4
   // gsb for sm90
   std::vector<reg_history<1> > gsb0, gsb7;
-  // rpc for sm90+
-  std::vector<reg_history<1> > rpc;
+  // rpc/CGABARRIER for sm90+
+  std::vector<reg_history<1> > rpc, CgaBar;
   TRSet gpr, ugpr;
   RSet pred, upred;
   std::vector<cbank_history> cbs;
@@ -255,6 +255,24 @@ struct reg_pad {
     }
     auto &gsb = v ? gsb7 : gsb0;
     return w_gen(gsb, off);
+  }
+  RegTabChains* rcgabar(unsigned long off) {
+    if ( snap ) {
+      if ( !snap->cgabar.has_value() )
+       snap->cgabar.emplace(1);
+      else
+       snap->cgabar.emplace( 1 | snap->cgabar.value() );
+    }
+    return r_gen(CgaBar, off);
+  }
+  RegTabChains* wcgabar(unsigned long off) {
+    if ( snap ) {
+      if ( !snap->cgabar.has_value() )
+       snap->cgabar.emplace(2);
+      else
+       snap->cgabar.emplace( 2 | snap->cgabar.value() );
+    }
+    return w_gen(CgaBar, off);
   }
   RegTabChains* rrpc(unsigned long off) {
     if ( snap ) snap->rpc.emplace(1);
@@ -346,7 +364,7 @@ struct reg_pad {
      ugpr.clear();
      upred.clear();
      cbs.clear();
-     cc.clear(); rpc.clear();
+     cc.clear(); rpc.clear(); CgaBar.clear();
      gsb0.clear(); gsb7.clear();
   }
 };
@@ -375,6 +393,7 @@ TabRIdx check_tconn_row(const nv_instr *, const std::vector<std::string_view> &,
 // 2 for cc
 // 3 - gsb
 // 4 - rpc
+// 5 - CgaBar
 // | 0x80 for uni
 typedef std::function<void(unsigned char type, unsigned char what, unsigned long dst, unsigned long src, const found_tab_cross &)> TLTrackCB;
 // WaW callback
