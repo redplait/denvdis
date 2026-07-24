@@ -23,12 +23,12 @@ Usage: $0 [options] file.cubin
   -d - debug mode
   -G - generate initial config file and exit
   -g - build cf graph
-  -l - check latency when try to swap instructions
+  -l - check latency and try to reduce stall counts
   -m - ignore instructions having min wait
   -P - do real patch. Don't forget to backup your CUBIN files
   -p - dump properties
   -r - dump relocs
-  -s - try to find instructions to swap and reduce stall count
+  -s - try to find instructions to swap
   -t - track registers
   -u - try detect register reuse cache
   -U - analyze possible registers reuse
@@ -98,7 +98,7 @@ my($gc_war, $gc_waw);
 # per-section filter, forms in filter_gcd, assigned in main sections loop
 my $gcdf;
 
-sub in_lmode { defined($opt_l) && !defined($opt_s); }
+sub in_lmode { defined($opt_l); }
 
 sub dump_lmode_stat
 {
@@ -1173,72 +1173,7 @@ They does not have transitive relation. Lets illustate this on simple example - 
 
 It's easy to see that despite the fact that A & B independent and B & C independent too A & C are not independent
 
-So when you add candidates to swap you can use only previous and current instructions. Lets check sequence from 2 pairs:
-
-=begin text
-
- A stall 1, B stall 2 - if we swap them we can gain stall 1
- B stall 2, C stall 4 - if we swap them we can gain stall 2
-
-=end text
-
-Obviously we should choose B & C bcs they have bigger stall gain. Unfortunatelly simple greedy algo can choose not global maximum, like in
-following example (remember that max stall can be 31):
-
-=begin text
-
- A stall 1, B stall 2 - if we swap them we can gain stall 1
- B stall 2, C stall 4 - if we swap them we can gain stall 2
- C stall 4, D stall 7 - gain 3
- D stall 7, E stall 11 - gain 4
- E stall 11, F stall 16 - gain 5
- F stall 16, G stall 22 - gain 6
- G stall 22, H stall 29 - gain 7
-
-=end text
-
-Here result will be swap G & H to gain 7, but if we save A & B, C & D and E & F we could also additioanl gain 1 + 3 + 5 = 9
-
-What is probability of those bad sequences? Well, lets assume that for pair of adjacent instructions probability to be independent is
-0.5 (in reality it in best case 0.25). I don't know how to estimate probability that gain of next pair will be better - so let it be 0.5 too
-
-Then for worst case we have P = (0,5 * 0,5) ^ 7 = 0,000061035 or 0.006%, loss 9
-
-For 6 consecutive instructions P = (0,5 * 0,5) ^ 6 = 0,000244141 or 0.024%, B & C = 2 + D & E = 4, loss 6
-
-For 5 consecutive instructions P = (0,5 * 0,5) ^ 5 = 0,000976562 or 0.1%, A & B = 1 + C & D = 3, loss 4
-
-For 4 consecutive instructions P = (0,5 * 0,5) ^ 4 = 0,00390625 or 0.4%, B + C = 2
-
-Seems that probability is not very high and using of simple and quick greedy algo here is ok
-
 =cut
-
-# arg - block
-# put block->[13] curr & block->[14] prev into block->[15] in form [ [ prev, curr ] ]
-sub greedy_add_swap
-{
-  my $b = shift;
-  unless( defined $b->[15] ) {
-    $b->[15] = [ [ $b->[14], $b->[13] ] ];
-    return 1;
-  }
-  # check if curr $b->[13] is curr from previous pair $prev->[1], offset is at index 0
-  my $prev = $b->[15]->[-1];
-  if ( $prev->[1]->[0] != $b->[14]->[0] ) {
-    push @{ $b->[15] }, [ $b->[14], $b->[13] ];
-    return 1;
-  }
-  # we have two adjacent pairs of independent instructions - see note above
-  # calc gain from previous pair
-  my $p_gain = stall_gain( $prev->[0], $prev->[1] );
-  my $c_gain = stall_gain( $b->[14], $b->[13] );
-printf("p_gain %d c_gain %d\n", $p_gain, $c_gain) if defined($opt_d);
-  return 0 if ( $c_gain <= $p_gain ); # keep previous pair
-  # replace with new pair
-  $b->[15]->[-1] = [ $b->[14], $b->[13] ];
-  2;
-}
 
 sub vq_name
 {
@@ -2555,21 +2490,26 @@ sub gdisasm
           $block->[18]->[-1]->[0]->[18] = $block->[13]->[0] if ( scalar @{ $block->[18] } );
           # store pair [ current instr, current latency ] in block->[18]
           push @{ $block->[18] }, [ $block->[13], $block->[16]->[4] ];
-          $block->[13] = [];
-        } else {
-          # compare snap from current at index 8 with prev at index 9
-          if ( !$idx ) {
-            # no prev - just store current in ->[9]
-            $block->[9] = [ $g, $pr ];
-          } else {
-            $block->[8] = [ $g, $pr ];
-            my $inter = is_interleaved($block);
-            if ( $may_swap && !$inter ) {
-              my $gain = can_swap($block);
-              if ( defined($gain) && $gain > 0 ) {
-                if ( greedy_add_swap($block) ) {
+          if ( defined $opt_s ) {
+            # compare snap from current at index 8 with prev at index 9
+            if ( !$idx ) {
+              # no prev - just store current in ->[9]
+              $block->[9] = [ $g, $pr ];
+            } else {
+              $block->[8] = [ $g, $pr ];
+              my $inter = is_interleaved($block);
+              if ( $may_swap && !$inter ) {
+                my $gain = can_swap($block); # applied config
+                if ( defined($gain) && $gain > 0) {
+                  my $scand = [ $idx - 1, $gain ];
+                  # put pair of candidates to block->[19] list
+                  if ( defined $block->[19] ) {
+                    push @{$block->[19]}, $scand;
+                  } else {
+                    $block->[19] = [ $scand ];
+                  }
                   upd_swap_stat($gain, get_old_pair_stall($block));
-                  printf("; Can swap to reduce %d\n", $gain);
+                  printf("; Can swap %X (idx %d) to reduce %d\n", $block->[13]->[0], $idx, $gain,);
                 }
               }
             }
@@ -2589,6 +2529,8 @@ sub gdisasm
           $block->[14] = $block->[13];
           $block->[13] = [];
         }
+      } else {
+        $block->[13] = [];
       }
       $rt->snap_clear() if ( defined $rt );
       $idx++;
@@ -2950,6 +2892,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
     with -l 4th item is latency_data [ current stall, latency from ins_lat, instr_off, ins_stall ]
   [17] - if this block contains unconditional EXIT
   [18] - array of [ instr_prop, latency_data, ...]
+  [19] - for -s array of swap candidates where each item is [ index of first first instruction, possible gain ]
 =cut
   my @bbs;
   my $add_block = sub {
@@ -3104,12 +3047,12 @@ croak("you can track registers only with -g option") if ( defined($opt_t) && !de
 croak("-u must be used with -t option") if ( defined($opt_u) && !defined($opt_t) );
 croak("-U must be used with -t option") if ( defined($opt_U) && !defined($opt_t) );
 if ( defined $opt_s ) {
- croak("you can use -s only with CFG -g option") unless defined($opt_g);
- croak("-s must be used with -t option") unless defined($opt_t);
- croak("-s must be used with -b option") unless defined($opt_b);
+ croak("-s must be used with -l option") unless defined($opt_l);
 }
 if ( defined $opt_l ) {
+ croak("you can use -l only with CFG -g option") unless defined($opt_g);
  croak("-l must be used wuth -t option") unless defined($opt_t);
+ croak("-l must be used with -b option") unless defined($opt_b);
 }
 # read config
 read_config($opt_C) if defined($opt_C);
