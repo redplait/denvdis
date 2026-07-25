@@ -1075,6 +1075,7 @@ sub can_swap
   return if ( !defined($b->[13]) || !defined($b->[14]) );
   my $curr = $b->[13];
   my $prev = $b->[14];
+  return if ( !scalar(@$curr) || !scalar(@$prev) );
   # check if any of instructions
   # 1) dual
   return 0 if ( $curr->[8] || $prev->[8] );
