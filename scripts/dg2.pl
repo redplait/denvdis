@@ -1,5 +1,5 @@
 #!perl -w
-# Sample of using perl modules from https://redplait.blogspot.com/2025/10/perl-modules-for-cubins-patching.html
+# SASS stall counts optimizator - see details at https://redplait.blogspot.com/2026/07/optimization-of-sass-stall-counts.html
 use strict;
 use warnings;
 use Elf::Reader;
@@ -1046,14 +1046,12 @@ sub denied_swap
   return 0 if ( defined $opt_a );
   # intra-warp instructions
   return 1 if ( $what->[1] =~ /BAR/ );
-  return 1 if ( $what->[1] =~ /ELECT/ || $what->[1] =~ /UTCATOMSWS/ );
-  return 1 if ( $what->[1] =~ /VOTE/ );
+  return 1 if ( $what->[1] =~ /ELECT/ || $what->[1] =~ /VOTE/ || $what->[1] =~ /UTCATOMSWS/ || $what->[1] =~ /USETMAXREG/ );
   return 1 if ( $what->[1] =~ /SHFL/ );
   return 1 if ( $what->[1] =~ /SYNCS/ );
   # some instructions falls anyway
   return 1 if ( $what->[1] =~ /LEA/ );
   return 1 if ( $what->[1] =~ /MUFU/ || $what->[1] =~ /SHF/ );
-  # return 1 if ( $what->[1] =~ /FADD/ || $what->[1] =~ /FMUL/ );
   0;
 }
 
@@ -1125,7 +1123,7 @@ sub can_swap
   # check if we can get some gain from swapping
   my $res = stall_gain($prev, $curr);
   return 0 unless ( $res );
-printf("Gain %d\n", $res) if defined($opt_v);
+printf("Gain %d for %X\n", $res, $curr->[0]) if defined($opt_v);
   my $new_usched = $curr->[7]->[0] - $res;
   # check min_wait at ->[11]
   return 0 if ( defined($curr->[11]) && ($new_usched < $curr->[11]) );
@@ -1137,13 +1135,6 @@ printf("Gain %d\n", $res) if defined($opt_v);
   $res;
 }
 
-# extract old stall count for pair of adjacent instructions
-# arg - block
-sub get_old_pair_stall
-{
-  my $b = shift;
-  $b->[13]->[7]->[0] + $b->[14]->[7]->[0];
-}
 
 # args: prev curr
 sub stall_gain
@@ -1809,11 +1800,61 @@ sub in_ranges
   0;
 }
 
+# extract old stall count for pair of adjacent instructions
+# arg - item from block->[19] array
+sub get_old_pair_stall
+{
+  my $b = shift;
+  $b->[2]->[7]->[0] + $b->[3]->[7]->[0];
+}
+
+
 # args: block, size of instructions array in block->[18]
 sub traverse_lat
 {
   my($bl, $lsize) = @_;
-  my $ld = $bl->[16];
+  my $waw = $bl->[12]->[0];
+  # remove WaWs from config
+  if ( defined($gc_waw) && defined($waw) && scalar(@$gc_waw) ) {
+    my @del;
+    foreach my $wk ( keys %$waw ) {
+      next unless in_ranges($gc_waw, $wk);
+      my $wra = $waw->{$wk};
+      my @tmp = grep { !in_ranges($gc_waw, $_->[0]); } @$wra;
+      if ( scalar @tmp ) {
+        $waw->{$wk} = \@tmp;
+      } else {
+        push @del, $wk;
+      }
+    }
+    delete $waw->{$_} for @del;
+  }
+  # check if we have swap candidtes list
+  unless ( defined $bl->[19] ) {
+    process_lat($bl, $lsize);
+    return;
+  }
+  # filter out swap candidates where second item in WaW
+  my @filt;
+  foreach my $sc ( @{ $bl->[19] } ) {
+     my $second_addr = $sc->[3]->[0];
+     next if exists $waw->{$second_addr};
+     push @filt, $sc;
+     # update stat
+     upd_swap_stat($sc->[1], get_old_pair_stall($sc));
+  }
+  unless ( scalar @filt ) {
+    process_lat($bl, $lsize);
+    return;
+  }
+  $bl->[19] = \@filt;
+}
+
+# args: block, size of instructions array in block->[18]
+sub process_lat
+{
+  my($bl, $lsize) = @_;
+  my $ld = $bl->[16]; # latency data
   # update stat
   $g_bl[0] += $lsize;
   $g_bl[1] += $ld->[0];
@@ -1871,21 +1912,6 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
   }
   dump_rl(\@rl, $il, 'initial') if defined($opt_d);
   my $waw = $bl->[12]->[0];
-  # remove WaWs from config
-  if ( defined($gc_waw) && defined($waw) && scalar(@$gc_waw) ) {
-    my @del;
-    foreach my $wk ( keys %$waw ) {
-      next unless in_ranges($gc_waw, $wk);
-      my $wra = $waw->{$wk};
-      my @tmp = grep { !in_ranges($gc_waw, $_->[0]); } @$wra;
-      if ( scalar @tmp ) {
-        $waw->{$wk} = \@tmp;
-      } else {
-        push @del, $wk;
-      }
-    }
-    delete $waw->{$_} for @del;
-  }
   # move cj into WaW hash $block->[12]->[0]
   foreach my $cji ( @cj ) {
     next if exists $waw->{$cji->[0]};
@@ -2510,7 +2536,6 @@ sub gdisasm
                   } else {
                     $block->[19] = [ $scand ];
                   }
-                  upd_swap_stat($gain, get_old_pair_stall($block));
                   printf("; Can swap %X (idx %d) to reduce %d\n", $block->[13]->[0], $idx, $gain);
                 }
               }
