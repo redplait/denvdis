@@ -104,7 +104,7 @@ sub dump_lmode_stat
 {
   printf("%d blocks with bad latency\n", $g_bl[2]) if ( $g_bl[2] );
   printf("total %d instrs, %d with tail, %d stalls\n", $g_bl[0], $g_bl[5], $g_bl[1]);
-  printf("%d stalls gain: %f\n", $g_bl[3], 1.0 * $g_bl[3] / $g_bl[1]);
+  printf("%d stalls gain: %f\n", $g_bl[3], 1.0 * $g_bl[3] / $g_bl[1]) if $g_bl[1];
   printf("%d instrs with gain: %f\n", $g_bl[4], 1.0 * $g_bl[4] / $g_bl[0]);
   printf("%d patched, %f\n", $g_bl[6], 1.0 * $g_bl[6] / $g_bl[4]) if ( $g_bl[6] && $g_bl[4]);
   printf("%d dec stalls, %f\n", $g_bl[7], 1.0 * $g_bl[7] / $g_bl[1]) if ( $g_bl[7] && $g_bl[1]);
