@@ -1922,9 +1922,42 @@ sub traverse_lat
     # dump found stuff for debugging
     printf("cand %X - %X: idx %d cj_idx %d/%d left %X right %X\n", $first_adr, $second_adr,
       $first_idx, $cj_idx, $cj_size, $left, $right); # if ( defined $opt_d );
-    # swap instructions and stall counts in it
-    
+    # swap instructions and stall counts in it - from here we must have rollback is case of errors/failure
+    # save old rolled stall counts in left_roll/right_roll
+    $left_roll = $il->[$first_idx]->[1]->[0];
+    $right_roll = $il->[$first_idx + 1]->[1]->[0];
+    # swap items
+    my $tmp_swap = $il->[$first_idx];
+    $il->[$first_idx] = $il->[$first_idx + 1];
+    $il->[$first_idx + 1] = $tmp_swap;
+    # fix rolled stall counts
+    $il->[$first_idx]->[1]->[0] = $left_roll;
+    $il->[$first_idx + 1]->[1]->[0] = $left_roll + $il->[$first_idx]->[1]->[3];
+    # fix remap hash
+    $bl->[14]->{$first_adr} = $second_adr;
+    $bl->[14]->{$second_adr} = $first_adr;
     # fill RL - logic almost like in process_lat
+ROLLB:
+    if ( $rollback ) {
+      # unswap items
+      my $tmp_swap = $il->[$first_idx];
+      $il->[$first_idx] = $il->[$first_idx + 1];
+      $il->[$first_idx + 1] = $tmp_swap;
+      # set original rolled stall counts
+      $il->[$first_idx]->[1]->[0] = $left_roll;
+      $il->[$first_idx + 1]->[1]->[0] = $right_roll;
+      # remove remaps
+      delete $bl->[14]->{$first_adr};
+      delete $bl->[14]->{$second_adr};
+    } else {
+      # cool, this pair can be swapped - put it in block->[15]
+      my $pc = [ $il->[$first_idx + 1]->[0], $il->[$first_idx]->[0] ]; # pair prev-curr
+      if ( defined $bl->[15] ) {
+        push @{ $bl->[15] }, $pc;
+      } else {
+        $bl->[15] = [ $pc ];
+      }
+    }
   }
 }
 
