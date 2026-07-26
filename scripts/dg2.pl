@@ -56,7 +56,7 @@ sub limit_stall
 my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm);
 # stat for barriers, key is ins name, value is [ wait, read, write ] count
 my %g_barstat;
-# per code section globals
+### per code section globals
 # syms inside section, curr_index and cached symbols
 my(@gs_syms, $gs_cidx, $g_afsyms);
 # relocs + indexes of reloc(a) sections
@@ -83,10 +83,11 @@ my $gsp_patched = 0;
 my $gsp_bad = 0;
 my $gsp_bad_attrs = 0;
 # lmode stat
-# indexes: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3], [5] - with range
-# with -P [6] - count of patched, [7] - sum of decreased stalls
-my @g_bl = ( 0, 0, 0, 0, 0, 0, 0, 0 );
-# config data
+# indexes: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3],
+#  [5] - with range, [6] - breaked on CJ
+# with -P [7] - count of patched, [8] - sum of decreased stalls
+my @g_bl = ( 0, 0, 0, 0, 0, 0, 0, 0, 0 );
+### config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
 # filled in read_config
@@ -104,10 +105,11 @@ sub dump_lmode_stat
 {
   printf("%d blocks with bad latency\n", $g_bl[2]) if ( $g_bl[2] );
   printf("total %d instrs, %d with range, %d stalls\n", $g_bl[0], $g_bl[5], $g_bl[1]);
-  printf("%d stalls gain: %f\n", $g_bl[3], 1.0 * $g_bl[3] / $g_bl[1]);
+  printf("%d stalls gain: %f\n", $g_bl[3], 1.0 * $g_bl[3] / $g_bl[1]) if $g_bl[1];
   printf("%d instrs with gain: %f\n", $g_bl[4], 1.0 * $g_bl[4] / $g_bl[0]);
-  printf("%d patched, %f\n", $g_bl[6], 1.0 * $g_bl[6] / $g_bl[4]) if ( $g_bl[6] && $g_bl[4]);
-  printf("%d dec stalls, %f\n", $g_bl[7], 1.0 * $g_bl[7] / $g_bl[1]) if ( $g_bl[7] && $g_bl[1]);
+  printf("%d instrs break on CJ: %f\n", $g_bl[6], 1.0 * $g_bl[6] / $g_bl[4]) if ( $g_bl[6] && $g_bl[4]);
+  printf("%d patched, %f\n", $g_bl[7], 1.0 * $g_bl[7] / $g_bl[4]) if ( $g_bl[7] && $g_bl[4]);
+  printf("%d dec stalls, %f\n", $g_bl[8], 1.0 * $g_bl[8] / $g_bl[1]) if ( $g_bl[8] && $g_bl[1]);
 }
 
 sub dump_swap_stat
@@ -1808,7 +1810,22 @@ sub get_old_pair_stall
   $b->[2]->[7]->[0] + $b->[3]->[7]->[0];
 }
 
+# block has 3 items used specificaly for collecting swap candidates during disasm - 13, 14, 15
+# now we can reuse it at end of block to check if each pair satisfy scheduling constraints, so
+# 13 - current RL array
+# 14 - hash to remap swapped addresses. key - old address, value - new address
+# args: block, address
+sub remap
+{
+  my($b, $adr) = @_;
+  my $rh = $b->[14];
+  return $rh->{$adr} if exists($rh->{$adr});
+  $adr;
+}
 
+# You can have -s to swap pass - then it try to swap pairs of candidates in block->[19]
+# or stall count optimization - then is just call process_lat
+# So for each pass you can use different configs
 # args: block, size of instructions array in block->[18]
 sub traverse_lat
 {
@@ -1829,11 +1846,12 @@ sub traverse_lat
     }
     delete $waw->{$_} for @del;
   }
-  # check if we have swap candidtes list
-  unless ( defined $bl->[19] ) {
+  unless( defined $opt_s ) {
     process_lat($bl, $lsize);
     return;
   }
+  # check if we have swap candidtes list
+  return unless ( defined $bl->[19] );
   # filter out swap candidates where second item in WaW
   my @filt;
   foreach my $sc ( @{ $bl->[19] } ) {
@@ -1843,11 +1861,71 @@ sub traverse_lat
      # update stat
      upd_swap_stat($sc->[1], get_old_pair_stall($sc));
   }
-  unless ( scalar @filt ) {
-    process_lat($bl, $lsize);
-    return;
-  }
+  return unless ( scalar @filt );
   $bl->[19] = \@filt;
+  # setup
+  my $il = $bl->[18]; # pairs of [ instr, lat ]
+  {
+    my %rh;
+    $bl->[14] = \%rh;
+  }
+  # hash to fast retrive indices - key is address, value is index
+  # Warning - it's never patched while swap instruction, so ins->[0] can mismatch the key
+  my %ids;
+  for my $i ( 0 .. $lsize - 1 ) {
+    my $iaddr = $il->[$i]->[0]->[0];
+    $ids{$iaddr} = $i;
+  }
+  # fill control joints array - copy&paste from process_lat, bad taste, yeah, I know
+  my @cj;
+  for my $i ( 0 .. $lsize - 1 ) {
+    my $ins = $il->[$i]->[0];
+    if ( $ins->[5] ) {
+      push @cj, [ $ins->[0], $i ];
+    }
+  }
+  my $cj_size = scalar @cj;
+  # data for rollback
+  my $rollback = 1;
+  my($first_idx, $first_adr, $second_adr, $left_roll, $right_roll);
+  # enum all candidates and try to apply RaWs & WaRs to see if both instrunctions fit in limits
+  # bcs it's too expensive to apply all - fill RL only in range first - MAX_SWAP_DIST .. second + MAX_SWAP_DIST
+  foreach my $sc ( @{ $bl->[19] } ) {
+    # make new rl
+    my @rl = ( undef ) x $lsize;
+    $bl->[13] = \@rl;
+    # setup addresses/indices
+    $first_adr = $sc->[2]->[0];
+    $second_adr = $sc->[3]->[0];
+    next unless exists($ids{$first_adr}); # wtf? Here nothing has been patched yet so it's safe to just go to next loop
+    $first_idx = $ids{$first_adr};
+    # find left index/address
+    my $left = $first_adr;
+    for ( my $i = $first_idx; $i >= 0; --$i ) {
+      my $iaddr = remap($bl, $il->[$i]->[0]->[0]);
+      last if ( $iaddr + MAX_SWAP_DIST < $first_adr );
+      $left = $iaddr;
+    }
+    # find starting index in cj
+    my $cj_idx = 0;
+    for my $i ( 0 .. $cj_size - 1 ) {
+      last if ( $cj[$i]->[0] >= $left );
+      $cj_idx++;
+    }
+    # find right index/address
+    my $right = $second_adr;
+    for my $i ( $first_idx + 1 .. $lsize - 1 ) {
+      my $iaddr = remap($bl, $il->[$i]->[0]->[0]);
+      last if ( $iaddr > $second_adr + MAX_SWAP_DIST );
+      $right = $iaddr;
+    }
+    # dump found stuff for debugging
+    printf("cand %X - %X: idx %d cj_idx %d/%d left %X right %X\n", $first_adr, $second_adr,
+      $first_idx, $cj_idx, $cj_size, $left, $right); # if ( defined $opt_d );
+    # swap instructions and stall counts in it
+    
+    # fill RL - logic almost like in process_lat
+  }
 }
 
 # args: block, size of instructions array in block->[18]
@@ -1890,6 +1968,7 @@ printf("cj %X %d\n", $ins->[0], $ins->[5]) if ( defined $opt_d );
     my $lar_idx = 0;
     my $start_lat = $il->[$i]->[1]->[0];
     my $must_be = $lar->[$lar_idx]->[1];
+    my $cj_breaked = 0;
     for my $j ( $i + 1 .. $lsize - 1 ) {
       my $in_cj = 0;
       $in_cj = ($il->[$j]->[0]->[0] == $cj[$cj_idx]->[0] ) if ( $cj_size && $cj_idx < $cj_size );
@@ -1900,6 +1979,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
         fill_rl_interval(\@rl, $i, 0, $lar->[$lar_idx], $il);
       } else {
         if ( $in_cj ) {
+          ++$g_bl[6] if ( !$cj_breaked++ );
           fill_rl_till(\@rl, $i, $il->[$j]->[1]->[0] - ($start_lat + $must_be), $cj[$cj_idx]->[0], $lar->[$lar_idx], $il);
         } else {
           fill_rl_interval(\@rl, $i, $il->[$j]->[1]->[0] - ($start_lat + $must_be), $lar->[$lar_idx], $il);
@@ -2071,8 +2151,8 @@ printf("%X tdiff %d cstall %d\n", $ci->[0]->[0], $diff, $c_stall) if defined($op
   printf("; dec_stall %X %s dec %d usched %d\n", $off, $ci->[0]->[2], $diff, $patched) if defined($opt_v);
   $gsp_patched++;
   # update stat
-  $g_bl[6]++;
-  $g_bl[7] += $diff;
+  $g_bl[7]++;
+  $g_bl[8] += $diff;
   1;
 }
 
