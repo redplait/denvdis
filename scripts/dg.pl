@@ -59,7 +59,7 @@ my %g_barstat;
 # per code section globals
 # syms inside section, curr_index and cached symbols
 my(@gs_syms, $gs_cidx, $g_afsyms);
-# relocs + indexes of reloc(a) sections
+# relocs + indices of reloc(a) sections
 my($gs_rel, $gs_rela, $gs_rel_idx, $gs_rela_idx);
 # cb params
 my(@gs_cbs, $gs_cb_size, $gs_cb_off);
@@ -87,7 +87,7 @@ my $gsp_patched = 0;
 my $gsp_bad = 0;
 my $gsp_bad_attrs = 0;
 # lmode stat
-# indexes: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3], [5] - with tail
+# indices: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3], [5] - with tail
 # with -P [6] - count of patched, [7] - sum of decreased stalls
 my @g_bl = ( 0, 0, 0, 0, 0, 0, 0, 0 );
 # config data
@@ -2739,7 +2739,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
   }
 =comment
   pass 2 - make blocks, complexity O(m) where m is number of marks/symbols/back references in @sorted array
-  indexes in block:
+  indices in block:
    [0] - start address
    [1] - last address
    [2] - symbol index or undef
@@ -2754,10 +2754,10 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
    [9] - snap array from previous instruction
   [10] - map with currently reused registers - for -u option
    latency tables (-l option):
-  [11] - col indexes of previous instruction from l2map
-  [12] - row indexes of previous instruction from l2map
+  [11] - col indices of previous instruction from l2map
+  [12] - row indices of previous instruction from l2map
    to find swappable instructions (-s option) we need more sophisticated data to keep some instructions properties
-   I chose array, indexes (first 7 from dump_ins) are
+   I chose array, indices (first 7 from dump_ins) are
     * 0 - offset
     * 1 - instruction name
     * 2 - full instruction text
