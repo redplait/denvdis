@@ -106,7 +106,7 @@ sub dump_lmode_stat
   printf("%d blocks with bad latency\n", $g_bl[2]) if ( $g_bl[2] );
   printf("total %d instrs, %d with range, %d stalls\n", $g_bl[0], $g_bl[5], $g_bl[1]);
   printf("%d stalls gain: %f\n", $g_bl[3], 1.0 * $g_bl[3] / $g_bl[1]) if $g_bl[1];
-  printf("%d instrs with gain: %f\n", $g_bl[4], 1.0 * $g_bl[4] / $g_bl[0]);
+  printf("%d instrs with gain: %f\n", $g_bl[4], 1.0 * $g_bl[4] / $g_bl[0]) if ( $g_bl[0] );
   printf("%d instrs break on CJ: %f\n", $g_bl[6], 1.0 * $g_bl[6] / $g_bl[4]) if ( $g_bl[6] && $g_bl[4]);
   printf("%d patched, %f\n", $g_bl[7], 1.0 * $g_bl[7] / $g_bl[4]) if ( $g_bl[7] && $g_bl[4]);
   printf("%d dec stalls, %f\n", $g_bl[8], 1.0 * $g_bl[8] / $g_bl[1]) if ( $g_bl[8] && $g_bl[1]);
@@ -1708,6 +1708,7 @@ sub fill_rl_interval
   $res;
 }
 
+# like fill_rl but has end address
 # args:
 #  rl ref
 #  start index
@@ -1738,6 +1739,41 @@ sub fill_rl_till
   }
   $res;
 }
+
+# fill rl for swap probe for some interval
+# args:
+#  block (hold rl in [13] and remap in [14]
+#  start idx
+#  value
+#  end address or undef
+#  ftc from track_lat
+#  il from block->[18]
+sub refill_rl
+{
+  my($b, $start, $val, $end_addr, $ftc, $il) = @_;
+  my $rl = $b->[13];
+  my $rl_len = scalar @$rl;
+  my $res = 0;
+  for my $i ( $start .. $rl_len - 1 ) {
+    my $curr_i = $il->[$i];
+    my $r_addr = remap_rl($b, $curr_i);
+    last if ( $r_addr >= $ftc->[0] );
+    last if ( defined($end_addr) && $r_addr >= $end_addr );
+    # check what we have
+    unless( defined $rl->[$i] ) {
+      $rl->[$i] = [ $val, $ftc ]; # put on index array [ value, ftc ]
+      ++$res;
+      next;
+    }
+    next if ( !$rl->[$i]->[0] ); # skip zeroes
+    next if ( $rl->[$i]->[0] < $val );
+    # update
+    $rl->[$i] = [ $val, $ftc ];
+    ++$res;
+  }
+  $res;
+}
+
 
 # dec intervals from WaR
 # args:
@@ -1789,6 +1825,28 @@ sub dump_rl
   }
 }
 
+# dump rl slice from traverse_lat
+# args: block index from, index to, header
+sub dump_rl_slice
+{
+  my($b, $i_from, $i_to, $hdr) = @_;
+  my $latch = 0;
+  my $rl = $b->[13];
+  my $rh = $b->[14];
+  my $il = $b->[18];
+  foreach my $i ( $i_from .. $i_to ) {
+    next unless( defined $rl->[$i] );
+    unless($latch) {
+      printf(";; %s RL [%d..%d] %X - %X:\n", $hdr, $i_from, $i_to, remap_rl($b, $il->[$i_from]), remap_rl($b, $il->[$i_to]));
+      ++$latch;
+    }
+    printf("; [%d] off %X", $i, remap_rl($b, $il->[$i]));
+    my $addr = $il->[$i]->[0];
+    printf("R") if exists($rh->{$addr});
+    printf("%d %s to %X\n", $rl->[$i]->[0], $rl->[$i]->[1]->[2], $rl->[$i]->[1]->[0]);
+  }
+}
+
 # probably would be better to employ interval tree from https://github.com/redplait/dwarfdump/tree/main/perl/Interval-Tree
 # but usually ranges is very limited amount so linear scan is ok here
 # args: ranges array from gc_war/$gc_waw, offset
@@ -1815,12 +1873,42 @@ sub get_old_pair_stall
 # 13 - current RL array
 # 14 - hash to remap swapped addresses. key - old address, value - new address
 # args: block, address
-sub remap
+sub remap($$)
 {
   my($b, $adr) = @_;
   my $rh = $b->[14];
   return $rh->{$adr} if exists($rh->{$adr});
   $adr;
+}
+
+sub remap_rl($$)
+{
+  my($b, $rl) = @_;
+  my $rh = $b->[14];
+  my $addr = $rl->[0]->[0];
+  return $rh->{$addr} if exists($rh->{$addr});
+  $addr;
+}
+
+# remove WaRs from config
+sub apply_war_config {
+  my $war = shift;
+  return unless defined($war);
+  if ( defined($gc_war) && scalar(@$gc_war) ) {
+    my @del;
+    foreach my $wk ( keys %$war ) {
+      next unless in_ranges($gc_war, $wk);
+       my $wra = $war->{$wk};
+       # remove all items in config ranges
+       my @tmp = grep { !in_ranges($gc_war, $_->[0]); } @$wra;
+       if ( scalar @tmp ) {
+         $war->{$wk} = \@tmp;
+       } else {
+         push @del, $wk;
+       }
+    }
+    delete $war->{$_} for @del;
+  }
 }
 
 # You can have -s to swap pass - then it try to swap pairs of candidates in block->[19]
@@ -1869,6 +1957,8 @@ sub traverse_lat
     my %rh;
     $bl->[14] = \%rh;
   }
+  my $war = $bl->[12]->[1];
+  apply_war_config($war);
   # hash to fast retrive indices - key is address, value is index
   # Warning - it's never patched while swap instruction, so ins->[0] can mismatch the key
   my %ids;
@@ -1885,15 +1975,13 @@ sub traverse_lat
     }
   }
   my $cj_size = scalar @cj;
+  my $lrt = $bl->[11];
   # data for rollback
   my $rollback = 1;
-  my($first_idx, $first_adr, $second_adr, $left_roll, $right_roll);
+  my($first_idx, $first_adr, $second_adr, $last_idx, $left_roll, $right_roll);
   # enum all candidates and try to apply RaWs & WaRs to see if both instrunctions fit in limits
   # bcs it's too expensive to apply all - fill RL only in range first - MAX_SWAP_DIST .. second + MAX_SWAP_DIST
   foreach my $sc ( @{ $bl->[19] } ) {
-    # make new rl
-    my @rl = ( undef ) x $lsize;
-    $bl->[13] = \@rl;
     # setup addresses/indices
     $first_adr = $sc->[2]->[0];
     $second_adr = $sc->[3]->[0];
@@ -1902,7 +1990,7 @@ sub traverse_lat
     # find left index/address
     my $left = $first_adr;
     for ( my $i = $first_idx; $i >= 0; --$i ) {
-      my $iaddr = remap($bl, $il->[$i]->[0]->[0]);
+      my $iaddr = remap_rl($bl, $il->[$i]);
       last if ( $iaddr + MAX_SWAP_DIST < $first_adr );
       $left = $iaddr;
     }
@@ -1914,10 +2002,12 @@ sub traverse_lat
     }
     # find right index/address
     my $right = $second_adr;
+    $last_idx = $first_idx + 1;
     for my $i ( $first_idx + 1 .. $lsize - 1 ) {
-      my $iaddr = remap($bl, $il->[$i]->[0]->[0]);
+      my $iaddr = remap_rl($bl, $il->[$i]);
       last if ( $iaddr > $second_adr + MAX_SWAP_DIST );
       $right = $iaddr;
+      $last_idx = $i;
     }
     # dump found stuff for debugging
     printf("cand %X - %X: idx %d cj_idx %d/%d left %X right %X\n", $first_adr, $second_adr,
@@ -1936,7 +2026,43 @@ sub traverse_lat
     # fix remap hash
     $bl->[14]->{$first_adr} = $second_adr;
     $bl->[14]->{$second_adr} = $first_adr;
+    # make new rl
+    my @rl = ( undef ) x $lsize;
+    $bl->[13] = \@rl;
+    my $curry_dump = sub {
+      my $hdr = shift;
+      dump_rl_slice($bl, $first_idx, $last_idx, $hdr);
+    };
     # fill RL - logic almost like in process_lat
+   for my $i ( $first_idx .. $last_idx ) {
+      my $orig_addr = $il->[$i]->[0]->[0];
+      my $raddr = remap_rl($bl, $il->[$i]);
+      ++$cj_idx if ( $cj_size && $cj_idx < $cj_size && $raddr == $cj[$cj_idx]->[0] );
+     next unless( exists $lrt->{$orig_addr} );
+      my $lar = $lrt->{$orig_addr};
+      my $lar_size = scalar(@$lar);
+      my $lar_idx = 0;
+      my $start_lat = $il->[$i]->[1]->[0];
+      my $must_be = $lar->[$lar_idx]->[1];
+      for my $j ( $i + 1 .. $last_idx ) {
+        my $in_cj = 0;
+        $in_cj = (remap_rl($bl, $il->[$j]) == $cj[$cj_idx]->[0] ) if ( $cj_size && $cj_idx < $cj_size );
+        next if (!$in_cj && $lar->[$lar_idx]->[0] != remap_rl($bl, $il->[$j]) );
+# printf("%X start %d must_be %d fact %d off %X\n", $caddr, $start_lat, $must_be, $il->[$j]->[1]->[0], $lar->[$lar_idx]->[0]);
+        if ( $start_lat + $must_be >= $il->[$j]->[1]->[0] ) {
+          refill_rl($bl, $i, 0, undef, $lar->[$lar_idx], $il);
+        } else {
+          refill_rl($bl, $i, $il->[$j]->[1]->[0] - ($start_lat + $must_be),
+            $in_cj ? $cj[$cj_idx]->[0]: undef,
+            $lar->[$lar_idx], $il
+          );
+        }
+        last if ( ++$lar_idx >= $lar_size );
+        $start_lat = $il->[$j]->[1]->[0];
+        $must_be = $lar->[$lar_idx]->[1];
+      }
+    }
+    $curry_dump->('initial');
 ROLLB:
     if ( $rollback ) {
       # unswap items
@@ -2037,22 +2163,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     my %oi;
     $oi{ $il->[$_]->[0]->[0] } = $_ for ( 0 .. $lsize - 1 );
     my $war = $bl->[12]->[1];
-    # remove WaRs from config
-    if ( defined($gc_war) && scalar(@$gc_war) ) {
-      my @del;
-      foreach my $wk ( keys %$war ) {
-        next unless in_ranges($gc_war, $wk);
-        my $wra = $war->{$wk};
-        # remove all items in config ranges
-        my @tmp = grep { !in_ranges($gc_war, $_->[0]); } @$wra;
-        if ( scalar @tmp ) {
-          $war->{$wk} = \@tmp;
-        } else {
-          push @del, $wk;
-        }
-      }
-      delete $war->{$_} for @del;
-    }
+    apply_war_config($war);
     my $war_patches = 0;
     foreach my $wark ( sort { $a <=> $b } keys %$war ) {
       my $wara = $war->{$wark};
