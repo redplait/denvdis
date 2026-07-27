@@ -58,6 +58,9 @@ ced: ced.cc libced.a
 sm120.so: sm120.cc
 	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
+sm107.so: sm107.cc
+	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
+
 sm103.so: sm103.cc
 	$(CLANG) $(SM_FLAGS) -o $@ $^ $(SM_LIBS)
 
@@ -162,6 +165,10 @@ sm101.cc: $(EAD) 90.props
 
 sm103.cc: $(EAD) 90.props
 	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -U 90.props -C sm103 ../data12/sm103_1.txt
+
+sm107.cc: $(EAD) 90.props
+	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -U 90.props -C sm107 ../data12/sm107_1.txt
+
 
 sm120.cc: $(EAD) 90.props
 	perl $(PERL_OPTS) $(EAD) $(EAD_OPTS) -U 90.props -C sm120 ../data12/sm120_1.txt
