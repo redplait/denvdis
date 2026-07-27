@@ -2073,6 +2073,7 @@ sub traverse_lat
         my $wara = $war->{$wark};
         # wark - offset where write happens, wara - array of sources
         next if ( $wark < $left );
+        last if ( $wark > $right ); # they sorted by addresses so this is safe optimization
         foreach my $src ( @$wara ) {
           next if ( $wark == $src->[0] ); # self-reference
           my $w_addr = remap($bl, $src->[0]);
@@ -2083,7 +2084,7 @@ sub traverse_lat
             next;
           }
  printf("apply WaR from %X (%d) till %X, v %d\n", $w_addr, $war_idx, $wark, $src->[1]) if defined($opt_d);
-          dec_rl_interval(\@rl, $war_idx, $wark, $src->[1], $src, $il);
+          dec_rl_interval(\@rl, $war_idx, remap($bl, $wark), $src->[1], $src, $il);
         }
       }
       $curry_dump->('after WaRs');
