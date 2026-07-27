@@ -116,6 +116,7 @@ sub dump_swap_stat
 {
   return unless($gs_ords);
   printf("Reordering stat: total %d swappable %d (%f)\n", $gs_total, $gs_ords, $gs_ords * 1.0 / $gs_total);
+  printf(" overall stalls %d, %f\n", $g_bl[1], $gs_gain * 1.0 / $g_bl[1]) if ( $g_bl[1] );
   printf(" total gain %d (%f avg) gain/old ratio %f \n", $gs_gain, $gs_gain * 1.0 / $gs_ords, $gs_gain * 1.0 / $gs_old_stall);
   printf(" skipped %d, patched %d, bad %d, bad attrs %d\n", $gsp_skipped, $gsp_patched, $gsp_bad, $gsp_bad_attrs) if defined($opt_P);
 }
@@ -1747,11 +1748,11 @@ sub fill_rl_till
 #  value
 #  end address or undef
 #  ftc from track_lat
-#  il from block->[18]
 sub refill_rl
 {
-  my($b, $start, $val, $end_addr, $ftc, $il) = @_;
+  my($b, $start, $val, $end_addr, $ftc) = @_;
   my $rl = $b->[13];
+  my $il = $b->[18];
   my $rl_len = scalar @$rl;
   my $res = 0;
   for my $i ( $start .. $rl_len - 1 ) {
@@ -1843,7 +1844,7 @@ sub dump_rl_slice
     printf("; [%d] off %X", $i, remap_rl($b, $il->[$i]));
     my $addr = $il->[$i]->[0];
     printf("R") if exists($rh->{$addr});
-    printf("%d %s to %X\n", $rl->[$i]->[0], $rl->[$i]->[1]->[2], $rl->[$i]->[1]->[0]);
+    printf(" %d %s to %X\n", $rl->[$i]->[0], $rl->[$i]->[1]->[2], $rl->[$i]->[1]->[0]);
   }
 }
 
@@ -1919,6 +1920,9 @@ sub traverse_lat
 {
   my($bl, $lsize) = @_;
   my $waw = $bl->[12]->[0];
+  # update stat
+  $g_bl[0] += $lsize;
+  $g_bl[1] += $bl->[16]->[0];
   # remove WaWs from config
   if ( defined($gc_waw) && defined($waw) && scalar(@$gc_waw) ) {
     my @del;
@@ -1946,8 +1950,6 @@ sub traverse_lat
      my $second_addr = $sc->[3]->[0];
      next if exists $waw->{$second_addr};
      push @filt, $sc;
-     # update stat
-     upd_swap_stat($sc->[1], get_old_pair_stall($sc));
   }
   return unless ( scalar @filt );
   $bl->[19] = \@filt;
@@ -1978,16 +1980,18 @@ sub traverse_lat
   my $lrt = $bl->[11];
   # data for rollback
   my $rollback = 1;
-  my($first_idx, $first_adr, $second_adr, $last_idx, $left_roll, $right_roll);
+  my($first_idx, $first_adr, $second_adr, $last_idx, $left_roll, $right_roll, $last_succ);
   # enum all candidates and try to apply RaWs & WaRs to see if both instrunctions fit in limits
   # bcs it's too expensive to apply all - fill RL only in range first - MAX_SWAP_DIST .. second + MAX_SWAP_DIST
   foreach my $sc ( @{ $bl->[19] } ) {
     # setup addresses/indices
     $first_adr = $sc->[2]->[0];
     $second_adr = $sc->[3]->[0];
+    # if previous pair was successfully swapped - skip current if it overlap it
+    next if ( defined($last_succ) && $last_succ == $first_adr );
     next unless exists($ids{$first_adr}); # wtf? Here nothing has been patched yet so it's safe to just go to next loop
     $first_idx = $ids{$first_adr};
-    # find left index/address
+    # find left index/address of range
     my $left = $first_adr;
     for ( my $i = $first_idx; $i >= 0; --$i ) {
       my $iaddr = remap_rl($bl, $il->[$i]);
@@ -2000,7 +2004,7 @@ sub traverse_lat
       last if ( $cj[$i]->[0] >= $left );
       $cj_idx++;
     }
-    # find right index/address
+    # find right index/address of range
     my $right = $second_adr;
     $last_idx = $first_idx + 1;
     for my $i ( $first_idx + 1 .. $lsize - 1 ) {
@@ -2049,12 +2053,12 @@ sub traverse_lat
         $in_cj = (remap_rl($bl, $il->[$j]) == $cj[$cj_idx]->[0] ) if ( $cj_size && $cj_idx < $cj_size );
         next if (!$in_cj && $lar->[$lar_idx]->[0] != remap_rl($bl, $il->[$j]) );
 # printf("%X start %d must_be %d fact %d off %X\n", $caddr, $start_lat, $must_be, $il->[$j]->[1]->[0], $lar->[$lar_idx]->[0]);
-        if ( $start_lat + $must_be >= $il->[$j]->[1]->[0] ) {
-          refill_rl($bl, $i, 0, undef, $lar->[$lar_idx], $il);
+        if ( $start_lat + $must_be > $il->[$j]->[1]->[0] ) {
+          refill_rl($bl, $i, -1, $right, $lar->[$lar_idx]);
         } else {
           refill_rl($bl, $i, $il->[$j]->[1]->[0] - ($start_lat + $must_be),
-            $in_cj ? $cj[$cj_idx]->[0]: undef,
-            $lar->[$lar_idx], $il
+            $in_cj ? $cj[$cj_idx]->[0] : $right,
+            $lar->[$lar_idx]
           );
         }
         last if ( ++$lar_idx >= $lar_size );
@@ -2063,6 +2067,36 @@ sub traverse_lat
       }
     }
     $curry_dump->('initial');
+    # now apply WaRs in range $left .. $right, indices map in ids
+    unless( defined $opt_w ) {
+      foreach my $wark ( sort { $a <=> $b } keys %$war ) {
+        my $wara = $war->{$wark};
+        # wark - offset where write happens, wara - array of sources
+        next if ( $wark < $left );
+        foreach my $src ( @$wara ) {
+          next if ( $wark == $src->[0] ); # self-reference
+          my $w_addr = remap($bl, $src->[0]);
+          next if ( $w_addr < $left || $w_addr > $right );
+          my $war_idx = $ids{$w_addr}; # index in rl
+          unless ( defined $war_idx ) {
+            croak("cant find war idx $w_addr in $wark");
+            next;
+          }
+ printf("apply WaR from %X (%d) till %X, v %d\n", $w_addr, $war_idx, $wark, $src->[1]) if defined($opt_d);
+          dec_rl_interval(\@rl, $war_idx, $wark, $src->[1], $src, $il);
+        }
+      }
+      $curry_dump->('after WaRs');
+    }
+    # final check
+    goto ROLLB if ( defined($rl[$first_idx]) && $rl[$first_idx]->[0] <= 0 );
+    goto ROLLB if ( defined($rl[$first_idx+1]) && $rl[$first_idx+1]->[0] <= 0 );
+    # ok, we really can swap this pair
+    $rollback = 0;
+    $last_succ = $second_adr;
+    # update stat
+    $sc->[1] = $rl[$first_idx]->[0] if ( defined($rl[$first_idx]) && $sc->[1] > $rl[$first_idx]->[0] );
+    upd_swap_stat($sc->[1], get_old_pair_stall($sc));
 ROLLB:
     if ( $rollback ) {
       # unswap items
@@ -2092,9 +2126,6 @@ sub process_lat
 {
   my($bl, $lsize) = @_;
   my $ld = $bl->[16]; # latency data
-  # update stat
-  $g_bl[0] += $lsize;
-  $g_bl[1] += $ld->[0];
   my $il = $bl->[18]; # pairs of [ instr, lat ]
   # call/ret/indirect branches are joints
   # - for themself
