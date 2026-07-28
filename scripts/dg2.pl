@@ -1186,9 +1186,9 @@ sub dump_swap_list
   my $b = shift;
   return unless(defined $b->[15]);
   foreach my $item ( @{ $b->[15] } ) {
-    printf("swap_list %X (%s) stall %d <-> %X (%s) stall %d\n",
+    printf("swap_list %X (%s) stall %d <-> %X (%s) stall %d gain %d\n",
       $item->[0]->[0], vq_name($item->[0]), $item->[0]->[7]->[0],
-      $item->[1]->[0], vq_name($item->[1]), $item->[1]->[7]->[0]);
+      $item->[1]->[0], vq_name($item->[1]), $item->[1]->[7]->[0], $item->[2]);
   }
 }
 
@@ -1988,7 +1988,7 @@ sub traverse_lat
     # setup addresses/indices
     $first_adr = $sc->[2]->[0];
     $second_adr = $sc->[3]->[0];
-    # if previous pair was successfully swapped - skip current if it overlap it
+    # if previous pair was successfully swapped - skip current if it overlaps with previous
     next if ( defined($last_succ) && $last_succ == $first_adr );
     next unless exists($ids{$first_adr}); # wtf? Here nothing has been patched yet so it's safe to just go to next loop
     $first_idx = $ids{$first_adr};
@@ -2036,7 +2036,7 @@ sub traverse_lat
     $bl->[13] = \@rl;
     my $curry_dump = sub {
       my $hdr = shift;
-      dump_rl_slice($bl, $first_idx, $last_idx, $hdr);
+      dump_rl_slice($bl, $first_idx, $last_idx, $hdr) if defined($opt_d);
     };
     # fill RL - logic almost like in process_lat
    for my $i ( $first_idx .. $last_idx ) {
@@ -2055,7 +2055,9 @@ sub traverse_lat
         next if (!$in_cj && $lar->[$lar_idx]->[0] != remap_rl($bl, $il->[$j]) );
 # printf("%X start %d must_be %d fact %d off %X\n", $caddr, $start_lat, $must_be, $il->[$j]->[1]->[0], $lar->[$lar_idx]->[0]);
         if ( $start_lat + $must_be > $il->[$j]->[1]->[0] ) {
-          refill_rl($bl, $i, -1, $right, $lar->[$lar_idx]);
+          goto ROLLB;
+        } elsif ( $start_lat + $must_be == $il->[$j]->[1]->[0] ) {
+          refill_rl($bl, $i, 0, $in_cj ? $cj[$cj_idx]->[0] : $right, $lar->[$lar_idx]);
         } else {
           refill_rl($bl, $i, $il->[$j]->[1]->[0] - ($start_lat + $must_be),
             $in_cj ? $cj[$cj_idx]->[0] : $right,
@@ -2074,7 +2076,7 @@ sub traverse_lat
         my $wara = $war->{$wark};
         # wark - offset where write happens, wara - array of sources
         next if ( $wark < $left );
-        last if ( $wark > $right ); # they sorted by addresses so this is safe optimization
+        my $app_cnt = 0;
         foreach my $src ( @$wara ) {
           next if ( $wark == $src->[0] ); # self-reference
           my $w_addr = remap($bl, $src->[0]);
@@ -2086,7 +2088,9 @@ sub traverse_lat
           }
  printf("apply WaR from %X (%d) till %X, v %d\n", $w_addr, $war_idx, $wark, $src->[1]) if defined($opt_d);
           dec_rl_interval(\@rl, $war_idx, remap($bl, $wark), $src->[1], $src, $il);
+          ++$app_cnt;
         }
+        last if ( $wark > $right && !$app_cnt ); # they sorted by addresses so this is safe optimization
       }
       $curry_dump->('after WaRs');
     }
