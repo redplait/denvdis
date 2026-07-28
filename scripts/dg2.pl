@@ -40,7 +40,8 @@ EOF
 }
 
 ### constants
-use constant MAX_SWAP_DIST => 0x70;
+use constant MAX_REUSE_DIST => 0x70;
+use constant MAX_SWAP_DIST => 0xa0;
 use constant USCHED => 'usched_info';
 use constant GAIN_LIMIT => 2;
 
@@ -533,7 +534,7 @@ sub post_process_swaps
       next;
     }
     # patch ushed_info, new stall is curr stall - prev stall
-    my $dec_stall = stall_gain($sr->[0], $sr->[1]); # $sr->[1]->[7]->[0] - $sr->[0]->[7]->[0];
+    my $dec_stall = $sr->[2];
     if ( $dec_stall ) {
       my $patched_usched = $sr->[1]->[7]->[1] - stall_gain($sr->[1], $sr->[0]);
       printf("decrease %d at %X, patched %d\n", $dec_stall, $p_off, $patched_usched) if defined($opt_v);
@@ -1513,7 +1514,7 @@ So we can build FSM to traverse registers track and try to find where we can ins
 =item * register is not wide
 
 =item * and those instructions are located not very far from each other - bcs reuse cache size is unknown but obviously limited.
-I arbitrary choosed value 0x70 - see constant MAX_SWAP_DIST
+I arbitrary choosed value 0x70 - see constant MAX_REUSE_DIST
 
 =back
 
@@ -1563,7 +1564,7 @@ sub collect_reuse
     # we have some read operation - check if it's not first
     if ( $state && defined($prev)) {
       # check distance and that this is not Nth operand in the same instruction
-      if ( $l->[0] != $prev->[0] && $l->[0] - $prev->[0] <= MAX_SWAP_DIST ) {
+      if ( $l->[0] != $prev->[0] && $l->[0] - $prev->[0] <= MAX_REUSE_DIST ) {
         if ( $gcdf->($prev->[0]) ) { # this address is not filtered?
           # check if previous read not marked already with reuse
           push(@res, $prev) unless ( rh_reuse($prev->[1]) );
@@ -2098,6 +2099,14 @@ sub traverse_lat
     # update stat
     $sc->[1] = $rl[$first_idx]->[0] if ( defined($rl[$first_idx]) && $sc->[1] > $rl[$first_idx]->[0] );
     upd_swap_stat($sc->[1], get_old_pair_stall($sc));
+    if ( defined $opt_P ) {
+      my $swap_item = [ $sc->[2], $sc->[3], $sc->[1] ];
+      unless( defined $bl->[15] ) {
+        $bl->[15] = [ $swap_item ];
+      } else {
+        push @{ $bl->[15] }, $swap_item;
+      }
+    }
 ROLLB:
     if ( $rollback ) {
       # unswap items
@@ -2829,20 +2838,11 @@ sub gdisasm
             dump_waw_hash($block);
           }
           traverse_lat($block, $lsize);
-        }
-      } elsif ( defined($opt_P) && defined($block->[15]) && !block_with_exit($block) ) {
-        # try to swap
-        my $do_swap = 1;
-        if ( defined $opt_l ) {
-          # check if there was no bad latency in this block
-          if ( $block->[16]->[2] ) { $do_swap = 0; }
-          else { # remove swaps with insufficient latency after swapping
-            $do_swap = check_swap_lat($block);
+          if ( defined($opt_P) && defined($block->[15]) && !block_with_exit($block) ) {
+            # try to swap
+            dump_swap_list($block) ; # if defined($opt_d);
+            post_process_swaps($block);
           }
-        }
-        if ( $do_swap ) {
-          dump_swap_list($block) ; # if defined($opt_d);
-          post_process_swaps($block);
         }
       }
       dump_rt($rt);
