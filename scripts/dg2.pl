@@ -118,11 +118,11 @@ sub dump_swap_stat
   return unless($gs_ords);
   printf("Reordering stat: total %d swappable %d (%f)\n", $gs_total, $gs_ords, $gs_ords * 1.0 / $gs_total);
   printf(" overall stalls %d, %f\n", $g_bl[1], $gs_gain * 1.0 / $g_bl[1]) if ( $g_bl[1] );
-  printf(" total gain %d (%f avg) gain/old ratio %f \n", $gs_gain, $gs_gain * 1.0 / $gs_ords, $gs_gain * 1.0 / $gs_old_stall);
+  printf(" total gain %d (%f avg) gain/old ratio %f\n", $gs_gain, $gs_gain * 1.0 / $gs_ords, $gs_gain * 1.0 / $gs_old_stall);
   printf(" skipped %d, patched %d, bad %d, bad attrs %d\n", $gsp_skipped, $gsp_patched, $gsp_bad, $gsp_bad_attrs) if defined($opt_P);
 }
 
-# args: stall gain, total old stall in pair
+# args: stall gain, total old stalls in pair from get_old_pair_stall
 sub upd_swap_stat
 {
   my($gain, $old) = @_;
@@ -1049,13 +1049,12 @@ sub denied_swap
   my $what = shift;
   return 0 if ( defined $opt_a );
   # intra-warp instructions
-  return 1 if ( $what->[1] =~ /BAR/ );
+  return 1 if ( $what->[1] =~ /BAR/ || $what->[1] =~ /SHFL/ || $what->[1] =~ /SYNCS/ );
   return 1 if ( $what->[1] =~ /ELECT/ || $what->[1] =~ /VOTE/ || $what->[1] =~ /UTCATOMSWS/ || $what->[1] =~ /USETMAXREG/ );
-  return 1 if ( $what->[1] =~ /SHFL/ );
-  return 1 if ( $what->[1] =~ /SYNCS/ );
   # some instructions falls anyway
-  return 1 if ( $what->[1] =~ /LEA/ );
-  return 1 if ( $what->[1] =~ /MUFU/ || $what->[1] =~ /SHF/ );
+  return 1 if ( $what->[1] =~ /LEA/ || $what->[1] =~ /MUFU/ );
+  # seems that ptxas inserts dummy plop3 after mad.wide and logic try to swap them
+  return 1 if ( $what->[2] =~ /MAD\.WIDE/ );
   0;
 }
 
@@ -1118,7 +1117,7 @@ sub can_swap
   }
   # both instructions are ld/st of the same type
   # see details in paper https://arxiv.org/html/2501.08071v1 p3.5
-  return 0 if ( is_ld_st($curr) && is_ld_st($prev) ); # && $curr->[1] eq $prev->[1] );
+  return 0 if ( is_ld_st($curr) || is_ld_st($prev) ); # && $curr->[1] eq $prev->[1] );
   return 0 if ( denied_swap($curr) || denied_swap($prev) );
   return 0 if ( is_cf($curr, $opt_v) || is_cf($prev, $opt_v) );
   # apply config
@@ -1129,8 +1128,11 @@ sub can_swap
   return 0 unless ( $res );
 printf("Gain %d for %X\n", $res, $curr->[0]) if defined($opt_v);
   my $new_usched = $curr->[7]->[0] - $res;
-  # check min_wait at ->[11]
-  return 0 if ( defined($curr->[11]) && ($new_usched < $curr->[11]) );
+  # check min_wait for current instruction at ->[11]
+  if ( defined($curr->[11]) ) {
+    return 0 unless defined($opt_m);
+    return 0 if ( $new_usched < $curr->[11] );
+  }
   # check if we really can patch
   if ( defined $curr->[12] ) {
 #  print 'US12:', $curr->[7], ' ', Dumper($curr->[12]);
@@ -1138,7 +1140,6 @@ printf("Gain %d for %X\n", $res, $curr->[0]) if defined($opt_v);
   }
   $res;
 }
-
 
 # args: prev curr
 sub stall_gain
@@ -1816,11 +1817,11 @@ sub dec_rl_interval
 #  end address
 #  dec value
 #  ftc from track_lat
-#  il from block->[18]
 sub dec_swap_interval
 {
-  my($bl, $start, $end_addr, $dec, $ftc, $il) = @_;
+  my($bl, $start, $end_addr, $dec, $ftc) = @_;
   return 0 unless defined($start);
+  my $il = $bl->[18];
   my $rl = $bl->[13];
   my $rl_len = scalar @$rl;
   my $res = 0;
@@ -2121,7 +2122,7 @@ sub traverse_lat
             next;
           }
  printf("apply WaR from %X (%d) till %X, v %d\n", $w_addr, $war_idx, $wark, $src->[1]) if defined($opt_d);
-          dec_swap_interval($bl, $war_idx, remap($bl, $wark), $src->[1], $src, $il);
+          dec_swap_interval($bl, $war_idx, remap($bl, $wark), $src->[1], $src);
           ++$app_cnt;
         }
         last if ( $wark > $right && !$app_cnt ); # they sorted by addresses so this is safe optimization
