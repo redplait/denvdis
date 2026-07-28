@@ -431,30 +431,30 @@ sub post_process_swaps
   my $bl = shift;
   my $c_ibt = get_ibt();
   foreach my $sr ( @{ $bl->[15] } ) {
-    # sr is ref to [ prev, curr ] swap candidates
-    # field at index [2] will be flag what to do
+    # sr is ref to [ prev, curr, stall dec ] swap candidates
+    # field at index [3] will be flag what to do
     # -1 - nothing, no post processing requires
     # 0 - ignore
-    # 1 - apply tail starting from index 3
-    $sr->[2] = -1;
+    # 1 - apply tail starting from index 4
+    $sr->[3] = -1;
     # check if any side has rel
     if ( defined($sr->[0]->[3]) || defined($sr->[1]->[3]) ) {
       if ( defined($sr->[0]->[3]) && defined($sr->[1]->[3]) ) { # both - call swap_rel
-         $sr->[2] = 1;
+         $sr->[3] = 1;
          my $both_rel = sub {
            printf("swap relocs in section %d, %X & %X\n", $gs_rel_idx, $sr->[0]->[0], $sr->[1]->[0]) if defined($opt_v);
            $g_attrs->swap_rel($gs_rel_idx, $sr->[0]->[3]->[0], $sr->[1]->[3]->[0]);
          };
          push @$sr, $both_rel;
        } elsif ( defined($sr->[0]->[3]) ) { # patch prev rel - new offset at curr
-         $sr->[2] = 1;
+         $sr->[3] = 1;
          my $prev_rel = sub {
            printf("patch prev rel at %X section %d\n", $sr->[0]->[0], $gs_rel_idx) if defined($opt_v);
            $g_attrs->patch_foff($gs_rel_idx, $sr->[0]->[3]->[0], $sr->[1]->[0]);
          };
          push @$sr, $prev_rel;
        } else { # patch curr - new offser at prev
-         $sr->[2] = 1;
+         $sr->[3] = 1;
          my $curr_rel = sub {
            printf("patch next rel at %X section %d\n", $sr->[1]->[0], $gs_rel_idx) if defined($opt_v);
            $g_attrs->patch_foff($gs_rel_idx, $sr->[1]->[3]->[0], $sr->[0]->[0]);
@@ -475,15 +475,15 @@ sub post_process_swaps
         # if they are the same - nothing to do
         if ( $gs_loffs->{$p_off} != $gs_loffs->{$c_off} ) {
           # unfortunatelly no - make patch data for both sides
-          $sr->[2] = 1;
+          $sr->[3] = 1;
           push @$sr, [ 1, $gs_loffs->{$p_off}, $p_off, $c_off ];
           push @$sr, [ 1, $gs_loffs->{$c_off}, $c_off, $p_off ];
         }
       } elsif ( $p_attr ) { # patch attr for prev
-        $sr->[2] = 1;
+        $sr->[3] = 1;
         push @$sr, [ 1, $gs_loffs->{$p_off}, $p_off, $c_off ];
       } elsif ( $c_attr ) { # patch attr for next
-        $sr->[2] = 1;
+        $sr->[3] = 1;
         push @$sr, [ 1, $gs_loffs->{$c_off}, $c_off, $p_off ];
       }
     }
@@ -493,17 +493,17 @@ sub post_process_swaps
       my $c_attr = exists($c_ibt->{$c_off}) ? 1 : 0;
       if ( $p_attr && $c_attr ) {
         # both side has IBT, oops
-          $sr->[2] = 0;
+          $sr->[3] = 0;
           printf("Adjacent pair has IBT at %X, skipping\n", $p_off);
       } elsif ( $p_attr ) { # patch prev IBT
-        $sr->[2] = 1;
+        $sr->[3] = 1;
         my $pleft_ibt = sub {
           print("patch prev IBT at %X to %X\n", $p_off, $c_off) if defined($opt_v);
           $g_attrs->patch_ib_addr($p_off, $c_off);
         };
         push @$sr, $pleft_ibt;
       } elsif ( $c_attr ) { # patch next IBT
-        $sr->[2] = 1;
+        $sr->[3] = 1;
         my $pc_ibt = sub {
           print("patch prev IBT at %X to %X\n", $c_off, $p_off) if defined($opt_v);
           $g_attrs->patch_ib_addr($c_off, $p_off);
@@ -516,7 +516,7 @@ sub post_process_swaps
   my %ah;
   # iterate and swap, fill %ah for attributes
   foreach my $sr ( @{ $bl->[15] } ) {
-    unless($sr->[2]) {
+    unless($sr->[3]) {
       $gsp_skipped++;
       next;
     }
@@ -536,7 +536,7 @@ sub post_process_swaps
     # patch ushed_info, new stall is curr stall - prev stall
     my $dec_stall = $sr->[2];
     if ( $dec_stall ) {
-      my $patched_usched = $sr->[1]->[7]->[1] - stall_gain($sr->[1], $sr->[0]);
+      my $patched_usched = $sr->[1]->[7]->[1] - $dec_stall;
       printf("decrease %d at %X, patched %d\n", $dec_stall, $p_off, $patched_usched) if defined($opt_v);
       unless ( defined $opt_z ) {
         unless ( $g_ced->patch(USCHED, $patched_usched) ) {
@@ -548,11 +548,11 @@ sub post_process_swaps
     }
     $gsp_patched++;
     # we have some tail for post-patching?
-    next if ( $sr->[2] < 0 );
+    next if ( $sr->[3] < 0 );
     # need patch relocs/attrs/something else
-    my $what = ref $sr->[3];
+    my $what = ref $sr->[4];
     if ( 'CODE' eq $what ) {
-      $gsp_bad_attrs++ unless ( $sr->[3]->() );
+      $gsp_bad_attrs++ unless ( $sr->[4]->() );
       next;
     }
     if ( 'ARRAY' ne $what ) {
@@ -561,7 +561,7 @@ sub post_process_swaps
     }
     # some attributes - can be several
     my $sr_size = scalar @$sr;
-    for my $i ( 3 .. $sr_size - 1 ) {
+    for my $i ( 4 .. $sr_size - 1 ) {
       my $ap = $sr->[$i];
       my $atr = $ap->[1];
       next unless($atr); # skip zeros
@@ -1809,6 +1809,40 @@ sub dec_rl_interval
   $res;
 }
 
+# dec_rl_interval for swap probes
+# args:
+#  block
+#  start index
+#  end address
+#  dec value
+#  ftc from track_lat
+#  il from block->[18]
+sub dec_swap_interval
+{
+  my($bl, $start, $end_addr, $dec, $ftc, $il) = @_;
+  return 0 unless defined($start);
+  my $rl = $bl->[13];
+  my $rl_len = scalar @$rl;
+  my $res = 0;
+  for my $i ( $start .. $rl_len - 1 ) {
+    my $curr_i = $il->[$i];
+    last if ( remap_rl($bl, $curr_i) >= $end_addr );
+    my $curr_rl = $rl->[$i];
+    next unless defined($curr_rl);
+    next if ( !$curr_rl->[0] );
+    # ok, some rl with positive value
+    ++$res;
+    if ( $curr_rl->[0] < $dec ) {
+      # just zero it
+      $rl->[$i] = [ 0, $ftc ];
+    } else {
+      $rl->[$i] = [ $curr_rl->[0] - $dec, $ftc ];
+    }
+  }
+  $res;
+}
+
+
 # dump rl for debugging
 # args: rl, il from block->[18], header
 sub dump_rl
@@ -2087,7 +2121,7 @@ sub traverse_lat
             next;
           }
  printf("apply WaR from %X (%d) till %X, v %d\n", $w_addr, $war_idx, $wark, $src->[1]) if defined($opt_d);
-          dec_rl_interval(\@rl, $war_idx, remap($bl, $wark), $src->[1], $src, $il);
+          dec_swap_interval($bl, $war_idx, remap($bl, $wark), $src->[1], $src, $il);
           ++$app_cnt;
         }
         last if ( $wark > $right && !$app_cnt ); # they sorted by addresses so this is safe optimization
@@ -2097,18 +2131,19 @@ sub traverse_lat
     # final check
     goto ROLLB if ( defined($rl[$first_idx]) && $rl[$first_idx]->[0] <= 0 );
     goto ROLLB if ( defined($rl[$first_idx+1]) && $rl[$first_idx+1]->[0] <= 0 );
+    $sc->[1] = $rl[$first_idx]->[0] if ( defined($rl[$first_idx]) && $sc->[1] > $rl[$first_idx]->[0] );
+    goto ROLLB unless $sc->[1];
     # ok, we really can swap this pair
     $rollback = 0;
     $last_succ = $second_adr;
     # update stat
-    $sc->[1] = $rl[$first_idx]->[0] if ( defined($rl[$first_idx]) && $sc->[1] > $rl[$first_idx]->[0] );
     upd_swap_stat($sc->[1], get_old_pair_stall($sc));
     if ( defined $opt_P ) {
-      my $swap_item = [ $sc->[2], $sc->[3], $sc->[1] ];
+      my @swap_item = ( $sc->[2], $sc->[3], $sc->[1] );
       unless( defined $bl->[15] ) {
-        $bl->[15] = [ $swap_item ];
+        $bl->[15] = [ \@swap_item ];
       } else {
-        push @{ $bl->[15] }, $swap_item;
+        push @{ $bl->[15] }, \@swap_item;
       }
     }
 ROLLB:
@@ -2123,14 +2158,6 @@ ROLLB:
       # remove remaps
       delete $bl->[14]->{$first_adr};
       delete $bl->[14]->{$second_adr};
-    } else {
-      # cool, this pair can be swapped - put it in block->[15]
-      my $pc = [ $il->[$first_idx + 1]->[0], $il->[$first_idx]->[0] ]; # pair prev-curr
-      if ( defined $bl->[15] ) {
-        push @{ $bl->[15] }, $pc;
-      } else {
-        $bl->[15] = [ $pc ];
-      }
     }
   }
 }
