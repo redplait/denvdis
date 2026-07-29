@@ -1112,7 +1112,7 @@ static int find_war(unsigned char kind, unsigned char what, const std::vector<T>
     // write branch
     if ( !state.has_value() ) continue;
     // check that write belongs to another instruction
-    if ( ch.off == state.value().first ) continue;
+    if ( ch.off == state.value().first ) { state.reset(); continue; }
     // here we have col for write and row for read
     // find_tab_cross args rows, cols
     auto tc = find_tab_cross( *state.value().second, ch.tab_chain[1] );
