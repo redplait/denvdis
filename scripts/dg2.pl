@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_s $opt_t $opt_u $opt_U $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_S $opt_s $opt_t $opt_u $opt_U $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -29,6 +29,7 @@ Usage: $0 [options] file.cubin
   -p - dump properties
   -r - dump relocs
   -s - try to find instructions to swap
+  -S - dump instructions stat
   -t - track registers
   -u - try detect register reuse cache
   -U - analyze possible registers reuse
@@ -40,6 +41,7 @@ EOF
 }
 
 ### constants
+use constant STAT_LIM => 15;
 use constant MAX_REUSE_DIST => 0x70;
 use constant MAX_SWAP_DIST => 0xa0;
 use constant USCHED => 'usched_info';
@@ -83,6 +85,10 @@ my $gsp_skipped = 0;
 my $gsp_patched = 0;
 my $gsp_bad = 0;
 my $gsp_bad_attrs = 0;
+# instruction swap map
+# key is instruction name (or pair)
+# values is in -s pair [ selected, applied ], else just count
+my %gi_stat;
 # lmode stat
 # indices: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3],
 #  [5] - with range, [6] - breaked on CJ
@@ -120,6 +126,79 @@ sub dump_swap_stat
   printf(" overall stalls %d, %f\n", $g_bl[1], $gs_gain * 1.0 / $g_bl[1]) if ( $g_bl[1] );
   printf(" total gain %d (%f avg) gain/old ratio %f\n", $gs_gain, $gs_gain * 1.0 / $gs_ords, $gs_gain * 1.0 / $gs_old_stall);
   printf(" skipped %d, patched %d, bad %d, bad attrs %d\n", $gsp_skipped, $gsp_patched, $gsp_bad, $gsp_bad_attrs) if defined($opt_P);
+}
+
+# instructions stat
+sub add_potential_swap
+{
+  my($f, $s) = @_;
+  my $key = $f->[1] . '+' . $s->[1];
+  if ( exists $gi_stat{$key} ) {
+    $gi_stat{$key}->[0]++;
+  } else {
+    $gi_stat{$key} = [ 1, 0 ];
+  }
+}
+
+sub add_real_swap
+{
+  my($f, $s) = @_;
+  my $key = $f->[1] . '+' . $s->[1];
+  if ( exists $gi_stat{$key} ) {
+    $gi_stat{$key}->[1]++;
+  } else {
+    $gi_stat{$key} = [ 0, 1 ];
+  }
+}
+
+sub add_reduced
+{
+  my $i = shift;
+  $gi_stat{$i->[1]}++;
+}
+
+sub dump_stat_list
+{
+  my($ar, $cb) = @_;
+  if ( defined $opt_v ) {
+    $cb->($_) for @$ar;
+  } else {
+    my $lim = scalar @$ar;
+    $lim = STAT_LIM if ( $lim > STAT_LIM );
+    $cb->($ar->[$_]) for ( 0 .. $lim - 1 );
+  }
+}
+
+sub dump_ins_stat
+{
+  if ( defined $opt_s ) {
+   my @kw = map { [ $_, $gi_stat{$_} ]; } keys %gi_stat;
+   my $cb = sub {
+      my $item = shift;
+      printf(" %s - %d %d\n", $item->[0], $item->[1]->[0], $item->[1]->[1]);
+   };
+    printf("--- Potential pairs:\n");
+    my @tmp = sort { $b->[1]->[0] <=> $a->[1]->[0] } @kw;
+    dump_stat_list(\@tmp, $cb);
+    printf("--- Patched pairs:\n");
+    @tmp = sort { $b->[1]->[1] <=> $a->[1]->[1] } @kw;
+    dump_stat_list(\@tmp, $cb);
+    printf("--- Rejected pairs:\n");
+    $cb = sub {
+      my $item = shift;
+      printf(" %s - %d\n", $item->[0], $item->[1]);
+    };
+    @tmp = sort { $b->[1] <=> $a->[1] } map { [ $_->[0], $_->[1]->[0] - $_->[1]->[1] ]; } @kw;
+    dump_stat_list(\@tmp, $cb);
+  } else {
+    my @tmp = sort { $b->[1] <=> $a->[1] } map { [ $_, $gi_stat{$_} ]; } keys %gi_stat;
+    my $cb = sub {
+      my $item = shift;
+      printf(" %s - %d\n", $item->[0], $item->[1]);
+    };
+    printf("--- Patched instructions:\n");
+    dump_stat_list(\@tmp, $cb);
+  }
 }
 
 # args: stall gain, total old stalls in pair from get_old_pair_stall
@@ -2139,6 +2218,7 @@ sub traverse_lat
     $last_succ = $second_adr;
     # update stat
     upd_swap_stat($sc->[1], get_old_pair_stall($sc));
+    add_real_swap($sc->[2], $sc->[3]) if defined($opt_S);
     if ( defined $opt_P ) {
       my @swap_item = ( $sc->[2], $sc->[3], $sc->[1] );
       unless( defined $bl->[15] ) {
@@ -2331,6 +2411,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     $visited{ $rl_item }->[1] -= $curr_dec;
     printf("; can dec %d-%d at %X lat_lim %d %s\n", lat_stall($il->[$i]), $curr_dec, $il->[$i]->[0]->[0], $lat_lim, $il->[$i]->[0]->[2]) if defined($opt_d);
     push @patch_list, [ $il->[$i], $curr_dec ] if ( defined $opt_P );
+    add_reduced($il->[$i]->[0]) if defined($opt_S);
   }
   # check if this block had bad latency
   $g_bl[2]++ if ( $ld->[2] );
@@ -2827,6 +2908,7 @@ sub gdisasm
                 my $gain = can_swap($block); # applied config
                 if ( defined($gain) && $gain > 0) {
                   my $scand = [ $idx - 1, $gain, $block->[14], $block->[13] ];
+                  add_potential_swap($block->[14], $block->[13]) if defined($opt_S);
                   # put pair of candidates to block->[19] list
                   if ( defined $block->[19] ) {
                     push @{$block->[19]}, $scand;
@@ -3348,7 +3430,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("abdGglmPprstUuvwzC:");
+my $state = getopts("abdGglmPprSstUuvwzC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -3438,5 +3520,6 @@ foreach my $s ( @es ) {
 dump_ruc() if defined($opt_u);
 dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
+dump_ins_stat() if defined($opt_S);
 dump_swap_stat() if defined($opt_s);
 dump_lmode_stat() if in_lmode();
