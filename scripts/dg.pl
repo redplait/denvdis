@@ -898,6 +898,7 @@ sub add_barstat
 
 sub dump_barstat
 {
+  print("--- bar stat\twait\tread\twrite\n");
   while( my($name, $ar) = each(%g_barstat) ) {
     printf("%s:\t%d %d %d\n", $name, $ar->[0], $ar->[1], $ar->[2]);
   }

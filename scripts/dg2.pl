@@ -171,6 +171,10 @@ sub dump_stat_list
 
 sub dump_ins_stat
 {
+  my $single_cb = sub {
+      my $item = shift;
+      printf(" %s - %d\n", $item->[0], $item->[1]);
+  };
   if ( defined $opt_s ) {
    my @kw = map { [ $_, $gi_stat{$_} ]; } keys %gi_stat;
    my $cb = sub {
@@ -184,20 +188,12 @@ sub dump_ins_stat
     @tmp = sort { $b->[1]->[1] <=> $a->[1]->[1] } @kw;
     dump_stat_list(\@tmp, $cb);
     printf("--- Rejected pairs:\n");
-    $cb = sub {
-      my $item = shift;
-      printf(" %s - %d\n", $item->[0], $item->[1]);
-    };
-    @tmp = sort { $b->[1] <=> $a->[1] } map { [ $_->[0], $_->[1]->[0] - $_->[1]->[1] ]; } @kw;
-    dump_stat_list(\@tmp, $cb);
+    @tmp = sort { $b->[1] <=> $a->[1] } grep { $_->[1]; } map { [ $_->[0], $_->[1]->[0] - $_->[1]->[1] ]; } @kw;
+    dump_stat_list(\@tmp, $single_cb);
   } else {
     my @tmp = sort { $b->[1] <=> $a->[1] } map { [ $_, $gi_stat{$_} ]; } keys %gi_stat;
-    my $cb = sub {
-      my $item = shift;
-      printf(" %s - %d\n", $item->[0], $item->[1]);
-    };
     printf("--- Patched instructions:\n");
-    dump_stat_list(\@tmp, $cb);
+    dump_stat_list(\@tmp, $single_cb);
   }
 }
 
@@ -975,6 +971,7 @@ sub add_barstat
 
 sub dump_barstat
 {
+  print("--- bar stat\twait\tread\twrite\n");
   while( my($name, $ar) = each(%g_barstat) ) {
     printf("%s:\t%d %d %d\n", $name, $ar->[0], $ar->[1], $ar->[2]);
   }
@@ -1196,12 +1193,17 @@ sub can_swap
   }
   # both instructions are ld/st of the same type
   # see details in paper https://arxiv.org/html/2501.08071v1 p3.5
-  return 0 if ( is_ld_st($curr) || is_ld_st($prev) ); # && $curr->[1] eq $prev->[1] );
+  return 0 if ( is_ld_st($curr) && is_ld_st($prev) ); # && $curr->[1] eq $prev->[1] );
   return 0 if ( denied_swap($curr) || denied_swap($prev) );
   return 0 if ( is_cf($curr, $opt_v) || is_cf($prev, $opt_v) );
   # apply config
   return 0 unless( $gcdf->($curr->[0]) );
   return 0 unless( $gcdf->($prev->[0]) );
+  # some additional checks
+  unless( defined $opt_a ) {
+    # It’s questionable idea, but I don’t see sence in swapping adjacent identical instructions
+    return 0 if ( $curr->[1] eq $prev->[1] );
+  }
   # check if we can get some gain from swapping
   my $res = stall_gain($prev, $curr);
   return 0 unless ( $res );
