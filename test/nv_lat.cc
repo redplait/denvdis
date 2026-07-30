@@ -51,6 +51,38 @@ inline static bool has_key(const NV_extracted &kv, const char *what) {
   return ki != kv.end();
 }
 
+/* I suspect that latency tables *_2.txt are too convervative for some instructions comparing with c8.txt
+   For example there is IMAD with value 4 and IMAD.WIDE with value 9
+   In _2.txt IMAD included in many gruups but none reflect 'wide', like
+
+   IMAD_OP = {IMAD,IMADfmalighter_pipe,IMAD32I,IMAD32Ifmalighter_pipe,
+                               IMUL,IMULfmalighter_pipe,IMUL32I,IMUL32Ifmalighter_pipe}
+
+   row in RaW looks like IMAD_OP`{Rd @RdRange,Rd2 @Rd2Range} : 5 4 6 6 6 6 8 6 6 7 7 7 7 7 7 6 4
+
+   So I add -S option to dg2.pl to collect most frequently patched instructions
+   This method is quick and dirty hack to relax delays for some instruction - sure it is incomplete
+   and knows only some most popular
+ */
+std::optional<int> NV_renderer::relax_latency(const struct nv_instr *ins, const NV_extracted &kv) const {
+  std::string_view iname = ins->name;
+  std::string_view iclas = ins->cname;
+  std::optional<int> res;
+  switch( ins->name[0] ) {
+    case 'I': // IMAD & IMUL
+      if ( iname == "IMAD"sv ) {
+        if ( !iclas.starts_with("imad_hi") && !iclas.starts_with("imad_wide") ) res.emplace(4);
+      }
+      else if ( iname == "IMUL"sv ) {
+        if ( !iclas.starts_with("imul_wide") ) res.emplace(4);
+      } else if ( iname == "IMUL32I"sv ) {
+        if ( !iclas.starts_with("imul32i_wide") ) res.emplace(7);
+      }
+     break;
+  }
+  return res;
+};
+
 static const std::unordered_map<std::string_view, int> s_spec9 = {
  { "UTCCP"sv, 10 },
  { "UTCHMMA"sv, 12 },
