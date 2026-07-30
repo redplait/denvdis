@@ -1121,7 +1121,15 @@ sub can_swap
   return 0 unless( $gcdf->($curr->[0]) );
   return 0 unless( $gcdf->($prev->[0]) );
   # check if we can get some gain from swapping
-  my $res = stall_gain($prev, $curr);
+  my $res;
+  if ( defined($curr->[11]) ) {
+    return 0 unless defined($opt_m);
+    $res = $curr->[7]->[0] - $curr->[11]; # current stall - min wait
+    return 0 if ( $res <= 0 );
+    $res = GAIN_LIMIT if ( $res > GAIN_LIMIT );
+  } else {
+    $res = stall_gain($prev, $curr);
+  }
   return 0 unless ( $res );
 printf("Gain %d\n", $res) if defined($opt_v);
   my $new_usched = $curr->[7]->[0] - $res;
