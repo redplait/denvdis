@@ -1205,13 +1205,20 @@ sub can_swap
     return 0 if ( $curr->[1] eq $prev->[1] );
   }
   # check if we can get some gain from swapping
-  my $res = stall_gain($prev, $curr);
+  my $res;
+  if ( defined($curr->[11]) ) {
+    return 0 unless defined($opt_m);
+    $res = $curr->[7]->[0] - $curr->[11]; # current stall - min wait
+    return 0 if ( $res <= 0 );
+    $res = GAIN_LIMIT if ( $res > GAIN_LIMIT );
+  } else {
+    $res = stall_gain($prev, $curr);
+  }
   return 0 unless ( $res );
 printf("Gain %d for %X\n", $res, $curr->[0]) if defined($opt_v);
   my $new_usched = $curr->[7]->[0] - $res;
   # check min_wait for current instruction at ->[11]
   if ( defined($curr->[11]) ) {
-    return 0 unless defined($opt_m);
     return 0 if ( $new_usched < $curr->[11] );
   }
   # check if we really can patch
@@ -2401,7 +2408,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     if ( defined $il->[$i]->[0]->[11] ) {
       $curr_dec = $st - $il->[$i]->[0]->[11];
     } else {
-      $curr_dec = $st - 2;
+      $curr_dec = $st - GAIN_LIMIT;
     }
     next if ( $curr_dec < 0 );
     $curr_dec = limit_stall($curr_dec, $st);
