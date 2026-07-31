@@ -367,10 +367,10 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       if ( kvi->second == 7 ) continue;
       if ( !strcmp(ea->ename, "Predicate") )
        { rtdb->pred_mask = (1 + (unsigned short)kvi->second) << 11;
-         fill_tab_chains(p, s_tkey_pred, rtdb->rpred(kvi->second, off, 0), 1); res++; }
+         res += fill_tab_chains(p, s_tkey_pred, rtdb->rpred(kvi->second, off, 0), 1); }
       else if ( !strcmp(ea->ename, "UniformPredicate") )
        { rtdb->pred_mask = 0x4000 | (1 + (unsigned short)kvi->second) << 11;
-         fill_tab_chains(p, s_tkey_upred, rtdb->rupred(kvi->second, off, 0), 1); res++; }
+         res += fill_tab_chains(p, s_tkey_upred, rtdb->rupred(kvi->second, off, 0), 1); }
       else
        fprintf(m_out, "unknown predicate %s at %lX\n", ea->ename, off);
       continue;
@@ -729,14 +729,35 @@ printf("check_ve %s %d\n", ve.arg, psize);
     auto cci = p.first->predicated->find(s_cc_prop);
     if ( cci != p.first->predicated->end() ) {
       int read_cc = cci->second(p.second);
-      if ( read_cc ) fill_tab_chain_CC(p, rtdb->rcc(off), 1);
+      if ( read_cc ) res += fill_tab_chain_CC(p, rtdb->rcc(off), 1);
     }
   }
   // track writeCC
   auto ccki = p.second.find("writeCC");
   if ( ccki == p.second.end() ) ccki = p.second.find("fcomp");
   if ( ccki != p.second.end() && ccki->second )
-    fill_tab_chain_CC(p, rtdb->wcc(off), 0, ccki->second);
+    res += fill_tab_chain_CC(p, rtdb->wcc(off), 0, ccki->second);
+
+  // track BD - since sm70
+  if ( is_sm70plus() && p.first->ins_type == INST_TYPE_DECOUPLED_BRU_DEPBAR_RD_SCBD ) {
+    // we have several possible instructions here
+    // bmov - writes to barReg, cab read from Ba
+    // break - reads from barReg
+    // bssy - writes to barReg
+    // bsync - reads from barReg
+    auto bi = p.second.find("barReg");
+    if ( bi != p.second.end() ) {
+      if ( !strcmp(p.first->name, "BMOV") || !strcmp(p.first->name, "BSSY") ) {
+        rtdb->write_bd((int)bi->second & 0xf, off); res++;
+        auto bai = p.second.find("Ba");
+        if ( bai != p.second.end() ) {
+          rtdb->read_bd((int)bai->second & 0xf, off); res++;
+        }
+      } else if ( !strcmp(p.first->name, "BREAK") || !strcmp(p.first->name, "BSYNC") ) {
+        rtdb->read_bd((int)bi->second & 0xf, off); res++;
+      }
+    }
+  }
 
   // track GMMA_GROUP_SCOREBOARD - sm90 only
   if ( is_sm90() ) {
@@ -745,12 +766,12 @@ printf("check_ve %s %d\n", ve.arg, psize);
       // if we have column - this is read
       auto gcol = check_tconn_col(p.first, s_ggs, s_true_tab);
       if ( gcol && (!gcol->filter || gcol->filter(p.first, p.second)) ) {
-        fill_tab_chains(p, s_ggs, rtdb->rgsb(gi->second, off), 1); // add column from s_ggs
+        res += fill_tab_chains(p, s_ggs, rtdb->rgsb(gi->second, off), 1); // add column from s_ggs
       }
       // else if we have row - this is write
       auto grow = check_tconn_row(p.first, s_ggs, s_true_tab);
       if ( grow && (!grow->filter || grow->filter(p.first, p.second)) ) {
-        fill_tab_chains(p, s_ggs, rtdb->wgsb(gi->second, off), 0); // add row from s_ggs
+        res += fill_tab_chains(p, s_ggs, rtdb->wgsb(gi->second, off), 0); // add row from s_ggs
       }
     }
   }
@@ -761,16 +782,16 @@ printf("check_ve %s %d\n", ve.arg, psize);
      // dirty hack - in table_true(rpc) the only reader/column is USETMAXREG
      // on other hand it also presents in rows, so passing check above
      if ( !strcmp(p.first->name, "USETMAXREG") )
-       fill_tab_chains(p, s_rpc, rtdb->rrpc(off), 1);
+       res += fill_tab_chains(p, s_rpc, rtdb->rrpc(off), 1);
      else
-       fill_tab_chains(p, s_rpc, rtdb->wrpc(off), 0);
+       res += fill_tab_chains(p, s_rpc, rtdb->wrpc(off), 0);
     }
     // CgaBar - if col then this is read
     if ( check_tconn_col(p.first, s_cgabar, s_true_tab) )
-      fill_tab_chains(p, s_cgabar, rtdb->rcgabar(off), 1);
+      res += fill_tab_chains(p, s_cgabar, rtdb->rcgabar(off), 1);
     // if row - this is write
     if ( check_tconn_row(p.first, s_cgabar, s_true_tab) )
-      fill_tab_chains(p, s_cgabar, rtdb->wcgabar(off), 0);
+      res += fill_tab_chains(p, s_cgabar, rtdb->wcgabar(off), 0);
   }
 
   return res;
@@ -802,6 +823,8 @@ void NV_renderer::finalize_rt(reg_pad *rtdb) {
   for ( auto &r: rtdb->pred ) std::sort(r.second.begin(), r.second.end(), srt);
  if ( !rtdb->upred.empty() )
   for ( auto &r: rtdb->upred ) std::sort(r.second.begin(), r.second.end(), srt);
+ if ( !rtdb->bds.empty() )
+  for ( auto &r: rtdb->bds ) std::sort(r.second.begin(), r.second.end(), srt);
  if ( !rtdb->cc.empty() )
   std::sort(rtdb->cc.begin(), rtdb->cc.end(), srt);
  if ( !rtdb->gsb0.empty() )
@@ -866,9 +889,21 @@ void NV_renderer::dump_rt(reg_pad *rtdb, int rc) const {
       else
        fprintf(m_out, " ;   %lX %X", c.off, c.kind & mask);
     }
-    if ( rc ) dump_rchains(c.tab_chain[0], !(c.kind & 0x8000));
+    constexpr bool has_tchain = requires(const decltype(std::declval<c>)& t) {
+      t.tab_chain;
+    };
+    if constexpr ( has_tchain ) {
+      if ( rc ) dump_rchains(c.tab_chain[0], !(c.kind & 0x8000));
+    }
     fputc('\n', m_out);
   };
+  if ( !rtdb->bds.empty() ) {
+    fprintf(m_out, ";;; %ld BDs\n", rtdb->bds.size());
+    for ( auto bi: rtdb->bds ) {
+      fprintf(m_out, " ;  B%d:\n", bi.first);
+      std::for_each(bi.second.cbegin(), bi.second.cend(), dump_rh);
+    }
+  }
   if ( !rtdb->cc.empty() ) {
    fprintf(m_out, ";;; %ld CC\n", rtdb->cc.size());
    for ( auto &c: rtdb->cc ) dump_rh(c);

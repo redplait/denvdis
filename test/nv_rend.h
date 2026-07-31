@@ -160,6 +160,9 @@ class NV_renderer {
     inline bool is_sm90() const {
       return m_sm == 0x5a;
     }
+    inline bool is_sm70plus() const {
+      return m_sm >= 0x46;
+    }
     inline bool is_sm90plus() const {
       return m_sm >= 0x5a;
     }

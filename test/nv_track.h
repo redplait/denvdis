@@ -127,6 +127,9 @@ struct track_snap {
   static constexpr int pr_size = 7;
   char pr[pr_size] = { 0, 0, 0, 0, 0, 0, 0 },
       upr[pr_size] = { 0, 0, 0, 0, 0, 0, 0 };
+  // BD - sm70+
+  static constexpr int bd_size = 16;
+  char bd[bd_size] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
   // cc - 1 - read, 2 - write
   std::optional<unsigned char> cc;
   // gsb0 & gsb7: like cc, 1 - read, 2 - write
@@ -136,6 +139,10 @@ struct track_snap {
   void reset() {
     gpr.clear(); cc.reset(); gsb0.reset(); gsb7.reset(); rpc.reset(); cgabar.reset();
     memset(pr, 0, pr_size); memset(upr, 0, pr_size);
+    memset(bd, 0, bd_size);
+  }
+  bool empty_bd() const {
+    return std::all_of(bd, bd + bd_size, [](char c) -> bool { return !c; });
   }
   bool empty_pr() const {
     return std::all_of(pr, pr + pr_size, [](char c) -> bool { return !c; });
@@ -148,7 +155,7 @@ struct track_snap {
   }
   inline bool empty() const {
     if ( !gpr.empty() ) return false;
-    return empty_pr() && empty_upr() && !cc.has_value() && gsb_empty();
+    return empty_pr() && empty_upr() && empty_bd() && !cc.has_value() && gsb_empty();
   }
 };
 
@@ -163,6 +170,7 @@ struct track_snap {
 struct reg_pad {
   typedef std::unordered_map<int, std::vector<reg_history<2> > > RSet;
   typedef std::unordered_map<int, std::vector<typed_reg_history> > TRSet;
+  typedef std::unordered_map<int,std::vector<_reg_history> > BDSet;
   std::vector<reg_history<2> > cc; // bcs CC has table_anti in sm3/sm4
   // gsb for sm90
   std::vector<reg_history<1> > gsb0, gsb7;
@@ -171,6 +179,7 @@ struct reg_pad {
   TRSet gpr, ugpr;
   RSet pred, upred;
   std::vector<cbank_history> cbs;
+  BDSet bds; // sm70+
   track_snap *snap = nullptr;
   reg_reuse m_reuse;
   _reg_history::RH pred_mask = 0;
@@ -187,6 +196,22 @@ struct reg_pad {
   void add_cb(unsigned long off, unsigned long cb_off, unsigned short cb_num, unsigned short k) {
     cbs.push_back( { off, cb_off, cb_num, k });
   }
+  // BD
+  void add_bd(int idx, unsigned long off, _reg_history::RH k) {
+    if ( snap ) {
+      snap->bd[idx] |= k & 0x8000 ? 2 : 1;
+    }
+    k |= pred_mask;
+    bds[idx].push_back( { off, k } );
+  }
+  void read_bd(int v, unsigned long off) {
+    add_bd(v, off, pred_mask);
+  }
+  void write_bd(int v, unsigned long off) {
+    _reg_history::RH kind = 0x8000 | pred_mask;
+    add_bd(v, off, kind);
+  }
+  // regs/predicates
   RegTabChains* _add(RSet &rs, int idx, unsigned long off, _reg_history::RH k) {
     if ( snap ) {
       if ( &rs == &pred ) {
@@ -355,7 +380,7 @@ struct reg_pad {
     return gsb0.empty() && gsb7.empty();
   }
   bool empty() const {
-    return gpr.empty() && pred.empty() && ugpr.empty() && upred.empty() && cbs.empty() && cc.empty() && gsb_empty();
+    return gpr.empty() && pred.empty() && ugpr.empty() && upred.empty() && bds.empty() && cbs.empty() && cc.empty() && gsb_empty();
   }
   void clear() {
      pred_mask = 0;
@@ -363,6 +388,7 @@ struct reg_pad {
      pred.clear();
      ugpr.clear();
      upred.clear();
+     bds.clear();
      cbs.clear();
      cc.clear(); rpc.clear(); CgaBar.clear();
      gsb0.clear(); gsb7.clear();
