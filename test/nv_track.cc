@@ -741,7 +741,7 @@ printf("check_ve %s %d\n", ve.arg, psize);
   // track BD - since sm70
   if ( is_sm70plus() && p.first->ins_type == INST_TYPE_DECOUPLED_BRU_DEPBAR_RD_SCBD ) {
     // we have several possible instructions here
-    // bmov - writes to barReg, cab read from Ba
+    // bmov - writes to barReg, can read from Ba
     // break - reads from barReg
     // bssy - writes to barReg
     // bsync - reads from barReg
@@ -889,10 +889,7 @@ void NV_renderer::dump_rt(reg_pad *rtdb, int rc) const {
       else
        fprintf(m_out, " ;   %lX %X", c.off, c.kind & mask);
     }
-    constexpr bool has_tchain = requires(const decltype(std::declval<c>)& t) {
-      t.tab_chain;
-    };
-    if constexpr ( has_tchain ) {
+    if constexpr ( requires { c.tab_chain; } ) {
       if ( rc ) dump_rchains(c.tab_chain[0], !(c.kind & 0x8000));
     }
     fputc('\n', m_out);
