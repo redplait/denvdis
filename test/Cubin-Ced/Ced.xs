@@ -3455,6 +3455,17 @@ cbs(SV *obj)
   }
 
 SV *
+bd(SV *obj, IV key, unsigned long from = 0)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto bd_iter = r->bds.find(key);
+ CODE:
+  if ( bd_iter == r->bds.end() ) RETVAL = &PL_sv_undef;
+  else RETVAL = fill_reg(bd_iter->second, from);
+ OUTPUT:
+  RETVAL
+
+SV *
 ccs(SV *obj, unsigned long from = 0)
  INIT:
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
