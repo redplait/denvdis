@@ -653,6 +653,12 @@ class Ced_perl: public CEd_base {
     if ( m_cb0.cnp )   add_cb0(hv, m_cb0.cnp_off, m_cb0.cnp);
     return newRV_noinc((SV*)hv);
   }
+  SV *relax_lat() const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    auto res = relax_latency(ins(), cex());
+    if ( !res.has_value() ) return &PL_sv_undef;
+    return newSViv(res.value());
+  }
  protected:
   int add_cb0(HV *, unsigned short, const NvCBParamNames *) const;
   template <typename T>
@@ -1724,6 +1730,14 @@ IV swap(SV *obj, UV off)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->try_swap(off);
+ OUTPUT:
+  RETVAL
+
+SV *relax_lat(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->relax_lat();
  OUTPUT:
   RETVAL
 
