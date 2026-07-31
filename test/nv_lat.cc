@@ -51,9 +51,16 @@ inline static bool has_key(const NV_extracted &kv, const char *what) {
   return ki != kv.end();
 }
 
+inline static bool check_pred(const struct nv_instr *ins, const NV_extracted &kv, const std::string_view &what, uint64_t &val) {
+  auto pi = ins->predicated->find(what);
+  if ( pi == ins->predicated->end() ) return false;
+  val = pi->second(kv);
+  return true;
+}
+
 /* I suspect that latency tables *_2.txt are too convervative for some instructions comparing with c8.txt
    For example there is IMAD with value 4 and IMAD.WIDE with value 9
-   In _2.txt IMAD included in many gruups but none reflect 'wide', like
+   In _2.txt IMAD included in many groups but none reflect 'wide', like
 
    IMAD_OP = {IMAD,IMADfmalighter_pipe,IMAD32I,IMAD32Ifmalighter_pipe,
                                IMUL,IMULfmalighter_pipe,IMUL32I,IMUL32Ifmalighter_pipe}
@@ -62,14 +69,15 @@ inline static bool has_key(const NV_extracted &kv, const char *what) {
 
    So I add -S option to dg2.pl to collect most frequently patched instructions
    This method is quick and dirty hack to relax delays for some instruction - sure it is incomplete
-   and knows only some most popular
+   and knows only some most popular. All return values were borrowed from c8.txt - check that they
+   are not less than the minimum value in TABLE_TRUE corresponding row
  */
 std::optional<int> NV_renderer::relax_latency(const struct nv_instr *ins, const NV_extracted &kv) const {
   std::string_view iname = ins->name;
   std::string_view iclas = ins->cname;
   std::optional<int> res;
   switch( ins->name[0] ) {
-    case 'I': // IMAD & IMUL
+    case 'I': // IMAD & IMUL(32I)
       if ( iname == "IMAD"sv ) {
         if ( !iclas.starts_with("imad_hi") && !iclas.starts_with("imad_wide") ) res.emplace(4);
       }
@@ -77,6 +85,16 @@ std::optional<int> NV_renderer::relax_latency(const struct nv_instr *ins, const 
         if ( !iclas.starts_with("imul_wide") ) res.emplace(4);
       } else if ( iname == "IMUL32I"sv ) {
         if ( !iclas.starts_with("imul32i_wide") ) res.emplace(7);
+      }
+     break;
+    case 'U': // UIADD3, UIMNMX, UMOV
+      if ( iname == "UIADD3"sv ) {
+        if ( !iclas.starts_with("uiadd3_64") ) res.emplace(6);
+      } else if ( iname =="UIMNMX"sv ) { // sm120 only?
+        if ( !iclas.starts_with("uimnmx_64") ) res.emplace(6);
+      } else if ( iname == "UMOV"sv ) {
+        uint64_t dsize = 0;
+        if ( check_pred(ins, kv, "IDEST_SIZE"sv, dsize) && 64 != dsize ) res.emplace(4);
       }
      break;
   }
