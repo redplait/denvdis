@@ -725,18 +725,21 @@ printf("check_ve %s %d\n", ve.arg, psize);
     idx++;
   }
   // track CC - must be last after filling pred_mask
-  if ( p.first->predicated ) {
-    auto cci = p.first->predicated->find(s_cc_prop);
-    if ( cci != p.first->predicated->end() ) {
-      int read_cc = cci->second(p.second);
-      if ( read_cc ) res += fill_tab_chain_CC(p, rtdb->rcc(off), 1);
-    }
+  // in older than sm70
+  if ( !is_sm70plus() ) {
+   if ( p.first->predicated ) {
+     auto cci = p.first->predicated->find(s_cc_prop);
+     if ( cci != p.first->predicated->end() ) {
+       int read_cc = cci->second(p.second);
+       if ( read_cc ) res += fill_tab_chain_CC(p, rtdb->rcc(off), 1);
+     }
+   }
+   // track writeCC
+   auto ccki = p.second.find("writeCC");
+   if ( ccki == p.second.end() ) ccki = p.second.find("fcomp");
+   if ( ccki != p.second.end() && ccki->second )
+     res += fill_tab_chain_CC(p, rtdb->wcc(off), 0, ccki->second);
   }
-  // track writeCC
-  auto ccki = p.second.find("writeCC");
-  if ( ccki == p.second.end() ) ccki = p.second.find("fcomp");
-  if ( ccki != p.second.end() && ccki->second )
-    res += fill_tab_chain_CC(p, rtdb->wcc(off), 0, ccki->second);
 
   // track BD - since sm70
   if ( is_sm70plus() && p.first->ins_type == INST_TYPE_DECOUPLED_BRU_DEPBAR_RD_SCBD ) {

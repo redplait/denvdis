@@ -73,6 +73,7 @@ static std::map<unsigned int, const char *> s_sht = {
  { 0x70000086, "SHT_CUDA_COMPAT_INFO" },
  { 0x70000087, "SHT_CUDA_EMBEDDED_HOST" },
  { 0x70000088, "SHT_CUDA_MERCURY_RESOLVED_RELA" },
+ { 0x70000089, "SHT_CUDA_METADATA_TRACE_MARK" },
 };
 
 // extracted from EIATTR_INDIRECT_BRANCH_TARGETS
@@ -756,6 +757,8 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
           }
         } else if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
           ltype = NVLType::Coop_grp;
+        else if ( attr == 0x27 ) // EIATTR_ATOM_SYS_INSTR_OFFSETS
+          ltype = NVLType::Atom_sys;
         else if ( attr == 0x1c ) // EIATTR_EXIT_INSTR_OFFSETS
           ltype = NVLType::Exit;
         else if ( attr == 0x1d ) // EIATTR_S2RCTAID_INSTR_OFFSETS
@@ -768,6 +771,8 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
           ltype = NVLType::MBarier;
         else if ( attr == 0x47 ) // EIATTR_SW_WAR_MEMBAR_SYS_INSTR_OFFSETS
           ltype = NVLType::War_membar;
+        else if ( attr == 0x65 ) // EIATTR_IGNOREOOB_CP_ASYNC_BULK_INSTR_OFFSETS
+          ltype = NVLType::Cp_async_bulk;
         // read offsets
         if ( ltype ) {
           auto ib = get_branch(sidx);
