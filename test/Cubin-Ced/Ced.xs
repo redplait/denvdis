@@ -3466,6 +3466,34 @@ bd(SV *obj, IV key, unsigned long from = 0)
   RETVAL
 
 SV *
+has_bd(SV *obj)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+   RETVAL = r->snap->empty_bd() ? &PL_sv_no : &PL_sv_yes;
+ OUTPUT:
+  RETVAL
+
+SV *
+snap_bd(SV *obj)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+   if ( r->snap->empty_bd() ) {
+     RETVAL = &PL_sv_undef;
+   } else {
+     // make hash with key index of BD
+     HV *hv = newHV();
+     for ( int i = 0; i < r->snap->bd_size; ++i ) {
+       if ( r->snap->bd[i] )
+         hv_store_ent(hv, newSViv(i), newSViv(r->snap->bd[i]), 0);
+     }
+     RETVAL = newRV_noinc((SV*)hv);
+   }
+ OUTPUT:
+  RETVAL
+
+SV *
 ccs(SV *obj, unsigned long from = 0)
  INIT:
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
