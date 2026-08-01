@@ -1013,6 +1013,7 @@ my %s_cf = (
  'BPT' => 0,
  'EXIT' => 0,
  'SYNC' => 0,
+ 'BSYNC' => 0,
  'BREAK' => 0,
  'KILL' => 0,
  'NANOSLEEP' => 0,
@@ -1439,7 +1440,7 @@ sub dump_ins
     $ar->[6] = $g_ced->has_pred();
     $ar->[9] = $brt ? 1 : $g_ced->ins_branch();
     $ar->[11] = $mw if ( $mw );
-    if ( defined($opt_P) || defined($opt_p) ) {
+    if ( defined($opt_s) || defined($opt_p) ) {
       $ar->[10] = $g_ced->grep_pred("VQ");
       $ar->[12] = $g_ced->check_tab(USCHED, 1);
       $ar->[13] = $cc if $cc;

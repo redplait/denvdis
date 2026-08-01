@@ -1094,6 +1094,7 @@ my %s_cf = (
  'BPT' => 0,
  'EXIT' => 0,
  'SYNC' => 0,
+ 'BSYNC' => 0,
  'BREAK' => 0,
  'KILL' => 0,
  'NANOSLEEP' => 0,
@@ -1452,7 +1453,7 @@ sub dump_ins
     $ar->[6] = $g_ced->has_pred();
     $ar->[9] = $brt ? 1 : $g_ced->ins_branch();
     $ar->[11] = $mw if ( $mw );
-    if ( defined($opt_P) || defined($opt_p) ) {
+    if ( defined($opt_s) || defined($opt_p) ) {
       $ar->[10] = $g_ced->grep_pred("VQ");
       $ar->[12] = $g_ced->check_tab(USCHED, 1);
       $ar->[13] = $cc if $cc;
@@ -3287,7 +3288,8 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
     * 16 - sidl has _CAS suffix
     * 17 - has wait
     * 18 - address of next instruction
-    * 19 - TBC
+    * 19 - instruction read or write BD
+    * 20 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
