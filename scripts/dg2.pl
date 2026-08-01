@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_S $opt_s $opt_t $opt_u $opt_U $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_u $opt_U $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -28,6 +28,7 @@ Usage: $0 [options] file.cubin
   -P - do real patch. Don't forget to backup your CUBIN files
   -p - dump properties
   -r - dump relocs
+  -R - try relaxed latency
   -s - try to find instructions to swap
   -S - dump instructions stat
   -t - track registers
@@ -1091,17 +1092,18 @@ my %s_cf = (
  'BRK' => 0,
  'CONT' => 0,
  'SSY' => 0,
+ 'BSSY' => 0, # bd
  'BPT' => 0,
  'EXIT' => 0,
  'SYNC' => 0,
- 'BSYNC' => 0,
- 'BREAK' => 0,
+ 'BSYNC' => 0, # bd
+ 'BREAK' => 0, # bd
  'KILL' => 0,
  'NANOSLEEP' => 0,
  'RTT' => 0,
  'WARPSYNC' => 0,
  'YIELD' => 0,
- 'BMOV' => 0,
+ 'BMOV' => 0, # bd
  'RPCMOV' => 0,
  'ACQBULK' => 0,
  'ENDCOLLECTIVE' => 0,
@@ -2599,6 +2601,19 @@ sub dump_snap_cc
   printf("; CC %s\n", 1 == $cc ? 'read' : 'write');
 }
 
+# dump BD for current instruction
+sub dump_snap_bd
+{
+  my $bdh = shift;
+  return unless defined($bdh);
+  while (my ($idx, $v) = each %$bdh ) {
+    my $what = '';
+    $what = ' read' if ( $v & 1 );
+    $what = ' write' if ( $v & 2 );
+    printf("; BD%d%s\n", $idx, $what);
+  }
+}
+
 # check if found instruction for reuse really has reusage mask
 # args:
 #  [ offset, mask ] from collect_reuse
@@ -2891,7 +2906,9 @@ sub gdisasm
       # dump snap
       if ( $res && defined($rt) ) {
         printf("; mask %X mask2 %X\n", $rt->mask(), $rt->mask2()) if defined($opt_v);
+        $block->[13]->[19] = $g_ced->relax_lat() if ( defined $opt_R );
         dump_snap_cc($rt->cc());
+        dump_snap_bd($rt->snap_bd());
         my($g, $pr) = $rt->snap();
         if ( defined($g) || defined($pr) ) {
           dump_snap($g, $pr);
@@ -3288,7 +3305,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
     * 16 - sidl has _CAS suffix
     * 17 - has wait
     * 18 - address of next instruction
-    * 19 - instruction read or write BD
+    * 19 - relaxed latency from relax_lat
     * 20 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
@@ -3441,7 +3458,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("abdGglmPprSstUuvwzC:");
+my $state = getopts("abdGglmPpRrSstUuvwzC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
