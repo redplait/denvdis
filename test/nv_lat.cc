@@ -101,6 +101,34 @@ std::optional<int> NV_renderer::relax_latency(const struct nv_instr *ins, const 
   return res;
 };
 
+// delay plop3 typically looks like
+// PLOP3.LUT P0,PT,PT,PT,PT, 0x80, 0 ?trans2 ; LUT 80: a & b & c
+// this is class plop3_lut_2out_ and has predicates names Pv, Pp, Pq, Pr
+// another forms with 4 predicates:
+// - class plop3_lut_2out_uniform_ with Pv, Pp, Pq & Upr
+// - class uplop3_lut_2out_ with UPv, UPp, UPq, UPr
+bool NV_renderer::delay_plop(const struct nv_instr *ins, const NV_extracted &kv) const {
+  std::string_view iclas = ins->cname;
+  auto check_pr = [&kv](const std::string_view &what) -> bool {
+    auto ki = kv.find(what);
+    if ( ki == kv.end() ) return false;
+    return ki->second == 7; // both Predicate & UniformPredicate marked 7 as (U)PT
+  };
+  if ( iclas == "plop3_lut_2out_"sv ) {
+    constexpr std::array preds = { "Pv"sv, "Pp"sv, "Pq"sv, "Pr"sv };
+    return std::all_of(preds.cbegin(), preds.cend(), check_pr);
+  }
+  if ( iclas == "plop3_lut_2out_uniform_"sv ) {
+    constexpr std::array preds = { "Pv"sv, "Pp"sv, "Pq"sv, "UPr"sv };
+    return std::all_of(preds.cbegin(), preds.cend(), check_pr);
+  }
+  if ( iclas == "uplop3_lut_2out_"sv ) {
+    constexpr std::array preds = { "UPv"sv, "UPp"sv, "UPq"sv, "UPr"sv };
+    return std::all_of(preds.cbegin(), preds.cend(), check_pr);
+  }
+  return false;
+}
+
 static const std::unordered_map<std::string_view, int> s_spec9 = {
  { "UTCCP"sv, 10 },
  { "UTCHMMA"sv, 12 },
