@@ -659,6 +659,10 @@ class Ced_perl: public CEd_base {
     if ( !res.has_value() ) return &PL_sv_undef;
     return newSViv(res.value());
   }
+  SV *delay_plop() const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    return NV_renderer::delay_plop(ins(), cex()) ? &PL_sv_yes : &PL_sv_no;
+  }
  protected:
   int add_cb0(HV *, unsigned short, const NvCBParamNames *) const;
   template <typename T>
@@ -1734,10 +1738,12 @@ IV swap(SV *obj, UV off)
   RETVAL
 
 SV *relax_lat(SV *obj)
+ ALIAS:
+  Cubin::Ced::delay_plop = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->relax_lat();
+   RETVAL = (1 == ix) ? e->delay_plop() : e->relax_lat();
  OUTPUT:
   RETVAL
 
