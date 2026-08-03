@@ -77,22 +77,27 @@ std::optional<int> NV_renderer::relax_latency(const struct nv_instr *ins, const 
   std::string_view iclas = ins->cname;
   std::optional<int> res;
   switch( ins->name[0] ) {
-    case 'I': // IMAD & IMUL(32I)
+    case 'I': // IMAD, IMNMX, ISETP & IMUL(32I)
       if ( iname == "IMAD"sv ) {
         if ( !iclas.starts_with("imad_hi") && !iclas.starts_with("imad_wide") ) res.emplace(4);
-      }
-      else if ( iname == "IMUL"sv ) {
+      } else if ( iname == "IMUL"sv ) {
         if ( !iclas.starts_with("imul_wide") ) res.emplace(4);
       } else if ( iname == "IMUL32I"sv ) {
         if ( !iclas.starts_with("imul32i_wide") ) res.emplace(7);
-      }
+      } else if ( iname == "IMNMX"sv ) {
+        if ( !iclas.starts_with("imnmx_64") ) res.emplace(5);
+      } /* else if ( iname == "ISETP"sv ) {
+        if ( !iclas.starts_with("isetp_64") ) res.emplace(5);
+      } */
      break;
-    case 'U': // UIADD3, UIMNMX, UMOV
+    case 'U': // UIADD3, UIMNMX, UISETP, UMOV
       if ( iname == "UIADD3"sv ) {
         if ( !iclas.starts_with("uiadd3_64") ) res.emplace(6);
       } else if ( iname =="UIMNMX"sv ) { // sm120 only?
         if ( !iclas.starts_with("uimnmx_64") ) res.emplace(6);
-      } else if ( iname == "UMOV"sv ) {
+      } /* else if ( iname =="UISETP"sv ) { // sm120 only?
+        if ( !iclas.starts_with("uisetp_64") ) res.emplace(6);
+      } */ else if ( iname == "UMOV"sv ) {
         uint64_t dsize = 0;
         if ( check_pred(ins, kv, "IDEST_SIZE"sv, dsize) && 64 != dsize ) res.emplace(4);
       }
