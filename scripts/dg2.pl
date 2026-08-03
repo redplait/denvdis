@@ -95,6 +95,8 @@ my %gi_stat;
 #  [5] - with range, [6] - breaked on CJ
 # with -P [7] - count of patched, [8] - sum of decreased stalls
 my @g_bl = ( 0, 0, 0, 0, 0, 0, 0, 0, 0 );
+# for -R option, 0 - total relaxes, 1 - applied
+my @g_R = ( 0, 0 );
 ### config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -118,6 +120,10 @@ sub dump_lmode_stat
   printf("%d instrs break on CJ: %f\n", $g_bl[6], 1.0 * $g_bl[6] / $g_bl[4]) if ( $g_bl[6] && $g_bl[4]);
   printf("%d patched, %f\n", $g_bl[7], 1.0 * $g_bl[7] / $g_bl[4]) if ( $g_bl[7] && $g_bl[4]);
   printf("%d dec stalls, %f\n", $g_bl[8], 1.0 * $g_bl[8] / $g_bl[1]) if ( $g_bl[8] && $g_bl[1]);
+  if ( defined $opt_R ) {
+    printf("relaxed %d %f\n", $g_R[0], 1.0 * $g_R[0] / $g_bl[0]) if ( $g_bl[0] );
+    printf("applied relaxed %d %f\n", $g_R[1], 1.0 * $g_R[1] / $g_bl[4]) if ( $g_R[1] && $g_bl[4]);
+  }
 }
 
 sub dump_swap_stat
@@ -1170,6 +1176,8 @@ sub can_swap
   return 0 if ( $curr->[16] || $prev->[16] );
   # 2,4) one of instructions is ENDING_INST
   return 0 if ( $curr->[14] || $prev->[14] );
+  # 2.5) one of instructions is Delay Plop
+  return 0 if ( $curr->[20] || $prev->[20] );
   # 3) has rela
   return 0 if ( $curr->[4] || $prev->[4] );
   # 4) share CC on old SMs
@@ -1428,6 +1436,7 @@ sub dump_ins
   my $i_text = $g_ced->ins_text();
   my $i_type = $g_ced->ins_itype();
   my $sidl = $g_ced->ins_sidl();
+  my $dp = $g_ced->delay_plop();
   my $cc = 0;
   $cc = 1 if ( $g_ced->get('TestCC') || $g_ced->grep_pred('DOES_READ_CC') );
   $cc |= 2 if ( $g_ced->get('writeCC') );
@@ -1443,6 +1452,7 @@ sub dump_ins
     printf(" min_wait: %d", $mw) if $mw;
     printf(" CC %d", $cc) if $cc;
     printf(" IType %d (%s)", $i_type, IType_name($i_type)) if ( $i_type );
+    printf(" DelayPlop") if ( $dp );
     printf("\n");
   }
   # store data for -s
@@ -1459,6 +1469,7 @@ sub dump_ins
       $ar->[10] = $g_ced->grep_pred("VQ");
       $ar->[12] = $g_ced->check_tab(USCHED, 1);
       $ar->[13] = $cc if $cc;
+      $ar->[20] = $dp;
       if ( defined($scbd_type) && (3 == $scbd_type) ) { # 3 - BB_ENDING_INST
         # check if this is unconditional bb_end
         $ar->[14] = !( $g_ced->has_pred() );
@@ -2906,7 +2917,10 @@ sub gdisasm
       # dump snap
       if ( $res && defined($rt) ) {
         printf("; mask %X mask2 %X\n", $rt->mask(), $rt->mask2()) if defined($opt_v);
-        $block->[13]->[19] = $g_ced->relax_lat() if ( defined $opt_R );
+        if ( defined $opt_R ) {
+          $block->[13]->[19] = $g_ced->relax_lat();
+          ++$g_R[0] if ( defined $block->[13]->[19] );
+        }
         dump_snap_cc($rt->cc());
         dump_snap_bd($rt->snap_bd());
         my($g, $pr) = $rt->snap();
@@ -3306,7 +3320,8 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
     * 17 - has wait
     * 18 - address of next instruction
     * 19 - relaxed latency from relax_lat
-    * 20 - TBC
+    * 20 - is delay plop instruction
+    * 21 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
