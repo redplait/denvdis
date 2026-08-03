@@ -95,8 +95,8 @@ my %gi_stat;
 #  [5] - with range, [6] - breaked on CJ
 # with -P [7] - count of patched, [8] - sum of decreased stalls
 my @g_bl = ( 0, 0, 0, 0, 0, 0, 0, 0, 0 );
-# for -R option, 0 - total relaxes, 1 - applied
-my @g_R = ( 0, 0 );
+# for -R option, 0 - total relaxes, 1 - passed the filter, 2 - applied
+my @g_R = ( 0, 0, 0 );
 ### config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -122,7 +122,8 @@ sub dump_lmode_stat
   printf("%d dec stalls, %f\n", $g_bl[8], 1.0 * $g_bl[8] / $g_bl[1]) if ( $g_bl[8] && $g_bl[1]);
   if ( defined $opt_R ) {
     printf("relaxed %d %f\n", $g_R[0], 1.0 * $g_R[0] / $g_bl[0]) if ( $g_bl[0] );
-    printf("applied relaxed %d %f\n", $g_R[1], 1.0 * $g_R[1] / $g_bl[4]) if ( $g_R[1] && $g_bl[4]);
+    printf("passed the filter %d %f\n", $g_R[1], 1.0 * $g_R[1] / $g_R[0]) if ( $g_R[0] && $g_R[1] );
+    printf("applied relaxed %d %f (total %f)\n", $g_R[2], 1.0 * $g_R[2] / $g_R[1], 1.0 * $g_R[2] / $g_bl[0]) if ( $g_R[1] && $g_R[2] && $g_bl[0] );
   }
 }
 
@@ -2279,6 +2280,8 @@ sub process_lat
   # bcs we process by offsets @cj also already ordered by instruction offsets too
   # it means that for iteration we can use single index $cj_idx
   my @cj;
+  # for -R option this is set of relaxed instructions addresses
+  my %in_R;
   for my $i ( 0 .. $lsize - 1 ) {
     my $ins = $il->[$i]->[0];
     if ( $ins->[5] ) {
@@ -2303,6 +2306,15 @@ printf("cj %X %d\n", $ins->[0], $ins->[5]) if ( defined $opt_d );
     my $lar_idx = 0;
     my $start_lat = $il->[$i]->[1]->[0];
     my $must_be = $lar->[$lar_idx]->[1];
+    if ( defined($opt_R) && $il->[$i]->[0]->[19]) {
+      my $relaxed = $il->[$i]->[0]->[19];
+      my $il_stall = lat_stall($il->[$i]);
+      if ( $relaxed < $must_be && $il_stall > 1 ) {
+ printf("apply -R for %X, relaxed %d must_be %d, stall %d\n", $il->[$i]->[0]->[0], $relaxed, $must_be, $il_stall) if defined($opt_d);
+        $must_be = $relaxed;
+        $in_R{$caddr} = 1;
+      }
+    }
     my $cj_breaked = 0;
     for my $j ( $i + 1 .. $lsize - 1 ) {
       my $in_cj = 0;
@@ -2360,6 +2372,9 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
       }
     }
     dump_rl(\@rl, $il, 'after WaR') if ( defined($opt_d) && $war_patches );
+  }
+  if ( defined $opt_R ) {
+    $g_R[1] += scalar keys %in_R;
   }
   # traverse rl and collect instructions to patch stall in @patch_list [ $idx, $stall_diff ]
   my @patch_list;
@@ -2434,6 +2449,9 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     $visited{ $rl_item }->[1] -= $curr_dec;
     printf("; can dec %d-%d at %X lat_lim %d %s\n", lat_stall($il->[$i]), $curr_dec, $il->[$i]->[0]->[0], $lat_lim, $il->[$i]->[0]->[2]) if defined($opt_d);
     push @patch_list, [ $il->[$i], $curr_dec ] if ( defined $opt_P );
+    if ( defined $opt_R ) {
+      ++$g_R[2] if ( exists $in_R{ $il->[$i]->[0]->[0] } );
+    }
     add_reduced($il->[$i]->[0]) if defined($opt_S);
   }
   # check if this block had bad latency
