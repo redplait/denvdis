@@ -1232,6 +1232,26 @@ bool NV_renderer::has_predicate(const NV_rlist *rl, const NV_extracted &kv) cons
   return false;
 }
 
+std::optional<NV_renderer::PredPair> NV_renderer::get_pred(const NV_rlist *rl, const NV_extracted &kv) const
+{
+  std::optional<NV_renderer::PredPair> res;
+  for ( auto r: *rl ) {
+    if ( r->type == R_opcode ) break;
+    if ( r->type == R_predicate ) {
+      const render_named *rn = (const render_named *)r;
+      auto kvi = kv.find(rn->name);
+      if ( kvi != kv.end() && kvi->second != 7 ) {
+        unsigned short pred = (unsigned short)kvi->second;
+        if ( rn->name[0] == 'U' ) pred |= 0x8000;
+        res.emplace( std::make_pair(has_not(rn, kv), pred) );
+        return res;
+      }
+      break;
+    }
+  }
+  return res;
+}
+
 bool NV_renderer::always_false(const struct nv_instr *i, const NV_rlist *rl, const NV_extracted &kv) const
 {
   for ( auto r: *rl ) {

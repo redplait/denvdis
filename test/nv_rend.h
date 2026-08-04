@@ -409,6 +409,8 @@ class NV_renderer {
      if ( ei ) return ei->ea;
      return try_by_ename(i, s);
    }
+   typedef std::pair<bool, unsigned short> PredPair;
+   std::optional<PredPair> get_pred(const NV_rlist *, const NV_extracted &kv) const;
    bool has_not(const render_named *rn, const NV_extracted &kv) const;
    // check for !@PT or !@UPT
    bool always_false(const struct nv_instr *, const NV_rlist *, const NV_extracted &kv) const;
