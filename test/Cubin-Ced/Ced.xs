@@ -454,6 +454,16 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return always_false(ins(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
   }
+  SV *get_pred() const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    auto res = NV_renderer::get_pred(m_rend, cex());
+    if ( !res.has_value() ) return &PL_sv_undef;
+    AV *av = newAV();
+    auto &pred = res.value();
+    av_push(av, pred.first ? &PL_sv_yes : &PL_sv_no );
+    av_push(av, newSViv(pred.second) );
+    return newRV_noinc((SV*)av);
+  }
   SV *has_pred() const {
     if ( !has_ins() ) return &PL_sv_undef;
     return has_predicate(m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
@@ -2320,6 +2330,13 @@ SV *cb0_names(SV *obj)
  OUTPUT:
   RETVAL
 
+SV *get_pred(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->get_pred();
+ OUTPUT:
+  RETVAL
 
 void
 ins_cbank(SV *obj)
