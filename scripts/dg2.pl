@@ -88,7 +88,7 @@ my $gsp_bad = 0;
 my $gsp_bad_attrs = 0;
 # instruction swap map
 # key is instruction name (or pair)
-# values is in -s pair [ selected, applied ], else just count
+# values is in -s pair [ selected, applied ], else [ total, patched ]
 my %gi_stat;
 # lmode stat
 # indices: 0 - total instrs, 1 - total stalls, 2 - bad blocks, 3 - excess delay, 4 - amount of instrs in [3],
@@ -159,10 +159,20 @@ sub add_real_swap
   }
 }
 
+sub add_ins
+{
+  my $i = shift;
+  if ( exists $gi_stat{$i} ) {
+    $gi_stat{$i}->[0]++;
+  } else {
+   $gi_stat{$i} = [ 1, 0 ];
+  }
+}
+
 sub add_reduced
 {
   my $i = shift;
-  $gi_stat{$i->[1]}++;
+  $gi_stat{$i->[1]}->[1]++;
 }
 
 sub dump_stat_list
@@ -199,7 +209,10 @@ sub dump_ins_stat
     @tmp = sort { $b->[1] <=> $a->[1] } grep { $_->[1]; } map { [ $_->[0], $_->[1]->[0] - $_->[1]->[1] ]; } @kw;
     dump_stat_list(\@tmp, $single_cb);
   } else {
-    my @tmp = sort { $b->[1] <=> $a->[1] } map { [ $_, $gi_stat{$_} ]; } keys %gi_stat;
+    my @tmp = sort { $b->[1] <=> $a->[1] } map { [ $_, $gi_stat{$_}->[0] ]; } keys %gi_stat;
+    printf("--- Total instructions:\n");
+    dump_stat_list(\@tmp, $single_cb);
+    @tmp = sort { $b->[1] <=> $a->[1] } grep { $_->[1]; } map { [ $_, $gi_stat{$_}->[1] ]; } keys %gi_stat;
     printf("--- Patched instructions:\n");
     dump_stat_list(\@tmp, $single_cb);
   }
@@ -1461,6 +1474,7 @@ sub dump_ins
     my $ar = $block->[13];
     $ar->[0] = $off;
     $ar->[1] = $g_ced->ins_name();
+    add_ins($ar->[1]) if defined($opt_S);
     $ar->[2] = $i_text;
     $ar->[5] = $brt;
     $ar->[6] = $g_ced->has_pred();
