@@ -3560,6 +3560,21 @@ p(SV *obj, IV key, unsigned long from = 0)
  OUTPUT:
   RETVAL
 
+SV *
+p_write(SV *obj, int key)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &mask = (key & 0x8000) ? r->snap->upr: r->snap->pr;
+ CODE:
+   key &= ~0x8000;
+   if ( key < 0 || key > 7 ) RETVAL = &PL_sv_undef;
+   else {
+     if ( mask[key] & 2 ) RETVAL = &PL_sv_yes;
+     else RETVAL = &PL_sv_no;
+   }
+ OUTPUT:
+  RETVAL
+
 
 BOOT:
  s_ca_pkg = gv_stashpv(s_ca, 0);

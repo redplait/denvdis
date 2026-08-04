@@ -657,6 +657,8 @@ To get details track use following properties
 
 =item up($reg_idx) to get univeral predicates
 
+=item p_write(index) - check if current instruction patches predicate with index, for Uniform Predicates use index | 0x8000
+
 =back
 
 They return array of refs to array where indices
