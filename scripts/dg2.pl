@@ -2132,19 +2132,49 @@ sub traverse_lat
   $g_bl[0] += $lsize;
   $g_bl[1] += $bl->[16]->[0];
   # remove WaWs from config
-  if ( defined($gc_waw) && defined($waw) && scalar(@$gc_waw) ) {
-    my @del;
-    foreach my $wk ( keys %$waw ) {
-      next unless in_ranges($gc_waw, $wk);
-      my $wra = $waw->{$wk};
-      my @tmp = grep { !in_ranges($gc_waw, $_->[0]); } @$wra;
-      if ( scalar @tmp ) {
-        $waw->{$wk} = \@tmp;
-      } else {
-        push @del, $wk;
+  if ( defined $waw ) {
+    my $efiltered = 0;
+    if ( defined $bl->[20] ) {
+      # apply -e in aeh
+      my $aeh = $bl->[20]->[0];
+      my @del;
+      foreach my $wk ( keys %$waw ) {
+        if ( exists($aeh->{$wk}) ) {
+          my $wra = $waw->{$wk};
+          my $old_wra = scalar @$wra;
+          my $what = $aeh->{$wk};
+          my @tmp = grep { $what != $_->[0]; } @$wra;
+          my $new_wra = scalar @tmp;
+printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defined($opt_d);
+          if ( $old_wra > $new_wra ) {
+            if ( $new_wra ) {
+              $waw->{$wk} = \@tmp;
+            } else {
+              push @del, $wk;
+            }
+            $ge_stat[1] += $old_wra - $new_wra;
+            ++$efiltered;
+          }
+        }
       }
+      delete $waw->{$_} for @del;
     }
-    delete $waw->{$_} for @del;
+    if ( defined($gc_waw) && scalar(@$gc_waw) ) {
+      my @del;
+      foreach my $wk ( keys %$waw ) {
+        next unless in_ranges($gc_waw, $wk);
+        my $wra = $waw->{$wk};
+        my @tmp = grep { !in_ranges($gc_waw, $_->[0]); } @$wra;
+        if ( scalar @tmp ) {
+          $waw->{$wk} = \@tmp;
+        } else {
+          push @del, $wk;
+          ++$efiltered;
+        }
+      }
+      delete $waw->{$_} for @del;
+    }
+    dump_waw_hash($bl) if ( defined($opt_d) && $efiltered );
   }
   unless( defined $opt_s ) {
     process_lat($bl, $lsize);
