@@ -99,7 +99,8 @@ my @g_bl = ( 0, 0, 0, 0, 0, 0, 0, 0, 0 );
 # stat for -R option, 0 - total relaxes, 1 - passed the filter, 2 - applied
 my @g_R = ( 0, 0, 0 );
 # stat for -e option, 0 - total adjacent instructions with orthogonal predicates, 1 - eliminated WaWs, 2 - eliminated WaRs
-my @ge_stat = ( 0, 0, 0 );
+# 3 - total WaWs, 4 - total WaRs
+my @ge_stat = ( 0, 0, 0, 0, 0 );
 ### config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -118,8 +119,8 @@ sub dump_estat
 {
   return unless($ge_stat[0]);
   printf(">e %d adjacent instructions with orthogonal predicates\n", $ge_stat[0]);
-  printf(">e %d eliminated WaWs\n", $ge_stat[1]) if $ge_stat[1];
-  printf(">e %d eliminated WaRs\n", $ge_stat[2]) if $ge_stat[2];
+  printf(">e %d eliminated WaWs %f\n", $ge_stat[1], 1.0 * $ge_stat[1] / $ge_stat[3]) if ( $ge_stat[1] && $ge_stat[3] );
+  printf(">e %d eliminated WaRs %f\n", $ge_stat[2], 1.0 * $ge_stat[2] / $ge_stat[4]) if ( $ge_stat[2] && $ge_stat[4] );
 }
 
 sub dump_lmode_stat
@@ -2139,6 +2140,7 @@ sub traverse_lat
       my $aeh = $bl->[20]->[0];
       my @del;
       foreach my $wk ( keys %$waw ) {
+        $ge_stat[3] += scalar @{ $waw->{$wk} };
         if ( exists($aeh->{$wk}) ) {
           my $wra = $waw->{$wk};
           my $old_wra = scalar @$wra;
