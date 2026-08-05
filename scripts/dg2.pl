@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_u $opt_U $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_e $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_u $opt_U $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -21,6 +21,7 @@ Usage: $0 [options] file.cubin
   -b - track read/write barriers
   -C config.file
   -d - debug mode
+  -e - try to eliminate false WaR/WaW
   -G - generate initial config file and exit
   -g - build cf graph
   -l - check latency and try to reduce stall counts
@@ -95,8 +96,10 @@ my %gi_stat;
 #  [5] - with range, [6] - breaked on CJ
 # with -P [7] - count of patched, [8] - sum of decreased stalls
 my @g_bl = ( 0, 0, 0, 0, 0, 0, 0, 0, 0 );
-# for -R option, 0 - total relaxes, 1 - passed the filter, 2 - applied
+# stat for -R option, 0 - total relaxes, 1 - passed the filter, 2 - applied
 my @g_R = ( 0, 0, 0 );
+# stat for -e option, 0 - total adjacent instructions with orthogonal predicates, 1 - eliminated WaWs, 2 - eliminated WaRs
+my @ge_stat = ( 0, 0, 0 );
 ### config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -110,6 +113,14 @@ my($gc_war, $gc_waw);
 my $gcdf;
 
 sub in_lmode { defined($opt_l); }
+
+sub dump_estat
+{
+  return unless($ge_stat[0]);
+  printf(">e %d adjacent instructions with orthogonal predicates\n", $ge_stat[0]);
+  printf(">e %d eliminated WaWs\n", $ge_stat[1]) if $ge_stat[1];
+  printf(">e %d eliminated WaRs\n", $ge_stat[2]) if $ge_stat[2];
+}
 
 sub dump_lmode_stat
 {
@@ -322,6 +333,18 @@ sub dump_waw_hash
       printf(";   old %X %s\n", $rec->[0], $rec->[2]);
     }
   }
+}
+
+# dump adjacent pairs for -e option, arg - block
+sub dump_rush_e
+{
+  my $bl = shift;
+  return unless ( defined $bl->[20] );
+  my $eh = $bl->[20]->[0];
+  my @sk = sort { $a <=> $b } keys %$eh;
+  return unless(scalar @sk);
+  printf(";;; Adjacent pairs\n");
+  printf("; %X - %X\n", $eh->{$_}, $_) for @sk;
 }
 
 # args: block, off, regs from snap
@@ -1437,6 +1460,35 @@ sub dump_rel_with_off
   print ' ', $v;
 }
 
+# track adjacent pairs
+# args: off, block, reg track
+sub check_rush_e
+{
+  my($off, $bl, $rt) = @_;
+  my $curr = $g_ced->get_pred();
+  unless( defined $curr ) {
+    $bl->[20]->[1] = undef;
+    return;
+  }
+  my $old = $bl->[20]->[1];
+  if ( defined $old ) {
+    # compare predicate at [1] and different condition at [0]
+    if ( $old->[1] == $curr->[1] && $old->[0] != $curr->[0] ) {
+      my $mr = $bl->[20]->[0];
+      $mr->{$off} = $bl->[20]->[2];
+      $ge_stat[0]++;
+    }
+  }
+  # finally check if current instruction patches it's predicate
+  if ( $rt->p_write($curr->[1]) ) {
+    $bl->[20]->[1] = undef;
+    return;
+  }
+  # store for next iteration
+  $bl->[20]->[1] = $curr;
+  $bl->[20]->[2] = $off;
+}
+
 # main horror - dump single instruction
 # args: offset, sched context, block (or undef), reg track
 # returns 0 if this instruction should be skipped
@@ -1543,7 +1595,10 @@ sub dump_ins
     return 0;
   }
   # track regs
-  $g_ced->track($rt) if defined($rt);
+  if ( defined $rt ) {
+    $g_ced->track($rt);
+    check_rush_e($off, $block, $rt) if defined($block->[20]);
+  }
   # check LUT
   my $lut = $g_ced->has_lut();
   if ( defined($lut) ) {
@@ -3023,6 +3078,7 @@ sub gdisasm
             dump_tracked_lat($block);
             dump_war_hash($block);
             dump_waw_hash($block);
+            dump_rush_e($block);
           }
           traverse_lat($block, $lsize);
           if ( defined($opt_P) && defined($block->[15]) && !block_with_exit($block) ) {
@@ -3362,6 +3418,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
   [17] - if this block contains unconditional EXIT
   [18] - array of [ instr_prop, latency_data, ...]
   [19] - for -s array of swap candidates where each item is [ index of first instruction, possible gain, prev, curr ]
+  [20] - for -e array [ map { second } -> first, [ current state from get_pred ], offset of prev ]
 =cut
   my @bbs;
   my $add_block = sub {
@@ -3392,6 +3449,10 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
     if ( in_lmode() ) {
       my @tmp;
       $res[18] = \@tmp;
+      if ( defined $opt_e ) {
+        my %pairs;
+        $res[20] = [ \%pairs, undef ];
+      }
     }
     \@res;
   };
@@ -3505,7 +3566,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("abdGglmPpRrSstUuvwzC:");
+my $state = getopts("abdeGglmPpRrSstUuvwzC:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -3597,4 +3658,7 @@ dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
 dump_ins_stat() if defined($opt_S);
 dump_swap_stat() if defined($opt_s);
-dump_lmode_stat() if in_lmode();
+if ( in_lmode() ) {
+  dump_estat() if defined($opt_e);
+  dump_lmode_stat();
+}
