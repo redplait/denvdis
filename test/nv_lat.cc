@@ -90,14 +90,20 @@ std::optional<int> NV_renderer::relax_latency(const struct nv_instr *ins, const 
         if ( !iclas.starts_with("isetp_64") ) res.emplace(5);
       } */
      break;
-    case 'U': // UIADD3, UIMNMX, UISETP, UMOV
+    case 'S': // SEL
+      if ( iname == "SEL"sv ) {
+        uint64_t dsize = 0;
+        if ( check_pred(ins, kv, "IDEST_SIZE"sv, dsize) && 64 != dsize ) res.emplace(3);
+      }
+     break;
+    case 'U': // UIADD3, UIMNMX, UISETP, UMOV & USEL both 4
       if ( iname == "UIADD3"sv ) {
         if ( !iclas.starts_with("uiadd3_64") ) res.emplace(6);
       } else if ( iname =="UIMNMX"sv ) { // sm120 only?
         if ( !iclas.starts_with("uimnmx_64") ) res.emplace(6);
       } /* else if ( iname =="UISETP"sv ) { // sm120 only?
         if ( !iclas.starts_with("uisetp_64") ) res.emplace(6);
-      } */ else if ( iname == "UMOV"sv ) {
+      } */ else if ( iname == "UMOV"sv  || iname == "USEL"sv ) {
         uint64_t dsize = 0;
         if ( check_pred(ins, kv, "IDEST_SIZE"sv, dsize) && 64 != dsize ) res.emplace(4);
       }
