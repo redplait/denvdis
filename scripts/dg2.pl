@@ -2143,10 +2143,12 @@ printf("war %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defi
          $war->{$wk} = \@tmp;
        } else {
          push @del, $wk;
+         ++$efiltered;
        }
     }
     delete $war->{$_} for @del;
   }
+  dump_war_hash($bl) if ( defined($opt_d) && $efiltered );
 }
 
 # You can have -s to swap pass - then it try to swap pairs of candidates in block->[19]
