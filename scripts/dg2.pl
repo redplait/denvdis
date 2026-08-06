@@ -2100,10 +2100,38 @@ sub remap_rl($$)
   $addr;
 }
 
-# remove WaRs from config
+# remove WaRs from config/-e
+# args: block, WaR hash
 sub apply_war_config {
-  my $war = shift;
+  my($bl, $war) = @_;
   return unless defined($war);
+  my $efiltered = 0;
+  if ( defined $bl->[20] ) {
+      # apply -e, hash in aeh
+      my $aeh = $bl->[20]->[0];
+      my @del;
+      foreach my $wk ( keys %$war ) {
+        $ge_stat[4] += scalar @{ $war->{$wk} };
+        if ( exists($aeh->{$wk}) ) {
+          my $wra = $war->{$wk};
+          my $old_wra = scalar @$wra;
+          my $what = $aeh->{$wk};
+          my @tmp = grep { $what != $_->[0]; } @$wra;
+          my $new_wra = scalar @tmp;
+printf("war %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defined($opt_d);
+          if ( $old_wra > $new_wra ) {
+            if ( $new_wra ) {
+              $war->{$wk} = \@tmp;
+            } else {
+              push @del, $wk;
+            }
+            $ge_stat[2] += $old_wra - $new_wra;
+            ++$efiltered;
+          }
+        }
+      }
+      delete $war->{$_} for @del;
+  }
   if ( defined($gc_war) && scalar(@$gc_war) ) {
     my @del;
     foreach my $wk ( keys %$war ) {
@@ -2136,7 +2164,7 @@ sub traverse_lat
   if ( defined $waw ) {
     my $efiltered = 0;
     if ( defined $bl->[20] ) {
-      # apply -e in aeh
+      # apply -e, hash in aeh
       my $aeh = $bl->[20]->[0];
       my @del;
       foreach my $wk ( keys %$waw ) {
@@ -2200,7 +2228,7 @@ printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defin
     $bl->[14] = \%rh;
   }
   my $war = $bl->[12]->[1];
-  apply_war_config($war);
+  apply_war_config($bl, $war);
   # hash to fast retrive indices - key is address, value is index
   # Warning - it's never patched while swap instruction, so ins->[0] can mismatch the key
   my %ids;
@@ -2452,7 +2480,7 @@ printf("in_cj %X for %X\n", $il->[$j]->[0]->[0], $caddr) if ( $in_cj && defined(
     my %oi;
     $oi{ $il->[$_]->[0]->[0] } = $_ for ( 0 .. $lsize - 1 );
     my $war = $bl->[12]->[1];
-    apply_war_config($war);
+    apply_war_config($bl, $war);
     my $war_patches = 0;
     foreach my $wark ( sort { $a <=> $b } keys %$war ) {
       my $wara = $war->{$wark};
