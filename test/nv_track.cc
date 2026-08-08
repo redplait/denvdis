@@ -1037,6 +1037,18 @@ static std::optional<unsigned long> get_last_upd(const std::vector<T> &hist, uns
     if ( out_rtc ) *out_rtc = hit->tab_chain;
     return res;
   }
+  // istruction can have several reads and only then write - like in IMAD R, R, R
+  // tracks here sorted only by off - final sort happens only in finalize_rt
+  // so check all records at hit->off
+  auto old_off = hit->off;
+  while( ++hit != hist.crend() ) {
+    if ( hit->off != old_off ) break;
+    if ( hit->kind & 0x8000 ) {
+      res.emplace(hit->off);
+      if ( out_rtc ) *out_rtc = hit->tab_chain;
+      return res;
+    }
+  }
   return res;
 }
 
@@ -1045,6 +1057,7 @@ static int find_notify(unsigned char kind, unsigned char what, const std::vector
   const RegTabChains *dst_rt = nullptr;
   auto dst = get_last_upd(hist, curr, &dst_rt);
   if ( !dst.has_value() ) return 0;
+// fprintf(stdout, "find_notify(%d, %d) off %lX - has dst %lX\n", kind, what, curr, dst.value());
   const RegTabChains *src_rt = nullptr;
   // find current regtab
   auto hit = hist.crbegin();
