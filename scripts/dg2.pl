@@ -2268,6 +2268,7 @@ printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defin
       last if ( $iaddr + MAX_SWAP_DIST < $first_adr );
       $left = $iaddr;
     }
+    my $left_idx = $ids{$left};
     # find starting index in cj
     my $cj_idx = 0;
     for my $i ( 0 .. $cj_size - 1 ) {
@@ -2285,7 +2286,7 @@ printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defin
     }
     # dump found stuff for debugging
     printf("cand %X - %X: idx %d cj_idx %d/%d left %X right %X\n", $first_adr, $second_adr,
-      $first_idx, $cj_idx, $cj_size, $left, $right); # if ( defined $opt_d );
+      $first_idx, $cj_idx, $cj_size, $left, $right) if ( defined $opt_d );
     # swap instructions and stall counts in it - from here we must have rollback is case of errors/failure
     # save old rolled stall counts in left_roll/right_roll
     $left_roll = $il->[$first_idx]->[1]->[0];
@@ -2305,12 +2306,13 @@ printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defin
     $bl->[13] = \@rl;
     my $curry_dump = sub {
       my $hdr = shift;
-      dump_rl_slice($bl, $first_idx, $last_idx, $hdr) if defined($opt_d);
+      dump_rl_slice($bl, $left_idx, $last_idx, $hdr) if defined($opt_d);
     };
     # fill RL - logic almost like in process_lat
-   for my $i ( $first_idx .. $last_idx ) {
+   for my $i ( $left_idx .. $last_idx ) {
       my $orig_addr = $il->[$i]->[0]->[0];
       my $raddr = remap_rl($bl, $il->[$i]);
+printf("fill_rl orig %X raddr %X i %d, cj %d/%d\n", $orig_addr, $raddr, $i, $cj_idx, $cj_size) if defined($opt_d);
       ++$cj_idx if ( $cj_size && $cj_idx < $cj_size && $raddr == $cj[$cj_idx]->[0] );
      next unless( exists $lrt->{$orig_addr} );
       my $lar = $lrt->{$orig_addr};
@@ -2318,12 +2320,14 @@ printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defin
       my $lar_idx = 0;
       my $start_lat = $il->[$i]->[1]->[0];
       my $must_be = $lar->[$lar_idx]->[1];
+printf("must_be %d start_lat %d\n", $must_be, $start_lat) if defined($opt_d);
       for my $j ( $i + 1 .. $last_idx ) {
         my $in_cj = 0;
         $in_cj = (remap_rl($bl, $il->[$j]) == $cj[$cj_idx]->[0] ) if ( $cj_size && $cj_idx < $cj_size );
         next if (!$in_cj && $lar->[$lar_idx]->[0] != remap_rl($bl, $il->[$j]) );
-# printf("%X start %d must_be %d fact %d off %X\n", $caddr, $start_lat, $must_be, $il->[$j]->[1]->[0], $lar->[$lar_idx]->[0]);
         if ( $start_lat + $must_be > $il->[$j]->[1]->[0] ) {
+ printf("%X start %d must_be %d fact %d off %X j %d\n",
+   $raddr, $start_lat, $must_be, $il->[$j]->[1]->[0], $lar->[$lar_idx]->[0], $j) if defined($opt_d);
           goto ROLLB;
         } elsif ( $start_lat + $must_be == $il->[$j]->[1]->[0] ) {
           refill_rl($bl, $i, 0, $in_cj ? $cj[$cj_idx]->[0] : $right, $lar->[$lar_idx]);
