@@ -2367,6 +2367,17 @@ printf("must_be %d start_lat %d\n", $must_be, $start_lat) if defined($opt_d);
       }
       $curry_dump->('after WaRs');
     }
+    # mark WaWs as undef
+    if ( defined $waw ) {
+      my $applied = 0;
+      for my $i ( $left_idx .. $last_idx ) {
+        my $orig_addr = $il->[$i]->[0]->[0];
+        next unless(exists $waw->{$orig_addr});
+        $rl[$i] = undef;
+        ++$applied;
+      }
+      $curry_dump->('after WaWs') if $applied;
+    }
     # final check
     goto ROLLB if ( defined($rl[$first_idx]) && $rl[$first_idx]->[0] <= 0 );
     goto ROLLB if ( defined($rl[$first_idx+1]) && $rl[$first_idx+1]->[0] <= 0 );
