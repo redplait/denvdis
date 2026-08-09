@@ -2373,6 +2373,8 @@ printf("must_be %d start_lat %d\n", $must_be, $start_lat) if defined($opt_d);
       for my $i ( $left_idx .. $last_idx ) {
         my $orig_addr = $il->[$i]->[0]->[0];
         next unless(exists $waw->{$orig_addr});
+        # check if this WaW cover our pair
+        goto ROLLB if ( $orig_addr == $first_adr || $orig_addr == $second_adr );
         $rl[$i] = undef;
         ++$applied;
       }
