@@ -46,6 +46,8 @@ EOF
 use constant STAT_LIM => 15;
 use constant MAX_REUSE_DIST => 0x70;
 use constant MAX_SWAP_DIST => 0xa0;
+# 2 for swapping pair, 2 instructions at left and 2 at right
+use constant MIN_SWAP_WINDOW => 6;
 use constant USCHED => 'usched_info';
 use constant GAIN_LIMIT => 2;
 
@@ -2287,6 +2289,10 @@ printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defin
     # dump found stuff for debugging
     printf("cand %X - %X: idx %d cj_idx %d/%d left %X right %X\n", $first_adr, $second_adr,
       $first_idx, $cj_idx, $cj_size, $left, $right) if ( defined $opt_d );
+    if ( $last_idx - $left_idx < MIN_SWAP_WINDOW ) {
+      printf("too narrow windows (%d), skip\n", $last_idx - $left_idx) if ( defined $opt_d );
+      next; # it's safe bcs we still patch nothing here
+    }
     # swap instructions and stall counts in it - from here we must have rollback is case of errors/failure
     # save old rolled stall counts in left_roll/right_roll
     $left_roll = $il->[$first_idx]->[1]->[0];
