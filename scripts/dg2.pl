@@ -83,7 +83,7 @@ my $gU_not_found = 0;  # cannot find reg or mask
 my $gU_patched = 0;    # count of patched with -P
 my $gU_bad_tabs = 0;   # count of patched with -P but having pending table
 # reordering stat - total amount of instructions, swappable pairs count, total stall gain
-my($gs_total, $gs_ords, $gs_gain, $gs_old_stall);
+my($gs_total, $gs_ords, $gs_gain, $gs_old_stall, $gs_too_narrow);
 # reordering patch stat
 my $gsp_skipped = 0;
 my $gsp_patched = 0;
@@ -145,6 +145,7 @@ sub dump_swap_stat
 {
   return unless($gs_ords);
   printf("Reordering stat: total %d swappable %d (%f)\n", $gs_total, $gs_ords, $gs_ords * 1.0 / $gs_total);
+  printf(" skipped too narrow %d (%f)\n", $gs_too_narrow, $gs_too_narrow * 1.0 / $gs_total);
   printf(" overall stalls %d, %f\n", $g_bl[1], $gs_gain * 1.0 / $g_bl[1]) if ( $g_bl[1] );
   printf(" total gain %d (%f avg) gain/old ratio %f\n", $gs_gain, $gs_gain * 1.0 / $gs_ords, $gs_gain * 1.0 / $gs_old_stall);
   printf(" skipped %d, patched %d, bad %d, bad attrs %d\n", $gsp_skipped, $gsp_patched, $gsp_bad, $gsp_bad_attrs) if defined($opt_P);
@@ -2290,7 +2291,8 @@ printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defin
     printf("cand %X - %X: idx %d cj_idx %d/%d left %X right %X\n", $first_adr, $second_adr,
       $first_idx, $cj_idx, $cj_size, $left, $right) if ( defined $opt_d );
     if ( $last_idx - $left_idx < MIN_SWAP_WINDOW ) {
-      printf("too narrow windows (%d), skip\n", $last_idx - $left_idx) if ( defined $opt_d );
+      printf("too narrow window (%d), skip\n", $last_idx - $left_idx) if ( defined $opt_d );
+      ++$gs_too_narrow;
       next; # it's safe bcs we still patch nothing here
     }
     # swap instructions and stall counts in it - from here we must have rollback is case of errors/failure
