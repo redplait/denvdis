@@ -1343,6 +1343,14 @@ static bool is_umma_AB(const render_M1 *rt) {
   return !strcmp(rt->name, "UMMAA") || !strcmp(rt->name, "UMMAB");
 }
 
+// check for TMEMX
+static bool is_tmem(const render_mem *rm) {
+  return 'T' == rm->name[0] &&
+         'M' == rm->name[1] &&
+         'E' == rm->name[2] &&
+         'M' == rm->name[3] && rm->name[4];
+}
+
 template <typename Fs, typename Fl>
 int NV_renderer::rend_single(const render_base *r, std::string &res, const char *opcode, Fs &&r1, Fl &&rl) const
 {
@@ -1421,8 +1429,12 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
 
       case R_mem: {
          const render_mem *rt = (const render_mem *)r;
-         if ( rt->pfx ) res += rt->pfx;
-         res += "[";
+         if ( is_tmem(rt) ) {
+           res += "tmem[";
+         } else {
+           if ( rt->pfx ) res += rt->pfx;
+           res += "[";
+         }
          rl(rt->right, res);
          res += ']';
        } break;
