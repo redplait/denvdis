@@ -1333,6 +1333,16 @@ bool NV_renderer::check_branch(const struct nv_instr *i, const NV_extracted::con
   return extract(i, kvi, res);
 }
 
+static bool is_umma(const render_M1 *rt) {
+  if ( strcmp(rt->name, "UMMA") ) return false;
+  // check that left is URh
+  return rt->left.type == R_enum && !strcmp(rt->left.arg, "URh");
+}
+
+static bool is_umma_AB(const render_M1 *rt) {
+  return !strcmp(rt->name, "UMMAA") || !strcmp(rt->name, "UMMAB");
+}
+
 template <typename Fs, typename Fl>
 int NV_renderer::rend_single(const render_base *r, std::string &res, const char *opcode, Fs &&r1, Fl &&rl) const
 {
@@ -1379,7 +1389,7 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
          const render_TTU *rt = (const render_TTU *)r;
          if ( rt->pfx ) res += rt->pfx;
          else res += ' ';
-         res += "ttu:[";
+         res += "ttu[";
          r1(rt->left, res);
          res += ']';
        }
@@ -1387,8 +1397,14 @@ int NV_renderer::rend_single(const render_base *r, std::string &res, const char 
      case R_M1: {
          const render_M1 *rt = (const render_M1 *)r;
          if ( rt->pfx ) res += rt->pfx;
-         if ( rt->name ) res += rt->name;
-         res += ":[";
+         if ( is_umma(rt) ) {
+          res += "idesc[";
+         } else if ( is_umma_AB(rt) ) {
+          res += "gdesc[";
+         } else {
+          if ( rt->name ) res += rt->name;
+          res += ":[";
+         }
          r1(rt->left, res);
          res += ']';
        } break;
