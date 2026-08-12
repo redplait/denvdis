@@ -1019,6 +1019,7 @@ sub add_barstat
 
 sub dump_barstat
 {
+  return unless(keys %g_barstat);
   print("--- bar stat\twait\tread\twrite\n");
   while( my($name, $ar) = each(%g_barstat) ) {
     printf("%s:\t%d %d %d\n", $name, $ar->[0], $ar->[1], $ar->[2]);
@@ -1273,7 +1274,7 @@ printf("Gain %d for %X\n", $res, $curr->[0]) if defined($opt_v);
   if ( defined($curr->[11]) ) {
     return 0 if ( $new_usched < $curr->[11] );
   }
-  # check if we really can patch
+  # check usched_info if we really can patch
   if ( defined $curr->[12] ) {
 #  print 'US12:', $curr->[7], ' ', Dumper($curr->[12]);
     return 0 unless( exists $curr->[12]->{$new_usched} );
@@ -1493,7 +1494,7 @@ sub check_rush_e
   $bl->[20]->[2] = $off;
 }
 
-# main horror - dump single instruction
+# main horror - dump single instruction and store data for analysis
 # args: offset, sched context, block (or undef), reg track
 # returns 0 if this instruction should be skipped
 sub dump_ins
@@ -2217,15 +2218,17 @@ printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defin
   }
   # check if we have swap candidtes list
   return unless ( defined $bl->[19] );
-  # filter out swap candidates where second item in WaW
-  my @filt;
-  foreach my $sc ( @{ $bl->[19] } ) {
-     my $second_addr = $sc->[3]->[0];
-     next if exists $waw->{$second_addr};
-     push @filt, $sc;
+  if ( defined $waw ) {
+    # filter out swap candidates where second item in WaW
+    my @filt;
+    foreach my $sc ( @{ $bl->[19] } ) {
+       my $second_addr = $sc->[3]->[0];
+       next if exists $waw->{$second_addr};
+       push @filt, $sc;
+    }
+    return unless ( scalar @filt );
+    $bl->[19] = \@filt;
   }
-  return unless ( scalar @filt );
-  $bl->[19] = \@filt;
   # setup
   my $il = $bl->[18]; # pairs of [ instr, lat ]
   {
@@ -2297,6 +2300,7 @@ printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defin
     }
     # swap instructions and stall counts in it - from here we must have rollback is case of errors/failure
     # save old rolled stall counts in left_roll/right_roll
+    # WARNING - from here you can't just next, use goto ROLLB
     $left_roll = $il->[$first_idx]->[1]->[0];
     $right_roll = $il->[$first_idx + 1]->[1]->[0];
     # swap items
