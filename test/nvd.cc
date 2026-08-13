@@ -711,7 +711,13 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
         if ( data + 4 + a_len <= end && opt_h )
           HexDump(m_out, (const unsigned char *)(data + 4), a_len);
         kp = data + 4;
-        if ( attr == 0xa ) { // EIATTR_PARAM_CBANK
+        if ( attr == 5 ) { // EIATTR_MAX_THREADS
+          if ( a_len != 3 * 4 ) fprintf(m_out, "invalid EIATTR_MAX_THREADS size %X\n", a_len);
+          else {
+            const uint32_t *mt = (const uint32_t *)kp;
+            fprintf(m_out, " X %d Y %d Z %d\n", mt[0], mt[1], mt[2]);
+          }
+        } else if ( attr == 0xa ) { // EIATTR_PARAM_CBANK
           if ( a_len != 8 ) fprintf(m_out, "invalid PARAM_CBANK size %X\n", a_len);
           else {
             uint32_t sec_id = *(uint32_t *)kp;

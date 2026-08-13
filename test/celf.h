@@ -201,6 +201,35 @@ class CElf: public T {
      }
      return !m_srels.empty();
    }
+   void dump_sym(size_t idx, int ln = 0) const {
+     if ( idx < 0 || idx >= m_syms.size() ) {
+       if ( ln ) fputc('\n', this->m_out);
+       return;
+     }
+     fprintf(this->m_out, "symbol %d", idx);
+     const auto &as = m_syms.at(idx);
+     // check what we have
+     if ( as.type == STT_SECTION ) {
+       fprintf(this->m_out, " section %d %s", as.section, as.name.c_str());
+     } else if ( as.type == STT_FILE ) {
+       fprintf(this->m_out, " file %s", as.name.c_str());
+     } else {
+      if ( as.bind == STB_GLOBAL )
+       fprintf(this->m_out, " global %s", as.name.c_str());
+      else if ( as.type == STT_OBJECT || as.type == STT_CUDA_OBJECT )
+       fprintf(this->m_out, " object %s", as.name.c_str());
+      else if ( as.type == STT_FUNC )
+       fprintf(this->m_out, " func %s", as.name.c_str());
+      else
+       fprintf(this->m_out, " unk_type %s", as.name.c_str());
+      fprintf(this->m_out, " section %d!0x%lX", as.section, as.addr);
+     }
+     if ( as.size )
+      fprintf(this->m_out, " size %lX", as.size);
+     if ( as.other )
+      fprintf(this->m_out, " other %X", as.other);
+     if ( ln ) fputc('\n', this->m_out);
+   }
    void dump_csym(const asymbol *as) const {
     if ( as->bind == STB_GLOBAL )
       fprintf(this->m_out, "\t.global %s\n", as->name.c_str());
