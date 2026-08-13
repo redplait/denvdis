@@ -85,6 +85,16 @@ class CElf: public T {
      }
      return !out_res.empty();
    }
+   void fill_cors(NV_labels *l, int ltype, const char *data, int alen) {
+    for ( const char *bcurr = data + 4; data + 4 + alen - bcurr >= 0x8; bcurr += 0x8 )
+    {
+      uint32_t *addr = (uint32_t *)(bcurr);
+      // there can be several labels for some addr, so add only if not exists yet
+      auto ri = l->find(addr[1]);
+      if ( ri == l->end() )
+        (*l)[addr[1]] = ltype;
+    }
+   }
    void fill_eaddrs(NV_labels *l, int ltype, const char *data, int alen) {
     for ( const char *bcurr = data + 4; data + 4 + alen - bcurr >= 0x4; bcurr += 0x4 )
     {

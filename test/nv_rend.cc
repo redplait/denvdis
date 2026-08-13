@@ -91,6 +91,7 @@ const char *NV_renderer::s_ltypes[] = {
  "LD_CACHEMODE_INSTR",
  "MBARRIER_INSTR",
  "SW_WAR_MEMBAR_SYS_INSTR",
+ "COROUTINE_RESUME",
  "INDIRECT_BRANCH_TARGETS",
 };
 

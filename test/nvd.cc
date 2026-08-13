@@ -754,22 +754,34 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             kp += 2;
             uint32_t tmp = *(uint32_t *)kp;
             if ( tmp & 0xff ) fprintf(m_out, " align %d\n", tmp & 0xff);
-            // space 4 bit shift 8
+            // space 4 bit shift 8 - see https://zhuanlan.zhihu.com/p/1961519233591674250
             unsigned space = (tmp >> 0x8) & 0xf;
-            if ( space ) fprintf(m_out, " space %X\n", space);
+            if ( space ) {
+              auto kind_name = param_kind_name(space);
+              if ( kind_name )
+                fprintf(m_out, " %s\n", kind_name);
+              else
+                fprintf(m_out, " space %X\n", space);
+            }
             // kind is not bitmask - it is 5 bit shift 8 + 4 = 12
             int kind = ((tmp >> 12) & 0x1f);
-            auto kind_name = param_kind_name(kind);
-            if ( kind_name )
-              fprintf(m_out, " %s", kind_name);
-            else
-              fprintf(m_out, " kind%d", kind);
+            fprintf(m_out, " cbank %d", kind);
             // in cb if 0 at bit 17
             int not_cb = (tmp >> 17) & 1;
+            // size is 14 bit
             uint32_t csize = (((tmp >> 0x10) & 0xffff) >> 2);
             fprintf(m_out, " size %X%s\n", csize, !not_cb ? " cbank" : "smem");
             if ( !not_cb ) add_cparam(sidx, ord, csize, off);
           }
+        } else if ( attr == 0x32 ) { // EIATTR_SHARED_SCRATCH
+          if ( a_len != 0x8 ) fprintf(m_out, "invalid SHARED_SCRATCH size %X\n", a_len);
+          else {
+            uint32_t *ss = (uint32_t *)kp;
+            fprintf(m_out, " start %X size %X\n", ss[0], ss[1]);
+          }
+        } else if ( attr == 0x3a ) { // EIATTR_COROUTINE_RESUME_ID_OFFSETS
+          auto ib = get_branch(sidx);
+          fill_cors(&ib->labels, Cor_resume, data, a_len);
         } else if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
           ltype = NVLType::Coop_grp;
         else if ( attr == 0x27 ) // EIATTR_ATOM_SYS_INSTR_OFFSETS
