@@ -358,7 +358,7 @@ int nv_dis::read_symbols()
   int res = _read_symbols(opt_t, [&](asymbol &sym) {
     auto cbi = cbs.find(sym.section);
     int has_cbi = cbi != cbs.end() && ( sym.type != STT_FILE && sym.type != STT_SECTION );
-    if ( opt_r || has_cbi ) {
+    if ( opt_r || opt_e || has_cbi ) {
       m_syms.push_back(std::move(sym));
       if ( has_cbi ) {
         auto &last = m_syms.back();
@@ -730,12 +730,21 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             fprintf(m_out, " size: %X\n", size);
             add_cbank(sidx, sec_id, off, size);
           }
+        } else if ( attr == 0x11 || attr == 0x12 || attr == 0x23 ) { // EIATTR_FRAME_SIZE/EIATTR_MIN_STACK_SIZE/EIATTR_MAX_STACK_SIZE
+           if ( a_len != 8 ) fprintf(m_out, "invalid FRAME_SIZE size %X\n", a_len);
+           else {
+            uint32_t sym_id = *(uint32_t *)kp;
+            fprintf(m_out, " Index: %X ", sym_id); if ( sym_id ) dump_sym(sym_id, 1); else fputc('\n', m_out);
+            kp += 4;
+            fprintf(m_out, " size: %X\n", *(uint32_t *)kp);
+           }
         } else if ( attr == 0x17 ) // EIATTR_KPARAM_INFO
         {
           // from https://github.com/VivekPanyam/cudaparsers/blob/main/src/cubin.rs
           if ( a_len != 0xc ) fprintf(m_out, "invalid KPARAM_INFO size %X\n", a_len);
           else {
-            fprintf(m_out, " Index: %X\n", *(uint32_t *)kp);
+            uint32_t sym_id = *(uint32_t *)kp;
+            fprintf(m_out, " Index: %X ", sym_id); if ( sym_id ) dump_sym(sym_id, 1); else fputc('\n', m_out);
             kp += 4;
             unsigned short ord = *(unsigned short *)kp;
             fprintf(m_out, " ordinal: %d\n", ord);
@@ -758,7 +767,7 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             // in cb if 0 at bit 17
             int not_cb = (tmp >> 17) & 1;
             uint32_t csize = (((tmp >> 0x10) & 0xffff) >> 2);
-            fprintf(m_out, " size %X%s\n", csize, !not_cb ? " cbank" : "");
+            fprintf(m_out, " size %X%s\n", csize, !not_cb ? " cbank" : "smem");
             if ( !not_cb ) add_cparam(sidx, ord, csize, off);
           }
         } else if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS

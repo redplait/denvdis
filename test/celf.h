@@ -206,7 +206,7 @@ class CElf: public T {
        if ( ln ) fputc('\n', this->m_out);
        return;
      }
-     fprintf(this->m_out, "symbol %d", idx);
+     fprintf(this->m_out, "symbol %ld", idx);
      const auto &as = m_syms.at(idx);
      // check what we have
      if ( as.type == STT_SECTION ) {
