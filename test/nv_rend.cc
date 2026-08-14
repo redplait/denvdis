@@ -82,15 +82,18 @@ std::unordered_map<int, std::pair<const char *, const char *> > NV_renderer::s_s
  { 0x79, { "sm121", "sm120" } },
 };
 
+// keep it in sync with NVLType
 const char *NV_renderer::s_ltypes[] = {
  "" /* 0 */,
  "WARP_WIDE_INSTR",
+ "ATOM_SYS",
  "COOP_GROUP_INSTR",
  "EXIT_INSTR",
  "S2RCTAID_INSTR",
  "LD_CACHEMODE_INSTR",
  "MBARRIER_INSTR",
  "SW_WAR_MEMBAR_SYS_INSTR",
+ "CP_ASYNC_BULK",
  "COROUTINE_RESUME",
  "INDIRECT_BRANCH_TARGETS",
 };
