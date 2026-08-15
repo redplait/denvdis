@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_B $opt_b $opt_d $opt_e $opt_f $opt_i $opt_m $opt_o $opt_k $opt_L $opt_l $opt_t $opt_U $opt_w/;
+use vars qw/$opt_a $opt_B $opt_b $opt_C $opt_d $opt_e $opt_f $opt_i $opt_m $opt_o $opt_k $opt_L $opt_l $opt_t $opt_U $opt_w/;
 
 sub usage()
 {
@@ -16,6 +16,7 @@ Usage: $0 [options] md.txt
  Options:
  -b idx:shift
  -B list of idx:shift
+ -C - gen tables for ptx parser
  -d - dump known tables rows
  -e - generate EBNF
  -f - mask frequency analysis
@@ -336,7 +337,7 @@ sub read_ops2
   open($fh, '<', $fname) or die("Cannot open $fname, error $!");
   my $ln = 0;
   # place masks to g_ops? seems that it's better not have big array with 1420 masks if you don't use it
-  my $add = defined($opt_f) || defined($opt_b) || defined($opt_B) || defined($opt_e) || defined($opt_i) || defined($opt_a) || defined($opt_o);
+  my $add = defined($opt_f) || defined($opt_b) || defined($opt_B) || defined($opt_C) || defined($opt_e) || defined($opt_i) || defined($opt_a) || defined($opt_o);
   my $max_mask = 0;
   while( $str = <$fh> ) {
     chomp $str;
@@ -368,7 +369,7 @@ sub read_ops2
   close $fh;
   # dump results
   $g_total_mask = \@mask;
-  unless ( defined $opt_e ) {
+  unless ( defined($opt_e) || defined($opt_C) ) {
     dump_mask(\@mask);
     printf("length of mask %d\n", bcnt(\@mask));
     printf("%d uniq ins\n", scalar keys %g_ins);
@@ -1010,8 +1011,150 @@ sub parse_L
   return $res;
 }
 
+# boring gen C stuff
+sub dump_C_tab
+{
+  my($tab_name, $ar) = @_;
+  my $res = 0;
+  printf("const static PTXTab %s = {\n", $tab_name);
+  foreach my $str ( @$ar ) {
+    next if ( $str eq '' );
+    $str =~ s/^\.//;
+    # skip <>= etc
+    next if ( $str =~ /<|>|=|\||%|&|\*|\!|\/|~/ );
+    printf(" \"%s\",\n", $str);
+    ++$res;
+  }
+  printf("}:\n");
+  $res;
+}
+
+sub gen_C {
+ # populate mask array
+ my @mask;
+ foreach my $i8 ( 0 .. 16 ) {
+   foreach my $j ( 0 .. 7 ) {
+     my $k = $i8 * 8 + $j;
+     unless ( exists $gk_tabs{$k} ) {
+       push @mask, undef;
+       next;
+     }
+     my $tab = $gk_tabs{$k};
+     my $tab_name = 's_' . $tab;
+     if ( exists $g_tcache{$tab} ) {
+       push @mask, $tab_name;
+       next;
+     }
+     my $ar = get_trows($tab);
+     unless( defined $ar ) {
+       printf("cant read table %s, idx %d:%d\n", $tab, $i8, $j);
+       push @mask, undef;
+       next;
+     }
+     # dump this table
+     dump_C_tab($tab_name, $ar);
+     push @mask, $tab_name;
+   }
+ }
+ # dump tabs
+ printf("\nconst static PTXTab *s_tabs[] = {\n");
+ foreach my $i8 ( 0 .. 16 ) {
+   foreach my $j ( 0 .. 7 ) {
+     my $k = $i8 * 8 + $j;
+     printf("// %d:%d %d\n", $i8, $j, $k);
+     if ( defined $mask[$k] ) {
+       printf(" &%s", $mask[$k]);
+     } else {
+       printf(" nullptr");
+     }
+     printf(",\n");
+   }
+ }
+ printf("}:\n");
+ # order instructions by name
+ # key - name, value - [ array from g_ops ]
+ my %sorted;
+ my $max_dot = 0;
+ my $max_name;
+ foreach my $op ( @g_ops ) {
+   my $op_name = $op->[3];
+   # strange () = stolen from https://stackoverflow.com/questions/43719236/count-characters-in-perl
+   my $c = () = $op_name =~ /\./g;
+   if ( $c > $max_dot ) {
+     $max_dot = $c;
+     $max_name = $op_name;
+   }
+   if ( exists $sorted{$op_name} ) {
+     my $ar = $sorted{$op_name};
+     push @$ar, $op;
+   } else {
+     $sorted{$op_name} = [ $op ];
+   }
+ }
+ # dump instructions
+ foreach my $op_name ( keys %sorted ) {
+   my $with_gn;
+   if ( exists $gn_tabs{$op_name} ) {
+     my $ar = get_trows($gn_tabs{$op_name});
+     unless( defined $ar ) {
+       printf("cant read known table for %s\n", $gn_tabs{$op_name});
+     } else {
+       my $tab_name = 's_tab_' . $op_name;
+       dump_C_tab($tab_name, $ar);
+       $with_gn = $tab_name;
+     }
+   }
+   my @names_ar;
+   my $idx = 0;
+   my $ar = $sorted{$op_name};
+   foreach my $op ( @$ar ) {
+     my $oname = $op->[3];
+     $oname =~ s/\./_/g;
+     my $s_name = 's_' . $oname . '_' . $idx++;
+     printf("static const %s = {\n", $s_name);
+     printf(" \"%s\",\n", $op->[3]);
+     printf(" %s,\n", defined($with_gn) ? '&' . $with_gn : 'nullptr');
+     # dump tail
+     my @tail = split /\t/, $op->[2];
+     if ( defined $tail[1] ) {
+       printf(" \"%s\", ",$tail[1]);
+     } else {
+       printf(" nullptr, ");
+     }
+     if ( defined $tail[2] ) {
+       printf(" \"%s\"",$tail[2]);
+     } else {
+       printf(" nullptr");
+     }
+     printf(",\n");
+     # dump mask array
+     my @masks = @{$op->[1]}[0 .. 16];
+     printf("{ %s }\n", join ',', map { sprintf("0x%X",$_); } @masks);
+     printf("};\n");
+     push @names_ar, $s_name;
+   }
+   # replace key with names_ar
+   $sorted{$op_name} = \@names_ar;
+ }
+ # dump instructions map
+ printf("static const int s_max_dot = %d; // %s\n", $max_dot, $max_name);
+ printf("const PTXOps g_ops = {\n");
+ my $ins_cnt = 0;
+ my $total_ins = 0;
+ foreach my $op_name ( sort { $a cmp $b } keys %sorted ) {
+   ++$ins_cnt;
+   printf(" { \"%s\", {", $op_name);
+   my $ar = $sorted{$op_name};
+   printf("%s", join ',', map { '&' . $_} @$ar );
+   printf("} }, // %d\n", scalar @$ar);
+   $total_ins += scalar @$ar;
+ }
+ printf("};\n");
+ printf("// %d keys, total %d ins\n", $ins_cnt, $total_ins);
+}
+
 # main
-my $status = getopts("Bb:adefikLl:motUw");
+my $status = getopts("Bb:aCdefikLl:motUw");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
@@ -1026,6 +1169,11 @@ if ( defined $opt_e ) {
   my %ins;
   $ins{$_} = 1 foreach @ARGV;
   gen_ebpf(scalar(keys %ins) ? \%ins : undef);
+  exit;
+}
+# -C - gen tabs for parser
+if ( defined $opt_C ) {
+  gen_C();
   exit;
 }
 # -l - make ptx for lexer brute-force
