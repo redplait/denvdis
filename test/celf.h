@@ -85,10 +85,12 @@ class CElf: public T {
      }
      return !out_res.empty();
    }
-   void fill_cors(NV_labels *l, int ltype, const char *data, int alen) {
+   void fill_cors(NV_labels *l, int ltype, const char *data, int alen, int verbose = 0) {
     for ( const char *bcurr = data + 4; data + 4 + alen - bcurr >= 0x8; bcurr += 0x8 )
     {
       uint32_t *addr = (uint32_t *)(bcurr);
+      if ( verbose )
+        fprintf(this->m_out, " %X - %X\n", addr[0], addr[1]);
       // there can be several labels for some addr, so add only if not exists yet
       auto ri = l->find(addr[1]);
       if ( ri == l->end() )

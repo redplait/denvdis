@@ -781,7 +781,7 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
           }
         } else if ( attr == 0x3a ) { // EIATTR_COROUTINE_RESUME_ID_OFFSETS
           auto ib = get_branch(sidx);
-          fill_cors(&ib->labels, Cor_resume, data, a_len);
+          fill_cors(&ib->labels, Cor_resume, data, a_len, 1);
         } else if ( attr == 0x28 ) // EIATTR_COOP_GROUP_INSTR_OFFSETS
           ltype = NVLType::Coop_grp;
         else if ( attr == 0x27 ) // EIATTR_ATOM_SYS_INSTR_OFFSETS
