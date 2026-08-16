@@ -1012,11 +1012,16 @@ sub parse_L
 }
 
 # boring gen C stuff
+# I need 3 types
+my $g_tab_type = 'PTXTab'; # for tables
+my $g_ins_type = 'PTXIns'; # for instructions descriptor
+my $g_ins_map  = 'PTXOps';
+
 sub dump_C_tab
 {
   my($tab_name, $ar) = @_;
   my $res = 0;
-  printf("const static PTXTab %s = {\n", $tab_name);
+  printf("const static %s %s = {\n", $g_tab_type, $tab_name);
   foreach my $str ( @$ar ) {
     next if ( $str eq '' );
     $str =~ s/^\.//;
@@ -1057,7 +1062,7 @@ sub gen_C {
    }
  }
  # dump tabs
- printf("\nconst static PTXTab *s_tabs[] = {\n");
+ printf("\nconst static %s *s_tabs[] = {\n", $g_tab_type);
  foreach my $i8 ( 0 .. 16 ) {
    foreach my $j ( 0 .. 7 ) {
      my $k = $i8 * 8 + $j;
@@ -1111,7 +1116,7 @@ sub gen_C {
      my $oname = $op->[3];
      $oname =~ s/\./_/g;
      my $s_name = 's_' . $oname . '_' . $idx++;
-     printf("static const %s = {\n", $s_name);
+     printf("static const %s %s = {\n", $g_ins_type, $s_name); # single descriptor
      printf(" \"%s\",\n", $op->[3]);
      printf(" %s,\n", defined($with_gn) ? '&' . $with_gn : 'nullptr');
      # dump tail
@@ -1138,7 +1143,7 @@ sub gen_C {
  }
  # dump instructions map
  printf("static const int s_max_dot = %d; // %s\n", $max_dot, $max_name);
- printf("const PTXOps g_ops = {\n");
+ printf("const %s g_ops = {\n", $g_ins_map);
  my $ins_cnt = 0;
  my $total_ins = 0;
  foreach my $op_name ( sort { $a cmp $b } keys %sorted ) {
