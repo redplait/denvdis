@@ -1027,10 +1027,10 @@ sub dump_C_tab
     $str =~ s/^\.//;
     # skip <>= etc
     next if ( $str =~ /<|>|=|\||%|&|\*|\!|\/|~/ );
-    printf(" \"%s\",\n", $str);
+    printf(" \"%s\",\n", lc($str));
     ++$res;
   }
-  printf("}:\n");
+  printf("};\n");
   $res;
 }
 
@@ -1077,7 +1077,7 @@ sub gen_C {
      printf(",\n");
    }
  }
- printf("}:\n");
+ printf("};\n");
  # order instructions by name
  # key - name, value - [ array from g_ops ]
  my %sorted;
@@ -1133,7 +1133,8 @@ sub gen_C {
      } else {
        printf(" nullptr");
      }
-     printf(",\n");
+     # line number - for debugging
+     printf(", %d,\n", $op->[0]);
      # dump mask array
      my @masks = @{$op->[1]}[0 .. 16];
      printf("{ %s }\n", join ',', map { sprintf("0x%X",$_); } @masks);
