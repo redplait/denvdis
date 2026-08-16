@@ -1035,6 +1035,8 @@ sub dump_C_tab
 }
 
 sub gen_C {
+ # header
+ printf("// Dont edit this file - it was generated %s by %s -C\n", scalar(localtime), $0);
  # populate mask array
  my @mask;
  foreach my $i8 ( 0 .. 16 ) {
