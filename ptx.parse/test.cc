@@ -1,6 +1,17 @@
 #include "ptx_types.h"
 #include <iostream>
 
+void dump_res(ParseRes *pr) {
+  if ( !pr->types.empty() ) {
+    printf("types %ld:\n", pr->types.size());
+    for ( auto &name: pr->types )
+      printf(" %.*s\n", name.size(), name.data());
+  }
+  if ( !pr->attrs.empty() ) {
+    printf("attrs %ld:\n", pr->attrs.size());
+  }
+}
+
 int main() {
   PTXParser p(nullptr);
   while( !std::cin.eof() ) {
@@ -9,5 +20,9 @@ int main() {
     if ( str.empty() ) continue;
     auto res = p.parse(str, 1);
     p.dump(stdout);
+    if ( res ) {
+      dump_res(res);
+      delete res;
+    }
   }
 }

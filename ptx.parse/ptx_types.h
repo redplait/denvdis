@@ -60,6 +60,7 @@ class PTXParser {
   int try_split(std::string &);
   int split_body();
   const PTXforms *find_instr(int verbose);
+  int try_types();
   size_t m_body_start;
   ParseRes *m_curr;
   // candidates
@@ -70,6 +71,7 @@ class PTXParser {
   // 2) instruction with attributes splitted with '.'
   std::string m_body;
   std::unordered_map<int, PTXDot> m_attrs;
+  size_t m_attrs_lim;
   // 3) tail - unchanged
   std::string_view m_tail;
   // now owning pointer

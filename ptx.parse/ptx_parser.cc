@@ -8,7 +8,7 @@ void PTXParser::dump(FILE *fp) {
   if ( !m_tail.empty() )
     fprintf(fp, "tail: %.*s\n", m_tail.size(), m_tail.data());
   if ( !m_attrs.empty() ) {
-    fprintf(fp, "%ld attrs:\n", m_attrs.size());
+    fprintf(fp, "%ld attrs, lim %ld:\n", m_attrs.size(), m_attrs_lim);
     for ( auto p: m_attrs ) {
       fprintf(fp, " [%d] at %ld: %.*s\n", p.first, p.second.first, p.second.second.size(), p.second.second.data());
     }
@@ -45,6 +45,7 @@ int PTXParser::split_body() {
   }
   if ( prev != curr ) // last
     m_attrs[idx++] = { prev, { m_body.c_str() + prev, curr - prev } };
+  m_attrs_lim = idx;
   return !m_attrs.empty();
 }
 
@@ -105,6 +106,21 @@ int PTXParser::try_split(std::string &s) {
   return !m_body.empty();
 }
 
+// try all remained attrs for types - from s_tab282F560
+int PTXParser::try_types() {
+  std::list<int> rem;
+  for ( int i = 1; i < m_attrs_lim; ++i ) {
+    auto ai = m_attrs.find(i);
+    if ( ai == m_attrs.end() ) continue;
+    auto typ = s_tab282F560.find(ai->second.second);
+    if ( typ == s_tab282F560.end() ) continue;
+    rem.push_back(i);
+    m_curr->types.push_back(ai->second.second);
+  }
+  for ( auto v: rem ) m_attrs.erase(v);
+  return !m_curr->types.empty();
+}
+
 ParseRes *PTXParser::parse(std::string &s, int verbose) {
   reset();
   try_split(s);
@@ -122,5 +138,9 @@ ParseRes *PTXParser::parse(std::string &s, int verbose) {
       else fputc('\n', m_log_fp);
     }
   }
-  return nullptr;
+  m_curr = new ParseRes;
+  try_types();
+  auto res = m_curr;
+  m_curr = nullptr;
+  return res;
 }
