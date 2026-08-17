@@ -2,6 +2,18 @@
 #include "ops.inc"
 #include <string.h>
 
+// from https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces-state-spaces-tab
+const static PTXTab SpaceTab = {
+ "reg",
+ "sreg",
+ "const",
+ "global",
+ "local",
+ "shared",
+ "surf",
+ "tex",
+};
+
 void PTXParser::dump(FILE *fp) {
   if ( !m_pred.empty() )
     fprintf(fp, "Pred: %.*s\n", m_pred.size(), m_pred.data());
@@ -139,6 +151,8 @@ int PTXParser::fill_attrs() {
   if ( first->spec_tab && first->spec_tab != &s_tab_istypep ) {
     collected.push_back( { -1, first->spec_tab });
   }
+  // always use SpaceTab
+  collected.push_back( { -1, &SpaceTab } );
   // traverse tabs in non-zero masks
   for ( int i = 0; i < PTXIns::MaskSize; ++i ) {
     auto c = ored_mask[i];
