@@ -1027,6 +1027,7 @@ sub dump_C_tab
     $str =~ s/^\.//;
     # skip <>= etc
     next if ( $str =~ /<|>|=|\||%|&|\*|\!|\/|~/ );
+    $str =~ s/\./::/g;
     printf(" \"%s\",\n", lc($str));
     ++$res;
   }
