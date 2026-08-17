@@ -57,10 +57,17 @@ class PTXParser {
   std::string_view &pred() { return m_pred; }
   std::string_view &tail() { return m_tail; }
  protected:
+  typedef std::list<int> RemList;
+  inline void rem_attrs(const RemList& rem) {
+    for ( auto v: rem ) m_attrs.erase(v);
+  }
   int try_split(std::string &);
   int split_body();
   const PTXforms *find_instr(int verbose);
-  int try_types();
+  bool is_typep(const PTXforms *) const;
+  int try_types(const PTXforms *);
+  template <typename T>
+  int try_types_tab(T &);
   int try_type(const char *);
   int cmp_types(const std::string_view &curr, char letter, std::list<std::string_view> &res);
   size_t m_body_start;

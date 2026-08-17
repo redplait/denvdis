@@ -106,19 +106,24 @@ int PTXParser::try_split(std::string &s) {
   return !m_body.empty();
 }
 
-// try all remained attrs for types - from s_tab282F560
-int PTXParser::try_types() {
-  std::list<int> rem;
+template <typename T>
+int PTXParser::try_types_tab(T &tab) {
+  RemList rem;
   for ( int i = 1; i < m_attrs_lim; ++i ) {
     auto ai = m_attrs.find(i);
     if ( ai == m_attrs.end() ) continue;
-    auto typ = s_tab282F560.find(ai->second.second);
-    if ( typ == s_tab282F560.end() ) continue;
+    auto typ = tab.find(ai->second.second);
+    if ( typ == tab.end() ) continue;
     rem.push_back(i);
     m_curr->types.push_back(ai->second.second);
   }
-  for ( auto v: rem ) m_attrs.erase(v);
+  rem_attrs(rem);
   return !m_curr->types.empty();
+}
+
+// try all remained attrs for types - from s_tab282F560
+int PTXParser::try_types(const PTXforms *flist) {
+  return try_types_tab( is_typep(flist) ? s_tab_istypep : s_tab282F560);
 }
 
 // generate [ | ] variants
@@ -225,6 +230,12 @@ int PTXParser::try_type(const char *fmt) {
   return ti == m_curr->types.cend();
 }
 
+bool PTXParser::is_typep(const PTXforms *flist) const {
+  if ( flist->empty() ) return false;
+  auto f1 = flist->at(0);
+  return f1->ops != nullptr && f1->ops[0] == 'O'; // strange type for istypep only
+}
+
 ParseRes *PTXParser::parse(std::string &s, int verbose) {
   reset();
   try_split(s);
@@ -243,7 +254,7 @@ ParseRes *PTXParser::parse(std::string &s, int verbose) {
     }
   }
   m_curr = new ParseRes;
-  try_types();
+  try_types(forms);
   // lets select forms
   for ( auto &f: *forms ) {
     if ( !f->ops ) {
