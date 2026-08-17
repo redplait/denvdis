@@ -1098,6 +1098,8 @@ sub gen_C {
      $sorted{$op_name} = [ $op ];
    }
  }
+ # types stat - key - letter, value - number of occurences
+ my %st_map;
  # dump instructions
  foreach my $op_name ( keys %sorted ) {
    my $with_gn;
@@ -1123,13 +1125,18 @@ sub gen_C {
      printf(" %s,\n", defined($with_gn) ? '&' . $with_gn : 'nullptr');
      # dump tail
      my @tail = split /\t/, $op->[2];
+     # ops
      if ( defined $tail[1] ) {
        printf(" \"%s\", ",$tail[1]);
      } else {
        printf(" nullptr, ");
      }
+     # types
      if ( defined $tail[2] ) {
        printf(" \"%s\"",$tail[2]);
+       # add types stat
+       my @t = $tail[2] =~ /[a-zA-Z]/g;
+       $st_map{$_}++ for @t;
      } else {
        printf(" nullptr");
      }
@@ -1144,6 +1151,10 @@ sub gen_C {
    # replace key with names_ar
    $sorted{$op_name} = \@names_ar;
  }
+ # dump types map
+ my @st = sort { $b->[1] <=> $a->[1] } map { [ $_, $st_map{$_} ]; } keys %st_map;
+ printf("// Used Types stat:\n");
+ printf("// %s - %d\n", $_->[0], $_->[1]) for @st;
  # dump instructions map
  printf("static const int s_max_dot = %d; // %s\n", $max_dot, $max_name);
  printf("const %s g_ops = {\n", $g_ins_map);
