@@ -1100,6 +1100,7 @@ sub gen_C {
  }
  # types stat - key - letter, value - number of occurences
  my %st_map;
+ my %t10; # first 10 instructions for letter
  # dump instructions
  foreach my $op_name ( keys %sorted ) {
    my $with_gn;
@@ -1136,7 +1137,15 @@ sub gen_C {
        printf(" \"%s\"",$tail[2]);
        # add types stat
        my @t = $tail[2] =~ /[a-zA-Z]/g;
-       $st_map{$_}++ for @t;
+       foreach my $l ( @t ) {
+         $st_map{$l}++;
+         if ( exists $t10{$l} ) {
+           my $ar = $t10{$l};
+           push @$ar, [ $op->[3], $op->[0] ] if ( scalar @$ar < 10 );
+         } else {
+           $t10{$l} = [ [ $op->[3], $op->[0] ] ];
+         }
+       }
      } else {
        printf(" nullptr");
      }
@@ -1154,7 +1163,11 @@ sub gen_C {
  # dump types map
  my @st = sort { $b->[1] <=> $a->[1] } map { [ $_, $st_map{$_} ]; } keys %st_map;
  printf("// Used Types stat:\n");
- printf("// %s - %d\n", $_->[0], $_->[1]) for @st;
+ foreach my $l ( @st ) {
+   printf("// %s - %d:", $l->[0], $l->[1]);
+   my $ar = $t10{$l->[0]};
+   printf(" %s\n", join ',', map{ sprintf("%s %d", $_->[0], $_->[1]); } @$ar);
+ }
  # dump instructions map
  printf("static const int s_max_dot = %d; // %s\n", $max_dot, $max_name);
  printf("const %s g_ops = {\n", $g_ins_map);
