@@ -1,5 +1,6 @@
 #include "ptx_types.h"
 #include "ops.inc"
+#include <string.h>
 
 void PTXParser::dump(FILE *fp) {
   if ( !m_pred.empty() )
@@ -119,6 +120,52 @@ int PTXParser::try_types_tab(T &tab) {
   }
   rem_attrs(rem);
   return !m_curr->types.empty();
+}
+
+int PTXParser::fill_attrs() {
+  if ( !m_curr || m_curr->forms.empty() ) return 0;
+  if ( m_attrs.empty() ) return 0;
+  auto &first = m_curr->forms.at(0);
+  decltype(first->mask) ored_mask;
+  memcpy(ored_mask, first->mask, sizeof(ored_mask));
+  for ( size_t i = 1; i < m_curr->forms.size(); ++i ) {
+    auto &next = m_curr->forms.at(i);
+    for ( size_t j = 0; j < PTXIns::MaskSize; ++j )
+      ored_mask[j] |= next->mask[j];
+  }
+  using TabIdx = std::pair<int, const PTXTab *>;
+  std::list<TabIdx> collected;
+  // check spec_tab first
+  if ( first->spec_tab && first->spec_tab != &s_tab_istypep ) {
+    collected.push_back( { -1, first->spec_tab });
+  }
+  // traverse tabs in non-zero masks
+  for ( int i = 0; i < PTXIns::MaskSize; ++i ) {
+    auto c = ored_mask[i];
+    for ( int j = 0; j < 8; ++j ) {
+      if ( !(c & (1 << j)) ) continue;
+      int idx = i * 8 + j;
+      if ( nullptr == s_tabs[idx] ) continue;
+      collected.push_back( { idx, s_tabs[idx] } );
+    }
+  }
+  RemList rem;
+  int res = 0;
+  // enum remained attrs
+  for ( int i = 1; i < m_attrs_lim; ++i ) {
+    auto ai = m_attrs.find(i);
+    if ( ai == m_attrs.end() ) continue;
+    for ( auto &coll: collected ) {
+      auto found = coll.second->find( ai->second.second );
+      if ( found == coll.second->end() ) continue;
+      m_curr->attrs[ coll.first ] = *found;
+      res++;
+      rem.push_back(i);
+      break;
+    }
+  }
+  rem_attrs(rem);
+  return res;
 }
 
 // try all remained attrs for types - from s_tab282F560
@@ -264,6 +311,7 @@ ParseRes *PTXParser::parse(std::string &s, int verbose) {
     if ( m_curr->types.empty() ) continue;
     if ( try_type(f->ops) ) m_curr->forms.push_back(f);
   }
+  fill_attrs();
   auto res = m_curr;
   m_curr = nullptr;
   return res;

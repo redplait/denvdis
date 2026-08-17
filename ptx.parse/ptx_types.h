@@ -11,7 +11,8 @@ struct PTXIns {
   const PTXTab *spec_tab = nullptr;
   const char *fmt, *ops;
   int ln;
-  unsigned char mask[17];
+  static constexpr int MaskSize = 17;
+  unsigned char mask[MaskSize];
 };
 typedef std::vector<const PTXIns *> PTXforms;
 typedef std::unordered_map<std::string_view, PTXforms> PTXOps;
@@ -70,6 +71,8 @@ class PTXParser {
   int try_types_tab(T &);
   int try_type(const char *);
   int cmp_types(const std::string_view &curr, char letter, std::list<std::string_view> &res);
+  // list of filtered forms in ParseRes.forms, fill ParseRes.attrs, remove matched from m_attrs
+  int fill_attrs();
   size_t m_body_start;
   ParseRes *m_curr;
   // candidates

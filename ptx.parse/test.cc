@@ -11,12 +11,20 @@ void dump_res(ParseRes *pr) {
     }
   }
   if ( !pr->types.empty() ) {
-    printf("types %ld:\n", pr->types.size());
+    printf("--- types %ld:\n", pr->types.size());
     for ( auto &name: pr->types )
       printf(" %.*s\n", name.size(), name.data());
   }
   if ( !pr->attrs.empty() ) {
-    printf("attrs %ld:\n", pr->attrs.size());
+    printf("--- attrs %ld:\n", pr->attrs.size());
+    for ( auto ap: pr->attrs ) {
+      if ( ap.first != -1 ) {
+        int maj = ap.first >> 3;
+        int min = ap.first & 7;
+        printf(" %d:%d", maj, min);
+      }
+      printf(" %.*s\n", ap.second.size(), ap.second.data());
+    }
   }
 }
 
