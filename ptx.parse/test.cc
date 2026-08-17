@@ -2,6 +2,14 @@
 #include <iostream>
 
 void dump_res(ParseRes *pr) {
+  if ( !pr->forms.empty() ) {
+    for ( auto &f: pr->forms ) {
+      printf(" line %d:", f->ln);
+      if ( f->fmt ) printf(" %s", f->fmt);
+      if ( f->ops ) printf(" %s", f->ops);
+      fputc('\n', stdout);
+    }
+  }
   if ( !pr->types.empty() ) {
     printf("types %ld:\n", pr->types.size());
     for ( auto &name: pr->types )

@@ -121,6 +121,110 @@ int PTXParser::try_types() {
   return !m_curr->types.empty();
 }
 
+// generate [ | ] variants
+const char *make_vars(char letter, std::list<std::string_view> &res, const char *fmt) {
+  auto prev = ++fmt;
+  auto curr = prev;
+  for ( ; *curr && *curr != ']'; ++curr ) {
+    if ( *curr == '|' ) {
+      res.push_back({ prev, curr - prev });
+      prev = curr + 1;
+    }
+  }
+  if ( *curr == ']' ) {
+    res.push_back({ prev, curr - prev });
+    return curr + 1;
+  }
+  return curr;
+}
+
+int cmp_type(const std::string_view &must_be, char letter, const std::string_view &what) {
+  std::string one_type;
+  switch(letter) {
+    case 'b':
+    case 'f':
+       one_type.push_back(letter);
+       one_type += what;
+       return one_type == must_be;
+     break;
+    case 'i':
+      // check s & u
+      one_type = "s";
+      one_type += what;
+      if ( one_type == must_be ) return 1;
+      one_type = "u";
+      one_type += what;
+      if ( one_type == must_be ) return 1;
+     break;
+    case 'h':
+      if ( what == "32" ) {
+        return must_be == "f16x2" || must_be == "bf16x2" || must_be == "u16x2" || must_be == "s16x2";
+      } else
+       fprintf(stderr, "unknown H size %.*s\n", what.size(), what.data());
+     break;
+    case 'e':
+      if ( what == "16" ) {
+        return must_be == "f16" || must_be == "bf16";
+      } else if ( what == "32" ) {
+        return must_be == "tf32";
+      } else
+       fprintf(stderr, "unknown E size %.*s\n", what.size(), what.data());
+     break;
+    default:
+     fprintf(stderr, "unknown letter %c, %.*s\n", letter, what.size(), what.data());
+  }
+  return 0;
+}
+
+int PTXParser::cmp_types(const std::string_view &curr, char letter, std::list<std::string_view> &res) {
+  fprintf(m_log_fp, "cmp_types: %.*s\n", curr.size(), curr.data());
+  for ( auto sv: res ) {
+    fprintf(m_log_fp, "> %c%.*s\n", letter, sv.size(), sv.data());
+    if ( cmp_type(curr, letter, sv) ) return 1;
+  }
+  return 0;
+}
+
+int PTXParser::try_type(const char *fmt) {
+  auto ti = m_curr->types.cbegin();
+  const char *curr = fmt;
+  char c_fmt = tolower(*curr);
+  for ( ++curr; *curr; ++curr ) {
+    // check L[]
+    if ( *curr == '[' ) {
+      std::list<std::string_view> vars;
+      curr = make_vars(c_fmt, vars, curr);
+      if ( !cmp_types(*ti, c_fmt, vars) ) return 0;
+      ++ti;
+      if ( !*curr ) break;
+      if ( ti == m_curr->types.cend() ) return 0;
+    }
+    // check L digit(s)
+    if ( isdigit(*curr) ) {
+      auto start = curr;
+      for ( ++curr; *curr; ++curr ) {
+        if ( isdigit(*curr) ) continue;
+        std::string_view dig{start, curr - start };
+ fprintf(m_log_fp, "L<dig> %c%.*s\n", c_fmt, dig.size(), dig.data());
+        if ( !cmp_type(*ti, c_fmt, dig) ) return 0;
+        ++ti;
+        if ( ti == m_curr->types.cend() ) return 0;
+        break;
+      }
+      // if this is last
+      if ( !*curr ) {
+        std::string_view dig{start, curr - start };
+ fprintf(m_log_fp, "Last<dig> %c%.*s\n", c_fmt, dig.size(), dig.data());
+        if ( !cmp_type(*ti, c_fmt, dig) ) return 0;
+        ++ti;
+        break;
+      }
+      c_fmt = tolower(*curr);
+    }
+  }
+  return ti == m_curr->types.cend();
+}
+
 ParseRes *PTXParser::parse(std::string &s, int verbose) {
   reset();
   try_split(s);
@@ -140,6 +244,15 @@ ParseRes *PTXParser::parse(std::string &s, int verbose) {
   }
   m_curr = new ParseRes;
   try_types();
+  // lets select forms
+  for ( auto &f: *forms ) {
+    if ( !f->ops ) {
+      if ( m_curr->types.empty() ) m_curr->forms.push_back(f);
+      continue;
+    }
+    if ( m_curr->types.empty() ) continue;
+    if ( try_type(f->ops) ) m_curr->forms.push_back(f);
+  }
   auto res = m_curr;
   m_curr = nullptr;
   return res;

@@ -29,7 +29,7 @@ struct ParseRes {
 class PTXParser {
  public:
   PTXParser(FILE *fp) {
-    if ( nullptr == fp ) m_log_fp = stderr;
+    if ( nullptr == fp ) m_log_fp = stdout;
     else m_log_fp = fp;
     m_curr = nullptr;
     reset();
@@ -61,6 +61,8 @@ class PTXParser {
   int split_body();
   const PTXforms *find_instr(int verbose);
   int try_types();
+  int try_type(const char *);
+  int cmp_types(const std::string_view &curr, char letter, std::list<std::string_view> &res);
   size_t m_body_start;
   ParseRes *m_curr;
   // candidates
