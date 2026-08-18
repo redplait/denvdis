@@ -517,7 +517,9 @@ my %gk_tabs = (
   3 * 8 + 0 => 'sat',
   3 * 8 + 1 => 'cc',
   3 * 8 + 2 => 'shiftamt',
-  3 * 8 + 3 => 'tab282E820', # (f)rnd
+  3 * 8 + 3 => 'tab282E820', # frnd
+  3 * 8 + 4 => 'tab282E820', # rnd
+# 3 * 8 + 5 - instruction has signed operands
   3 * 8 + 6 => 'uni',
   3 * 8 + 7 => 'tab282E7E0', # cmp     byte ptr [r12+3], 0/js
 # 4
