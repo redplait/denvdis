@@ -527,7 +527,7 @@ my %gk_tabs = (
   4 * 8 + 6 => 'tab282DFE0', # mov.type & cvt 01 - type with .pred
   4 * 8 + 7 => 'tab282EC40', # scope/ss like .gpu .cluster
 # 5 - full
-  5 * 8 + 0 => 'tab282E6A0', # load_mode
+  5 * 8 + 0 => 'tab282E6A0', # im2col
   5 * 8 + 1 => 'testp',
   5 * 8 + 2 => 'tab282E960', # .cop
   5 * 8 + 3 => 'tab282E900', # .sem + barrier.cluster
@@ -536,10 +536,10 @@ my %gk_tabs = (
   5 * 8 + 6 => 'tab282EC20', # cache level like .l1
   5 * 8 + 7 => 'tab282EB80', # eviction, since v7.4 also for ld/st/prefetch
 # 6
-  6 * 8 + 0 => 'tab282EC40', # test    byte ptr [r12+6], 1
-  6 * 8 + 1 => 'tab282F2D0', # just speculation for _col/_row
-  6 * 8 + 2 => 'vec',
-  6 * 8 + 3 => 'tab282E760', # geom
+  6 * 8 + 0 => 'tab282EC40', # scope - test    byte ptr [r12+6], 1
+  6 * 8 + 1 => 'vec',
+#  6 * 8 + 2 - texture address?
+  6 * 8 + 3 => 'tab282E760', # geom - texture mode?
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
   6 * 8 + 6 => 'tab282E640', # occurs only in print handler for cp.async.bulk.tensor
   6 * 8 + 7 => 'tab282E620', # cta_group
