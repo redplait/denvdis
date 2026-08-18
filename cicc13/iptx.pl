@@ -1136,7 +1136,7 @@ sub gen_C {
        printf(" nullptr, ");
      }
      # types
-     if ( defined $tail[2] ) {
+     if ( defined $tail[2] && $tail[2] ne '(null)') {
        printf(" \"%s\"",$tail[2]);
        # add types stat
        my @t = $tail[2] =~ /[a-zA-Z]/g;
