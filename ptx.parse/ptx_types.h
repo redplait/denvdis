@@ -41,6 +41,7 @@ class PTXParser {
   void reset() {
     m_body_start = 0;
     m_curr = nullptr;
+    m_tail_ops = 0;
     m_pred = {};
     m_tail = {};
     m_body.clear();
@@ -83,7 +84,7 @@ class PTXParser {
   // 2) instruction with attributes splitted with '.'
   std::string m_body;
   std::unordered_map<int, PTXDot> m_attrs;
-  size_t m_attrs_lim;
+  size_t m_attrs_lim, m_tail_ops;
   // 3) tail - unchanged
   std::string_view m_tail;
   // now owning pointer

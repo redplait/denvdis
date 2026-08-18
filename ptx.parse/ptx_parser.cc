@@ -1,6 +1,7 @@
 #include "ptx_types.h"
 #include "ops.inc"
 #include <string.h>
+#include <algorithm>
 
 // from https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces-state-spaces-tab
 const static PTXTab SpaceTab = {
@@ -204,16 +205,61 @@ const char *make_vars(char letter, std::list<std::string_view> &res, const char 
   return curr;
 }
 
+// types are case sensitive - there are n & N
+// F - float
+// I - integer
+// B - ??, can be 128bit
+// H - half float like f16x2
+// P - pred
+// E - bf16 ?
+// T - tf32
+// Q - can have size 8/16/32
+int cmp_letter(const std::string_view &must_be, char letter) {
+  char c = must_be.at(0);
+  switch(letter) {
+    case 'O': // istypep only
+     return 1;
+     break;
+    case 'P':
+     return must_be == "pred";
+     break;
+    case 'T':
+     return must_be.starts_with("tf");
+     break;
+    case 'F':
+     return must_be.at(0) == 'f';
+     break;
+    case 'E':
+     return must_be == "bf16";
+     break;
+    case 'H':
+      return must_be.ends_with("x2");
+     break;
+    case 'B':
+      return c == 'b';
+     break;
+    case 'I':
+      return c == 's' || c == 'u';
+     break;
+    case 'Q':
+      return c == 'e' || must_be.starts_with("ue");
+     break;
+    default:
+     fprintf(stderr, "unknown Letter %c\n", letter);
+  }
+  return 0;
+}
+
 int cmp_type(const std::string_view &must_be, char letter, const std::string_view &what) {
   std::string one_type;
   switch(letter) {
-    case 'b':
-    case 'f':
-       one_type.push_back(letter);
+    case 'B':
+    case 'F':
+       one_type.push_back(tolower(letter));
        one_type += what;
        return one_type == must_be;
      break;
-    case 'i':
+    case 'I':
       // check s & u
       one_type = "s";
       one_type += what;
@@ -222,19 +268,35 @@ int cmp_type(const std::string_view &must_be, char letter, const std::string_vie
       one_type += what;
       if ( one_type == must_be ) return 1;
      break;
-    case 'h':
+    case 'H':
       if ( what == "32" ) {
         return must_be == "f16x2" || must_be == "bf16x2" || must_be == "u16x2" || must_be == "s16x2";
       } else
        fprintf(stderr, "unknown H size %.*s\n", what.size(), what.data());
      break;
-    case 'e':
+    case 'T':
+      if ( what == "32" )
+        return must_be == "tf32";
+      fprintf(stderr, "unknown T size %.*s\n", what.size(), what.data());
+     break;
+    case 'E':
       if ( what == "16" ) {
-        return must_be == "f16" || must_be == "bf16";
+        return must_be == "bf16";
       } else if ( what == "32" ) {
         return must_be == "tf32";
       } else
        fprintf(stderr, "unknown E size %.*s\n", what.size(), what.data());
+     break;
+    case 'Q':
+      if ( what == "8" ) {
+        return must_be == "e4m3" || must_be == "e5m2" || must_be == "e3m4" || must_be == "e2m3" || must_be == "e3m2" ||
+          must_be == "ue8m0" || must_be == "ue4m3";
+      } else if ( what == "16" ) {
+        return (must_be.at(0) == 'e' || must_be.starts_with("ue")) && must_be.ends_with("x2");
+      } else if ( what == "32" ) {
+        return (must_be.at(0) == 'e' || must_be.starts_with("ue")) && must_be.ends_with("x4");
+      } else
+       fprintf(stderr, "unknown Q size %.*s\n", what.size(), what.data());
      break;
     default:
      fprintf(stderr, "unknown letter %c, %.*s\n", letter, what.size(), what.data());
@@ -254,7 +316,7 @@ int PTXParser::cmp_types(const std::string_view &curr, char letter, std::list<st
 int PTXParser::try_type(const char *fmt) {
   auto ti = m_curr->types.cbegin();
   const char *curr = fmt;
-  char c_fmt = tolower(*curr);
+  char c_fmt = *curr;
   for ( ++curr; *curr; ++curr ) {
     // check L[]
     if ( *curr == '[' ) {
@@ -262,8 +324,11 @@ int PTXParser::try_type(const char *fmt) {
       curr = make_vars(c_fmt, vars, curr);
       if ( !cmp_types(*ti, c_fmt, vars) ) return 0;
       ++ti;
+      c_fmt = 0;
       if ( !*curr ) break;
       if ( ti == m_curr->types.cend() ) return 0;
+      c_fmt = *curr;
+      continue;
     }
     // check L digit(s)
     if ( isdigit(*curr) ) {
@@ -282,11 +347,28 @@ int PTXParser::try_type(const char *fmt) {
         std::string_view dig{start, curr - start };
  fprintf(m_log_fp, "Last<dig> %c%.*s\n", c_fmt, dig.size(), dig.data());
         if ( !cmp_type(*ti, c_fmt, dig) ) return 0;
+        c_fmt = 0;
         ++ti;
         break;
       }
-      c_fmt = tolower(*curr);
+      c_fmt = *curr;
+      continue;
     }
+    // Letter like IF32
+    if ( c_fmt ) {
+      if ( !cmp_letter(*ti, c_fmt) ) return 0;
+      ++ti;
+      if ( ti == m_curr->types.cend() ) return 0;
+      c_fmt = *curr;
+      continue;
+    }
+    fprintf(stderr, "unkown fmt %c\n", *curr);
+  }
+  // check if we have last letter
+  if ( c_fmt ) {
+    if ( ti == m_curr->types.cend() ) return 0;
+    if ( !cmp_letter(*ti, c_fmt) ) return 0;
+    ++ti;
   }
   return ti == m_curr->types.cend();
 }
@@ -303,6 +385,8 @@ ParseRes *PTXParser::parse(std::string &s, int verbose) {
   if ( m_body.empty() ) return nullptr;
   // split body by dots
   if ( !split_body() ) return nullptr;
+  if ( !m_tail.empty() )
+    m_tail_ops = std::count_if(m_tail.cbegin(), m_tail.cend(), [](char c) { return c == ','; });
   // try to find instruction
   auto forms = find_instr(verbose);
   if ( !forms ) return nullptr;
@@ -323,7 +407,11 @@ ParseRes *PTXParser::parse(std::string &s, int verbose) {
       continue;
     }
     if ( m_curr->types.empty() ) continue;
-    if ( try_type(f->ops) ) m_curr->forms.push_back(f);
+    if ( verbose ) fprintf(m_log_fp, "-- try_type %s\n", f->ops);
+    if ( try_type(f->ops) ) {
+      if ( verbose ) fprintf(m_log_fp, "[+] matched\n");
+      m_curr->forms.push_back(f);
+    }
   }
   fill_attrs();
   auto res = m_curr;
