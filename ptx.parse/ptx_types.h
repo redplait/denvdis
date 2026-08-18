@@ -67,11 +67,11 @@ class PTXParser {
   int split_body();
   const PTXforms *find_instr(int verbose);
   bool is_typep(const PTXforms *) const;
-  int try_types(const PTXforms *);
+  int collect_types(const PTXforms *);
   template <typename T>
   int try_types_tab(T &);
-  int try_type(const char *);
-  int cmp_types(const std::string_view &curr, char letter, std::list<std::string_view> &res);
+  int try_type(const char *, int);
+  int cmp_types(const std::string_view &curr, char letter, std::list<std::string_view> &res, int);
   // list of filtered forms in ParseRes.forms, fill ParseRes.attrs, remove matched from m_attrs
   int fill_attrs();
   size_t m_body_start;

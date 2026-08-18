@@ -184,7 +184,7 @@ int PTXParser::fill_attrs() {
 }
 
 // try all remained attrs for types - from s_tab282F560
-int PTXParser::try_types(const PTXforms *flist) {
+int PTXParser::collect_types(const PTXforms *flist) {
   return try_types_tab( is_typep(flist) ? s_tab_istypep : s_tab282F560);
 }
 
@@ -304,16 +304,16 @@ int cmp_type(const std::string_view &must_be, char letter, const std::string_vie
   return 0;
 }
 
-int PTXParser::cmp_types(const std::string_view &curr, char letter, std::list<std::string_view> &res) {
-  fprintf(m_log_fp, "cmp_types: %.*s\n", curr.size(), curr.data());
+int PTXParser::cmp_types(const std::string_view &curr, char letter, std::list<std::string_view> &res, int verb) {
+  if ( verb ) fprintf(m_log_fp, "cmp_types: %.*s\n", curr.size(), curr.data());
   for ( auto sv: res ) {
-    fprintf(m_log_fp, "> %c%.*s\n", letter, sv.size(), sv.data());
+    if ( verb & 2 ) fprintf(m_log_fp, "> %c%.*s\n", letter, sv.size(), sv.data());
     if ( cmp_type(curr, letter, sv) ) return 1;
   }
   return 0;
 }
 
-int PTXParser::try_type(const char *fmt) {
+int PTXParser::try_type(const char *fmt, int verb) {
   auto ti = m_curr->types.cbegin();
   const char *curr = fmt;
   char c_fmt = *curr;
@@ -322,7 +322,7 @@ int PTXParser::try_type(const char *fmt) {
     if ( *curr == '[' ) {
       std::list<std::string_view> vars;
       curr = make_vars(c_fmt, vars, curr);
-      if ( !cmp_types(*ti, c_fmt, vars) ) return 0;
+      if ( !cmp_types(*ti, c_fmt, vars, verb) ) return 0;
       ++ti;
       c_fmt = 0;
       if ( !*curr ) break;
@@ -336,7 +336,7 @@ int PTXParser::try_type(const char *fmt) {
       for ( ++curr; *curr; ++curr ) {
         if ( isdigit(*curr) ) continue;
         std::string_view dig{start, curr - start };
- fprintf(m_log_fp, "L<dig> %c%.*s\n", c_fmt, dig.size(), dig.data());
+ if ( verb & 2 ) fprintf(m_log_fp, "L<dig> %c%.*s\n", c_fmt, dig.size(), dig.data());
         if ( !cmp_type(*ti, c_fmt, dig) ) return 0;
         ++ti;
         if ( ti == m_curr->types.cend() ) return 0;
@@ -345,7 +345,7 @@ int PTXParser::try_type(const char *fmt) {
       // if this is last
       if ( !*curr ) {
         std::string_view dig{start, curr - start };
- fprintf(m_log_fp, "Last<dig> %c%.*s\n", c_fmt, dig.size(), dig.data());
+ if ( verb & 2 ) fprintf(m_log_fp, "Last<dig> %c%.*s\n", c_fmt, dig.size(), dig.data());
         if ( !cmp_type(*ti, c_fmt, dig) ) return 0;
         c_fmt = 0;
         ++ti;
@@ -399,7 +399,7 @@ ParseRes *PTXParser::parse(std::string &s, int verbose) {
     }
   }
   m_curr = new ParseRes;
-  try_types(forms);
+  collect_types(forms);
   // lets select forms
   for ( auto &f: *forms ) {
     if ( !f->ops ) {
@@ -408,7 +408,7 @@ ParseRes *PTXParser::parse(std::string &s, int verbose) {
     }
     if ( m_curr->types.empty() ) continue;
     if ( verbose ) fprintf(m_log_fp, "-- try_type %s\n", f->ops);
-    if ( try_type(f->ops) ) {
+    if ( try_type(f->ops, verbose) ) {
       if ( verbose ) fprintf(m_log_fp, "[+] matched\n");
       m_curr->forms.push_back(f);
     }

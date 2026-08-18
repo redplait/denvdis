@@ -35,6 +35,7 @@ void usage(const char *prog)
 {
   printf("usage: %s [options]\n", prog);
   printf("Options:\n");
+  printf(" -d - debug mode\n");
   printf(" -v - verbose mode\n");
   exit(6);
 }
@@ -43,10 +44,11 @@ int main(int argc, char **argv)
 {
   int c;
   while(1) {
-    c = getopt(argc, argv, "v");
+    c = getopt(argc, argv, "dv");
     if ( c == -1 ) break;
     switch(c) {
-      case 'v': opt_v = 1; break;
+      case 'v': opt_v |= 1; break;
+      case 'd': opt_v |= 2; break;
       default: usage(argv[0]);
     }
   }
