@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_B $opt_b $opt_C $opt_d $opt_e $opt_f $opt_i $opt_m $opt_o $opt_k $opt_L $opt_l $opt_t $opt_U $opt_w/;
+use vars qw/$opt_a $opt_B $opt_b $opt_C $opt_d $opt_e $opt_f $opt_i $opt_m $opt_o $opt_k $opt_L $opt_l $opt_t $opt_T $opt_U $opt_w/;
 
 sub usage()
 {
@@ -28,6 +28,7 @@ Usage: $0 [options] md.txt
  -L process output from ptx/colsetp.pl
  -m - ignore psedo-instructions
  -t - verify tabs and dump still unused
+ -T - filter by type
  -U - dump instruction not presented in cicc
  -w - ignore obscure _mma.warpgroup & _mma
 EOF
@@ -200,12 +201,16 @@ OUTER:
 }
 
 # boring mask logic
-sub dump_mask
-{
+sub _dump_mask {
   my $mr = shift;
   foreach my $mi ( @$mr ) {
     printf("%2.2X ", $mi);
   }
+}
+
+sub dump_mask
+{
+  _dump_mask(@_);
   printf("\n");
 }
 
@@ -337,7 +342,8 @@ sub read_ops2
   open($fh, '<', $fname) or die("Cannot open $fname, error $!");
   my $ln = 0;
   # place masks to g_ops? seems that it's better not have big array with 1420 masks if you don't use it
-  my $add = defined($opt_f) || defined($opt_b) || defined($opt_B) || defined($opt_C) || defined($opt_e) || defined($opt_i) || defined($opt_a) || defined($opt_o);
+  my $add = defined($opt_f) || defined($opt_b) || defined($opt_B) || defined($opt_C) || defined($opt_e) || defined($opt_i) ||
+    defined($opt_a) || defined($opt_o) || defined($opt_T);
   my $max_mask = 0;
   while( $str = <$fh> ) {
     chomp $str;
@@ -1188,8 +1194,44 @@ sub gen_C {
  printf("// %d keys, total %d ins\n", $ins_cnt, $total_ins);
 }
 
+sub filter_types
+{
+  my @idx;
+  foreach my $op ( @g_ops ) {
+    my @tail = split /\t/, $op->[2];
+    next if ( !defined($tail[2]) || $tail[2] eq '(null)');
+    next if ( -1 == index($tail[2], $opt_T) );
+    # dump
+    _dump_mask($op->[1]);
+    printf(" %s %s ln %d\n", $op->[3], $tail[2], $op->[0]);
+    push @idx, $op;
+  }
+  my $size = scalar @idx;
+  return unless($size);
+  return unless ( defined($opt_a) || defined($opt_o) );
+  my @res = @{ $idx[0]->[1] };
+  for my $i ( 1 .. $size - 1 ) {
+     my $ar = $idx[$i]->[1];
+     if ( defined $opt_a ) {
+        foreach my $ai ( 0 .. MaskSize ) {
+          $res[$ai] &= $ar->[$ai];
+         }
+       } else {
+        foreach my $oi ( 0 .. MaskSize ) {
+          $res[$oi] |= $ar->[$oi];
+        }
+     }
+  }
+  dump_mask(\@res);
+  if ( defined $opt_k ) {
+    printf("try apply_k\n");
+    my $ar = apply_k(\@res);
+    dump_mask($ar) if defined($ar);
+  }
+}
+
 # main
-my $status = getopts("Bb:aCdefikLl:motUw");
+my $status = getopts("Bb:aCdefikLl:motT:Uw");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
@@ -1247,6 +1289,10 @@ if ( defined $opt_k ) {
   printf("unknown mask:  ");
   dump_mask(\@still_unk);
   printf("unk size %d\n", bcnt(\@still_unk));
+}
+if ( defined $opt_T ) {
+  filter_types();
+  exit;
 }
 
 my %ins;
