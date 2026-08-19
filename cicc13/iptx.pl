@@ -1117,18 +1117,30 @@ sub gen_C {
  # types stat - key - letter, value - number of occurences
  my %st_map;
  my %t10; # first 10 instructions for letter
+ my %gn_names; # name is table name, value is generated name
  # dump instructions
  foreach my $op_name ( keys %sorted ) {
    my $with_gn;
    if ( exists $gn_tabs{$op_name} ) {
-     my $ar = get_trows($gn_tabs{$op_name});
-     unless( defined $ar ) {
-       printf("cant read known table for %s\n", $gn_tabs{$op_name});
+     my $tgn = $gn_tabs{$op_name};
+     my $tab_name;
+     if ( exists $gn_names{$tgn} ) {
+       $tab_name = $gn_names{$tgn};
      } else {
-       my $tab_name = 's_tab_' . $op_name;
-       dump_C_tab($tab_name, $ar);
-       $with_gn = $tab_name;
+       my $ar = get_trows($gn_tabs{$op_name});
+       unless( defined $ar ) {
+         printf("cant read known table for %s\n", $gn_tabs{$op_name});
+       } else {
+         if ( $tgn =~ /^tab/ ) {
+           $tab_name = 's_' . $tgn;
+         } else {
+           $tab_name = 's_tab_' . $tgn;
+         }
+         dump_C_tab($tab_name, $ar);
+         $gn_names{$tgn} = $tab_name;
+       }
      }
+     $with_gn = $tab_name;
    }
    my @names_ar;
    my $idx = 0;
