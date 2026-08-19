@@ -36,17 +36,19 @@ void usage(const char *prog)
   printf("usage: %s [options]\n", prog);
   printf("Options:\n");
   printf(" -d - debug mode\n");
+  printf(" -t - apply number of operands\n");
   printf(" -v - verbose mode\n");
   exit(6);
 }
 
 int main(int argc, char **argv)
 {
-  int c;
+  int c, opt_t = 0;
   while(1) {
-    c = getopt(argc, argv, "dv");
+    c = getopt(argc, argv, "dtv");
     if ( c == -1 ) break;
     switch(c) {
+      case 't': opt_t = 1; break;
       case 'v': opt_v |= 1; break;
       case 'd': opt_v |= 2; break;
       default: usage(argv[0]);
@@ -57,7 +59,7 @@ int main(int argc, char **argv)
     std::string str;
     std::getline(std::cin, str);
     if ( str.empty() ) continue;
-    auto res = p.parse(str, opt_v);
+    auto res = p.parse(str, opt_t, opt_v);
     p.dump(stdout);
     if ( res ) {
       dump_res(res);

@@ -52,13 +52,14 @@ class PTXParser {
       m_curr = nullptr;
     }
   }
-  ParseRes *parse(std::string &, int verbose = 0);
+  ParseRes *parse(std::string &, int process_tail, int verbose = 0);
   // dump state methods
   void dump(FILE *);
   // getters
   std::string_view &pred() { return m_pred; }
   std::string_view &tail() { return m_tail; }
  protected:
+  bool check_op_count(const char *ops) const;
   typedef std::list<int> RemList;
   inline void rem_attrs(const RemList& rem) {
     for ( auto v: rem ) m_attrs.erase(v);

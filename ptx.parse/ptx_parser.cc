@@ -19,8 +19,10 @@ void PTXParser::dump(FILE *fp) {
   if ( !m_pred.empty() )
     fprintf(fp, "Pred: %.*s\n", m_pred.size(), m_pred.data());
   fprintf(fp, "body at %ld: %s\n", m_body_start, m_body.c_str());
-  if ( !m_tail.empty() )
+  if ( !m_tail.empty() ) {
     fprintf(fp, "tail: %.*s\n", m_tail.size(), m_tail.data());
+    if ( m_tail_ops ) fprintf(fp, "%ld tail operands\n", m_tail_ops);
+  }
   if ( !m_attrs.empty() ) {
     fprintf(fp, "%ld attrs, lim %ld:\n", m_attrs.size(), m_attrs_lim);
     for ( auto p: m_attrs ) {
@@ -185,7 +187,7 @@ int PTXParser::fill_attrs() {
 
 // try all remained attrs for types - from s_tab282F560
 int PTXParser::collect_types(const PTXforms *flist) {
-  return try_types_tab( is_typep(flist) ? s_tab_istypep : s_tab282F560);
+  return try_types_tab( is_typep(flist) ? s_tab_istypep : s_tab282DFE0);
 }
 
 // generate [ | ] variants
@@ -268,11 +270,12 @@ int cmp_type(const std::string_view &must_be, char letter, const std::string_vie
       one_type += what;
       if ( one_type == must_be ) return 1;
      break;
+    case 'N':
     case 'H':
       if ( what == "32" ) {
         return must_be == "f16x2" || must_be == "bf16x2" || must_be == "u16x2" || must_be == "s16x2";
       } else
-       fprintf(stderr, "unknown H size %.*s\n", what.size(), what.data());
+       fprintf(stderr, "unknown %c size %.*s\n", letter, what.size(), what.data());
      break;
     case 'T':
       if ( what == "32" )
@@ -287,12 +290,12 @@ int cmp_type(const std::string_view &must_be, char letter, const std::string_vie
       } else
        fprintf(stderr, "unknown E size %.*s\n", what.size(), what.data());
      break;
-    case 'Q':
+    case 'Q': // see https://docs.nvidia.com/cuda/parallel-thread-execution/#operand-types-for-packed-floating-point-instruction-type
       if ( what == "8" ) {
         return must_be == "e4m3" || must_be == "e5m2" || must_be == "e3m4" || must_be == "e2m3" || must_be == "e3m2" ||
-          must_be == "ue8m0" || must_be == "ue4m3";
+          must_be == "ue8m0" || must_be == "ue4m3" || must_be == "s2f6";
       } else if ( what == "16" ) {
-        return (must_be.at(0) == 'e' || must_be.starts_with("ue")) && must_be.ends_with("x2");
+        return (must_be.at(0) == 'e' || must_be.starts_with("ue") || must_be.starts_with("s2f6") ) && must_be.ends_with("x2");
       } else if ( what == "32" ) {
         return (must_be.at(0) == 'e' || must_be.starts_with("ue")) && must_be.ends_with("x4");
       } else
@@ -379,14 +382,36 @@ bool PTXParser::is_typep(const PTXforms *flist) const {
   return f1->ops != nullptr && f1->ops[0] == 'O'; // strange type for istypep only
 }
 
-ParseRes *PTXParser::parse(std::string &s, int verbose) {
+bool PTXParser::check_op_count(const char *ops) const {
+  if ( !ops ) return !m_tail_ops;
+  return strlen(ops) == m_tail_ops;
+}
+
+ParseRes *PTXParser::parse(std::string &s, int process_tail, int verbose) {
   reset();
   try_split(s);
   if ( m_body.empty() ) return nullptr;
   // split body by dots
   if ( !split_body() ) return nullptr;
-  if ( !m_tail.empty() )
-    m_tail_ops = std::count_if(m_tail.cbegin(), m_tail.cend(), [](char c) { return c == ','; });
+  if ( !m_tail.empty() && process_tail ) {
+    // first naive implementation was just
+    // m_tail_ops = 1 + std::count_if(m_tail.cbegin(), m_tail.cend(), [](char c) { return c == ','; });
+    // but official ptx doc https://docs.nvidia.com/cuda/parallel-thread-execution/#data-movement-and-conversion-instructions-ld-global-nc
+    // has following wonderful example:
+    //   ld.global.L2::evict_last.L1::evict_last.v4.u64 { %reg0, %reg1, %reg2, %reg3}, [addr];
+    // actually there only 2 operands, so lets ignore all inside curly braces
+    int cb = 0;
+    m_tail_ops = 1;
+    for ( auto c: m_tail ) {
+      if ( c == ';' ) break;
+      if ( c == '{' ) { cb++; continue; }
+      if ( cb ) {
+        if ( c == '}' ) cb--;
+        continue;
+      }
+      if ( c == ',' ) ++m_tail_ops;
+    }
+  }
   // try to find instruction
   auto forms = find_instr(verbose);
   if ( !forms ) return nullptr;
@@ -402,6 +427,9 @@ ParseRes *PTXParser::parse(std::string &s, int verbose) {
   collect_types(forms);
   // lets select forms
   for ( auto &f: *forms ) {
+    if ( process_tail ) {
+      if ( !check_op_count(f->fmt) ) continue;
+    }
     if ( !f->ops ) {
       if ( m_curr->types.empty() ) m_curr->forms.push_back(f);
       continue;
