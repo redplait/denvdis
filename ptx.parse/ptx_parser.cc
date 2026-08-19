@@ -277,6 +277,11 @@ int cmp_type(const std::string_view &must_be, char letter, const std::string_vie
       } else
        fprintf(stderr, "unknown %c size %.*s\n", letter, what.size(), what.data());
      break;
+    case 'R': // I have zero ideas what is it - iptx.pl -T RX shows that it presents in
+      // 8-16 - cvt
+      // 4 - (_)mma
+      return must_be.ends_with(what);
+     break;
     case 'T':
       if ( what == "32" )
         return must_be == "tf32";
