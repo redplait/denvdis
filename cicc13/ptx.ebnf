@@ -217,223 +217,225 @@ tab282ECE0 = [ ".m8n8k4" | ".m8n8k16" | ".m8n8k32" | ".m16n16k8" | ".m16n16k16" 
 
 sp = [ ".sp" ]
 
-mma0 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp ] ; mma	hhhhdC	F16F16F16F16
+tab282F2F0 = [ ".row" | ".col" ]
 
-mma1 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp ] ; mma	dhhddC	F32F16F16F32
+mma0 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	hhhhdC	F16F16F16F16
 
-mma2 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp ] ; mma	dddddC	F32F32
+mma1 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	dhhddC	F32F16F16F32
 
-mma3 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 sp ] ; mma	sddsdC	I32I8I8I32
+mma2 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	dddddC	F32F32
 
-mma4 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 sp ] ; mma	sddsdC	I32I32
+mma3 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	sddsdC	I32I8I8I32
 
-mma5 = "mma" [ tab282F560 vec sync aligned tab282ECE0 ] ; mma	hhhh	F16F16F16F16
+mma4 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	sddsdC	I32I32
 
-mma6 = "mma" [ tab282F560 vec sync aligned tab282ECE0 ] ; mma	fhhh	F32F16F16F16
+mma5 = "mma" [ tab282F560 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	hhhh	F16F16F16F16
 
-mma7 = "mma" [ tab282F560 vec sync aligned tab282ECE0 ] ; mma	fhhf	F32F16F16F32
+mma6 = "mma" [ tab282F560 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	fhhh	F32F16F16F16
 
-mma8 = "mma" [ tab282F560 vec sync aligned tab282ECE0 ] ; mma	VVVV	F16F16F16F32
+mma7 = "mma" [ tab282F560 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	fhhf	F32F16F16F32
+
+mma8 = "mma" [ tab282F560 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	VVVV	F16F16F16F32
 
 tab282FC80 = [ "<" | "<=" | ">" | ">=" | "==" | "!=" | ".or" | "||" | ".and" | "&&" | ".xor" | ".add" | ".sub" | "<<" | ">>" | "*" | "/" | "%" | "!" | "~" | ".min" | ".max" | ".maxabs" | ".inc" | ".dec" | ".popc" | ".cas" | ".exch" | ".safeadd" ]
 
-mma9 = "mma" [ tab282FC80 tab282F560 vec tab282FC80 sync aligned tab282ECE0 ] ; mma	sdds	I32I32
+mma9 = "mma" [ tab282FC80 tab282F560 vec tab282FC80 sync aligned tab282ECE0 tab282F2F0 ] ; mma	sdds	I32I32
 
-mma10 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 ] ; mma	sdds	I32I8I8I32
+mma10 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	sdds	I32I8I8I32
 
-mma11 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 ] ; mma	sdds	I32I32
+mma11 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	sdds	I32I32
 
-mma12 = "mma" [ tab282F560 tab282E820 vec sync aligned tab282ECE0 ] ; mma	0123	F64F64F64F64
+mma12 = "mma" [ tab282F560 tab282E820 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	0123	F64F64F64F64
 
-mma13 = "mma" [ tab282F560 vec sync aligned tab282ECE0 ] ; mma	dddd	F32F32
+mma13 = "mma" [ tab282F560 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	dddd	F32F32
 
 tab282FA00 = [ ".kind::mx8" | ".kind::int8" | ".kind::fp8" | ".kind::fp4" | ".kind::fp16" | ".kind::mxint8" | ".kind::i8" | ".kind::ti16" | ".kind::f8f6f4" | ".kind::mxf8f6f4" | ".kind::nvf4" | ".kind::mxf4" | ".kind::tf32" | ".kind::f16" | ".kind::mxf4nvf4" ]
 
-mma14 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 ] ; mma	fddf	F32Q8Q8F32
+mma14 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	fddf	F32Q8Q8F32
 
-mma15 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 ] ; mma	hddh	F16Q8Q8F16
+mma15 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	hddh	F16Q8Q8F16
 
-mma16 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp ] ; mma	fddfdC	F32Q8Q8F32
+mma16 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	fddfdC	F32Q8Q8F32
 
-mma17 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 ] ; mma	hddh	F16R4Q8F16
+mma17 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	hddh	F16R4Q8F16
 
-mma18 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 ] ; mma	fddf	F32R4Q8F32
+mma18 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	fddf	F32R4Q8F32
 
-mma19 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 ] ; mma	hddh	F16Q8R4F16
+mma19 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	hddh	F16Q8R4F16
 
-mma20 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 ] ; mma	fddf	F32Q8R4F32
+mma20 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	fddf	F32Q8R4F32
 
-mma21 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 ] ; mma	hddh	F16R4R4F16
+mma21 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	hddh	F16R4R4F16
 
-mma22 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 ] ; mma	fddf	F32R4R4F32
+mma22 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	fddf	F32R4R4F32
 
-mma23 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp ] ; mma	hddhdC	F16R4Q8F16
+mma23 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	hddhdC	F16R4Q8F16
 
-mma24 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp ] ; mma	fddfdC	F32R4Q8F32
+mma24 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	fddfdC	F32R4Q8F32
 
-mma25 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp ] ; mma	hddhdC	F16Q8R4F16
+mma25 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	hddhdC	F16Q8R4F16
 
-mma26 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp ] ; mma	fddfdC	F32Q8R4F32
+mma26 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	fddfdC	F32Q8R4F32
 
-mma27 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp ] ; mma	hddhdC	F16R4R4F16
+mma27 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	hddhdC	F16R4R4F16
 
-mma28 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp ] ; mma	fddfdC	F32R4R4F32
+mma28 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	fddfdC	F32R4R4F32
 
-mma29 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp ] ; mma	hddhdC	F16Q8Q8F16
+mma29 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	hddhdC	F16Q8Q8F16
 
 tab282F2A0 = [ ".fc" | ".sp::ordered_metadata" | ".fc::2gb4" ]
 
 tab282F8E0 = [ ".scale_vec::1X" | ".scale_vec::2X" | ".scale_vec::4X" ]
 
-mma30 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 ] ; mma	fddfdxdx	F32R4R4F32Q8
+mma30 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	fddfdxdx	F32R4R4F32Q8
 
-mma31 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 sp ] ; mma	fddfdCdxdx	F32R4R4F32Q8
+mma31 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	fddfdCdxdx	F32R4R4F32Q8
 
-mma32 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 ] ; mma	fddfdxdx	F32Q8Q8F32Q8
+mma32 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	fddfdxdx	F32Q8Q8F32Q8
 
-mma33 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 ] ; mma	fddfdxdx	F32R4Q8F32Q8
+mma33 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	fddfdxdx	F32R4Q8F32Q8
 
-mma34 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 ] ; mma	fddfdxdx	F32Q8R4F32Q8
+mma34 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 tab282F2F0 ] ; mma	fddfdxdx	F32Q8R4F32Q8
 
-mma35 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 sp ] ; mma	fddfdCdxdx	F32Q8Q8F32Q8
+mma35 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	fddfdCdxdx	F32Q8Q8F32Q8
 
-mma36 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 sp ] ; mma	fddfdCdxdx	F32R4Q8F32Q8
+mma36 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	fddfdCdxdx	F32R4Q8F32Q8
 
-mma37 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 sp ] ; mma	fddfdCdxdx	F32Q8R4F32Q8
+mma37 = "mma" [ tab282F560 tab282F2A0 tab282FA00 tab282F8E0 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	fddfdCdxdx	F32Q8R4F32Q8
 
-mma38 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp ] ; mma	hhhhdC	F16F16F16F16
+mma38 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	hhhhdC	F16F16F16F16
 
-mma39 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp ] ; mma	dhhddC	F32F16F16F32
+mma39 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	dhhddC	F32F16F16F32
 
-mma40 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp ] ; mma	dddddC	F32F32
+mma40 = "mma" [ tab282F560 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	dddddC	F32F32
 
-mma41 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 sp ] ; mma	sddsdC	I32I8I8I32
+mma41 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	sddsdC	I32I8I8I32
 
-mma42 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 sp ] ; mma	sddsdC	I32I32
+mma42 = "mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	sddsdC	I32I32
 
-_mma0 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	hhhh	F16F16
+_mma0 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	hhhh	F16F16
 
-_mma1 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	fhhh	F32F16
+_mma1 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	fhhh	F32F16
 
-_mma2 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	fhhf	F32F32
+_mma2 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	fhhf	F32F32
 
-_mma3 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	VVVV	F16F32
+_mma3 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	VVVV	F16F32
 
-_mma4 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	ssss	I8I8
+_mma4 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	ssss	I8I8
 
-_mma5 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	sdds	
+_mma5 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	sdds	
 
-_mma6 = "_mma" [ tab282FC80 tab282F560 vec tab282FC80 tab282ECE0 ] ; _mma	sdds	I32I32
+_mma6 = "_mma" [ tab282FC80 tab282F560 vec tab282FC80 tab282ECE0 tab282F2F0 ] ; _mma	sdds	I32I32
 
-_mma7 = "_mma" [ tab282F560 tab282E820 vec tab282ECE0 ] ; _mma	0123	F64F64F64F64
+_mma7 = "_mma" [ tab282F560 tab282E820 vec tab282ECE0 tab282F2F0 ] ; _mma	0123	F64F64F64F64
 
 tab282ECA0 = [ ".thread" | ".pair" | ".quad" ]
 
 layout = [ ".alayout" | ".blayout" ]
 
-_mma8 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	hhhhdC	F16F16F16F16
+_mma8 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	hhhhdC	F16F16F16F16
 
-_mma9 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	dhhddC	F32F16F16F32
+_mma9 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	dhhddC	F32F16F16F32
 
-_mma10 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	dddddC	F32F32
+_mma10 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	dddddC	F32F32
 
-_mma11 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	sddsdC	I32I8I8I32
+_mma11 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	sddsdC	I32I8I8I32
 
-_mma12 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	sddsdC	I32I32
+_mma12 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	sddsdC	I32I32
 
-_mma13 = "_mma" [ tab282F560 satfinite vec tab282ECE0 ] ; _mma	sdds	I32I8I8I32
+_mma13 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	sdds	I32I8I8I32
 
-_mma14 = "_mma" [ tab282F560 satfinite vec tab282ECE0 ] ; _mma	sdds	I32I32
+_mma14 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	sdds	I32I32
 
-_mma15 = "_mma" [ tab282F560 vec tab282ECE0 ] ; _mma	hddh	F16Q8Q8F16
+_mma15 = "_mma" [ tab282F560 vec tab282ECE0 tab282F2F0 ] ; _mma	hddh	F16Q8Q8F16
 
-_mma16 = "_mma" [ tab282F560 vec tab282ECE0 ] ; _mma	fddf	F32Q8Q8F32
+_mma16 = "_mma" [ tab282F560 vec tab282ECE0 tab282F2F0 ] ; _mma	fddf	F32Q8Q8F32
 
-_mma17 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	hddhdC	F16Q8Q8F16
+_mma17 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	hddhdC	F16Q8Q8F16
 
-_mma18 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdC	F32Q8Q8F32
+_mma18 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	fddfdC	F32Q8Q8F32
 
-_mma19 = "_mma" [ tab282F560 vec tab282ECE0 ] ; _mma	hddh	F16R4Q8F16
+_mma19 = "_mma" [ tab282F560 vec tab282ECE0 tab282F2F0 ] ; _mma	hddh	F16R4Q8F16
 
-_mma20 = "_mma" [ tab282F560 vec tab282ECE0 ] ; _mma	fddf	F32R4Q8F32
+_mma20 = "_mma" [ tab282F560 vec tab282ECE0 tab282F2F0 ] ; _mma	fddf	F32R4Q8F32
 
-_mma21 = "_mma" [ tab282F560 vec tab282ECE0 ] ; _mma	hddh	F16Q8R4F16
+_mma21 = "_mma" [ tab282F560 vec tab282ECE0 tab282F2F0 ] ; _mma	hddh	F16Q8R4F16
 
-_mma22 = "_mma" [ tab282F560 vec tab282ECE0 ] ; _mma	fddf	F32Q8R4F32
+_mma22 = "_mma" [ tab282F560 vec tab282ECE0 tab282F2F0 ] ; _mma	fddf	F32Q8R4F32
 
-_mma23 = "_mma" [ tab282F560 vec tab282ECE0 ] ; _mma	hddh	F16R4R4F16
+_mma23 = "_mma" [ tab282F560 vec tab282ECE0 tab282F2F0 ] ; _mma	hddh	F16R4R4F16
 
-_mma24 = "_mma" [ tab282F560 vec tab282ECE0 ] ; _mma	fddf	F32R4R4F32
+_mma24 = "_mma" [ tab282F560 vec tab282ECE0 tab282F2F0 ] ; _mma	fddf	F32R4R4F32
 
-_mma25 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	hddhdC	F16R4Q8F16
+_mma25 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	hddhdC	F16R4Q8F16
 
-_mma26 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdC	F32R4Q8F32
+_mma26 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	fddfdC	F32R4Q8F32
 
-_mma27 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	hddhdC	F16Q8R4F16
+_mma27 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	hddhdC	F16Q8R4F16
 
-_mma28 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdC	F32Q8R4F32
+_mma28 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	fddfdC	F32Q8R4F32
 
-_mma29 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	hddhdC	F16R4R4F16
+_mma29 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	hddhdC	F16R4R4F16
 
-_mma30 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdC	F32R4R4F32
+_mma30 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	fddfdC	F32R4R4F32
 
-_mma31 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 ] ; _mma	fddfdxdx	F32R4R4F32Q8
+_mma31 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282F2F0 ] ; _mma	fddfdxdx	F32R4R4F32Q8
 
-_mma32 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdCdxdx	F32R4R4F32Q8
+_mma32 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	fddfdCdxdx	F32R4R4F32Q8
 
-_mma33 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 ] ; _mma	fddfdxdx	F32Q8Q8F32Q8
+_mma33 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282F2F0 ] ; _mma	fddfdxdx	F32Q8Q8F32Q8
 
-_mma34 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 ] ; _mma	fddfdxdx	F32R4Q8F32Q8
+_mma34 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282F2F0 ] ; _mma	fddfdxdx	F32R4Q8F32Q8
 
-_mma35 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 ] ; _mma	fddfdxdx	F32Q8R4F32Q8
+_mma35 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282F2F0 ] ; _mma	fddfdxdx	F32Q8R4F32Q8
 
-_mma36 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 ] ; _mma	fddfdxdx	F32R4R4F32Q8
+_mma36 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282F2F0 ] ; _mma	fddfdxdx	F32R4R4F32Q8
 
-_mma37 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdCdxdx	F32Q8Q8F32Q8
+_mma37 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	fddfdCdxdx	F32Q8Q8F32Q8
 
-_mma38 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdCdxdx	F32R4Q8F32Q8
+_mma38 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	fddfdCdxdx	F32R4Q8F32Q8
 
-_mma39 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdCdxdx	F32Q8R4F32Q8
+_mma39 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	fddfdCdxdx	F32Q8R4F32Q8
 
-_mma40 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdCdxdx	F32R4R4F32Q8
+_mma40 = "_mma" [ tab282F560 tab282F2A0 tab282F8E0 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	fddfdCdxdx	F32R4R4F32Q8
 
-_mma41 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	hhhh	F16F16
+_mma41 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	hhhh	F16F16
 
-_mma42 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	fhhh	F32F16
+_mma42 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	fhhh	F32F16
 
-_mma43 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	fhhf	F32F32
+_mma43 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	fhhf	F32F32
 
-_mma44 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	VVVV	F16F32
+_mma44 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	VVVV	F16F32
 
-_mma45 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	ssss	I8I8
+_mma45 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	ssss	I8I8
 
-_mma46 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 ] ; _mma	sdds	
+_mma46 = "_mma" [ tab282F560 sat satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	sdds	
 
-_mma47 = "_mma" [ tab282FC80 tab282F560 vec tab282FC80 tab282ECE0 ] ; _mma	sdds	I32I32
+_mma47 = "_mma" [ tab282FC80 tab282F560 vec tab282FC80 tab282ECE0 tab282F2F0 ] ; _mma	sdds	I32I32
 
-_mma48 = "_mma" [ tab282F560 tab282E820 vec tab282ECE0 ] ; _mma	0123	F64F64F64F64
+_mma48 = "_mma" [ tab282F560 tab282E820 vec tab282ECE0 tab282F2F0 ] ; _mma	0123	F64F64F64F64
 
-_mma49 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	hhhhdC	F16F16F16F16
+_mma49 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	hhhhdC	F16F16F16F16
 
-_mma50 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	dhhddC	F32F16F16F32
+_mma50 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	dhhddC	F32F16F16F32
 
-_mma51 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	dddddC	F32F32
+_mma51 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	dddddC	F32F32
 
-_mma52 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	sddsdC	I32I8I8I32
+_mma52 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	sddsdC	I32I8I8I32
 
-_mma53 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	sddsdC	I32I32
+_mma53 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	sddsdC	I32I32
 
-_mma54 = "_mma" [ tab282F560 satfinite vec tab282ECE0 ] ; _mma	sdds	I32I8I8I32
+_mma54 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	sdds	I32I8I8I32
 
-_mma55 = "_mma" [ tab282F560 satfinite vec tab282ECE0 ] ; _mma	sdds	I32I32
+_mma55 = "_mma" [ tab282F560 satfinite vec tab282ECE0 tab282F2F0 ] ; _mma	sdds	I32I32
 
-_mma56 = "_mma" [ tab282F560 vec tab282ECE0 ] ; _mma	hddh	F16Q8Q8F16
+_mma56 = "_mma" [ tab282F560 vec tab282ECE0 tab282F2F0 ] ; _mma	hddh	F16Q8Q8F16
 
-_mma57 = "_mma" [ tab282F560 vec tab282ECE0 ] ; _mma	fddf	F32Q8Q8F32
+_mma57 = "_mma" [ tab282F560 vec tab282ECE0 tab282F2F0 ] ; _mma	fddf	F32Q8Q8F32
 
-_mma58 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	hddhdC	F16Q8Q8F16
+_mma58 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	hddhdC	F16Q8Q8F16
 
-_mma59 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout ] ; _mma	fddfdC	F32Q8Q8F32
+_mma59 = "_mma" [ tab282F560 vec tab282ECE0 tab282ECA0 sp layout tab282F2F0 ] ; _mma	fddfdC	F32Q8Q8F32
 
 transA = [ ".transA" ]
 
@@ -1998,85 +2000,85 @@ wmma_mma8 = "wmma.mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 ] ; wm
 
 wmma_mma9 = "wmma.mma" [ tab282F560 satfinite vec sync aligned tab282ECE0 ] ; wmma.mma	dddd	F32T32T32F32
 
-wmma_load.a0 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	hM	F16
+wmma_load.a0 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	hM	F16
 
-wmma_load.a1 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	hMu	F16
+wmma_load.a1 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	hMu	F16
 
-wmma_load.a2 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	VV	F32
+wmma_load.a2 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	VV	F32
 
-wmma_load.a3 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	VVV	F32
+wmma_load.a3 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	VVV	F32
 
-wmma_load.a4 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	sM	
+wmma_load.a4 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	sM	
 
-wmma_load.a5 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	sMu	
+wmma_load.a5 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	sMu	
 
-wmma_load.a6 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	sM	I8
+wmma_load.a6 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	sM	I8
 
-wmma_load.a7 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	sMu	I8
+wmma_load.a7 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	sMu	I8
 
-wmma_load.a8 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	0M	F64
+wmma_load.a8 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	0M	F64
 
-wmma_load.a9 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	0Mu	F64
+wmma_load.a9 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	0Mu	F64
 
-wmma_load.a10 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	dM	
+wmma_load.a10 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	dM	
 
-wmma_load.a11 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.a	dMu	
+wmma_load.a11 = "wmma.load.a" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.a	dMu	
 
-wmma_load.b0 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	hM	F16
+wmma_load.b0 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	hM	F16
 
-wmma_load.b1 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	hMu	F16
+wmma_load.b1 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	hMu	F16
 
-wmma_load.b2 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	VV	F32
+wmma_load.b2 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	VV	F32
 
-wmma_load.b3 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	VVV	F32
+wmma_load.b3 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	VVV	F32
 
-wmma_load.b4 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	sM	
+wmma_load.b4 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	sM	
 
-wmma_load.b5 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	sMu	
+wmma_load.b5 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	sMu	
 
-wmma_load.b6 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	sM	I8
+wmma_load.b6 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	sM	I8
 
-wmma_load.b7 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	sMu	I8
+wmma_load.b7 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	sMu	I8
 
-wmma_load.b8 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	0M	F64
+wmma_load.b8 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	0M	F64
 
-wmma_load.b9 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	0Mu	F64
+wmma_load.b9 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	0Mu	F64
 
-wmma_load.b10 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	dM	
+wmma_load.b10 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	dM	
 
-wmma_load.b11 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.b	dMu	
+wmma_load.b11 = "wmma.load.b" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.b	dMu	
 
-wmma_load.c0 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.c	hM	F16
+wmma_load.c0 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.c	hM	F16
 
-wmma_load.c1 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.c	hMu	F16
+wmma_load.c1 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.c	hMu	F16
 
-wmma_load.c2 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.c	fM	F32
+wmma_load.c2 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.c	fM	F32
 
-wmma_load.c3 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.c	fMu	F32
+wmma_load.c3 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.c	fMu	F32
 
-wmma_load.c4 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.c	sM	I32
+wmma_load.c4 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.c	sM	I32
 
-wmma_load.c5 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.c	sMu	I32
+wmma_load.c5 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.c	sMu	I32
 
-wmma_load.c6 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.c	0M	F64
+wmma_load.c6 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.c	0M	F64
 
-wmma_load.c7 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.load.c	0Mu	F64
+wmma_load.c7 = "wmma.load.c" [ tab282F560 tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.load.c	0Mu	F64
 
-wmma_store.d0 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.store.d	Mh	F16
+wmma_store.d0 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.store.d	Mh	F16
 
-wmma_store.d1 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.store.d	Mhu	F16
+wmma_store.d1 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.store.d	Mhu	F16
 
-wmma_store.d2 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.store.d	Mf	F32
+wmma_store.d2 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.store.d	Mf	F32
 
-wmma_store.d3 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.store.d	Mfu	F32
+wmma_store.d3 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.store.d	Mfu	F32
 
-wmma_store.d4 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.store.d	Ms	I32
+wmma_store.d4 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.store.d	Ms	I32
 
-wmma_store.d5 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.store.d	Msu	I32
+wmma_store.d5 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.store.d	Msu	I32
 
-wmma_store.d6 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.store.d	M0	F64
+wmma_store.d6 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.store.d	M0	F64
 
-wmma_store.d7 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 ] ; wmma.store.d	M0u	F64
+wmma_store.d7 = "wmma.store.d" [ tab282EC40 vec sync aligned tab282ECE0 tab282F2F0 ] ; wmma.store.d	M0u	F64
 
 wgmma_mma_async0 = "wgmma.mma_async" [ tab282F560 vec sync aligned tab282ECE0 ] ; wgmma.mma_async	hUUPCCCC	F16F16F16
 

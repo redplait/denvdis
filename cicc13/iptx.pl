@@ -476,6 +476,13 @@ my %gn_tabs = (
  'istypep' => 'istypep',
  'pmevent' => 'tab282E1E0',
  'vmad' => 'tab282E460',
+ # wmma layout - in tab282F2F0
+ 'wmma.load.a' => 'tab282F2F0',
+ 'wmma.load.b' => 'tab282F2F0',
+ 'wmma.load.c' => 'tab282F2F0',
+ 'wmma.store.d' => 'tab282F2F0',
+ 'mma' => 'tab282F2F0',
+ '_mma' => 'tab282F2F0',
 );
 
 =pod
