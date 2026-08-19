@@ -2198,7 +2198,10 @@ tcgen05_shift0 = "tcgen05.shift" [ tab282E620 down ] ; tcgen05.shift	M
 tab282E600 = [ ".warpx2::02_13" | ".warpx2::01_23" | ".warpx4" ]
 
 tcgen05_cp0 = "tcgen05.cp" [ tab282E620 tab282E600 tab282E5E0 tab282ECE0 ] ; tcgen05.cp	MU	
-tcgen05_fence0 = "tcgen05.fence" ; tcgen05.fence		
+
+tf = [ "::after_thread_sync" | "::before_thread_sync" ]
+
+tcgen05_fence0 = "tcgen05.fence" [ tf ] ; tcgen05.fence		
 
 wait = [ "::ld" | "::st" ]
 
@@ -2928,13 +2931,15 @@ mbarrier_pending_count0 = "mbarrier.pending_count" [ tab282F560 ] ; mbarrier.pen
 
 mbarrier_test_wait.parity0 = "mbarrier.test_wait.parity" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; mbarrier.test_wait.parity	PMu	B64
 
-mbarrier_try_wait0 = "mbarrier.try_wait" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; mbarrier.try_wait	PMU	B64
+nosleep = [ ".nosleep" ]
 
-mbarrier_try_wait1 = "mbarrier.try_wait" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; mbarrier.try_wait	PMUu	B64
+mbarrier_try_wait0 = "mbarrier.try_wait" [ tab282F560 tab282EC40 tab282E900 tab282EC40 nosleep ] ; mbarrier.try_wait	PMU	B64
 
-mbarrier_try_wait.parity0 = "mbarrier.try_wait.parity" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; mbarrier.try_wait.parity	PMu	B64
+mbarrier_try_wait1 = "mbarrier.try_wait" [ tab282F560 tab282EC40 tab282E900 tab282EC40 nosleep ] ; mbarrier.try_wait	PMUu	B64
 
-mbarrier_try_wait.parity1 = "mbarrier.try_wait.parity" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; mbarrier.try_wait.parity	PMuu	B64
+mbarrier_try_wait.parity0 = "mbarrier.try_wait.parity" [ tab282F560 tab282EC40 tab282E900 tab282EC40 nosleep ] ; mbarrier.try_wait.parity	PMu	B64
+
+mbarrier_try_wait.parity1 = "mbarrier.try_wait.parity" [ tab282F560 tab282EC40 tab282E900 tab282EC40 nosleep ] ; mbarrier.try_wait.parity	PMuu	B64
 
 mbarrier_complete_tx0 = "mbarrier.complete_tx" [ tab282EC40 tab282E900 tab282EC40 ] ; mbarrier.complete_tx	Mu	B64
 

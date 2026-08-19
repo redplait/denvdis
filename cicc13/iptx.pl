@@ -483,6 +483,9 @@ my %gn_tabs = (
  'wmma.store.d' => 'tab282F2F0',
  'mma' => 'tab282F2F0',
  '_mma' => 'tab282F2F0',
+ # nosleep
+ 'mbarrier.try_wait' => 'nosleep',
+ 'mbarrier.try_wait.parity' => 'nosleep',
 );
 
 =pod
@@ -638,6 +641,7 @@ my %gk_tabs = (
  16 * 8 + 0 => 'tab282F440', # test    byte ptr [r14+10h], 1
  16 * 8 + 1 => 'tab282F3E0',
  16 * 8 + 2 => 'b1024',
+ 16 * 8 + 3 => 'tf', # tcgen05.fence
  16 * 8 + 4 => 'wait', # ::ld/::st for tcgen05.wait
  16 * 8 + 5 => 'tab282E2C0', # test    byte ptr [r12+10h], 20h
  16 * 8 + 6 => 'tab282E280', # test    byte ptr [r12+10h], 40h
