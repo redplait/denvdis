@@ -820,20 +820,23 @@ sub get_not_used_tabs
     $tabs{$1}++;
   }
   closedir($dh);
+  my %seen;
   # traverse gk_tabs values
   foreach my $t ( values %gk_tabs ) {
     if ( exists $tabs{$t} ) {
       delete $tabs{$t};
+      $seen{$t} //= 1;
     } else {
-      printf("unknown tab %s\n", $t);
+      printf("unknown tab %s\n", $t) unless(exists $seen{$t});
     }
   }
   # traverse gn_tabs values
   foreach my $t ( values %gn_tabs ) {
     if ( exists $tabs{$t} ) {
       delete $tabs{$t};
+      $seen{$t} //= 1;
     } else {
-      printf("unknown gn tab %s\n", $t);
+      printf("unknown gn tab %s\n", $t) unless(exists $seen{$t});
     }
   }
   return \%tabs;
