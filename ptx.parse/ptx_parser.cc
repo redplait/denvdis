@@ -238,7 +238,7 @@ int cmp_letter(const std::string_view &must_be, char letter) {
      return must_be.at(0) == 'f';
      break;
     case 'E':
-     return must_be == "bf16";
+     return must_be == "bf16" || must_be == "bf16x2";
      break;
     case 'H':
       return must_be.ends_with("x2");
@@ -297,7 +297,7 @@ int cmp_type(const std::string_view &must_be, char letter, const std::string_vie
       if ( what == "16" ) {
         return must_be == "bf16";
       } else if ( what == "32" ) {
-        return must_be == "tf32";
+        return must_be == "bf16x2";
       } else
        fprintf(stderr, "unknown E size %.*s\n", what.size(), what.data());
      break;
