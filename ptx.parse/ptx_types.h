@@ -22,8 +22,8 @@ typedef std::pair<size_t, std::string_view> PTXDot;
 struct ParseRes {
   PTXforms forms; // unfortunately there can be several
   std::list<std::string_view> types; // see https://gh.evko.io/crucible-notes/ptxas/pipeline/ptx-parser.html
-  // key is index in forms->mask
-  std::unordered_map<int, std::string_view> attrs;
+  // first field is index in forms->mask
+  std::vector<std::pair<int, std::string_view> > attrs;
 };
 
 // main parser class
@@ -58,6 +58,7 @@ class PTXParser {
   // getters
   std::string_view &pred() { return m_pred; }
   std::string_view &tail() { return m_tail; }
+  const std::unordered_map<int, PTXDot> &rem_attrs() const { return m_attrs; }
  protected:
   bool check_op_count(const char *ops) const;
   typedef std::list<int> RemList;

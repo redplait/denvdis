@@ -109,6 +109,7 @@ int PTXParser::try_split(std::string &s) {
     if ( c == ';' ) return 1;
     m_body.push_back(tolower(c));
   }
+  if ( m_body.starts_with("//") ) return 0;
   // strip spaces after body
   for ( ++curr ; curr < s.size(); ++curr ) {
     c = s.at(curr);
@@ -155,7 +156,7 @@ int PTXParser::fill_attrs() {
     collected.push_back( { -1, first->spec_tab });
   }
   // always use SpaceTab
-  collected.push_back( { -1, &SpaceTab } );
+  collected.push_back( { -2, &SpaceTab } );
   // traverse tabs in non-zero masks
   for ( int i = 0; i < PTXIns::MaskSize; ++i ) {
     auto c = ored_mask[i];
@@ -169,13 +170,14 @@ int PTXParser::fill_attrs() {
   RemList rem;
   int res = 0;
   // enum remained attrs
+  m_curr->attrs.reserve(m_attrs.size());
   for ( int i = 1; i < m_attrs_lim; ++i ) {
     auto ai = m_attrs.find(i);
     if ( ai == m_attrs.end() ) continue;
     for ( auto &coll: collected ) {
       auto found = coll.second->find( ai->second.second );
       if ( found == coll.second->end() ) continue;
-      m_curr->attrs[ coll.first ] = *found;
+      m_curr->attrs.push_back( { coll.first, *found } );
       res++;
       rem.push_back(i);
       break;
@@ -196,12 +198,12 @@ const char *make_vars(char letter, std::list<std::string_view> &res, const char 
   auto curr = prev;
   for ( ; *curr && *curr != ']'; ++curr ) {
     if ( *curr == '|' ) {
-      res.push_back({ prev, curr - prev });
+      res.push_back({ prev, size_t(curr - prev) });
       prev = curr + 1;
     }
   }
   if ( *curr == ']' ) {
-    res.push_back({ prev, curr - prev });
+    res.push_back({ prev, size_t(curr - prev) });
     return curr + 1;
   }
   return curr;
@@ -343,7 +345,7 @@ int PTXParser::try_type(const char *fmt, int verb) {
       auto start = curr;
       for ( ++curr; *curr; ++curr ) {
         if ( isdigit(*curr) ) continue;
-        std::string_view dig{start, curr - start };
+        std::string_view dig{start, size_t(curr - start) };
  if ( verb & 2 ) fprintf(m_log_fp, "L<dig> %c%.*s\n", c_fmt, dig.size(), dig.data());
         if ( !cmp_type(*ti, c_fmt, dig) ) return 0;
         ++ti;
@@ -352,7 +354,7 @@ int PTXParser::try_type(const char *fmt, int verb) {
       }
       // if this is last
       if ( !*curr ) {
-        std::string_view dig{start, curr - start };
+        std::string_view dig{start, size_t(curr - start) };
  if ( verb & 2 ) fprintf(m_log_fp, "Last<dig> %c%.*s\n", c_fmt, dig.size(), dig.data());
         if ( !cmp_type(*ti, c_fmt, dig) ) return 0;
         c_fmt = 0;

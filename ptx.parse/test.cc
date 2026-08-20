@@ -5,13 +5,14 @@
 int opt_v = 0;
 
 void dump_res(ParseRes *pr) {
-  if ( !pr->forms.empty() ) {
-    for ( auto &f: pr->forms ) {
-      printf(" line %d:", f->ln);
-      if ( f->fmt ) printf(" %s", f->fmt);
-      if ( f->ops ) printf(" %s", f->ops);
-      fputc('\n', stdout);
-    }
+  if ( pr->forms.empty() ) return;
+  int latch = 0;
+  for ( auto &f: pr->forms ) {
+    if ( !latch++ ) printf("--> %s\n", f->name);
+    printf(" line %d:", f->ln);
+    if ( f->fmt ) printf(" %s", f->fmt);
+    if ( f->ops ) printf(" %s", f->ops);
+    fputc('\n', stdout);
   }
   if ( !pr->types.empty() ) {
     printf("--- types %ld:\n", pr->types.size());
@@ -21,7 +22,7 @@ void dump_res(ParseRes *pr) {
   if ( !pr->attrs.empty() ) {
     printf("--- attrs %ld:\n", pr->attrs.size());
     for ( auto ap: pr->attrs ) {
-      if ( ap.first != -1 ) {
+      if ( ap.first >= 0 ) {
         int maj = ap.first >> 3;
         int min = ap.first & 7;
         printf(" %d:%d", maj, min);
