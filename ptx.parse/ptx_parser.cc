@@ -177,7 +177,11 @@ int PTXParser::fill_attrs() {
     for ( auto &coll: collected ) {
       auto found = coll.second->find( ai->second.second );
       if ( found == coll.second->end() ) continue;
+#ifdef PR_ATTRS_MULTIMAP
+      m_curr->attrs.insert( { coll.first, *found } );
+#else
       m_curr->attrs.push_back( { coll.first, *found } );
+#endif
       res++;
       rem.push_back(i);
       break;

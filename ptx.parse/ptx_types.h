@@ -19,11 +19,17 @@ typedef std::unordered_map<std::string_view, PTXforms> PTXOps;
 // first - start index, second - body
 typedef std::pair<size_t, std::string_view> PTXDot;
 
+#define PR_ATTRS_MULTIMAP
+
 struct ParseRes {
   PTXforms forms; // unfortunately there can be several
   std::list<std::string_view> types; // see https://gh.evko.io/crucible-notes/ptxas/pipeline/ptx-parser.html
+#ifdef PR_ATTRS_MULTIMAP
+  std::unordered_multimap<int, std::string_view> attrs;
+#else
   // first field is index in forms->mask
   std::vector<std::pair<int, std::string_view> > attrs;
+#endif
 };
 
 // main parser class
