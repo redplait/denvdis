@@ -63,6 +63,7 @@ class PTXParser {
   void dump(FILE *);
   // getters
   std::string_view &pred() { return m_pred; }
+  const std::string &body() const { return m_body; }
   std::string_view &tail() { return m_tail; }
   const std::unordered_map<int, PTXDot> &rem_attrs() const { return m_attrs; }
  protected:
