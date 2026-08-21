@@ -191,7 +191,7 @@ int PTXParser::fill_attrs() {
   return res;
 }
 
-// try all remained attrs for types - from s_tab282F560
+// try all remained attrs for types - from s_tab282DFE0
 int PTXParser::collect_types(const PTXforms *flist) {
   return try_types_tab( is_typep(flist) ? s_tab_istypep : s_tab282DFE0);
 }

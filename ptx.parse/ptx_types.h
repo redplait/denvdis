@@ -13,6 +13,11 @@ struct PTXIns {
   int ln;
   static constexpr int MaskSize = 17;
   unsigned char mask[MaskSize];
+  // some masks presents just properties of instruction
+  inline bool has_bit(int maj, int min) const {
+    if ( maj < 0 || maj >= MaskSize ) return false;
+    return mask[maj] & (1 << min);
+  }
 };
 typedef std::vector<const PTXIns *> PTXforms;
 typedef std::unordered_map<std::string_view, PTXforms> PTXOps;
@@ -96,6 +101,6 @@ class PTXParser {
   size_t m_attrs_lim, m_tail_ops;
   // 3) tail - unchanged
   std::string_view m_tail;
-  // now owning pointer
+  // not owning pointer
   FILE *m_log_fp;
 };
