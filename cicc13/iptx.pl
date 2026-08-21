@@ -631,6 +631,7 @@ my %gk_tabs = (
  14 * 8 + 7 => 'cache_hint', # cmp     byte ptr [r12+0Eh], 0/jns
 # 15
  15 * 8 + 0 => 'oob', # fma only
+ 15 * 8 + 1 => 'proxykind',
  15 * 8 + 2 => 'tab282F510', # test    byte ptr [r12+0Fh], 2 - proxy kind
  15 * 8 + 3 => 'mbarrier_init', # test    byte ptr [r12+0Fh], 8
  15 * 8 + 4 => 'tab282F4E0', # sync_restrict::shared:*

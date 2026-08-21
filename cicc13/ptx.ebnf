@@ -2882,10 +2882,13 @@ fence0 = "fence" [ tab282E900 tab282EC40 mbarrier_init tab282F4E0 ] ; fence		P
 
 tab282E8D0 = [ ".async::generic" | ".tensormap::generic" ]
 
-fence_proxy0 = "fence.proxy" [ tab282EC40 tab282E900 tab282E8D0 tab282EC40 tab282F4E0 ] ; fence.proxy		P
+proxykind = [ ".alias" | ".async" | ".async.global" | ".async.shared::cta" | ".async.shared::cluster" ]
+
+fence_proxy0 = "fence.proxy" [ tab282EC40 tab282E900 tab282E8D0 tab282EC40 proxykind tab282F4E0 ] ; fence.proxy		P
 
 fence_proxy1 = "fence.proxy" [ tab282E900 tab282E8D0 tab282EC40 ] ; fence.proxy	MC	
-membar_proxy0 = "membar.proxy" ; membar.proxy		
+
+membar_proxy0 = "membar.proxy" [ proxykind ] ; membar.proxy		
 
 tensormap_cp_fenceproxy0 = "tensormap.cp_fenceproxy" [ tab282E6A0 tab282E900 tab282E8D0 tab282EC40 sync aligned ] ; tensormap.cp_fenceproxy	MMC	
 
