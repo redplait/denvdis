@@ -65,7 +65,7 @@ class PTXParser {
     m_curr = nullptr;
     reset();
   }
-  ~PTXParser() {
+  virtual ~PTXParser() {
     if ( m_curr ) delete m_curr;
   }
   void reset() {
@@ -122,4 +122,16 @@ class PTXParser {
   std::string_view m_tail;
   // not owning pointer
   FILE *m_log_fp;
+};
+
+class PTXParser_str: public PTXParser {
+ public:
+   PTXParser_str(FILE *fp): PTXParser(fp) {}
+   ParseRes *parse(char *str, int process_tail, int verbose = 0) {
+     if ( !str || !*str ) return nullptr;
+     m_copy = str;
+     return PTXParser::parse(m_copy, process_tail, verbose);
+   }
+ protected:
+   std::string m_copy;
 };
