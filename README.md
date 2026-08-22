@@ -44,3 +44,13 @@ parser of nvdisasm output - some [details](https://redplait.blogspot.com/2025/06
 You can run "strange loop" to consume output of nvd - for this later must use option *-c*
 
 By default all 3 trying to load corresponding sm_xx.so from current directory - but you can peek those dir with env var SM_DIR
+
+## PTX parser
+is the result of [RE](https://redplait.blogspot.com/2026/06/re-of-ptx-grammar-from-ptxas-part-4.html) and is therefore almost certainly incomplete and, in places, incorrect
+
+Currently [iptx.pl -kf](https://github.com/redplait/denvdis/blob/master/cicc13/iptx.pl) shows 11 still unknown masks from 121
+
+I was able to identify 5 of them as instructions properties - so in total 6 masks are still unknown - this is 5%
+
+ * [EBNF](https://github.com/redplait/denvdis/blob/master/cicc13/ptx.ebnf) grammar
+ * [PTX parser](https://github.com/redplait/denvdis/tree/master/ptx.parse)
