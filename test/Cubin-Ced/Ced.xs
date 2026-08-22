@@ -171,6 +171,8 @@ class Perl_ELog: public NV_ELog {
   }
 };
 
+static Perl_ELog p_log;
+
 class Ced_perl: public CEd_base {
  private:
    int ref_cnt = 1;
@@ -178,13 +180,13 @@ class Ced_perl: public CEd_base {
   reg_reuse reus;
   Ced_perl(IElf *e) {
     curr_dis.first = nullptr;
-    m_elog = new Perl_ELog;
+    m_elog = &p_log;
     m_e = e;
     e->add_ref();
   }
   virtual ~Ced_perl() {
     if ( m_e ) m_e->release();
-    if ( m_elog ) delete m_elog;
+    // if ( m_elog ) delete m_elog;
     for ( auto &iter: m_cached_hvs ) SvREFCNT_dec(iter.second);
   }
   void add_ref() { ref_cnt++; }
