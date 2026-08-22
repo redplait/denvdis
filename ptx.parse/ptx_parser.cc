@@ -213,15 +213,17 @@ const char *make_vars(char letter, std::list<std::string_view> &res, const char 
   return curr;
 }
 
-// types are case sensitive - there are n & N
-// F - float
-// I - integer
+// possible types
 // B - ??, can be 128bit
-// H - half float like f16x2
-// P - pred
+// F - float
 // E - bf16 ?
-// T - tf32
+// I - integer
+// H - half float like f16x2
+// N - presents only for min/max & add, no ideas what is it
+// P - pred
+// R - ??, size 4 & 8/16 for cvt
 // Q - can have size 8/16/32
+// T - tf32
 int cmp_letter(const std::string_view &must_be, char letter) {
   char c = must_be.at(0);
   switch(letter) {
@@ -439,7 +441,7 @@ ParseRes *PTXParser::parse(std::string &s, int process_tail, int verbose) {
   // lets select forms
   for ( auto &f: *forms ) {
     if ( process_tail ) {
-      if ( !check_op_count(f->fmt) ) continue;
+      if ( !f->tex_addr() && !check_op_count(f->fmt) ) continue;
     }
     if ( !f->ops ) {
       if ( m_curr->types.empty() ) m_curr->forms.push_back(f);

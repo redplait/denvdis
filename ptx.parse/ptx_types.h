@@ -18,6 +18,25 @@ struct PTXIns {
     if ( maj < 0 || maj >= MaskSize ) return false;
     return mask[maj] & (1 << min);
   }
+  // iptx.pl -kf shows 11 still unknown masks
+  // some really not correspond to real table and just instruction properties
+  // currently I was able to recognize 5 of them
+  // WARNING: keep them sorted by mask index
+  inline bool pred_dest() const {
+    return has_bit(0, 6); // modify predicate register
+  }
+  inline bool is_wide() const {
+    return has_bit(4, 4); // mul.wide & mad.wide - probably to mark IDEST2
+  }
+  inline bool is_signed() const {
+    return has_bit(3, 5); // operands are signed
+  }
+  inline bool tex_addr() const {
+    return has_bit(6, 2); // one of operands is texture address, highly likely cannot be correctly splitted by comma
+  }
+  inline bool is_txq() const {
+    return has_bit(8, 5); // official doc don't show nothing special for TXQ vs txq.level
+  }
 };
 typedef std::vector<const PTXIns *> PTXforms;
 typedef std::unordered_map<std::string_view, PTXforms> PTXOps;
