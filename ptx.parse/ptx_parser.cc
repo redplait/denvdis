@@ -1,6 +1,7 @@
 #include "ptx_types.h"
 #include "ops.inc"
 #include <string.h>
+#include <stdarg.h>
 #include <algorithm>
 
 // from https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces-state-spaces-tab
@@ -14,6 +15,17 @@ const static PTXTab SpaceTab = {
  "surf",
  "tex",
 };
+
+void PTXParser::Err(const char *fmt, ...) const
+{
+ va_list args;
+ va_start(args, fmt);
+ if ( m_elog )
+   m_elog->verr(fmt, &args);
+ else
+  vfprintf(stderr, fmt, args);
+ va_end(args);
+}
 
 void PTXParser::dump(FILE *fp) {
   if ( !m_pred.empty() )
@@ -224,7 +236,7 @@ const char *make_vars(char letter, std::list<std::string_view> &res, const char 
 // R - ??, size 4 & 8/16 for cvt
 // Q - can have size 8/16/32
 // T - tf32
-int cmp_letter(const std::string_view &must_be, char letter) {
+int PTXParser::cmp_letter(const std::string_view &must_be, char letter) {
   char c = must_be.at(0);
   switch(letter) {
     case 'O': // istypep only
@@ -255,12 +267,12 @@ int cmp_letter(const std::string_view &must_be, char letter) {
       return c == 'e' || must_be.starts_with("ue");
      break;
     default:
-     fprintf(stderr, "unknown Letter %c\n", letter);
+     Err("unknown Letter %c\n", letter);
   }
   return 0;
 }
 
-int cmp_type(const std::string_view &must_be, char letter, const std::string_view &what) {
+int PTXParser::cmp_type(const std::string_view &must_be, char letter, const std::string_view &what) {
   std::string one_type;
   switch(letter) {
     case 'B':
@@ -283,7 +295,7 @@ int cmp_type(const std::string_view &must_be, char letter, const std::string_vie
       if ( what == "32" ) {
         return must_be == "f16x2" || must_be == "bf16x2" || must_be == "u16x2" || must_be == "s16x2";
       } else
-       fprintf(stderr, "unknown %c size %.*s\n", letter, what.size(), what.data());
+       Err("unknown %c size %.*s\n", letter, what.size(), what.data());
      break;
     case 'R': // I have zero ideas what is it - iptx.pl -T RX shows that it presents in
       // 8-16 - cvt
@@ -293,7 +305,7 @@ int cmp_type(const std::string_view &must_be, char letter, const std::string_vie
     case 'T':
       if ( what == "32" )
         return must_be == "tf32";
-      fprintf(stderr, "unknown T size %.*s\n", what.size(), what.data());
+      Err("unknown T size %.*s\n", what.size(), what.data());
      break;
     case 'E':
       if ( what == "16" ) {
@@ -301,7 +313,7 @@ int cmp_type(const std::string_view &must_be, char letter, const std::string_vie
       } else if ( what == "32" ) {
         return must_be == "bf16x2";
       } else
-       fprintf(stderr, "unknown E size %.*s\n", what.size(), what.data());
+       Err("unknown E size %.*s\n", what.size(), what.data());
      break;
     case 'Q': // see https://docs.nvidia.com/cuda/parallel-thread-execution/#operand-types-for-packed-floating-point-instruction-type
       if ( what == "8" ) {
@@ -312,10 +324,10 @@ int cmp_type(const std::string_view &must_be, char letter, const std::string_vie
       } else if ( what == "32" ) {
         return (must_be.at(0) == 'e' || must_be.starts_with("ue")) && must_be.ends_with("x4");
       } else
-       fprintf(stderr, "unknown Q size %.*s\n", what.size(), what.data());
+       Err("unknown Q size %.*s\n", what.size(), what.data());
      break;
     default:
-     fprintf(stderr, "unknown letter %c, %.*s\n", letter, what.size(), what.data());
+     Err("unknown letter %c, %.*s\n", letter, what.size(), what.data());
   }
   return 0;
 }
@@ -378,7 +390,7 @@ int PTXParser::try_type(const char *fmt, int verb) {
       c_fmt = *curr;
       continue;
     }
-    fprintf(stderr, "unkown fmt %c\n", *curr);
+    Err("unkown fmt %c\n", *curr);
   }
   // check if we have last letter
   if ( c_fmt ) {
