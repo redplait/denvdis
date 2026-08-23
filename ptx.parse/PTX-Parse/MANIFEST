@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+MANIFEST
+Parse.xs
+ppport.h
+README
+t/PTX-Parse.t
+lib/PTX/Parse.pm

@@ -1,0 +1,6 @@
+Revision history for Perl extension PTX::Parse.
+
+0.01  Sat Aug 22 14:59:45 2026
+	- original version; created by h2xs 1.23 with options
+		-cfg PTX::Parse
+
