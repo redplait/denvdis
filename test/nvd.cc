@@ -796,6 +796,8 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
           ltype = NVLType::Warp_wide;
         else if ( attr == 0x39 ) // EIATTR_MBARRIER_INSTR_OFFSETS
           ltype = NVLType::MBarier;
+        else if ( attr == 0x46 ) // EIATTR_SYSCALL_OFFSETS
+          ltype = NVLType::Sys_call;
         else if ( attr == 0x47 ) // EIATTR_SW_WAR_MEMBAR_SYS_INSTR_OFFSETS
           ltype = NVLType::War_membar;
         else if ( attr == 0x65 ) // EIATTR_IGNOREOOB_CP_ASYNC_BULK_INSTR_OFFSETS

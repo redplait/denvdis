@@ -92,6 +92,7 @@ const char *NV_renderer::s_ltypes[] = {
  "S2RCTAID_INSTR",
  "LD_CACHEMODE_INSTR",
  "MBARRIER_INSTR",
+ "Sys_Call",
  "SW_WAR_MEMBAR_SYS_INSTR",
  "CP_ASYNC_BULK",
  "COROUTINE_RESUME",
