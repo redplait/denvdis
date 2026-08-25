@@ -730,7 +730,8 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             fprintf(m_out, " size: %X\n", size);
             add_cbank(sidx, sec_id, off, size);
           }
-        } else if ( attr == 0x11 || attr == 0x12 || attr == 0x23 ) { // EIATTR_FRAME_SIZE/EIATTR_MIN_STACK_SIZE/EIATTR_MAX_STACK_SIZE
+ // check EIATTR_FRAME_SIZE/EIATTR_MIN_STACK_SIZE/EIATTR_MAX_STACK_SIZE/EIATTR_REGCOUNT
+        } else if ( attr == 0x11 || attr == 0x12 || attr == 0x23 || attr == 0x26) {
            if ( a_len != 8 ) fprintf(m_out, "invalid FRAME_SIZE size %X\n", a_len);
            else {
             uint32_t sym_id = *(uint32_t *)kp;
