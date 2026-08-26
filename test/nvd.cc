@@ -764,6 +764,14 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             add_cbank(sidx, sec_id, off, size);
           }
           goto skip_unk;
+        } else if ( attr == 0xf ) { // EIATTR_EXTERNS
+           int32_t *syms = (int32_t *)kp;
+           auto end = kp + a_len;
+           for ( int i = 0; end - kp >= 4; kp += 4, ++i ) {
+             auto sym_id = syms[i];
+             fprintf(m_out, " [%d] ", i); if ( sym_id ) dump_sym(sym_id, 1); else fputc('\n', m_out);
+           }
+           goto skip_unk;
  // check EIATTR_FRAME_SIZE/EIATTR_MIN_STACK_SIZE/EIATTR_MAX_STACK_SIZE/EIATTR_REGCOUNT
         } else if ( attr == 0x11 || attr == 0x12 || attr == 0x23 || attr == 0x26 || attr == 0x2f ) {
            if ( a_len != 8 ) fprintf(m_out, "invalid FRAME_SIZE size %X\n", a_len);
