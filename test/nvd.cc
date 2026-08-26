@@ -19,6 +19,17 @@ int opt_c = 0,
     opt_N = 0,
     opt_O = 0;
 
+// filled from argv (with -f) so it's safe to keep them in string_view
+static std::list<std::string_view> s_sec_filters;
+
+// return true if need to process section with name s
+bool filter_section(const std::string &s) {
+ if ( s_sec_filters.empty() ) return true;
+ return std::any_of(s_sec_filters.cbegin(), s_sec_filters.cend(), [&s](const std::string_view &what) {
+    return s.npos != s.find(what);
+  });
+}
+
 static std::map<char, const char *> s_ei = {
 #include "eiattrs.inc"
 };
@@ -1028,8 +1039,9 @@ void nv_dis::process()
       dump_sass_regs(sec);
     } else if ( sname == ".nv_debug_info_reg_type" || sname == ".nv.merc.nv_debug_info_reg_type" ) {
       dump_sass_reg_types(sec);
-    } else if ( !strncmp(sname.c_str(), ".text.", 6) )
+    } else if ( sname.starts_with(".text.") )
     {
+      if ( !filter_section(sname) ) continue;
       m_dis->init( (const unsigned char *)sec->get_data(), sec->get_size(), 0 );
       if ( opt_c )
        fprintf(m_out, "\t.section %s\n", sname.c_str());
@@ -1047,6 +1059,7 @@ void usage(const char *prog)
   printf("-c - dump instruction in form similar to original nvdisasm\n");
   printf("-e - dump attributes\n");
   printf("-h - hex dump\n");
+  printf("-f substring - disasm only sections containing specific substring\n");
   printf("-l - dump latency from ptxas\n");
   printf("-L - dump reg track tabs\n");
   printf("-m - dump missed fields\n");
@@ -1071,7 +1084,7 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "ceghLlmMqrtTNOpPSs:o:");
+    c = getopt(argc, argv, "ceghLlmMqrtTNOpPSf:s:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'c': opt_c = 1; break;
@@ -1091,6 +1104,8 @@ int main(int argc, char **argv)
       case 'r': opt_r = 1; break;
       case 'N': opt_N = 1; break;
       case 'S': opt_S = 1; break;
+      // options with args
+      case 'f': s_sec_filters.push_back(optarg); break;
       case 'o': o_fname = optarg; break;
       case 's': s = atoi(optarg); break;
       default: usage(argv[0]);
