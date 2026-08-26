@@ -116,7 +116,8 @@ class CElf: public T {
        one_indirect_branch ib;
        // record like
        // 0 - 32bit address
-       // 4 & 6 - unknown 16bit words
+       // 4 - 16bit word, 1 - call
+       // 6 - unknown 16bit word
        // 8 - 32bit count
        // 0xc - ... - list of 32bit labels, count items
        // so minimal size should be 0xc

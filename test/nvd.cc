@@ -189,7 +189,9 @@ class nv_dis: public CElf<NV_renderer>
      m_branches[i] = res;
      return res;
    }
-
+   // unreconized eiattrs - for -e option
+   std::unordered_map<unsigned char, size_t> m_unattrs;
+   void dump_unattrs() const;
    // symbols in const banks, key is cb index
    std::map<int, std::vector<const asymbol *> > m_cb_syms;
    std::map<unsigned long, asymbol *> m_curr_syms;
@@ -243,6 +245,25 @@ class nv_dis: public CElf<NV_renderer>
        iter->second++;
    }
 };
+
+void nv_dis::dump_unattrs() const {
+  if ( m_unattrs.empty() ) return;
+  using unattr = std::pair<unsigned char, size_t>;
+  std::vector<unattr> what;
+  // copy from m_unattrs
+  for ( auto u: m_unattrs )
+    what.push_back( { u.first, u.second } );
+  std::sort(what.begin(), what.end(), [](const unattr &a, const unattr &b) { return a.second > b.second; });
+  // dump
+  fprintf(m_out, "Unrecognized eiattrs %ld:\n", what.size());
+  std::for_each(what.cbegin(), what.cend(), [&](const unattr &a) {
+    auto ni = s_ei.find(a.first);
+    if ( ni != s_ei.end() )
+      fprintf(m_out, " %s: %ld\n", ni->second, a.second);
+    else
+      fprintf(m_out, " %d: %ld\n", a.first, a.second);
+   });
+}
 
 void nv_dis::add_cparam(Elf_Word idx, int ordinal, uint32_t size, unsigned short off)
 {
@@ -717,6 +738,7 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             const uint32_t *mt = (const uint32_t *)kp;
             fprintf(m_out, " X %d Y %d Z %d\n", mt[0], mt[1], mt[2]);
           }
+          goto skip_unk;
         } else if ( attr == 0xa ) { // EIATTR_PARAM_CBANK
           if ( a_len != 8 ) fprintf(m_out, "invalid PARAM_CBANK size %X\n", a_len);
           else {
@@ -730,8 +752,9 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             fprintf(m_out, " size: %X\n", size);
             add_cbank(sidx, sec_id, off, size);
           }
+          goto skip_unk;
  // check EIATTR_FRAME_SIZE/EIATTR_MIN_STACK_SIZE/EIATTR_MAX_STACK_SIZE/EIATTR_REGCOUNT
-        } else if ( attr == 0x11 || attr == 0x12 || attr == 0x23 || attr == 0x26) {
+        } else if ( attr == 0x11 || attr == 0x12 || attr == 0x23 || attr == 0x26 || attr == 0x2f ) {
            if ( a_len != 8 ) fprintf(m_out, "invalid FRAME_SIZE size %X\n", a_len);
            else {
             uint32_t sym_id = *(uint32_t *)kp;
@@ -739,6 +762,7 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             kp += 4;
             fprintf(m_out, " size: %X\n", *(uint32_t *)kp);
            }
+           goto skip_unk;
         } else if ( attr == 0x17 ) // EIATTR_KPARAM_INFO
         {
           // from https://github.com/VivekPanyam/cudaparsers/blob/main/src/cubin.rs
@@ -774,12 +798,14 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             fprintf(m_out, " size %X%s\n", csize, !not_cb ? " cbank" : "smem");
             if ( !not_cb ) add_cparam(sidx, ord, csize, off);
           }
+          goto skip_unk;
         } else if ( attr == 0x32 ) { // EIATTR_SHARED_SCRATCH
           if ( a_len != 0x8 ) fprintf(m_out, "invalid SHARED_SCRATCH size %X\n", a_len);
           else {
             uint32_t *ss = (uint32_t *)kp;
             fprintf(m_out, " start %X size %X\n", ss[0], ss[1]);
           }
+          goto skip_unk;
         } else if ( attr == 0x3a ) { // EIATTR_COROUTINE_RESUME_ID_OFFSETS
           auto ib = get_branch(sidx);
           fill_cors(&ib->labels, Cor_resume, data, a_len, 1);
@@ -820,7 +846,11 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             // store in branches first if presents
             ib->branches[ibt.addr] = std::move(ibt.labels);
           });
+          goto skip_unk;
         }
+        if ( !ltype )
+          m_unattrs[attr]++;
+ skip_unk:
         data += 4 + a_len;
         break;
       default: fprintf(stderr, "unknown format %d, section %d off %lX (%s)\n",
@@ -1006,6 +1036,8 @@ void nv_dis::process()
       try_dis(i);
     }
   }
+  if ( opt_e )
+    dump_unattrs();
 }
 
 void usage(const char *prog)
