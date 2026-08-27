@@ -29,6 +29,13 @@ struct one_indirect_branch {
  std::list<uint32_t> labels;
 };
 
+// borrowed from Cubin-Attrs
+struct mbar_item {
+  uint32_t regNo, mem_off;
+  uint16_t mask;
+  unsigned char ureg;
+};
+
 template <typename T>
 class CElf: public T {
  public:
@@ -106,6 +113,34 @@ class CElf: public T {
       if ( ri == l->end() )
         (*l)[addr] = ltype;
     }
+   }
+   // read EIATTR_MBARRIER_INSTR_OFFSETS
+   int parse_mbars(NV_labels *l, const char *start, uint32_t len) {
+     int res = 0;
+     auto end = start + len;
+     for ( auto curr = start; curr < end && end - curr >= 0x10; curr += 0x10 ) {
+       uint32_t addr = *(uint32_t *)curr;
+       (*l)[addr] = MBarier;
+       ++res;
+     }
+     return res;
+   }
+   template <typename C>
+   int parse_mbars(const char *start, uint32_t len, C &&cb) {
+     int res = 0;
+     auto end = start + len;
+     for ( auto curr = start; curr < end && end - curr >= 0x10; curr += 0x10 ) {
+       mbar_item mi;
+       // read all fields
+       uint32_t addr = *(uint32_t *)curr;
+       mi.regNo = *(uint32_t *)(curr + 0x4);
+       mi.mem_off = *(uint32_t *)(curr + 0x8);
+       mi.mask = *(uint16_t *)(curr + 0xc);
+       mi.ureg = *(curr + 0xe);
+       cb(addr, mi);
+       ++res;
+     }
+     return res;
    }
    // read EIATTR_INDIRECT_BRANCH_TARGETS and run callback C for each record
    template <typename C>

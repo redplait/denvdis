@@ -66,8 +66,6 @@ int CEd_base::setup_labels(int idx)
           ltype = NVLType::Ld_cachemode;
         else if ( attr == 0x31 ) // EIATTR_INT_WARP_WIDE_INSTR_OFFSETS
           ltype = NVLType::Warp_wide;
-        else if ( attr == 0x39 ) // EIATTR_MBARRIER_INSTR_OFFSETS
-          ltype = NVLType::MBarier;
         else if ( attr == 0x47 ) // EIATTR_SW_WAR_MEMBAR_SYS_INSTR_OFFSETS
           ltype = NVLType::War_membar;
         // read offsets
@@ -81,7 +79,8 @@ int CEd_base::setup_labels(int idx)
             // store addr with type 0
             m_labels[ibt.addr] = 0;
           });
-        }
+        } else if ( attr == 0x39 ) // EIATTR_MBARRIER_INSTR_OFFSETS
+          parse_mbars(&m_labels, data, a_len);
         data += 4 + a_len;
         break;
       default: Err("unknown format %d, section %d off %lX (%s)\n",

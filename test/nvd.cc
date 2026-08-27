@@ -91,6 +91,7 @@ static std::map<unsigned int, const char *> s_sht = {
 struct bt_per_section
 {
   std::unordered_map<uint32_t, std::list<uint32_t> > branches; // key - offset, value - targets from one_indirect_branch
+  std::unordered_map<uint32_t, mbar_item> mbars;
   NV_labels labels; // offset of label
 };
 
@@ -840,8 +841,6 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
           ltype = NVLType::Ld_cachemode;
         else if ( attr == 0x31 ) // EIATTR_INT_WARP_WIDE_INSTR_OFFSETS
           ltype = NVLType::Warp_wide;
-        else if ( attr == 0x39 ) // EIATTR_MBARRIER_INSTR_OFFSETS
-          ltype = NVLType::MBarier;
         else if ( attr == 0x46 ) // EIATTR_SYSCALL_OFFSETS
           ltype = NVLType::Sys_call;
         else if ( attr == 0x47 ) // EIATTR_SW_WAR_MEMBAR_SYS_INSTR_OFFSETS
@@ -864,6 +863,20 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             fputc('\n', m_out);
             // store in branches first if presents
             ib->branches[ibt.addr] = std::move(ibt.labels);
+          });
+          goto skip_unk;
+        } else if ( attr == 0x39 ) {
+          auto ib = get_branch(sidx);
+          int i = 0;
+          parse_mbars( data + 4, a_len, [&](uint32_t addr, mbar_item &mi) {
+            fprintf(m_out, " [%d] addr %X\n", i, addr);
+            fprintf(m_out, "    regNo %X\n", mi.regNo);
+            fprintf(m_out, "    mem_off %X\n", mi.mem_off);
+            fprintf(m_out, "    mask %X\n", mi.mask);
+            fprintf(m_out, "    ureg %X\n", mi.ureg);
+            ib->labels[addr] = NVLType::MBarier;
+            ib->mbars[addr] = std::move(mi);
+            i++;
           });
           goto skip_unk;
         }
