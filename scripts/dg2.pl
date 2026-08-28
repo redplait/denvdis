@@ -60,7 +60,7 @@ sub limit_stall
 }
 
 ### globals
-my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm);
+my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm, $g_gattrs);
 # stat for barriers, key is ins name, value is [ wait, read, write ] count
 my %g_barstat;
 ### per code section globals
@@ -762,6 +762,19 @@ sub setup_syms
   }
 }
 
+sub dump_sym_attr
+{
+  my $sym = shift;
+  return unless defined($g_gattrs);
+  return unless exists($g_gattrs->{$sym->[7]});
+  my $ar = $g_gattrs->{$sym->[7]};
+  return if ( 'ARRAY' ne ref $ar );
+  printf("; REGCOUNT %d\n", $ar->[0]) if $ar->[0];
+  printf("; Frame Size %X\n", $ar->[1]) if $ar->[1];
+  printf("; min stack_size %X\n", $ar->[2]) if $ar->[2];
+  printf("; max stack_size %X\n", $ar->[3]) if $ar->[3];
+}
+
 sub dump_sym_cmn
 {
   my $sym = shift;
@@ -769,6 +782,7 @@ sub dump_sym_cmn
   printf("\t.global %s\n", $sym->[0]) if ( STB_GLOBAL == $sym->[3] );
   # size
   printf("\t.size %X\n", $sym->[2]) if ( $sym->[2] );
+  dump_sym_attr($sym);
   # dump name label
   printf("%s:\n", $sym->[0]);
 }
@@ -876,12 +890,12 @@ sub dump_cparams
   my $cnt = $g_attrs->params_cnt();
   @gs_cbs = ();
   return unless $cnt;
-  printf(" %d CParams off %X:\n", $cnt, $gs_cb_off);
+  printf("; %d CParams off %X:\n", $cnt, $gs_cb_off);
   my @tmp;
   for ( my $ci = 0; $ci < $cnt; ++$ci ) {
     my $c = $g_attrs->param($ci);
     next unless defined($c);
-    printf("  [%d] ord %d off %X size %X\n", $ci, $c->{'ord'}, $c->{'off'}, $c->{'size'});
+    printf(";  [%d] ord %d off %X size %X\n", $ci, $c->{'ord'}, $c->{'off'}, $c->{'size'});
     $c->{'off'} += $gs_cb_off;
     push @tmp, [ $c->{'off'}, $c ];
   }
@@ -3707,6 +3721,8 @@ if ( defined $opt_G ) {
 $g_attrs = Cubin::Attrs->new($g_elf);
 dir("Attrs failed on $ARGV[0]") unless defined($g_attrs);
 printf("%d sections with code\n", scalar(@es)) if defined($opt_v);
+# read attrs from file-wide section .nv.info
+$g_gattrs = $g_attrs->get_sym_attrs(Cubin::Attrs::nv_info($g_elf));
 
 # we have list of sections in @es
 foreach my $s ( @es ) {
