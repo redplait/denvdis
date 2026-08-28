@@ -97,6 +97,7 @@ const char *NV_renderer::s_ltypes[] = {
  "CP_ASYNC_BULK",
  "COROUTINE_RESUME",
  "INDIRECT_BRANCH_TARGETS",
+ "Atf",
 };
 
 const char *NV_renderer::s_labels[] = {

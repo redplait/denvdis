@@ -43,6 +43,7 @@ enum NVLType {
   Cp_async_bulk, // EIATTR_IGNOREOOB_CP_ASYNC_BULK_INSTR_OFFSETS
   Cor_resume, // EIATTR_COROUTINE_RESUME_ID_OFFSETS
   Ind_BT,   // reffered from EIATTR_INDIRECT_BRANCH_TARGETS
+  Atf,      // EIATTR_AT_ENTRY_FRAGMENTS - for debug version only?
 };
 
 typedef std::unordered_map<uint32_t, int> NV_labels;

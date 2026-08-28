@@ -744,7 +744,10 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
         if ( data + 4 + a_len <= end && opt_h )
           HexDump(m_out, (const unsigned char *)(data + 4), a_len);
         kp = data + 4;
-        if ( attr == 5 ) { // EIATTR_MAX_THREADS
+        if (
+             attr == 5    || // EIATTR_MAX_THREADS
+             attr == 0x3d    // EIATTR_CTA_PER_CLUSTER
+      ) {
           if ( a_len != 3 * 4 ) fprintf(m_out, "invalid EIATTR_MAX_THREADS size %X\n", a_len);
           else {
             const uint32_t *mt = (const uint32_t *)kp;
@@ -773,10 +776,35 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
              fprintf(m_out, " [%d] ", i); if ( sym_id ) dump_sym(sym_id, 1); else fputc('\n', m_out);
            }
            goto skip_unk;
- // check EIATTR_FRAME_SIZE/EIATTR_MIN_STACK_SIZE/EIATTR_MAX_STACK_SIZE/EIATTR_REGCOUNT
-        } else if ( attr == 0x11 || attr == 0x12 || attr == 0x23 || attr == 0x26 || attr == 0x2f ) {
-           if ( a_len != 8 ) fprintf(m_out, "invalid FRAME_SIZE size %X\n", a_len);
-           else {
+        } else if (
+          attr == 0x1e || // EIATTR_CRS_STACK_SIZE
+          attr == 0x36 || // EIATTR_SW_WAR
+          attr == 0x37    // EIATTR_CUDA_API_VERSION
+      ) {
+          if ( a_len != 4 ) fprintf(m_out, "invalid CRS_STACK_SIZE size %X\n", a_len);
+          else {
+            uint32_t sz = *(uint32_t *)kp;
+            fprintf(m_out, " %X\n", sz);
+          }
+          goto skip_unk;
+        } else if (
+          attr == 2    || // EIATTR_IMAGE_SLOT
+          attr == 8    || // EIATTR_TEXTURE_NORMALIZED
+          attr == 0x11 || // EIATTR_FRAME_SIZE
+          attr == 0x12 || // EIATTR_MIN_STACK_SIZE
+          attr == 0x13 || // EIATTR_SAMPLER_FORCE_UNNORMALIZED
+          attr == 0x23 || // EIATTR_MAX_STACK_SIZE
+          attr == 0x26 || // EIATTR_LOAD_CACHE_REQUEST
+          attr == 0x2f || // EIATTR_REGCOUNT
+          attr == 0x3b    // EIATTR_SAM_REGION_STACK_SIZE
+      ) {
+           if ( a_len != 8 ) {
+             auto ai = s_ei.find(attr);
+             if ( ai != s_ei.end() )
+              fprintf(m_out, "invalid %s size %X\n", ai->second, a_len);
+             else
+              fprintf(m_out, "invalid ATTR_%d size %X\n", attr, a_len);
+           } else {
             uint32_t sym_id = *(uint32_t *)kp;
             fprintf(m_out, " Index: %X ", sym_id); if ( sym_id ) dump_sym(sym_id, 1); else fputc('\n', m_out);
             kp += 4;
@@ -845,13 +873,15 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
           ltype = NVLType::Sys_call;
         else if ( attr == 0x47 ) // EIATTR_SW_WAR_MEMBAR_SYS_INSTR_OFFSETS
           ltype = NVLType::War_membar;
+        else if ( attr == 0x4f ) // EIATTR_AT_ENTRY_FRAGMENTS
+          ltype = NVLType::Atf;
         else if ( attr == 0x65 ) // EIATTR_IGNOREOOB_CP_ASYNC_BULK_INSTR_OFFSETS
           ltype = NVLType::Cp_async_bulk;
         // read offsets
         if ( ltype ) {
           auto ib = get_branch(sidx);
           fill_eaddrs(&ib->labels, ltype, data, a_len);
-        } else if ( attr == 0x34 ) {
+        } else if ( attr == 0x34 ) { // EIATTR_INDIRECT_BRANCH_TARGETS
           // collect indirect branches
           auto ib = get_branch(sidx);
           parse_branch_targets(data + 4, a_len, [&](one_indirect_branch &ibt) {
@@ -865,7 +895,7 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
             ib->branches[ibt.addr] = std::move(ibt.labels);
           });
           goto skip_unk;
-        } else if ( attr == 0x39 ) {
+        } else if ( attr == 0x39 ) { // EIATTR_MBARRIER_INSTR_OFFSETS
           auto ib = get_branch(sidx);
           int i = 0;
           parse_mbars( data + 4, a_len, [&](uint32_t addr, mbar_item &mi) {
