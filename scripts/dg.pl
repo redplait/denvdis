@@ -315,6 +315,15 @@ printf("need closure, size %d\n", scalar @$ar) if defined($opt_d);
   $check_off;
 }
 
+# check if instruction at addr has EIATTR_MBARRIER_INSTR_OFFSETS
+sub is_mbar
+{
+  my $addr = shift;
+  return 0 unless defined($gs_loffs);
+  return 0 unless exists($gs_loffs->{$addr});
+  0x39 == $gs_loffs->{$addr};
+}
+
 # process swap candidates list - swap instructions and patch usched_info (unless -z option was used)
 # arg - block ref, list of swapped instructions in block->[15]
 sub post_process_swaps
@@ -1103,6 +1112,8 @@ sub can_swap
   return 0 if ( $curr->[16] || $prev->[16] );
   # 2,4) one of instructions is ENDING_INST
   return 0 if ( $curr->[14] || $prev->[14] );
+  # 2.6) one of instructions is MBAR
+  return 0 if ( is_mbar($curr->[0]) || is_mbar($prev->[0]) );
   # 3) has rela
   return 0 if ( $curr->[4] || $prev->[4] );
   # 4) share CC on old SMs
