@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_e $opt_f $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_u $opt_U $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_e $opt_f $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_T $opt_u $opt_U $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -34,6 +34,7 @@ Usage: $0 [options] file.cubin
   -s - try to find instructions to swap
   -S - dump instructions stat
   -t - track registers
+  -T - track registers used in single block
   -u - try detect register reuse cache
   -U - analyze possible registers reuse
   -v - verbose mode
@@ -2801,6 +2802,40 @@ sub dump_t2l
   }
 }
 
+# -T machinery - it can't be placed inside block bcs must keep data while processing set of blocks
+# so it is global hash, key is reg from snap, value is [ number of blocks, block start addr ]
+# must be reset at end of section processing
+my %g_Tr;
+
+# args: block, g from snap
+sub snap2T
+{
+  my($g, $bl) = @_;
+  return unless defined($g);
+  foreach my $r ( keys %$g ) {
+    if ( exists $g_Tr{$r} ) {
+      my $ar = $g_Tr{$r};
+      next if ( $ar->[0] > 1 );
+      next if ( $ar->[1] == $bl->[0] );
+      $ar->[0]++;
+    } else {
+      $g_Tr{$r} = [ 1, $bl->[0] ];
+    }
+  }
+}
+
+sub reseT { %g_Tr = (); }
+
+sub dump_T
+{
+  my $latch = 0;
+  while( my($r, $ar) = each(%g_Tr) ) {
+    next if ( $ar->[0] != 1 );
+    printf(";;; Registers used in single block:\n") if ( !$latch++ );
+    printf(";  %sR%d in %X\n", $r & 0x8000 ? 'U' : '', $r & 0xff, $ar->[1]);
+  }
+}
+
 # dump reg track snapshot for current instruction
 sub dump_snap
 {
@@ -3145,6 +3180,7 @@ sub gdisasm
         my($g, $pr) = $rt->snap();
         if ( defined($g) || defined($pr) ) {
           dump_snap($g, $pr);
+          snap2T($g, $block) if defined($opt_T);
           if ( defined $opt_l ) {
             $g_ced->track_lat($rt, $block->[11], defined $opt_d);
             track2lat($block->[16], $g, $pr);
@@ -3702,7 +3738,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("abdeGglmPpRrSstUuvwzC:f:");
+my $state = getopts("abdeGglmPpRrSsTtUuvwzC:f:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -3720,6 +3756,7 @@ if ( defined $opt_l ) {
  croak("-l must be used wuth -t option") unless defined($opt_t);
  croak("-l must be used with -b option") unless defined($opt_b);
 }
+croak("-T must be used with -t & -g") if ( defined($opt_T) && (!defined($opt_t) || !defined($opt_g)) );
 # read config
 read_config($opt_C) if defined($opt_C);
 
@@ -3806,9 +3843,11 @@ foreach my $s ( @es ) {
  my $off = $g_w == 128 ? 0: 8;
  die("initial offset") unless $g_ced->off($off);
  if ( defined $opt_g ) {
+   reseT();
    my $graph = dg($off, $s->[9]); # args - start of code offset bcs we need at least 2 passes, section size
    sym_reset();
    gdisasm($graph);
+   dump_T() if defined($opt_T);
  } else { disasm($s->[9]); }  # arg - section size
 }
 dump_ruc() if defined($opt_u);
