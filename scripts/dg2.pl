@@ -72,6 +72,9 @@ my($gs_rel, $gs_rela, $gs_rel_idx, $gs_rela_idx);
 my(@gs_cbs, $gs_cb_size, $gs_cb_off);
 # labels from attrs
 my($gs_loffs, $gs_ibt);
+# some cyclomatic stat: count of blocks, back-edges, total instrs, total edges. filled in dg
+# index 4 is public symbols count - filled in dump_sym_attr
+my @g_cycls = ( 0, 0, 0, 0, 0 );
 # for -u
 my $gu_max = 0;
 my($gu_off, %gu_cache);
@@ -116,6 +119,16 @@ my($gc_war, $gc_waw);
 my $gcdf;
 
 sub in_lmode { defined($opt_l); }
+
+sub dump_cycls
+{
+  printf("%d total blocks %d total instrs", $g_cycls[0], $g_cycls[2]);
+  printf(" avg block %f instrs", 1.0 * $g_cycls[2] / $g_cycls[0]) if $g_cycls[0];
+  printf(", %d back-edges, total %d edges", $g_cycls[1], $g_cycls[3]);
+  printf(" %f", 1.0 * $g_cycls[1] / $g_cycls[3]) if $g_cycls[3];
+  printf("\n");
+  printf("%d public syms, avg len %f blocks\n", $g_cycls[4], 1.0 * $g_cycls[0] / $g_cycls[4]) if $g_cycls[4];
+}
 
 sub dump_estat
 {
@@ -778,6 +791,7 @@ sub dump_sym_attr
   return unless exists($g_gattrs->{$sym->[7]});
   my $ar = $g_gattrs->{$sym->[7]};
   return if ( 'ARRAY' ne ref $ar );
+  $g_cycls[4]++;
   printf("; REGCOUNT %d\n", $ar->[0]) if $ar->[0];
   printf("; Frame Size %X\n", $ar->[1]) if $ar->[1];
   printf("; min stack_size %X\n", $ar->[2]) if $ar->[2];
@@ -3405,6 +3419,7 @@ sub dg
   };
   my $off; # at end will hold last processed address
   do {
+    $g_cycls[2]++;
     $off = $g_ced->get_off();
     gcheck_sym(\%br, $off);
     my $skip = is_skip();
@@ -3441,6 +3456,8 @@ sub dg
               if ( $addl == $off ) { # this is dead-loop
                 $is_dl = 1;
               } else {
+                $g_cycls[3]++;
+                $g_cycls[1]++ if ( $addl < $off );
                 add_label(\%br, $addl, $off);
                 $pre = is_pre();
                 $scbd_type = $g_ced->ins_scbd_type() || is_bssy();
@@ -3665,6 +3682,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
   }
   dump_blocks(\@bbs, 1) if ( defined $opt_d );
   # finally return blocks
+  $g_cycls[0] += scalar @bbs;
   \@bbs;
 }
 
@@ -3775,6 +3793,7 @@ dump_ruc() if defined($opt_u);
 dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
 dump_ins_stat() if defined($opt_S);
+dump_cycls() if defined($opt_g);
 dump_swap_stat() if defined($opt_s);
 if ( in_lmode() ) {
   dump_estat() if defined($opt_e);
