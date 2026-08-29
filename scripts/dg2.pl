@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_e $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_u $opt_U $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_e $opt_f $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_u $opt_U $opt_v $opt_w $opt_z/;
 
 sub usage()
 {
@@ -22,6 +22,7 @@ Usage: $0 [options] file.cubin
   -C config.file
   -d - debug mode
   -e - try to eliminate false WaR/WaW
+  -f section1,section2,... - filter for section names, like in nvd
   -G - generate initial config file and exit
   -g - build cf graph
   -l - check latency and try to reduce stall counts
@@ -3701,7 +3702,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("abdeGglmPpRrSstUuvwzC:");
+my $state = getopts("abdeGglmPpRrSstUuvwzC:f:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -3721,6 +3722,25 @@ if ( defined $opt_l ) {
 }
 # read config
 read_config($opt_C) if defined($opt_C);
+
+# process -f
+my $s_filt;
+
+if ( defined $opt_f ) {
+  my @tmp = map { $_ =~ s/\s//g; $_ } split /,/, $opt_f;
+  $s_filt = \@tmp if scalar(@tmp);
+}
+
+# arg - section from exs list
+sub sect_filt
+{
+  my $s = shift;
+  return 1 unless defined($s_filt);
+  foreach my $f ( @$s_filt ) {
+    return 1 if ( -1 != index( $s->[1], $f ) );
+  }
+  0;
+}
 
 # load elf, symbols, ced & attrs
 $g_elf = Elf::Reader->new($ARGV[0]);
@@ -3756,6 +3776,7 @@ $g_gattrs = $g_attrs->get_sym_attrs(Cubin::Attrs::nv_info($g_elf));
 
 # we have list of sections in @es
 foreach my $s ( @es ) {
+ next unless( sect_filt($s) );
  my $a_idx = $g_attrs->try($s->[0]);
  # dump current section
  printf("[%d] attrs in %d size %X %s\n", $s->[0], $a_idx, $s->[9], $s->[1]);
