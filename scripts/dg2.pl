@@ -73,7 +73,7 @@ my(@gs_cbs, $gs_cb_size, $gs_cb_off);
 # labels from attrs
 my($gs_loffs, $gs_ibt);
 # some cyclomatic stat: count of blocks, back-edges, total instrs, total edges. filled in dg
-# index 4 is public symbols count - filled in dump_sym_attr
+# index 4 is public symbols count - filled in head_syms
 my @g_cycls = ( 0, 0, 0, 0, 0 );
 # for -u
 my $gu_max = 0;
@@ -791,7 +791,6 @@ sub dump_sym_attr
   return unless exists($g_gattrs->{$sym->[7]});
   my $ar = $g_gattrs->{$sym->[7]};
   return if ( 'ARRAY' ne ref $ar );
-  $g_cycls[4]++;
   printf("; REGCOUNT %d\n", $ar->[0]) if $ar->[0];
   printf("; Frame Size %X\n", $ar->[1]) if $ar->[1];
   printf("; min stack_size %X\n", $ar->[2]) if $ar->[2];
@@ -832,7 +831,9 @@ sub head_syms
   while ( $gs_syms[$gs_cidx]->[1] < $block_off ) {
     return if ( ++$gs_cidx >= scalar(@gs_syms) );
   }
-  return check_sym($off);
+  my $res = check_sym($off);
+  $g_cycls[4]++ if $res;
+  $res;
 }
 
 # put first found symbol to br[off+2]

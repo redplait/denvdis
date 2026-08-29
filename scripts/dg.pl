@@ -600,7 +600,7 @@ sub head_syms
     return if ( ++$gs_cidx >= scalar(@gs_syms) );
   }
   my $res = check_sym($off);
-  $g_cycls[4] += $res;;
+  $g_cycls[4]++ if $res;
   $res;
 }
 
