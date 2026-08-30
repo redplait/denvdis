@@ -1568,11 +1568,14 @@ sub dump_ins
     printf(" DelayPlop") if ( $dp );
     printf("\n");
   }
-  # store data for -s
-  if ( defined($block) && ( defined($opt_s) || defined($opt_l) ) ) {
+  if ( defined $opt_g ) {
     my $ar = $block->[13];
     $ar->[0] = $off;
     $ar->[1] = $g_ced->ins_name();
+  }
+  # store data for -s
+  if ( defined($block) && ( defined($opt_s) || defined($opt_l) ) ) {
+    my $ar = $block->[13];
     add_ins($ar->[1]) if defined($opt_S);
     $ar->[2] = $i_text;
     $ar->[5] = $brt;
@@ -3660,7 +3663,7 @@ TI:
       my %ruc;
       $res[10] = \%ruc;
     }
-    if ( defined($opt_s) || defined($opt_l) ) {
+    if ( defined($opt_g) || defined($opt_s) || defined($opt_l) ) {
       my @tmp;
       $res[13] = \@tmp;
     }

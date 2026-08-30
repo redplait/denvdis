@@ -1471,11 +1471,14 @@ sub dump_ins
     printf(" IType %d (%s)", $i_type, IType_name($i_type)) if ( $i_type );
     printf("\n");
   }
+  if ( defined $opt_g ) {
+     my $ar = $block->[13];
+     $ar->[0] = $off;
+     $ar->[1] = $g_ced->ins_name();
+  }
   # store data for -s
   if ( defined($block) && ( defined($opt_s) || defined($opt_l) ) ) {
     my $ar = $block->[13];
-    $ar->[0] = $off;
-    $ar->[1] = $g_ced->ins_name();
     $ar->[2] = $i_text;
     $ar->[5] = $brt;
     $ar->[6] = $g_ced->has_pred();
@@ -2850,7 +2853,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
       my %ruc;
       $res[10] = \%ruc;
     }
-    if ( defined($opt_s) || defined($opt_l) ) {
+    if ( defined($opt_g) || defined($opt_s) || defined($opt_l) ) {
       my @tmp;
       $res[13] = \@tmp;
     }
