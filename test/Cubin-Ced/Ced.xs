@@ -246,6 +246,10 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return nullptr;
     return ins()->field_atoff((short)off);
   }
+  SV *get_urz() const {
+    if ( !m_urz.has_value() ) return &PL_sv_undef;
+    return newSViv(m_urz.value());
+  }
   SV *extract_instrs() const;
   SV *extract_instrs(REGEXP *) const;
   bool extract_insn(const char *, std::vector<SV *> &);
@@ -1959,6 +1963,14 @@ int rz(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = e->get_rz();
+ OUTPUT:
+  RETVAL
+
+SV *urz(SV *obj)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->get_urz();
  OUTPUT:
   RETVAL
 

@@ -652,6 +652,12 @@ int NV_renderer::load(const char *sm_name)
        m_width = m_dis->width();
        if ( m_width == 88 ) m_block_mask = 32 - 1;
        else if ( m_width == 64 ) m_block_mask = 64 - 1;
+       auto renums = m_dis->get_renums();
+       if ( renums ) {
+         auto urz_e = renums->find("ZeroUniformRegister"sv);
+         if ( urz_e != renums->end() )
+           m_urz = urz_e->second->cbegin()->second;
+       }
      }
      asgn_cb0();
      return (m_dis != nullptr);

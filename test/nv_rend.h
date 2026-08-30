@@ -7,6 +7,7 @@
 #include <list>
 #include <unordered_map>
 #include <unordered_set>
+#include <optional>
 #include <type_traits>
 #include "include/nv_types.h"
 #include "nv_cb0.h"
@@ -513,6 +514,7 @@ class NV_renderer {
    int m_width;
    int m_sm = 0; // sm number
    int m_block_mask = 0;
+   std::optional<int> m_urz; // value of URZ is differs across different SMs - can be extracted from ZeroUniformRegister enum
    // convert offset to start of block
    unsigned long to_block_start(unsigned long loff) const {
      if ( !m_block_mask ) return loff;
