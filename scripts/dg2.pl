@@ -62,7 +62,7 @@ sub limit_stall
 }
 
 ### globals
-my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm, $g_gattrs);
+my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm, $g_urz, $g_gattrs);
 # stat for barriers, key is ins name, value is [ wait, read, write ] count
 my %g_barstat;
 ### per code section globals
@@ -2833,18 +2833,49 @@ sub dump_T
   my $bl = shift;
   my $latch = 0;
   my %b_hash; # key - block start, value - whole block
+  my $m_r = 0;
+  my $m_ur = 0;
   while( my($r, $ar) = each(%g_Tr) ) {
+    my $r_idx = $r & 0xff;
+    if ( $r & 0x8000 ) {
+      next if ( defined($g_urz) && $r_idx >= $g_urz );
+      $m_ur = $r_idx if ( $r_idx > $m_ur );
+    } else {
+      $m_r = $r_idx if ( $r_idx > $m_r );
+    }
     next if ( $ar->[0] != 1 );
     if ( !$latch++ ) {
       printf(";;; Registers used in single block:\n");
       $b_hash{ $_->[0] } = $_ for @$bl;
     }
-    printf(";  %sR%d in %X", $r & 0x8000 ? 'U' : '', $r & 0xff, $ar->[1]);
+    printf(";  %sR%d in %X", $r & 0x8000 ? 'U' : '', $r_idx, $ar->[1]);
     if ( exists $b_hash{ $ar->[1] } ) {
       my $fb = $b_hash{ $ar->[1] };
       printf(" end %X%s", $fb->[1]->[1], get_block_type($fb));
     }
     printf("\n");
+  }
+  return unless($latch);
+  # check holes in regular registers
+  if ( $m_r ) {
+    $latch = 0;
+    for my $i ( 0 .. $m_r ) {
+      next if ( exists $g_Tr{$i} );
+      printf("; RHoles:") if ( !$latch++ );
+      printf(" R%d", $i);
+    }
+    printf("\n") if $latch;
+  }
+  # check holes in uniform registers
+  if ( $m_ur ) {
+    $latch = 0;
+    for my $i ( 0 .. $m_ur ) {
+      next if ( exists $g_Tr{$i | 0x8000} );
+      printf("; URHoles:") if ( !$latch++ );
+      printf(" UR%d", $i);
+    }
+    printf("\n") if $latch;
+
   }
 }
 
@@ -3824,6 +3855,7 @@ die("cannot load cubin $ARGV[0]") unless defined($g_ced);
 $g_ced->optv(1) if defined($opt_v);
 $g_w = $g_ced->width();
 $g_sm = $g_ced->sm_num();
+$g_urz = $g_ced->urz();
 if ( defined $opt_v ) {
   printf("SM %s width %d block_mask %d\n", $g_ced->sm_name(), $g_w, $g_ced->block_mask());
 }
