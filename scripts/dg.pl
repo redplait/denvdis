@@ -1526,11 +1526,12 @@ sub dump_ins
     else { printf("LABEL_%X: ; %s\n", $off, $g_attrs->attr_name($l)); }
   }
   # check for unconditional EXIT
-  if ( defined($block) && defined($block->[13]) && defined($opt_P) ) {
+  if ( defined($block) && defined($block->[13]) ) {
     my $ar = $block->[13];
-    # [6] is has_pred & [1] is ins_name
-    $block->[17] = 1 if ( !$ar->[6] && $ar->[1] eq 'EXIT' );
-    $block->[17] = 1 if ( 2 == $brt );
+    # [6] is has_pred
+    if ( !$ar->[6] ) {
+      $block->[17] = 1 if ( $ar->[1] eq 'EXIT' || 2 == $brt ); # RETURN
+    }
   }
   # process scheduling/find dual instr
   process_sched($off, $sctx, $block);
