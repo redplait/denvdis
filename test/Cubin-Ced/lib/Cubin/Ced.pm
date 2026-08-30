@@ -765,6 +765,10 @@ to dump them use function dump_ftc
 
 =item * block_mask - for width 64 or 88 this is mask of instruction block size. You can get address of block like $off & ~$block_mask
 
+=item * rz - value of RZ
+
+=item * urz - value of URZ, undef if current SM does not support uniform registers
+
 =item * sm_num
 
 =item * sm_name
