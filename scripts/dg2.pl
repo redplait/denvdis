@@ -2826,13 +2826,24 @@ sub snap2T
 
 sub reseT { %g_Tr = (); }
 
+# args - list of blocks
 sub dump_T
 {
+  my $bl = shift;
   my $latch = 0;
+  my %b_hash; # key - block start, value - whole block
   while( my($r, $ar) = each(%g_Tr) ) {
     next if ( $ar->[0] != 1 );
-    printf(";;; Registers used in single block:\n") if ( !$latch++ );
-    printf(";  %sR%d in %X\n", $r & 0x8000 ? 'U' : '', $r & 0xff, $ar->[1]);
+    if ( !$latch++ ) {
+      printf(";;; Registers used in single block:\n");
+      $b_hash{ $_->[0] } = $_ for @$bl;
+    }
+    printf(";  %sR%d in %X", $r & 0x8000 ? 'U' : '', $r & 0xff, $ar->[1]);
+    if ( exists $b_hash{ $ar->[1] } ) {
+      my $fb = $b_hash{ $ar->[1] };
+      printf(" end %X%s", $fb->[1]->[1], get_block_type($fb));
+    }
+    printf("\n");
   }
 }
 
@@ -3140,6 +3151,7 @@ sub is_interleaved
 sub gdisasm
 {
   my $dg = shift;
+  my $in_lm = in_lmode();
   for my $block ( @$dg ) {
     my $off = $block->[0];
     my $block_off = $g_ced->block_off($off);
@@ -3155,7 +3167,6 @@ sub gdisasm
     my $rt;
     $rt = Cubin::Ced::RegTrack->new() if defined($opt_t);
     my $idx = 0;
-    my $in_lm = in_lmode();
     # disasm every instruction in this block
     do {
       my $may_swap = 0;
@@ -3233,7 +3244,7 @@ sub gdisasm
       $block->[13] = [];
       $rt->snap_clear() if ( defined $rt );
       $idx++;
-    } while( $g_ced->next_off() < $block->[1] && $g_ced->next() );
+    } while( $g_ced->next_off() < $block->[1]->[1] && $g_ced->next() );
     # do block post-processing of block here
     if ( defined $rt ) {
       $rt->finalize();
@@ -3341,11 +3352,19 @@ sub add_label
  }
 }
 
+sub get_block_type
+{
+  my $bl = shift;
+  return ' B' if ( 1 == $bl->[1]->[0] );
+  return ' S' if ( 2 == $bl->[1]->[0] );
+  '';
+}
+
 sub dump_blocks
 {
   my($br, $resolved) = @_;
   foreach my $b ( @$br ) {
-    printf("block %X till %X", $b->[0], $b->[1]);
+    printf("block %X till %X%s", $b->[0], $b->[1]->[1], get_block_type($b));
     printf(" sym %d", $b->[2]) if ( defined $b->[2] );
     printf(":\n");
     if ( $resolved ) {
@@ -3421,12 +3440,13 @@ sub is_bb_end
 }
 
 # build cfg graph
+# args: start address, section size
 sub dg
 {
   my($code_off, $s_size) = @_;
   my %br; # map of branches and markers
   my $ibs = merge_ibts(\%br);
-  my($ib_curr, $ib_size);
+  my($ib_curr, $ib_size, %back_edges);
   if ( defined $ibs ) {
     $ib_curr = 0;
     $ib_size = scalar(@$ibs);
@@ -3457,68 +3477,73 @@ sub dg
   };
   my $off; # at end will hold last processed address
   do {
-    $g_cycls[2]++;
     $off = $g_ced->get_off();
     gcheck_sym(\%br, $off);
     my $skip = is_skip();
-    if ( $skip ) { $add_prev->($off); }
-    else {
-      my $brt = $g_ced->ins_brt();
-      my $cond = $g_ced->has_pred();
-      my $scbd_type;
-      my $link_prev = sub {
-        $add_prev->($off);
-        $cnd_sub->($cond, $off);
-        $br{$off+1} = 1 if ( !$cond );
-      };
-      # check if this is IBT
-      if ( $check_ibt->($off) ) {
-        printf("ibt at %X\n", $off) if defined($opt_d);
-        # nothing to add - br arleady has IBT labels
-        $link_prev->();
-      } else {
-        # check if have some branch
-        my $is_dl = 0;
-        my $added = 0;
-        my $pre = 0;
-        if ( $brt == Cubin::Ced::BRT_RETURN || $brt == Cubin::Ced::BRT_BRANCHOUT ) {
-          # return/exit don't have address - so logic is the same as for IBT
-          $link_prev->();
+    if ( $skip ) {
+      $add_prev->($off);
+      goto TI;
+    }
+    $g_cycls[2]++;
+    my $brt = $g_ced->ins_brt();
+    my $cond = $g_ced->has_pred();
+    my $scbd_type;
+    my $link_prev = sub {
+      $add_prev->($off);
+      $cnd_sub->($cond, $off);
+      $br{$off+1} = 1 if ( !$cond );
+    };
+    # check if this is IBT
+    if ( $check_ibt->($off) ) {
+      printf("ibt at %X\n", $off) if defined($opt_d);
+      # nothing to add - br arleady has IBT labels
+      $link_prev->();
+      goto TI;
+    }
+    # check if have some branch
+    my $is_dl = 0;
+    my $added = 0;
+    my $pre = 0;
+    if ( $brt == Cubin::Ced::BRT_RETURN || $brt == Cubin::Ced::BRT_BRANCHOUT ) {
+      # return/exit don't have address - so logic is the same as for IBT
+      $link_prev->();
+      goto TI;
+    }
+    my($rel, $is_a) = has_rel($off);
+    # ignore instr having relocs
+    unless($rel && $is_a) {
+      my $addl = $g_ced->ins_clabs();
+      if ( defined($addl) ) {
+        $added = 1;
+        if ( $addl == $off ) { # this is dead-loop
+          $is_dl = 1;
         } else {
-          my($rel, $is_a) = has_rel($off);
-          # ignore instr having relocs
-          unless($rel && $is_a) {
-            my $addl = $g_ced->ins_clabs();
-            if ( defined($addl) ) {
-              $added = 1;
-              if ( $addl == $off ) { # this is dead-loop
-                $is_dl = 1;
-              } else {
-                $g_cycls[3]++;
-                $g_cycls[1]++ if ( $addl < $off );
-                add_label(\%br, $addl, $off);
-                $pre = is_pre();
-                $scbd_type = $g_ced->ins_scbd_type() || is_bssy();
-                $gs_loffs->{$addl} = 0; # this is really some new labal - store it for later disasm too
-              }
-            }
+          $g_cycls[3]++;
+          if ( $addl < $off ) {
+            $back_edges{$addl}++;
+            $g_cycls[1]++;
           }
-          # link with prev instr
-          $add_prev->($off) unless($is_dl);
-          if ( $added ) {
-printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d));
-            if ( defined($scbd_type) && 1 == $scbd_type ) { # 1 - BARRIER_INST
-              $has_prev = $off;
-            } # check if we have conditional branch
-            elsif ( $pre ) { $cnd_sub->($pre, $off); }
-            else { $cnd_sub->($cond, $off) if ( $brt ); }
-            if ( $is_dl ) {
-              $br{$off+1} = -1; # put dead-loop marker
-            } elsif ( $brt != Cubin::Ced::BRT_CALL && !$cond ) { $br{$off+1} = 1; }
-          }
+          add_label(\%br, $addl, $off);
+          $pre = is_pre();
+          $scbd_type = $g_ced->ins_scbd_type() || is_bssy();
+          $gs_loffs->{$addl} = 0; # this is really some new labal - store it for later disasm too
         }
       }
     }
+    # link with prev instr
+    $add_prev->($off) unless($is_dl);
+    if ( $added ) {
+printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d));
+      if ( defined($scbd_type) && 1 == $scbd_type ) { # 1 - BARRIER_INST
+        $has_prev = $off;
+      } # check if we have conditional branch
+      elsif ( $pre ) { $cnd_sub->($pre, $off); }
+      else { $cnd_sub->($cond, $off) if ( $brt ); }
+      if ( $is_dl ) {
+         $br{$off+1} = -1; # put dead-loop marker
+      } elsif ( $brt != Cubin::Ced::BRT_CALL && !$cond ) { $br{$off+1} = 1; }
+    }
+TI:
   } while( $g_ced->next_off() < $s_size && $g_ced->next() );
   # make sorted array
   my @sorted = sort { $a->[0] <=> $b->[0] } map {
@@ -3542,7 +3567,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
   pass 2 - make blocks, complexity O(m) where m is number of marks/symbols/back references in @sorted array
   indices in block:
    [0] - start address
-   [1] - last address
+   [1] - [ type of block, last address]
    [2] - symbol index or undef
    [3] - map with back-refs
   below is data for barriers tracking - used in process_sched & check_sched
@@ -3629,7 +3654,11 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
   };
   my $cb;
   my $close_block = sub {
-    $cb->[1] = shift;
+    my $addr = shift;
+    my $type = 0;
+    $type = 2 if ( $cb->[0] == $code_off );
+    $type = 1 if ( exists $back_edges{$cb->[0]} );
+    $cb->[1] = [ $type, $addr ];
     undef $cb;
   };
   # check if we need to add first block
@@ -3695,7 +3724,8 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
   }
   # check if last block has last addr
   if ( scalar @bbs ) {
-    $bbs[-1]->[1] = $off + 1 unless( defined $bbs[-1]->[1] );
+    my $lb = $bbs[-1];
+    $lb->[1] = [ exists $back_edges{ $lb->[0] }, $off + 1 ] unless( defined $lb->[1] );
   }
   dump_blocks(\@bbs, 0) if ( defined $opt_d );
   # pass 3 - resolve all back-references to blocks (now they are just offsets)
@@ -3847,7 +3877,7 @@ foreach my $s ( @es ) {
    my $graph = dg($off, $s->[9]); # args - start of code offset bcs we need at least 2 passes, section size
    sym_reset();
    gdisasm($graph);
-   dump_T() if defined($opt_T);
+   dump_T($graph) if defined($opt_T);
  } else { disasm($s->[9]); }  # arg - section size
 }
 dump_ruc() if defined($opt_u);
