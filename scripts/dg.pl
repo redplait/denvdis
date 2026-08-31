@@ -54,7 +54,7 @@ sub limit_stall
 }
 
 ### globals
-my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm, $g_gattrs);
+my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm, $g_urz, $g_gattrs);
 # stat for barriers, key is ins name, value is [ wait, read, write ] count
 my %g_barstat;
 # per code section globals
@@ -1472,9 +1472,9 @@ sub dump_ins
     printf("\n");
   }
   if ( defined $opt_g ) {
-     my $ar = $block->[13];
-     $ar->[0] = $off;
-     $ar->[1] = $g_ced->ins_name();
+    my $ar = $block->[13];
+    $ar->[0] = $off;
+    $ar->[1] = $g_ced->ins_name();
   }
   # store data for -s
   if ( defined($block) && ( defined($opt_s) || defined($opt_l) ) ) {
@@ -3036,6 +3036,7 @@ die("cannot load cubin $ARGV[0]") unless defined($g_ced);
 $g_ced->optv(1) if defined($opt_v);
 $g_w = $g_ced->width();
 $g_sm = $g_ced->sm_num();
+$g_urz = $g_ced->urz();
 if ( defined $opt_v ) {
   printf("SM %s width %d block_mask %d\n", $g_ced->sm_name(), $g_w, $g_ced->block_mask());
 }

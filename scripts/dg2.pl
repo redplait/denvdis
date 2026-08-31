@@ -3488,7 +3488,7 @@ sub is_pre
 sub is_bssy
 {
   return 1 if 'BSSY' eq $g_ced->ins_name();
-  undef;
+  0;
 }
 
 my %s_bb_end = (
@@ -3583,9 +3583,11 @@ sub dg
       $link_prev->();
       goto TI;
     }
+    my $i_bssy = 0;
     my($rel, $is_a) = has_rel($off);
     # ignore instr having relocs
     unless($rel && $is_a) {
+      $i_bssy = is_bssy();
       my $addl = $g_ced->ins_clabs();
       if ( defined($addl) ) {
         $added = 1;
@@ -3599,23 +3601,24 @@ sub dg
           }
           add_label(\%br, $addl, $off);
           $pre = is_pre();
-          $scbd_type = $g_ced->ins_scbd_type() || is_bssy();
-          $gs_loffs->{$addl} = 0; # this is really some new labal - store it for later disasm too
+          $scbd_type = $g_ced->ins_scbd_type();
+          $gs_loffs->{$addl} = 0; # this is really some new label - store it for later disasm too
         }
       }
     }
     # link with prev instr
     $add_prev->($off) unless($is_dl);
     if ( $added ) {
-printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d));
-      if ( defined($scbd_type) && 1 == $scbd_type ) { # 1 - BARRIER_INST
+printf("%X scbd_type %d bssy %d\n", $off, $scbd_type, $i_bssy) if ($scbd_type && defined($opt_d));
+      if ( $i_bssy || (defined($scbd_type) && 1 == $scbd_type) ) { # 1 - BARRIER_INST
         $has_prev = $off;
       } # check if we have conditional branch
       elsif ( $pre ) { $cnd_sub->($pre, $off); }
       else { $cnd_sub->($cond, $off) if ( $brt ); }
+      # check if we need to put marker
       if ( $is_dl ) {
          $br{$off+1} = -1; # put dead-loop marker
-      } elsif ( $brt != Cubin::Ced::BRT_CALL && !$cond ) { $br{$off+1} = 1; }
+      } elsif ( !$i_bssy && $brt != Cubin::Ced::BRT_CALL && !$cond ) { $br{$off+1} = 1; }
     }
 TI:
   } while( $g_ced->next_off() < $s_size && $g_ced->next() );
