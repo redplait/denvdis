@@ -1572,15 +1572,15 @@ sub dump_ins
     my $ar = $block->[13];
     $ar->[0] = $off;
     $ar->[1] = $g_ced->ins_name();
+    $ar->[5] = $brt;
+    $ar->[6] = $g_ced->has_pred();
+    $ar->[9] = $brt ? 1 : $g_ced->ins_branch();
   }
   # store data for -s
   if ( defined($block) && ( defined($opt_s) || defined($opt_l) ) ) {
     my $ar = $block->[13];
     add_ins($ar->[1]) if defined($opt_S);
     $ar->[2] = $i_text;
-    $ar->[5] = $brt;
-    $ar->[6] = $g_ced->has_pred();
-    $ar->[9] = $brt ? 1 : $g_ced->ins_branch();
     $ar->[11] = $mw if ( $mw );
     if ( defined($opt_s) || defined($opt_p) ) {
       $ar->[10] = $g_ced->grep_pred("VQ");
@@ -3399,14 +3399,17 @@ sub get_block_type
 sub dump_blocks
 {
   my($br, $resolved) = @_;
-  foreach my $b ( @$br ) {
-    printf("block %X till %X%s", $b->[0], $b->[1]->[1], get_block_type($b));
-    printf(" sym %d", $b->[2]) if ( defined $b->[2] );
+  foreach my $bl ( @$br ) {
+    printf("block %X till %X%s", $bl->[0], $bl->[1]->[1], get_block_type($bl));
+    printf(" sym %d", $bl->[2]) if ( defined $bl->[2] );
     printf(":\n");
     if ( $resolved ) {
-      printf(" %X", $_->[0]) for ( values %{ $b->[3] } );
+      for my $r ( sort { $a <=> $b } keys %{ $bl->[3] } ) {
+        my $br = $bl->[3]->{$r};
+        printf(" %X -> %X%s\n", $r, $br->[0], get_block_type($br));
+      }
     } else {
-     printf(" %X", $_) for ( keys %{ $b->[3] } );
+     printf(" %X", $_) for ( sort { $a <=> $b } keys %{ $bl->[3] } );
     }
     printf("\n");
   }
@@ -3769,7 +3772,7 @@ TI:
   # clojure for bin_sac
   my $bs_cb = sub {
     my($br, $addr) = @_;
-    return 0 if ( $addr >= $br->[0] && $addr < $br->[1] );
+    return 0 if ( $addr >= $br->[0] && $addr < $br->[1]->[1] );
     return -1 if ( $addr > $br->[0] );
     1;
   };
@@ -3784,7 +3787,10 @@ TI:
     }
     $cb->[3] = \%blinks;
   }
-  dump_blocks(\@bbs, 1) if ( defined $opt_d );
+  if ( defined $opt_d ) {
+    printf("--- with fixed back refs\n");
+    dump_blocks(\@bbs, 1);
+  }
   # finally return blocks
   $g_cycls[0] += scalar @bbs;
   \@bbs;
