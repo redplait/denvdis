@@ -170,7 +170,7 @@ sub scbd_type_name($)
 
 our @reg_sfx = ( 'd', 'd2', 'a', 'b', 'c', 'e', 'h', 'i' );
 
-# args: type, is universal
+# args: type, is uniform
 sub rkey($$) {
   my($t, $ur) = @_;
   return if ( $t < 0 || $t > ISRC_I() );
@@ -635,9 +635,9 @@ Holds in separate object Cubin::Ced::RegTrack. There are 4 kind of registers in 
 
 =item * Predicates
 
-=item * Universal registers: L<https://redplait.blogspot.com/2025/07/sass-instructions-uniform-registers.html>
+=item * Uniform registers: L<https://redplait.blogspot.com/2025/07/sass-instructions-uniform-registers.html>
 
-=item * Universal predicates (UPxx)
+=item * Uniform predicates (UPxx)
 
 =back
 
@@ -645,19 +645,33 @@ Main method in Ced is $ced->track($track_db). Also you should call 'finalize' be
 
 RegTrack can give you all 4 set of registers with (u)rs/(u)ps for registers/predicates - it retuns ref to hash where key is register number
 
+To get count of registers/predicates in track:
+
+=over
+
+=item * r_cnt to get count of regular registers
+
+=item * ur_cnt to get count of uniform registers
+
+=item * p_cnt to get count of regular predicates
+
+=item * up_cnt to get count of uniform predicates
+
+=back
+
 To get details track use following properties
 
 =over
 
-=item r($reg_idx) to get regular registers
+=item * r($reg_idx) to get regular registers
 
-=item ur($reg_idx) to get universal registers
+=item * ur($reg_idx) to get uniform registers
 
-=item p($reg_idx) to get predicates
+=item * p($reg_idx) to get predicates
 
-=item up($reg_idx) to get univeral predicates
+=item * up($reg_idx) to get uniform predicates
 
-=item p_write(index) - check if current instruction patches predicate with index, for Uniform Predicates use index | 0x8000
+=item * p_write(index) - check if current instruction patches predicate with index, for Uniform Predicates use index | 0x8000
 
 =back
 
@@ -790,7 +804,7 @@ PTypes & PType_name - names of types
 
 RTypes & RType_name - names of render types (R_xx)
 
-rkey($type, $is_universal) - returns name of key name for some register like 'URc'
+rkey($type, $is_uniform) - returns name of key name for some register like 'URc'
 
 reuse_attr($type) - returns name of reuse key like 'reuse_src_c'
 

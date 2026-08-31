@@ -3551,6 +3551,18 @@ rs(SV *obj)
  OUTPUT:
   RETVAL
 
+int
+r_cnt(SV *obj)
+ ALIAS:
+  Cubin::Ced::RegTrack::ur_cnt = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &rs = (ix == 1) ? r->ugpr: r->gpr;
+ CODE:
+  RETVAL = rs.size();
+ OUTPUT:
+  RETVAL
+
 SV *
 ps(SV *obj)
  ALIAS:
@@ -3560,6 +3572,18 @@ ps(SV *obj)
    auto &rs = (ix == 1) ? r->upred: r->pred;
  CODE:
   RETVAL = fill_rhash(rs);
+ OUTPUT:
+  RETVAL
+
+int
+p_cnt(SV *obj)
+ ALIAS:
+  Cubin::Ced::RegTrack::up_cnt = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &rs = (ix == 1) ? r->upred: r->pred;
+ CODE:
+  RETVAL = rs.size();
  OUTPUT:
   RETVAL
 
