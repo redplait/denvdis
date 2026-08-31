@@ -74,9 +74,13 @@ my($gs_rel, $gs_rela, $gs_rel_idx, $gs_rela_idx);
 my(@gs_cbs, $gs_cb_size, $gs_cb_off);
 # labels from attrs
 my($gs_loffs, $gs_ibt);
+# for -T
 # some cyclomatic stat: count of blocks, back-edges, total instrs, total edges. filled in dg
 # index 4 is public symbols count - filled in head_syms
 my @g_cycls = ( 0, 0, 0, 0, 0 );
+# used resources - reg, uniform regs, pred, uniform preds
+# second set used for per-function stat
+my @g_rsT = ( 0, 0, 0, 0, 0, 0, 0, 0 );
 # for -u
 my $gu_max = 0;
 my($gu_off, %gu_cache);
@@ -130,6 +134,21 @@ sub dump_cycls
   printf(" %f", 1.0 * $g_cycls[1] / $g_cycls[3]) if $g_cycls[3];
   printf("\n");
   printf("%d public syms, avg len %f blocks\n", $g_cycls[4], 1.0 * $g_cycls[0] / $g_cycls[4]) if $g_cycls[4];
+  # dump srT
+  if ( $g_cycls[0] ) {
+    printf("; %d regs, avg %f per block\n", $g_rsT[0], 1.0 * $g_rsT[0] / $g_cycls[0] ) if $g_rsT[0];
+    printf("; %d uregs, avg %f per block\n", $g_rsT[1], 1.0 * $g_rsT[1] / $g_cycls[0] ) if $g_rsT[1];
+    printf("; %d preds, avg %f per block\n", $g_rsT[2], 1.0 * $g_rsT[2] / $g_cycls[0] ) if $g_rsT[2];
+    printf("; %d upreds, avg %f per block\n", $g_rsT[3], 1.0 * $g_rsT[3] / $g_cycls[0] ) if $g_rsT[3];
+  }
+}
+
+sub next_srT
+{
+  for my $i ( 0 .. 3 ) {
+    $g_rsT[$i] += $g_rsT[$i + 4];
+    $g_rsT[$i + 4] = 0;
+  }
 }
 
 sub dump_estat
@@ -2834,6 +2853,7 @@ sub reseT { %g_Tr = (); }
 sub dump_T
 {
   my $bl = shift;
+  my $bl_size = scalar @$bl;
   my $latch = 0;
   my %b_hash; # key - block start, value - whole block
   my $m_r = 0;
@@ -2858,13 +2878,12 @@ sub dump_T
     }
     printf("\n");
   }
-  return unless($latch);
   # check holes in regular registers
   if ( $m_r ) {
     $latch = 0;
     for my $i ( 0 .. $m_r ) {
       next if ( exists $g_Tr{$i} );
-      printf("; RHoles:") if ( !$latch++ );
+      printf("; RHoles max %d:", $m_r) if ( !$latch++ );
       printf(" R%d", $i);
     }
     printf("\n") if $latch;
@@ -2874,12 +2893,18 @@ sub dump_T
     $latch = 0;
     for my $i ( 0 .. $m_ur ) {
       next if ( exists $g_Tr{$i | 0x8000} );
-      printf("; URHoles:") if ( !$latch++ );
+      printf("; URHoles max %d:", $m_ur) if ( !$latch++ );
       printf(" UR%d", $i);
     }
     printf("\n") if $latch;
-
   }
+  if ( $bl_size ) {
+    printf("; %d regs, avg %f per block\n", $g_rsT[4], 1.0 * $g_rsT[4] / $bl_size ) if $g_rsT[4];
+    printf("; %d uregs, avg %f per block\n", $g_rsT[5], 1.0 * $g_rsT[5] / $bl_size ) if $g_rsT[5];
+    printf("; %d preds, avg %f per block\n", $g_rsT[6], 1.0 * $g_rsT[6] / $bl_size ) if $g_rsT[6];
+    printf("; %d upreds, avg %f per block\n", $g_rsT[7], 1.0 * $g_rsT[7] / $bl_size ) if $g_rsT[7];
+  }
+  next_srT();
 }
 
 # dump reg track snapshot for current instruction
@@ -3301,6 +3326,16 @@ sub gdisasm
             post_process_swaps($block);
           }
         }
+      }
+      if ( defined $opt_T ) {
+        my $v = $rt->r_cnt();
+        $g_rsT[4] += $v if $v;
+        $v = $rt->ur_cnt();
+        $g_rsT[5] += $v if $v;
+        $v = $rt->p_cnt();
+        $g_rsT[6] += $v if $v;
+        $v = $rt->up_cnt();
+        $g_rsT[7] += $v if $v;
       }
       dump_rt($rt);
       dump_t2l($block->[16]) if ( defined($opt_l) && defined($opt_v) );
@@ -3927,7 +3962,10 @@ dump_ruc() if defined($opt_u);
 dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
 dump_ins_stat() if defined($opt_S);
-dump_cycls() if defined($opt_g);
+if ( defined $opt_T ) {
+  next_srT();
+  dump_cycls();
+}
 dump_swap_stat() if defined($opt_s);
 if ( in_lmode() ) {
   dump_estat() if defined($opt_e);
