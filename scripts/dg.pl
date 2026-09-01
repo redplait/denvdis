@@ -935,11 +935,17 @@ sub add_barstat
   }
 }
 
+# to stop changing this stat at every run - no while each anymore
+# only sorted instruction names
 sub dump_barstat
 {
+  return unless(keys %g_barstat);
   print("--- bar stat\twait\tread\twrite\n");
-  while( my($name, $ar) = each(%g_barstat) ) {
-    printf("%s:\t%d %d %d\n", $name, $ar->[0], $ar->[1], $ar->[2]);
+  foreach my $name ( sort keys %g_barstat ) {
+    my $ar = $g_barstat{$name};
+    printf("%s:\t", $name);
+    printf("\t") if ( length($name) < 8 );
+    printf("%d\t%d\t%d\n", $ar->[0], $ar->[1], $ar->[2]);
   }
 }
 
