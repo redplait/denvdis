@@ -2898,6 +2898,26 @@ sub dump_T
     }
     printf("\n");
   }
+  # dump score boards used in single block
+  # reuse b_hash from prev loop - it was inited if we have non-zero $latch
+  my $m_bd = 0;
+  my $b_filled = $latch;
+  $latch = 0;
+  while( my($r, $ar) = each(%g_Tbd) ) {
+    $m_bd = $r if ( $r > $m_bd );
+    next if ( $ar->[0] != 1 );
+    printf(";;; BDs used in single block:\n") if ( !$latch++ );
+    unless( $b_filled ) {
+      $b_hash{ $_->[0] } = $_ for @$bl;
+      ++$b_filled;
+    }
+    printf(";  B%d in %X", $r, $ar->[1]);
+    if ( exists $b_hash{ $ar->[1] } ) {
+      my $fb = $b_hash{ $ar->[1] };
+      printf(" end %X%s", $fb->[1]->[1], get_block_type($fb));
+    }
+    printf("\n");
+  }
   # check holes in regular registers
   if ( $m_r ) {
     $latch = 0;
@@ -2915,6 +2935,16 @@ sub dump_T
       next if ( exists $g_Tr{$i | 0x8000} );
       printf("; URHoles max %d:", $m_ur) if ( !$latch++ );
       printf(" UR%d", $i);
+    }
+    printf("\n") if $latch;
+  }
+  # check holes in score boards
+  if ( $m_bd ) {
+    $latch = 0;
+    for my $i ( 0 .. $m_bd ) {
+      next if ( exists $g_Tbd{$i} );
+      printf("; BDHoles max %d:", $m_bd) if ( !$latch++ );
+      printf(" B%d", $i);
     }
     printf("\n") if $latch;
   }
