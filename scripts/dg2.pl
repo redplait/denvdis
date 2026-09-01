@@ -81,6 +81,8 @@ my @g_cycls = ( 0, 0, 0, 0, 0 );
 # used resources - reg, uniform regs, pred, uniform preds, score boards
 # second set used for per-function stat
 my @g_rsT = ( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
+# stat for possibly reg pressure descrease - first two are (u)reg total, second tow are (u)reg holes count
+my @g_rpT = ( 0, 0, 0, 0 );
 # for -u
 my $gu_max = 0;
 my($gu_off, %gu_cache);
@@ -142,6 +144,9 @@ sub dump_cycls
     printf("; %d upreds, avg %f per block\n", $g_rsT[3], 1.0 * $g_rsT[3] / $g_cycls[0] ) if $g_rsT[3];
     printf("; %d BD, avg %f per block\n", $g_rsT[4], 1.0 * $g_rsT[4] / $g_cycls[0] ) if $g_rsT[4];
   }
+  # dump found holes in registers
+  printf("; %d holes in regs (%d), %f\n", $g_rpT[2], $g_rpT[0], 1.0 * $g_rpT[2] / $g_rpT[0]) if ( $g_rpT[0] && $g_rpT[2] );
+  printf("; %d holes in uregs (%d), %f\n", $g_rpT[3], $g_rpT[1], 1.0 * $g_rpT[3] / $g_rpT[1]) if ( $g_rpT[1] && $g_rpT[3] );
 }
 
 sub next_srT
@@ -2920,21 +2925,26 @@ sub dump_T
   }
   # check holes in regular registers
   if ( $m_r ) {
+    $g_rpT[0] += $m_r;
     $latch = 0;
     for my $i ( 0 .. $m_r ) {
       next if ( exists $g_Tr{$i} );
       printf("; RHoles max %d:", $m_r) if ( !$latch++ );
       printf(" R%d", $i);
+      $g_rpT[2]++;
     }
     printf("\n") if $latch;
   }
   # check holes in uniform registers
   if ( $m_ur ) {
+    $g_rpT[1] += $m_ur;
     $latch = 0;
     for my $i ( 0 .. $m_ur ) {
       next if ( exists $g_Tr{$i | 0x8000} );
       printf("; URHoles max %d:", $m_ur) if ( !$latch++ );
       printf(" UR%d", $i);
+      # skip holes up to UR3
+      $g_rpT[3]++ if ( $i > 3 );
     }
     printf("\n") if $latch;
   }
