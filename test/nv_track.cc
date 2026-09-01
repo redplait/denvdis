@@ -252,6 +252,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
   NVP_type t1 = GENERIC, t2 = GENERIC,
    t_a = GENERIC, t_b = GENERIC, t_c = GENERIC, t_e = GENERIC, t_h = GENERIC;
   int ends2 = 0;
+  const int urz_lim = m_urz.has_value() ? m_urz.value() : m_dis->rz;
   bool setp = is_setp(p.first, ends2);
   if ( has_props ) {
     for ( auto pr: *p.first->props ) {
@@ -457,7 +458,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         _reg_history::RH what = _reg_history::windex(i);
-        if ( (int)kvi->second + i >= m_dis->rz ) break;
+        if ( (int)kvi->second + i >= urz_lim ) break;
         fill_tab_chains(p, s_tkey_ugpr, rtdb->rugpr(kvi->second + i, off, what, op_idx, _t), 1);
         res++;
       }
@@ -467,7 +468,7 @@ int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &
       int res = 0;
       for ( unsigned short i = 0; i < dsize / 32; i++ ) {
         _reg_history::RH what = _reg_history::windex(i);
-        if ( (int)kvi->second + i >= m_dis->rz ) break;
+        if ( (int)kvi->second + i >= urz_lim ) break;
         fill_tab_chains(p, s_tkey_ugpr, rtdb->wugpr(kvi->second + i, off, what, _t), 0);
         res++;
       }
