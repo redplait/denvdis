@@ -3503,6 +3503,15 @@ bd(SV *obj, IV key, unsigned long from = 0)
   RETVAL
 
 SV *
+bds(SV *obj)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+  RETVAL = fill_rhash(r->bds);
+ OUTPUT:
+  RETVAL
+
+SV *
 has_bd(SV *obj)
  INIT:
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
@@ -3584,6 +3593,15 @@ p_cnt(SV *obj)
    auto &rs = (ix == 1) ? r->upred: r->pred;
  CODE:
   RETVAL = rs.size();
+ OUTPUT:
+  RETVAL
+
+int
+bd_cnt(SV *obj)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+ CODE:
+  RETVAL = r->bds.size();
  OUTPUT:
   RETVAL
 
