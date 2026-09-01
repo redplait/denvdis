@@ -78,9 +78,9 @@ my($gs_loffs, $gs_ibt);
 # some cyclomatic stat: count of blocks, back-edges, total instrs, total edges. filled in dg
 # index 4 is public symbols count - filled in head_syms
 my @g_cycls = ( 0, 0, 0, 0, 0 );
-# used resources - reg, uniform regs, pred, uniform preds
+# used resources - reg, uniform regs, pred, uniform preds, score boards
 # second set used for per-function stat
-my @g_rsT = ( 0, 0, 0, 0, 0, 0, 0, 0 );
+my @g_rsT = ( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
 # for -u
 my $gu_max = 0;
 my($gu_off, %gu_cache);
@@ -140,14 +140,15 @@ sub dump_cycls
     printf("; %d uregs, avg %f per block\n", $g_rsT[1], 1.0 * $g_rsT[1] / $g_cycls[0] ) if $g_rsT[1];
     printf("; %d preds, avg %f per block\n", $g_rsT[2], 1.0 * $g_rsT[2] / $g_cycls[0] ) if $g_rsT[2];
     printf("; %d upreds, avg %f per block\n", $g_rsT[3], 1.0 * $g_rsT[3] / $g_cycls[0] ) if $g_rsT[3];
+    printf("; %d BD, avg %f per block\n", $g_rsT[4], 1.0 * $g_rsT[4] / $g_cycls[0] ) if $g_rsT[4];
   }
 }
 
 sub next_srT
 {
-  for my $i ( 0 .. 3 ) {
-    $g_rsT[$i] += $g_rsT[$i + 4];
-    $g_rsT[$i + 4] = 0;
+  for my $i ( 0 .. 4 ) {
+    $g_rsT[$i] += $g_rsT[$i + 5];
+    $g_rsT[$i + 5] = 0;
   }
 }
 
@@ -2829,6 +2830,8 @@ sub dump_t2l
 # so it is global hash, key is reg from snap, value is [ number of blocks, block start addr ]
 # must be reset at end of section processing
 my %g_Tr;
+# and the same for score boards
+my %g_Tbd;
 
 # args: block, g from snap
 sub snap2T
@@ -2847,7 +2850,24 @@ sub snap2T
   }
 }
 
-sub reseT { %g_Tr = (); }
+# args: block, snap_bd
+sub snap_bd2T
+{
+  my($g, $bl) = @_;
+  return unless defined($g);
+  foreach my $r ( keys %$g ) {
+    if ( exists $g_Tbd{$r} ) {
+      my $ar = $g_Tbd{$r};
+      next if ( $ar->[0] > 1 );
+      next if ( $ar->[1] == $bl->[0] );
+      $ar->[0]++;
+    } else {
+      $g_Tbd{$r} = [ 1, $bl->[0] ];
+    }
+  }
+}
+
+sub reseT { %g_Tr = (); %g_Tbd = (); }
 
 # args - list of blocks
 sub dump_T
@@ -2899,10 +2919,11 @@ sub dump_T
     printf("\n") if $latch;
   }
   if ( $bl_size ) {
-    printf("; %d regs, avg %f per block\n", $g_rsT[4], 1.0 * $g_rsT[4] / $bl_size ) if $g_rsT[4];
-    printf("; %d uregs, avg %f per block\n", $g_rsT[5], 1.0 * $g_rsT[5] / $bl_size ) if $g_rsT[5];
-    printf("; %d preds, avg %f per block\n", $g_rsT[6], 1.0 * $g_rsT[6] / $bl_size ) if $g_rsT[6];
-    printf("; %d upreds, avg %f per block\n", $g_rsT[7], 1.0 * $g_rsT[7] / $bl_size ) if $g_rsT[7];
+    printf("; %d regs, avg %f per block\n", $g_rsT[5], 1.0 * $g_rsT[5] / $bl_size ) if $g_rsT[5];
+    printf("; %d uregs, avg %f per block\n", $g_rsT[6], 1.0 * $g_rsT[6] / $bl_size ) if $g_rsT[6];
+    printf("; %d preds, avg %f per block\n", $g_rsT[7], 1.0 * $g_rsT[7] / $bl_size ) if $g_rsT[7];
+    printf("; %d upreds, avg %f per block\n", $g_rsT[8], 1.0 * $g_rsT[8] / $bl_size ) if $g_rsT[8];
+    printf("; %d BD, avg %f per block\n", $g_rsT[9], 1.0 * $g_rsT[9] / $bl_size ) if $g_rsT[9];
   }
   next_srT();
 }
@@ -2946,7 +2967,7 @@ sub dump_snap_bd
     my $what = '';
     $what = ' read' if ( $v & 1 );
     $what = ' write' if ( $v & 2 );
-    printf("; BD%d%s\n", $idx, $what);
+    printf("; B%d%s\n", $idx, $what);
   }
 }
 
@@ -3247,7 +3268,11 @@ sub gdisasm
           ++$g_R[0] if ( defined $block->[13]->[19] );
         }
         dump_snap_cc($rt->cc());
-        dump_snap_bd($rt->snap_bd());
+        my $sbd = $rt->snap_bd();
+        if ( defined $sbd ) {
+          dump_snap_bd($sbd);
+          snap_bd2T($sbd, $block) if defined($opt_T);
+        }
         my($g, $pr) = $rt->snap();
         if ( defined($g) || defined($pr) ) {
           dump_snap($g, $pr);
@@ -3329,13 +3354,15 @@ sub gdisasm
       }
       if ( defined $opt_T ) {
         my $v = $rt->r_cnt();
-        $g_rsT[4] += $v if $v;
-        $v = $rt->ur_cnt();
         $g_rsT[5] += $v if $v;
-        $v = $rt->p_cnt();
+        $v = $rt->ur_cnt();
         $g_rsT[6] += $v if $v;
-        $v = $rt->up_cnt();
+        $v = $rt->p_cnt();
         $g_rsT[7] += $v if $v;
+        $v = $rt->up_cnt();
+        $g_rsT[8] += $v if $v;
+        $v = $rt->bd_cnt();
+        $g_rsT[9] += $v if $v;
       }
       dump_rt($rt);
       dump_t2l($block->[16]) if ( defined($opt_l) && defined($opt_v) );
@@ -3755,6 +3782,7 @@ TI:
 #   Y         marker          close prev block
     if ( 'ARRAY' eq ref $cop->[1] ) {
       my $need_close = 0;
+      my $prev_block = $cb;
       if ( defined $cb ) {
         # check if all labels located in current block
         for ( @{ $cop->[1] } ) {
@@ -3766,6 +3794,9 @@ TI:
       }
       $close_block->($cop->[0]-1) if ( $need_close );
       $cb = $add_block->($cop->[0])  unless $cb;
+      if ( $need_close && defined($prev_block) ) { # add link from prev block to this
+        $prev_block->[3]->{$cb->[0]} = 1;
+      }
       $cb->[3]->{$_} = 0 for ( @{ $cop->[1] } );
       next;
     }
