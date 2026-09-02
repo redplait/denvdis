@@ -3569,14 +3569,13 @@ rs_nw(SV *obj)
  CODE:
    if ( rs.empty() ) RETVAL = &PL_sv_undef;
    else { // enum all history and filter by no_wide_reg
-     AV *av = newAV();
+     HV *hv = newHV();
      for ( auto rhi: rs ) {
-       if ( !no_wide_reg(rhi.second) ) continue;
        int key = rhi.first;
        if ( 1 == ix ) key |= 0x8000;
-       av_push(av, newSViv(key));
+       hv_store_ent(hv, newSViv(key), newSViv(no_wide_reg(rhi.second)), 0);
      }
-     RETVAL = newRV_noinc((SV*)av);
+     RETVAL = newRV_noinc((SV*)hv);
    }
  OUTPUT:
   RETVAL
