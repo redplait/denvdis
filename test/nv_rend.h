@@ -500,7 +500,8 @@ class NV_renderer {
       && m_dis->rz != (int)kvi->second;
    }
    inline bool is_ureg(const nv_eattr *ea, NV_extracted::const_iterator &kvi) const {
-     return (!strcmp(ea->ename, "UniformRegister") || !strcmp(ea->ename, "NonZeroUniformRegister")) && m_dis->rz != (int)kvi->second;
+     const int urz = m_urz.has_value() ? m_urz.value() : m_dis->rz;
+     return (!strcmp(ea->ename, "UniformRegister") || !strcmp(ea->ename, "NonZeroUniformRegister")) && urz != (int)kvi->second;
    }
    inline bool is_bd(const nv_eattr *ea) const {
      return !strcmp(ea->ename, "BD");
