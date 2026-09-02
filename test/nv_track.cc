@@ -238,6 +238,10 @@ static int fill_tab_chain_CC(const NV_renderer::NV_pair &p, RegTabChains *tlist,
   return res;
 }
 
+// prefixes for is_usv, for uniform regs there only two such beasts
+static const std::string_view s_UR_a = "Ra_U"sv;
+static const std::string_view s_UR_b = "Rb_U"sv;
+
 int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &p, unsigned long off)
 {
   int res = 0;
@@ -614,6 +618,8 @@ printf("%lX idx %d rtype %d\n", off, idx, r->type);
       auto len = strlen(ve.arg);
       if ( len < 2 ) return GENERIC;
       if ( len > 7 && !strcmp(ve.arg + len - 7, "_offset") ) len -= 7;
+      if ( is_usv(a_sv, ve.arg, "URa", s_UR_a) ) { out_size = a_size; return t_a; }
+      if ( is_usv(b_sv, ve.arg, "URb", s_UR_b) ) { out_size = b_size; return t_b; }
       if ( ve.arg[len - 2] != 'R' ) return GENERIC;
       if ( ve.arg[len - 1] == 'a' ) { out_size = a_size; return t_a; }
       if ( ve.arg[len - 1] == 'b' ) { out_size = b_size; return t_b; }

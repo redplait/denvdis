@@ -109,7 +109,11 @@ class NV_renderer {
   }
   static bool is_sv2(const std::string_view *sv, const char *name, const char *pfx)
   {
-     return NV_renderer::is_sv(sv, name) || !strcmp(name, pfx);
+    return NV_renderer::is_sv(sv, name) || !strcmp(name, pfx);
+  }
+  static bool is_usv(const std::string_view *sv, const char *name, const char *pfx, const std::string_view &Rpfx) {
+    std::string_view tmp{name};
+    return tmp.starts_with(Rpfx) || is_sv2(sv, name, pfx);
   }
   int load(const char *);
   int load(std::string &s) {
