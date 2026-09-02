@@ -81,7 +81,7 @@ my @g_cycls = ( 0, 0, 0, 0, 0 );
 # used resources - reg, uniform regs, pred, uniform preds, score boards
 # second set used for per-function stat
 my @g_rsT = ( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
-# stat for possibly reg pressure descrease - first two are (u)reg total, second tow are (u)reg holes count
+# stat for possibly reg pressure descrease - first two are (u)reg total, second two are (u)reg holes count
 my @g_rpT = ( 0, 0, 0, 0 );
 # for -u
 my $gu_max = 0;
@@ -1082,12 +1082,17 @@ sub add_barstat
   }
 }
 
+# to stop changing this stat at every run - no while each anymore
+# only sorted instruction names
 sub dump_barstat
 {
   return unless(keys %g_barstat);
   print("--- bar stat\twait\tread\twrite\n");
-  while( my($name, $ar) = each(%g_barstat) ) {
-    printf("%s:\t%d %d %d\n", $name, $ar->[0], $ar->[1], $ar->[2]);
+  foreach my $name ( sort keys %g_barstat ) {
+    my $ar = $g_barstat{$name};
+    printf("%s:\t", $name);
+    printf("\t") if ( length($name) < 8 );
+    printf("%d\t%d\t%d\n", $ar->[0], $ar->[1], $ar->[2]);
   }
 }
 
@@ -2855,7 +2860,7 @@ sub snap2T
   }
 }
 
-# args: block, snap_bd
+# args: snap_bd, block
 sub snap_bd2T
 {
   my($g, $bl) = @_;
@@ -3460,7 +3465,7 @@ symbol: ; some local/global function
 
 =end text
 
-Seems that we must close previous block and start new one
+Seems that we must close previous block and start new one, adding link from A to B
 
 =head2 Complexity of algorithm
 
@@ -3471,8 +3476,8 @@ this can be done with sorted list of IBT sources
 
 =item Pass 2 - sort O(m * log(m)) + O(m) where m is amount of blocks + markers
 
-=item Pass 3 - resolve block back-links. If we have M blocks - each can have M - 1 back references, resolving can use binary search, so
-total O(M * M * log(M))
+=item Pass 3 - resolve block back-links. If we have M blocks - each can have M - 1 back references, resolving can use binary search
+(implemented in sub bin_sac), so total O(M * (M / 2) * log(M))
 
 =back
 
@@ -3820,9 +3825,9 @@ TI:
 #   Y        back ref         put back ref to current block
 #   N         marker          wtf? add new block with single instruction - don't know if it has sence
 #   Y         marker          close prev block
+    my $prev_block = $cb;
     if ( 'ARRAY' eq ref $cop->[1] ) {
       my $need_close = 0;
-      my $prev_block = $cb;
       if ( defined $cb ) {
         # check if all labels located in current block
         for ( @{ $cop->[1] } ) {
@@ -3846,6 +3851,8 @@ TI:
       unless($cb) {
         $cb = $add_block->($curr_off);
         $cb->[2] = $cop->[1];
+        # add link from prev block to newly created
+        $prev_block->[3]->{$cb->[0]} = 1 if ( defined $prev_block );
         next;
       }
       unless(defined $cb->[2]) {
@@ -3857,6 +3864,8 @@ TI:
       $close_block->(1+$g_ced->prev_off($curr_off));
       $cb = $add_block->($curr_off);
       $cb->[2] = $cop->[1];
+      # add link from prev block to newly created
+      $prev_block->[3]->{$cb->[0]} = 1 if ( defined $prev_block );
       next;
     }
     # marker or dead loop
