@@ -109,7 +109,7 @@ struct cbank_history {
    there are many of resources in latency tables besides gpr/predicates
    run grep TAB *_2.txt | grep -v GPR | grep -v PRED
    Hovewer most of them ORDERED_ZERO like SCOREBOARD
-   There are severa sm90 (H100) specific tables:
+   There are several sm90 (H100) specific tables:
     - CGABARRIER but connection field CgaBar not presented in MD - stored in CgaBar with dirty hacks
     - GMMA_SCOREBOARD
     - GMMA_GROUP_SCOREBOARD - connected by field gsb:
@@ -159,6 +159,11 @@ struct track_snap {
   }
 };
 
+template <typename T>
+bool no_wide_reg(const std::vector<T> &hist) {
+  return std::all_of(hist.cbegin(), hist.cend(), [](const T& rh) { return 0 == rh.windex(); });
+}
+
 // register tracks
 // there can be 4 groups of register
 // - general purpose registers
@@ -170,7 +175,7 @@ struct track_snap {
 struct reg_pad {
   typedef std::unordered_map<int, std::vector<reg_history<2> > > RSet;
   typedef std::unordered_map<int, std::vector<typed_reg_history> > TRSet;
-  typedef std::unordered_map<int,std::vector<_reg_history> > BDSet;
+  typedef std::unordered_map<int, std::vector<_reg_history> > BDSet;
   std::vector<reg_history<2> > cc; // bcs CC has table_anti in sm3/sm4
   // gsb for sm90
   std::vector<reg_history<1> > gsb0, gsb7;

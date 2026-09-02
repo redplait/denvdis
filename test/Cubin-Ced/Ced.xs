@@ -3491,6 +3491,17 @@ cbs(SV *obj)
     }
   }
 
+int
+bd_len(SV *obj, IV key)
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto bd_iter = r->bds.find(key);
+ CODE:
+   if ( bd_iter == r->bds.end() ) RETVAL = 0;
+   else RETVAL = bd_iter->second.size();
+ OUTPUT:
+  RETVAL
+
 SV *
 bd(SV *obj, IV key, unsigned long from = 0)
  INIT:
@@ -3549,6 +3560,29 @@ ccs(SV *obj, unsigned long from = 0)
   RETVAL
 
 SV *
+rs_nw(SV *obj)
+ ALIAS:
+  Cubin::Ced::RegTrack::urs_nw = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &rs = (ix == 1) ? r->ugpr: r->gpr;
+ CODE:
+   if ( rs.empty() ) RETVAL = &PL_sv_undef;
+   else { // enum all history and filter by no_wide_reg
+     AV *av = newAV();
+     for ( auto rhi: rs ) {
+       if ( !no_wide_reg(rhi.second) ) continue;
+       int key = rhi.first;
+       if ( 1 == ix ) key |= 0x8000;
+       av_push(av, newSViv(key));
+     }
+     RETVAL = newRV_noinc((SV*)av);
+   }
+ OUTPUT:
+  RETVAL
+
+
+SV *
 rs(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::urs = 1
@@ -3605,6 +3639,20 @@ bd_cnt(SV *obj)
  OUTPUT:
   RETVAL
 
+int
+r_len(SV *obj, IV key)
+ ALIAS:
+  Cubin::Ced::RegTrack::ur_len = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &rs = (ix == 1) ? r->ugpr: r->gpr;
+   auto rs_iter = rs.find(key);
+ CODE:
+   if ( rs_iter == rs.end() ) RETVAL = 0;
+   else RETVAL = rs_iter->second.size();
+ OUTPUT:
+  RETVAL
+
 SV *
 r(SV *obj, IV key, unsigned long from = 0)
  ALIAS:
@@ -3616,6 +3664,20 @@ r(SV *obj, IV key, unsigned long from = 0)
  CODE:
   if ( rs_iter == rs.end() ) RETVAL = &PL_sv_undef;
   else RETVAL = fill_reg(rs_iter->second, from);
+ OUTPUT:
+  RETVAL
+
+int
+p_len(SV *obj, IV key)
+ ALIAS:
+  Cubin::Ced::RegTrack::up_len = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &rs = (ix == 1) ? r->upred: r->pred;
+   auto rs_iter = rs.find(key);
+ CODE:
+   if ( rs_iter == rs.end() ) RETVAL = 0;
+   else RETVAL = rs_iter->second.size();
  OUTPUT:
   RETVAL
 

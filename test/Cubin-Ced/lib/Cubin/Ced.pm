@@ -645,7 +645,7 @@ Main method in Ced is $ced->track($track_db). Also you should call 'finalize' be
 
 RegTrack can give you all 4 set of registers with (u)rs/(u)ps for registers/predicates - it retuns ref to hash where key is register number
 
-To get count of registers/predicates in track:
+To get count of registers/predicates/scoreboards in track:
 
 =over
 
@@ -657,19 +657,23 @@ To get count of registers/predicates in track:
 
 =item * up_cnt to get count of uniform predicates
 
+=item * bd_cnt to get count of scoreboards
+
 =back
 
 To get details track use following properties
 
 =over
 
-=item * r($reg_idx) to get regular registers
+=item * r($reg_idx) to get regular register
 
-=item * ur($reg_idx) to get uniform registers
+=item * ur($reg_idx) to get uniform register
 
-=item * p($reg_idx) to get predicates
+=item * p($reg_idx) to get predicate
 
-=item * up($reg_idx) to get uniform predicates
+=item * up($reg_idx) to get uniform predicate
+
+=item * bd($bd_idx) to get scoreboard
 
 =item * p_write(index) - check if current instruction patches predicate with index, for Uniform Predicates use index | 0x8000
 
