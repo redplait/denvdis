@@ -885,9 +885,9 @@ sub bin_sa
 {
   my($ar, $idx, $what) = @_;
   my $low = 0;
-  my $high = scalar @$ar; # Index of the last element
-  while ($low < $high) {
-     my $mid = int(($low + $high) / 2); # Calculate the middle index
+  my $high = scalar(@$ar) - 1; # Index of the last element
+  while ($low <= $high) {
+     my $mid = int(($low + $high) / 2.0); # Calculate the middle index
      if ($ar->[$mid]->[$idx] == $what) {
         return wantarray ? ($mid, $ar->[$mid]) : $mid; # Target found
      } elsif ($ar->[$mid]->[$idx] < $what) {
@@ -900,14 +900,14 @@ sub bin_sa
 }
 
 # lame binary search in array
-# args: ref to array, sub with <=> like result, target
+# args: ref to array, sub with <=> like result against current array item, target
 sub bin_sac
 {
   my($ar, $cb, $what) = @_;
   my $low = 0;
-  my $high = scalar @$ar; # Index of the last element
-  while ($low < $high) {
-     my $mid = int(($low + $high) / 2); # Calculate the middle index
+  my $high = scalar(@$ar) - 1; # Index of the last element
+  while ($low <= $high) {
+     my $mid = int(($low + $high) / 2.0); # Calculate the middle index
      my $res = $cb->($ar->[$mid], $what);
      if (!$res) {
         return wantarray ? ($mid, $ar->[$mid]) : $mid; # Target found
@@ -2850,6 +2850,7 @@ my($g_Trw0, $g_Turw0);
 sub merge_rw0
 {
   my($prev, $rt, $hr) = @_;
+  return $prev unless(defined $hr);
   my %tmp;
   my $add = sub {
    my $r = shift;
@@ -3631,8 +3632,7 @@ sub is_pre
 # MEM_SCBD_TYPE filled only since sm90
 sub is_bssy
 {
-  return 1 if 'BSSY' eq $g_ced->ins_name();
-  0;
+  'BSSY' eq $g_ced->ins_name();
 }
 
 my %s_bb_end = (
@@ -3886,6 +3886,11 @@ TI:
   my $need_firstb = 1;
   $need_firstb = 0 if ( scalar(@sorted) && 'ARRAY' eq $sorted[0]->[1] && $sorted[0]->[0] <= $code_off );
   $cb = $add_block->($code_off) if ( $need_firstb );
+  # closure to link curr block in $cb with some prev
+  my $prev_blink = sub {
+    my $pblock = shift;
+    $cb->[3]->{$pblock->[0]} = 1;
+  };
   foreach my $cop ( @sorted ) {
 # we have 8 cases here
 # has block  current operand  what to do
@@ -3911,8 +3916,9 @@ TI:
       }
       $close_block->($cop->[0]-1) if ( $need_close );
       $cb = $add_block->($cop->[0])  unless $cb;
+printf("cop %X need_closee %d prev %s\n", $cop->[0], $need_close, defined($prev_block) ? 'Y' : 'N') if defined($opt_d);
       if ( $need_close && defined($prev_block) ) { # add link from prev block to this
-        $prev_block->[3]->{$cb->[0]} = 1;
+        $prev_blink->($prev_block);
       }
       $cb->[3]->{$_} = 0 for ( @{ $cop->[1] } );
       next;
@@ -3924,7 +3930,7 @@ TI:
         $cb = $add_block->($curr_off);
         $cb->[2] = $cop->[1];
         # add link from prev block to newly created
-        $prev_block->[3]->{$cb->[0]} = 1 if ( defined $prev_block );
+        $prev_blink->($prev_block) if ( defined $prev_block );
         next;
       }
       unless(defined $cb->[2]) {
@@ -3937,7 +3943,7 @@ TI:
       $cb = $add_block->($curr_off);
       $cb->[2] = $cop->[1];
       # add link from prev block to newly created
-      $prev_block->[3]->{$cb->[0]} = 1 if ( defined $prev_block );
+      $prev_blink->($prev_block) if ( defined $prev_block );
       next;
     }
     # marker or dead loop
@@ -3963,13 +3969,14 @@ TI:
   my $bs_cb = sub {
     my($br, $addr) = @_;
     return 0 if ( $addr >= $br->[0] && $addr < $br->[1]->[1] );
-    return -1 if ( $addr > $br->[0] );
-    1;
+    return 1 if ( $br->[0] > $addr );
+    -1;
   };
   foreach $cb ( @bbs ) {
     my $brs = $cb->[3];
     my %blinks;
     foreach my $addr ( keys %$brs ) {
+      next if ( $addr >= $cb->[0] && $addr < $cb->[1]->[1] ); # skip self refs - to avoid expensive bin_sac call
       my($idx, $found) = bin_sac(\@bbs, $bs_cb, $addr);
       next unless defined($found);
       next if ( $found == $cb ); # skip self references
