@@ -627,9 +627,9 @@ sub bin_sa
 {
   my($ar, $idx, $what) = @_;
   my $low = 0;
-  my $high = scalar @$ar; # Index of the last element
-  while ($low < $high) {
-     my $mid = int(($low + $high) / 2); # Calculate the middle index
+  my $high = scalar(@$ar) - 1; # Index of the last element
+  while ($low <= $high) {
+     my $mid = int(($low + $high) / 2.0); # Calculate the middle index
      if ($ar->[$mid]->[$idx] == $what) {
         return wantarray ? ($mid, $ar->[$mid]) : $mid; # Target found
      } elsif ($ar->[$mid]->[$idx] < $what) {
@@ -647,9 +647,9 @@ sub bin_sac
 {
   my($ar, $cb, $what) = @_;
   my $low = 0;
-  my $high = scalar @$ar; # Index of the last element
-  while ($low < $high) {
-     my $mid = int(($low + $high) / 2); # Calculate the middle index
+  my $high = scalar(@$ar) - 1; # Index of the last element
+  while ($low <= $high) {
+     my $mid = int(($low + $high) / 2.0); # Calculate the middle index
      my $res = $cb->($ar->[$mid], $what);
      if (!$res) {
         return wantarray ? ($mid, $ar->[$mid]) : $mid; # Target found
@@ -2898,6 +2898,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
 #   Y        back ref         put back ref to current block
 #   N         marker          wtf? add new block with single instruction - don't know if it has sence
 #   Y         marker          close prev block
+     my $prev_block = $cb;
     if ( 'ARRAY' eq ref $cop->[1] ) {
       my $need_close = 0;
       if ( defined $cb ) {
@@ -2911,6 +2912,9 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
       }
       $close_block->($cop->[0]-1) if ( $need_close );
       $cb = $add_block->($cop->[0])  unless $cb;
+      if ( $need_close && defined($prev_block) ) { # add link from prev block to this
+        $prev_block->[3]->{$cb->[0]} = 1;
+      }
       $cb->[3]->{$_} = 0 for ( @{ $cop->[1] } );
       next;
     }
@@ -2955,8 +2959,8 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
   my $bs_cb = sub {
     my($br, $addr) = @_;
     return 0 if ( $addr >= $br->[0] && $addr < $br->[1] );
-    return -1 if ( $addr > $br->[0] );
-    1;
+    return 1 if ( $br->[0] > $addr );
+    -1;
   };
   foreach $cb ( @bbs ) {
     my $brs = $cb->[3];
