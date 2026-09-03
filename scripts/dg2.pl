@@ -2842,6 +2842,70 @@ sub dump_t2l
 my %g_Tr;
 # and the same for score boards
 my %g_Tbd;
+# two ref to map where key is reg idx and value is [ always_zero, cumulative history len] - for registers always used with zero windex
+my($g_Trw0, $g_Turw0);
+
+# add zero-windex registers from reg track at end of some block
+# args: prev rw0, rt, ref to hash from (u)rs_nw
+sub merge_rw0
+{
+  my($prev, $rt, $hr) = @_;
+  my %tmp;
+  my $add = sub {
+   my $r = shift;
+   if ( $hr->{$r} ) {
+     $tmp{$r} = [ 1, $r & 0x8000 ? $rt->ur_len($r & 0xff) : $rt->r_len($r) ];
+   } else {
+     $tmp{$r} = [ 0, 0 ];
+   }
+  };
+  unless( defined $prev ) { # this is first call
+    return \%tmp unless( defined $hr );
+    $add->($_) for ( keys %$hr );
+    return \%tmp;
+  }
+  return $prev unless( defined $hr );
+  foreach my $r ( keys %$hr ) {
+    if ( exists $prev->{$r} ) {
+      # check if both old and new marked with 1
+      if ( $prev->{$r}->[0] && $hr->{$r} ) {
+        $tmp{$r} = [ 1, $prev->{$r}->[1] + ($r & 0x8000) ? $rt->ur_len($r & 0xff) : $rt->r_len($r) ];
+      } else {
+        $tmp{$r} = [ 0, 0 ];
+      }
+    } else { # new reg
+     $add->($r);
+    }
+  }
+  # finally copy all values from old map not presented in current rt
+  # if you remove this loop you will get only registers used in every block
+  for ( keys %$prev ) {
+    $tmp{$_} = $prev->{$_} unless( exists $hr->{$)} );
+  }
+  return \%tmp;
+}
+
+# add zero-windex regs from rt
+# arg: rt
+sub add_rw0
+{
+  my $rt = shift;
+  $g_Trw0 = merge_rw0($g_Trw0, $rt, $rt->rs_nw());
+  $g_Turw0 = merge_rw0($g_Turw0, $rt, $rt->urs_nw());
+}
+
+# dump zero-windex regs
+# arg: ref to rw0 hash, is uniform
+sub dump_rw0
+{
+  my($hr, $uni) = @_;
+  return unless defined($hr);
+  return unless( scalar keys %$hr );
+  printf(";;; 0Windex %sRegs %d:\n", $uni ? 'U' : '', scalar keys %$hr);
+  foreach my $r ( sort { $a <=> $b } keys %$hr ) {
+    printf(";  %sR%d - %d\n", $uni ? 'U' : '', $r & 0xff, $hr->{$r}->[1]) if ( $hr->{$r}->[0] );
+  }
+}
 
 # args: block, g from snap
 sub snap2T
@@ -2877,7 +2941,11 @@ sub snap_bd2T
   }
 }
 
-sub reseT { %g_Tr = (); %g_Tbd = (); }
+sub reseT {
+ %g_Tr = (); %g_Tbd = ();
+ undef $g_Trw0;
+ undef $g_Turw0
+}
 
 # args - list of blocks
 sub dump_T
@@ -2963,6 +3031,9 @@ sub dump_T
     }
     printf("\n") if $latch;
   }
+  # dump (u)rw0
+  dump_rw0($g_Trw0, 0) if ( defined $g_Trw0 );
+  dump_rw0($g_Turw0, 1) if ( defined $g_Turw0 );
   if ( $bl_size ) {
     printf("; %d regs, avg %f per block\n", $g_rsT[5], 1.0 * $g_rsT[5] / $bl_size ) if $g_rsT[5];
     printf("; %d uregs, avg %f per block\n", $g_rsT[6], 1.0 * $g_rsT[6] / $bl_size ) if $g_rsT[6];
@@ -3398,6 +3469,7 @@ sub gdisasm
         }
       }
       if ( defined $opt_T ) {
+        add_rw0($rt);
         my $v = $rt->r_cnt();
         $g_rsT[5] += $v if $v;
         $v = $rt->ur_cnt();
