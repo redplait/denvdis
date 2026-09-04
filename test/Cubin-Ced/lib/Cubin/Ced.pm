@@ -507,7 +507,7 @@ You can check if you still have pending tables with $cub->ptabs method
 =item * ins_upreds(Pkey) - version of ins_preds for uniform predicates
 
 =item * ins_cbank - if instruction has Const Bank in form c[I][X] where I is number - returns ref to array [I, X] if X is also number
- or just [I] otherwise. S
+ or just [I] otherwise. Supports B<wantarray>
 
 =item * efields - returns ref to hash of enum-based fields, key is field name, value is array where
   a[0] - is_ignore

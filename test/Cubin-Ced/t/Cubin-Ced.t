@@ -115,6 +115,14 @@ ok( $tl_res == 0, 'track_lat'); # for MOV R20,c[0][0x140] there are no src refs
 
 $t_num+=9;
 
+# ins_preds - at 0x398 Pd
+$cub->off(0x398);
+my @p1 = $cub->ins_preds(1);
+ok( 1 == scalar(@p1), 'ins_preds size');
+ok( 'Pd' eq $p1[0], 'ins_preds Pd');
+$t_num+=2;
+
+
 # by_name
 my $tx = $cub->by_name('TXA');
 ok( defined($tx), 'by_name 1');
