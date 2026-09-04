@@ -242,6 +242,94 @@ static int fill_tab_chain_CC(const NV_renderer::NV_pair &p, RegTabChains *tlist,
 static const std::string_view s_UR_a = "Ra_U"sv;
 static const std::string_view s_UR_b = "Rb_U"sv;
 
+template <typename T>
+bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv,
+  std::vector<std::string_view> &res, T &filter) const
+{
+  int state = 0;
+  auto is_xxx = [&](const nv_eattr *ea) -> bool {
+    auto ki = kv.find(ea->ename);
+    if ( ki == kv.end() ) return false;
+    if ( filter(ea, ki) ) {
+      res.push_back(ea->ename);
+      return true;
+    }
+    return false;
+  };
+  auto check_ve = [&](const ve_base &ve) -> bool {
+    if ( ve.type == R_value ) return false;
+    const nv_eattr *ea = find_ea(i, ve.arg);
+    if ( !ea ) return false;
+    return is_xxx(ea);
+  };
+  auto check_ve_list = [&](const std::list<ve_base> &l) {
+    int res = 0;
+    for ( auto &ve: l ) {
+      if ( ve.type == R_value ) continue;
+      const nv_eattr *ea = find_ea(i, ve.arg);
+      if ( !ea ) continue;
+      if ( ea->ignore ) continue;
+      if ( is_xxx(ea) ) res++;
+    }
+    return res;
+  };
+  for ( auto &r: *m_dis->get_rend(i->n) ) {
+    switch(r->type) {
+      case R_opcode: state++;
+        break;
+      case R_value:
+      case R_predicate:
+        break;
+      case R_enum:
+        if ( state ) {
+          const render_named *rn = (const render_named *)r;
+          const nv_eattr *ea = find_ea(i, rn->name);
+          if ( ea && !ea->ignore ) is_xxx(ea);
+        }
+        break;
+      case R_C:
+      case R_CX: {
+         const render_C *rn = (const render_C *)r;
+         check_ve(rn->left);
+         check_ve_list(rn->right);
+       }
+       break;
+      case R_desc: {
+         const render_desc *rd = (const render_desc *)r;
+         check_ve(rd->left);
+         check_ve_list(rd->right);
+       }
+       break;
+      case R_mem: {
+         const render_mem *rm = (const render_mem *)r;
+         check_ve_list(rm->right);
+       }
+       break;
+      case R_TTU: {
+         const render_TTU *rt = (const render_TTU *)r;
+         check_ve(rt->left);
+       }
+       break;
+      case R_M1: {
+         const render_M1 *rt = (const render_M1 *)r;
+         check_ve(rt->left);
+       }
+       break;
+    }
+  }
+  return !res.empty();
+}
+
+bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
+  auto isr = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) { return is_reg(ea, kvi) && v == (long)kvi->second; };
+  return use_reg(i, kv, res, isr);
+}
+
+bool NV_renderer::use_ureg(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
+  auto isur = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) { return is_ureg(ea, kvi) && v == (long)kvi->second; };
+  return use_reg(i, kv, res, isur);
+}
+
 int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &p, unsigned long off)
 {
   int res = 0;
