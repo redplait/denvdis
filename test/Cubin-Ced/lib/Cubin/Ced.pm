@@ -498,8 +498,16 @@ You can check if you still have pending tables with $cub->ptabs method
   a[1] - name of second CB field
   a[2] - scale (if presents)
 
+=item * ins_regs(Rkey) - extract list of fields used register Rkey, supports B<wantarray>
+
+=item * ins_uregs(Rkey) - version of ins_regs for uniform registers
+
+=item * ins_preds(Pkey) - extract list of fields used predicate Pkey, supports B<wantarray>
+
+=item * ins_upreds(Pkey) - version of ins_preds for uniform predicates
+
 =item * ins_cbank - if instruction has Const Bank in form c[I][X] where I is number - returns ref to array [I, X] if X is also number
- or just [I] otherwise. Supports wantarray
+ or just [I] otherwise. S
 
 =item * efields - returns ref to hash of enum-based fields, key is field name, value is array where
   a[0] - is_ignore
@@ -521,7 +529,7 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * kv - returns hash of all fields, key is field name and value is, well, field value
 
-=item * grep(regexp) - returns names of KV matched with regexp. support wantarray
+=item * grep(regexp) - returns names of KV matched with regexp. support B<wantarray>
 
 =item * get(name) - returns from KV value for field 'name'
 
@@ -600,7 +608,7 @@ left & right are ref to array where indices
 
 =back
 
-To extract only rendering item(s) of specific type you can use 'grep' method - it supports wantarray
+To extract only rendering item(s) of specific type you can use 'grep' method - it supports B<wantarray>
 
 Float conversion can be extracted with method 'ins_conv'
 
@@ -616,7 +624,7 @@ Float conversion can be extracted with method 'ins_conv'
 
 =item * has_tfield(field_name) - tries to find field in tables, returns table index or undef
 
-=item * tab_fields($idx) - returns array of fields names for table with index $idx (must be in 0 .. tab_count), supports wantarray
+=item * tab_fields($idx) - returns array of fields names for table with index $idx (must be in 0 .. tab_count), supports B<wantarray>
  In essecne it returns first value from I<tab> method
 
 =item * tab_map($idx) - return second value from I<tab> method
@@ -695,7 +703,7 @@ They return array of refs to array where indices
 
 =back
 
-To get list of used const banks use 'cbs' method - it support wantarray and return list of array where indices
+To get list of used const banks use 'cbs' method - it support B<wantarray> and return list of array where indices
 
 =over
 
@@ -795,7 +803,7 @@ to dump them use function dump_ftc
 
 =item * dirty - if current instruction was patched
 
-=item * stat - return statistics of IO operations in form [flush_count, read_count, is_dirty]. Supports wantarray
+=item * stat - return statistics of IO operations in form [flush_count, read_count, is_dirty]. Supports B<wantarray>
 
 =item * instrs - return names of all instructions in this SM, support regex as first optional arg
 

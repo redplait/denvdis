@@ -456,6 +456,10 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return check_dual(cex()) ? &PL_sv_yes : &PL_sv_no;
   }
+  bool ins_pred(std::vector<std::string_view> &res, bool is_uni, int v) const {
+    if ( !has_ins() ) return false;
+    return is_uni ? use_upred(ins(), cex(), v, res) : use_pred(ins(), cex(), v, res);
+  }
   bool ins_reg(std::vector<std::string_view> &res, bool is_uni, int v) const {
     if ( !has_ins() ) return false;
     return is_uni ? use_ureg(ins(), cex(), v, res) : use_reg(ins(), cex(), v, res);
@@ -1978,13 +1982,19 @@ void
 ins_regs(SV *obj, IV key)
  ALIAS:
   Cubin::Ced::ins_uregs = 1
+  Cubin::Ced::ins_preds = 2
+  Cubin::Ced::ins_upreds = 3
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
    std::vector<std::string_view> res;
+   bool ret;
  PPCODE:
-   bool ret = e->ins_reg(res, 1 == ix, key);
+   if ( ix > 1 )
+     ret = e->ins_pred(res, 3 == ix, key);
+   else
+     ret = e->ins_reg(res, 1 == ix, key);
 // warn("ins_reg(%d, ix %d) %d %d\n", key, ix, ret, res.size());
    if ( !ret ) {
     if ( gimme == G_ARRAY) {
