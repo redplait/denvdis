@@ -243,6 +243,44 @@ static const std::string_view s_UR_a = "Ra_U"sv;
 static const std::string_view s_UR_b = "Rb_U"sv;
 
 template <typename T>
+bool NV_renderer::_use_pred(const struct nv_instr *i, const NV_extracted &kv,
+  std::vector<std::string_view> &res, T &filter) const
+{
+  auto is_xxx = [&](const char *fname, const nv_eattr *ea) -> bool {
+    auto ki = kv.find(fname);
+    if ( ki == kv.end() ) return false;
+    if ( filter(ea, ki) ) {
+      res.push_back(fname);
+      return true;
+    }
+    return false;
+  };
+  for ( auto r: *m_dis->get_rend(i->n) ) {
+    if ( r->type == R_predicate ) {
+      const render_named *rn = (const render_named *)r;
+      const nv_eattr *ea = find_ea(i, rn->name);
+      if ( !ea ) continue;
+      is_xxx(rn->name, ea);
+    } else if ( r->type == R_enum ) {
+      const render_named *rn = (const render_named *)r;
+      const nv_eattr *ea = find_ea(i, rn->name);
+      if ( ea && !ea->ignore ) is_xxx(rn->name, ea);
+    }
+  }
+  return !res.empty();
+}
+
+bool NV_renderer::use_pred(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
+  auto isp = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool { return is_pred(ea, kvi) && v == (long)kvi->second; };
+  return _use_pred(i, kv, res, isp);
+}
+
+bool NV_renderer::use_upred(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
+  auto isup = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool { return is_upred(ea, kvi) && v == (long)kvi->second; };
+  return _use_pred(i, kv, res, isup);
+}
+
+template <typename T>
 bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv,
   std::vector<std::string_view> &res, T &filter) const
 {

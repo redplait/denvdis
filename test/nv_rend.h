@@ -482,6 +482,11 @@ class NV_renderer {
    // check if instruction use some specific register
    bool use_reg(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
    bool use_ureg(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
+   // and the same for predicates
+   template <typename T>
+   bool _use_pred(const struct nv_instr *i, const NV_extracted &kvi, std::vector<std::string_view> &res, T &) const;
+   bool use_pred(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
+   bool use_upred(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
    // reg_pads
    const NV_Prop *match_compound_prop(const nv_instr *i, const ve_base &) const;
    const NV_Prop *match_compound_prop(const nv_instr *i, const std::list<ve_base> &) const;
