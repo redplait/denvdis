@@ -80,6 +80,7 @@ class CEd: public CEd_base {
    int parse_tail(int idx, std::string &);
    int verify_off(unsigned long);
    int process_p(std::string &p, int idx, std::string &tail);
+   int apply_Reg_replace(const std::string &s, std::string &v1, std::string &v2);
    void dump_ins(unsigned long off) const;
    void dump_render() const;
 };
@@ -242,17 +243,45 @@ int CEd::parse_tail(int idx, std::string &s)
     Err("invalid syntax: %s, line %d\n", s.c_str(), m_ln);
     return 0;
   }
-  char c = s.at(idx);
-  if ( 'r' == c ) { // 'r' for replace some instruction. parser in base class ParseSASS
+  auto skip_spaces = [&](int check) {
     for ( idx++; idx < s_size; idx++ )
     {
-      c = s.at(idx);
+      char c = s.at(idx);
       if ( !isspace(c) ) break;
     }
+    if ( !check ) return 1;
     if ( idx >= s_size ) {
-      Err("invalid r syntax: %s, line %d\n", s.c_str(), m_ln);
+      Err("invalid %c syntax: %s, line %d\n", (char)check, s.c_str(), m_ln);
       return 0;
     }
+    return 1;
+  };
+  char c = s.at(idx);
+  if ( 'R' == c ) { // 'R' for replace reg/pred to another
+    std::string v1, v2;
+    if ( !skip_spaces('R') ) return 0;
+    // read first arg - what to replace
+    for ( ; idx < s_size; idx++ )
+    {
+      c = s.at(idx);
+      if ( isspace(c) ) break;
+      v1.push_back(c);
+    }
+    if ( idx >= s_size ) {
+      Err("invalid R syntax: %s, line %d\n", s.c_str(), m_ln);
+      return 0;
+    }
+    if ( !skip_spaces('R') ) return 0;
+    // read second arg - replaced value
+    for ( ; idx < s_size; idx++ )
+    {
+      c = s.at(idx);
+      if ( isspace(c) ) break;
+      v2.push_back(c);
+    }
+    return apply_Reg_replace(s, v1, v2);
+  } else if ( 'r' == c ) { // 'r' for replace some instruction. parser in base class ParseSASS
+    if ( !skip_spaces('r') ) return 0;
     int add_res = add(s, idx);
     if ( !add_res || m_forms.empty() ) {
       Err("cannot parse %s, line %d\n", s.c_str(), m_ln);
@@ -297,15 +326,7 @@ int CEd::parse_tail(int idx, std::string &s)
      // fields args have different formats depending from it's type - like int/float
      // field can be part of table and current value can be bad combination - for this I postpone actual patching
      // and finally field can be in const bank
-    for ( idx++; idx < s_size; idx++ )
-    {
-      c = s.at(idx);
-      if ( !isspace(c) ) break;
-    }
-    if ( idx >= s_size ) {
-      Err("invalid p syntax: %s, line %d\n", s.c_str(), m_ln);
-      return 0;
-    }
+    if ( !skip_spaces('p') ) return 0;
     // extract field name - stupid stl missed copy_while algo and take_while presents in ranges only
     std::string what;
     for ( ; idx < s_size; idx++ ) {
@@ -347,6 +368,93 @@ int CEd::parse_tail(int idx, std::string &s)
   }
   Err("invalid syntax: %s, line %d\n", s.c_str(), m_ln);
   return 0;
+}
+
+static const char *s_repl_kind[4] = {
+ "Register",
+ "Uniform Register",
+ "Predicate",
+ "Uniform Predicate",
+};
+
+int CEd::apply_Reg_replace(const std::string &s, std::string &v1, std::string &v2)
+{
+  size_t pfx_size = 0;
+  int kind = 0; // 0 - reg, 1 - ureg, 2 - pred, 3 - upred
+  // check what we asked replaces for
+  if ( v1.empty() || v1.size() < 2 ) {
+    Err("invald first arg for R: %s, line %d\n", s.c_str(), m_ln);
+    return 0;
+  }
+  if ( v2.empty() || v2.size() < 2 ) {
+    Err("invald second arg for R: %s, line %d\n", s.c_str(), m_ln);
+    return 0;
+  }
+  if ( v1.at(0) == 'U' ) ++pfx_size;
+  char c = v1.at(pfx_size);
+  if ( c == 'R' ) { kind = pfx_size++; }
+  else if ( c == 'P' ) { kind = 2 + pfx_size++; }
+  else {
+    Err("dont know how to replace %s: %s, line %d\n", v1.c_str(), s.c_str(), m_ln);
+    return 0;
+  }
+  // check char v2 has the same prefix as v1
+  std::string_view pfx{ v1.c_str(), pfx_size };
+  if ( !v2.starts_with(pfx) ) {
+    Err("differend prefixes %s vs %s: %s, line %d\n", v1.c_str(), v2.c_str(), s.c_str(), m_ln);
+    return 0;
+  }
+  // read what value
+  int what = atoi(v1.c_str() + pfx_size);
+  int what2 = atoi(v2.c_str() + pfx_size);
+  if ( what == what2 ) { // swap one awl for another
+    m_state = WantOff;
+    return 1;
+  }
+  // try to collect fields
+  std::vector<std::string_view> fields;
+  bool res;
+  switch(kind) {
+    case 0: res = use_reg(ins(), cex(), what, fields);
+     break;
+    case 1: res = use_ureg(ins(), cex(), what, fields);
+     break;
+    case 2: res = use_pred(ins(), cex(), what, fields);
+     break;
+    case 3: res = use_upred(ins(), cex(), what, fields);
+     break;
+    default: Err("unknown kind %d, %s, line %d\n", kind, s.c_str(), m_ln);
+     return 0;
+  }
+  if ( !res || fields.empty() ) {
+    Err("no field contain %s %d\n", s_repl_kind[kind], what);
+    m_state = WantOff;
+    return 1;
+  }
+  // patch all fields and flush
+  auto in_s = ins();
+  for ( auto &fname: fields ) {
+    auto field = std::lower_bound(in_s->fields.begin(), in_s->fields.end(), fname,
+       [](const NV_field &f, const std::string_view &w) {
+         return f.name < w;
+      });
+    if ( opt_d ) {
+      printf("field %.*s %sfound\n", (int)fname.size(), fname.data(),
+        field == in_s->fields.end() ? "NOT" : ""
+      );
+    }
+    if ( field == in_s->fields.end() ) {
+      Err("unknown field %.*s, line %d\n", (int)fname.size(), fname.data(), m_ln);
+      return 0;
+    }
+    if ( !patch(field, what2, fname) ) return 0;
+  }
+  if ( !flush_buf() ) {
+      Err("instr %s flush failed\n", s.c_str());
+      return 0;
+  }
+  m_state = WantOff;
+  return 1;
 }
 
 int CEd::process_p(std::string &p, int idx, std::string &tail)
