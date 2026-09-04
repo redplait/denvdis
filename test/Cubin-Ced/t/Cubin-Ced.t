@@ -89,6 +89,12 @@ $t_num+=2;
 ok( $cub->next(), 'next');
 is( 16, $cub->get_off(), 'next offset should be 16' );
 
+# ins_regs - for instruction at 0x10 R20 must be Rd
+my @r20 = $cub->ins_regs(20);
+ok( 1 == scalar(@r20), 'ins_regs size');
+ok( 'Rd' eq $r20[0], 'ins_regs Rd');
+$t_num+=2;
+
 # regtrack
 my $rt = Cubin::Ced::RegTrack->new();
 ok( defined($rt), 'new regtrack');

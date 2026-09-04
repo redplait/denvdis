@@ -456,6 +456,10 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return check_dual(cex()) ? &PL_sv_yes : &PL_sv_no;
   }
+  bool ins_reg(std::vector<std::string_view> &res, bool is_uni, int v) const {
+    if ( !has_ins() ) return false;
+    return is_uni ? use_ureg(ins(), cex(), v, res) : use_reg(ins(), cex(), v, res);
+  }
   SV *check_false() const {
     if ( !has_ins() ) return &PL_sv_undef;
     return always_false(ins(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
@@ -1919,13 +1923,20 @@ by_name(SV *obj, const char *name)
    std::vector<SV *> res;
  PPCODE:
   if ( !e->extract_insn(name, res) ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     if ( gimme == G_ARRAY) {
-      EXTEND(SP, res.size());
-      for ( auto si: res )
-       mPUSHs(si);
+      auto rsize = res.size();
+      EXTEND(SP, rsize);
+      for ( auto si: res ) {
+        mPUSHs(si);
+      }
+      XSRETURN(rsize);
     } else {
       AV *av = newAV();
       for ( auto si: res )
@@ -1944,18 +1955,59 @@ field_at(SV *obj, IV off)
    auto *f = e->field_at(off);
  PPCODE:
    if ( !f ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
    } else {
     SV *name = newSVpv(f->name.data(), f->name.size());
     if ( gimme == G_ARRAY) {
       EXTEND(SP, 2);
       mPUSHs(name);
       mPUSHi(f->mask[0].second); // size
+      XSRETURN(2);
     } else {
       ST(0) = name;
       XSRETURN(1);
     }
+   }
+
+void
+ins_regs(SV *obj, IV key)
+ ALIAS:
+  Cubin::Ced::ins_uregs = 1
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   std::vector<std::string_view> res;
+ PPCODE:
+   bool ret = e->ins_reg(res, 1 == ix, key);
+// warn("ins_reg(%d, ix %d) %d %d\n", key, ix, ret, res.size());
+   if ( !ret ) {
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
+   } else {
+     auto rs = res.size();
+     if ( gimme == G_ARRAY) {
+       EXTEND(SP, rs);
+       for ( auto &s: res ) {
+         mPUSHs(newSVpv(s.data(), s.size()));
+       }
+       XSRETURN(rs);
+     } else {
+       AV *av = newAV();
+       for ( auto &s: res )
+         av_push(av, newSVpv(s.data(), s.size()));
+       mXPUSHs(newRV_noinc((SV*)av));
+       XSRETURN(1);
+     }
    }
 
 int rz(SV *obj)
@@ -2305,8 +2357,12 @@ ins_branch(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  PPCODE:
   if ( !e->has_ins() ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     long off = 0;
     bool res = e->is_branch(off);
@@ -2317,6 +2373,7 @@ ins_branch(SV *obj)
       EXTEND(SP, 2);
       mXPUSHs(res ? &PL_sv_yes : &PL_sv_no);
       mXPUSHi(off);
+      XSRETURN(2);
     }
   }
 
@@ -2364,8 +2421,12 @@ ins_cbank(SV *obj)
   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  PPCODE:
   if ( !e->has_ins() ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     auto cb_off = e->ins_cb(&cb_idx, 1 == ix);
     if ( 0xffff == cb_idx ) {
@@ -2378,6 +2439,7 @@ ins_cbank(SV *obj)
         mXPUSHi(cb_idx);
         if ( res_size > 1 )
           mPUSHi(cb_off.value());
+        XSRETURN(res_size);
       } else {
         AV *av = newAV();
         av_push(av, newSViv(cb_idx));
@@ -2400,13 +2462,18 @@ tab(SV *obj, IV key)
  PPCODE:
   res = e->get_tab(key, &names, &dict);
   if ( !res ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     if ( gimme == G_ARRAY) {
       EXTEND(SP, 2);
       mPUSHs(names);
       mPUSHs(dict);
+      XSRETURN(2);
     } else {
       AV *av = newAV();
       av_push(av, names);
@@ -2435,12 +2502,18 @@ tab_fields(SV *obj, IV key)
  PPCODE:
   e->tab_fields(key, names);
   if ( names.empty() ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     if ( gimme == G_ARRAY) {
-      EXTEND(SP, names.size());
+      auto nsize = names.size();
+      EXTEND(SP, nsize);
       for ( auto &s: names ) mPUSHs(newSVpv(s.data(), s.size()));
+      XSRETURN(nsize);
     } else {
       AV *av = newAV();
       for ( auto &s: names ) av_push(av, newSVpv(s.data(), s.size()));
@@ -2460,12 +2533,18 @@ lcols(SV *obj)
   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  PPCODE:
   if ( !e->get_lxx(indexes, !ix) ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     if ( gimme == G_ARRAY) {
-      EXTEND(SP, indexes.size());
+      auto isize = indexes.size();
+      EXTEND(SP, isize);
       for ( auto s: indexes ) mPUSHs(s);
+      XSRETURN(isize);
     } else {
       AV *av = newAV();
       for ( auto s: indexes ) av_push(av, s);
@@ -2497,6 +2576,7 @@ stat(SV *obj)
       mPUSHi(e->get_flush());
       mPUSHi(e->get_rdr());
       mPUSHi(e->is_dirty());
+      XSRETURN(3);
   } else {
       AV *av = newAV();
       av_push(av, newSViv(e->get_flush()));
@@ -2596,12 +2676,18 @@ grep(SV *obj, SV *re)
    rx = (REGEXP *)SvRV(re);
    e->grep_kv(rx, res);
    if ( res.empty() ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+     if ( gimme == G_ARRAY) {
+       XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     if ( gimme == G_ARRAY) {
-      EXTEND(SP, res.size());
+      auto rsize = res.size();
+      EXTEND(SP, rsize);
       for ( auto &s: res ) mPUSHs(newSVpv(s.data(), s.size()));
+      XSRETURN(rsize);
     } else {
       AV *av = newAV();
       for ( auto &s: res ) av_push(av, newSVpv(s.data(), s.size()));
@@ -2993,12 +3079,18 @@ tab_fields(SV *obj, IV key)
  PPCODE:
   e->base->tab_fields(e->ins, key, names);
   if ( names.empty() ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     if ( gimme == G_ARRAY) {
-      EXTEND(SP, names.size());
+      auto nsize = names.size();
+      EXTEND(SP, nsize);
       for ( auto &s: names ) mPUSHs(newSVpv(s.data(), s.size()));
+      XSRETURN(nsize);
     } else {
       AV *av = newAV();
       for ( auto &s: names ) av_push(av, newSVpv(s.data(), s.size()));
@@ -3027,13 +3119,18 @@ tab(SV *obj, IV key)
  PPCODE:
   res = e->base->get_tab(e->ins, key, &names, &dict);
   if ( !res ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     if ( gimme == G_ARRAY) {
       EXTEND(SP, 2);
       mPUSHs(names);
       mPUSHs(dict);
+      XSRETURN(1);
     } else {
       AV *av = newAV();
       av_push(av, names);
@@ -3133,14 +3230,20 @@ INIT:
     if ( r.first->type == key ) tmp.push_back(&r);
   }
   if ( tmp.empty() ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     if ( gimme == G_ARRAY) {
-      EXTEND(SP, tmp.size());
+      auto tsize = tmp.size();
+      EXTEND(SP, tsize);
       for ( auto r: tmp ) {
         mPUSHs(get_ritem(*r));
       }
+      XSRETURN(tsize);
     } else {
       AV *av = newAV();
       for ( auto r: tmp ) {
@@ -3396,8 +3499,12 @@ snap(SV *obj)
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
  PPCODE:
   if ( r->snap->empty() ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     auto regs = gprs(r->snap);
     auto prs = merge_preds(r->snap);
@@ -3407,6 +3514,7 @@ snap(SV *obj)
       EXTEND(SP, esize);
       mPUSHs(regs);
       if( esize > 1 ) mPUSHs(prs);
+      XSRETURN(esize);
     } else {
       AV *av = newAV();
       av_push(av, regs);
@@ -3477,12 +3585,18 @@ cbs(SV *obj)
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
  PPCODE:
   if ( r->cbs.empty() ) {
-    ST(0) = &PL_sv_undef;
-    XSRETURN(1);
+    if ( gimme == G_ARRAY) {
+      XSRETURN_EMPTY;
+    } else {
+      ST(0) = &PL_sv_undef;
+      XSRETURN(1);
+    }
   } else {
     if ( gimme == G_ARRAY) {
-      EXTEND(SP, r->cbs.size());
+      auto cbsize = r->cbs.size();
+      EXTEND(SP, cbsize);
       for ( auto &cbh: r->cbs ) { mPUSHs(make_one_cb(cbh)); }
+      XSRETURN(cbsize);
     } else {
       AV *av = newAV();
       for ( auto &cbh: r->cbs ) av_push(av, make_one_cb(cbh));
