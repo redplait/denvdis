@@ -247,11 +247,13 @@ bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv,
   std::vector<std::string_view> &res, T &filter) const
 {
   int state = 0;
-  auto is_xxx = [&](const nv_eattr *ea) -> bool {
-    auto ki = kv.find(ea->ename);
+  auto is_xxx = [&](const char *fname, const nv_eattr *ea) -> bool {
+    auto ki = kv.find(fname);
+// Err("is_xxx(%s ea) %s %s\n", fname, ea->ename, ki == kv.end() ? "not found" : "found");
     if ( ki == kv.end() ) return false;
     if ( filter(ea, ki) ) {
-      res.push_back(ea->ename);
+// Err("match is_xxx(%s ea) %s %lX\n", fname, ea->ename, ki->second);
+      res.push_back(fname);
       return true;
     }
     return false;
@@ -260,7 +262,7 @@ bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv,
     if ( ve.type == R_value ) return false;
     const nv_eattr *ea = find_ea(i, ve.arg);
     if ( !ea ) return false;
-    return is_xxx(ea);
+    return is_xxx(ve.arg, ea);
   };
   auto check_ve_list = [&](const std::list<ve_base> &l) {
     int res = 0;
@@ -269,11 +271,11 @@ bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv,
       const nv_eattr *ea = find_ea(i, ve.arg);
       if ( !ea ) continue;
       if ( ea->ignore ) continue;
-      if ( is_xxx(ea) ) res++;
+      if ( is_xxx(ve.arg, ea) ) res++;
     }
     return res;
   };
-  for ( auto &r: *m_dis->get_rend(i->n) ) {
+  for ( auto r: *m_dis->get_rend(i->n) ) {
     switch(r->type) {
       case R_opcode: state++;
         break;
@@ -284,7 +286,7 @@ bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv,
         if ( state ) {
           const render_named *rn = (const render_named *)r;
           const nv_eattr *ea = find_ea(i, rn->name);
-          if ( ea && !ea->ignore ) is_xxx(ea);
+          if ( ea && !ea->ignore ) is_xxx(rn->name, ea);
         }
         break;
       case R_C:
@@ -321,12 +323,12 @@ bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv,
 }
 
 bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
-  auto isr = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) { return is_reg(ea, kvi) && v == (long)kvi->second; };
+  auto isr = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool { return is_reg(ea, kvi) && v == (long)kvi->second; };
   return use_reg(i, kv, res, isr);
 }
 
 bool NV_renderer::use_ureg(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
-  auto isur = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) { return is_ureg(ea, kvi) && v == (long)kvi->second; };
+  auto isur = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool { return is_ureg(ea, kvi) && v == (long)kvi->second; };
   return use_reg(i, kv, res, isur);
 }
 
