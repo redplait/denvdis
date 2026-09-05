@@ -1357,7 +1357,8 @@ static bool is_umma_AB(const render_M1 *rt) {
 
 // check for TMEMX
 static bool is_tmem(const render_mem *rm) {
-  return 'T' == rm->name[0] &&
+  return rm->name &&
+         'T' == rm->name[0] &&
          'M' == rm->name[1] &&
          'E' == rm->name[2] &&
          'M' == rm->name[3] && rm->name[4];
