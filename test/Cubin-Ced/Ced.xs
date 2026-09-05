@@ -468,6 +468,16 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return false;
     return is_uni ? use_ureg(ins(), cex(), v, res) : use_reg(ins(), cex(), v, res);
   }
+  // version with several keys
+  bool ins_pred(std::unordered_map<std::string_view, long> &res, bool is_uni, const std::set<long> &v) const {
+    if ( !has_ins() ) return false;
+    return is_uni ? use_upred(ins(), cex(), v, res) : use_pred(ins(), cex(), v, res);
+  }
+  bool ins_reg(std::unordered_map<std::string_view, long> &res, bool is_uni, const std::set<long> &v) const {
+    if ( !has_ins() ) return false;
+    return is_uni ? use_ureg(ins(), cex(), v, res) : use_reg(ins(), cex(), v, res);
+  }
+
   SV *check_false() const {
     if ( !has_ins() ) return &PL_sv_undef;
     return always_false(ins(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
@@ -1979,6 +1989,58 @@ field_at(SV *obj, IV off)
       XSRETURN(1);
     }
    }
+
+SV *
+ins_rlist(SV *obj, SV *ar)
+ ALIAS:
+  Cubin::Ced::ins_urlist = 1
+  Cubin::Ced::ins_plist = 2
+  Cubin::Ced::ins_uplist = 3
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   std::unordered_map<std::string_view, long> res;
+   std::set<long> keys;
+   AV* array;
+   bool ret = false;
+   const char *called_name = GvNAME(CvGV(cv));
+ CODE:
+   // check that ar is ref to array
+   if (!SvROK(ar) || SvTYPE(SvRV(ar)) != SVt_PVAV) {
+    croak("%s: expected an ARRAY reference", called_name ? called_name : "ins_Xlist");
+    RETVAL = &PL_sv_undef;
+   } else {
+     array = (AV*) SvRV(ar); // Dereference the SV to get the AV*
+     // fill keys
+     for (int i = 0; i <= av_len(array); i++) {
+       SV** elem = av_fetch(array, i, 0);
+       auto key = SvIV(*elem);
+#ifdef DEBUG
+ my_warn("add key %x\n", key);
+#endif
+       keys.insert(key);
+    }
+    if ( keys.empty() ) {
+      croak("%s: empty ARRAY reference", called_name ? called_name : "ins_Xlist");
+      RETVAL = &PL_sv_undef;
+    } else {
+      if ( ix > 1 )
+       ret = e->ins_pred(res, 3 == ix, keys);
+      else
+       ret = e->ins_reg(res, 1 == ix, keys);
+      if ( !ret || res.empty() ) {
+        RETVAL = &PL_sv_undef; // nothing was found
+      } else { // make new hashmap and return ref to it
+        HV *hv = newHV();
+        for ( auto &ri: res ) {
+          hv_store(hv, ri.first.data(), ri.first.size(), newSViv(ri.second), 0);
+        }
+        RETVAL = newRV_noinc((SV*)hv);
+      }
+    }
+  }
+ OUTPUT:
+  RETVAL
+
 
 void
 ins_regs(SV *obj, IV key)

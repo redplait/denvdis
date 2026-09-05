@@ -94,6 +94,13 @@ my @r20 = $cub->ins_regs(20);
 ok( 1 == scalar(@r20), 'ins_regs size');
 ok( 'Rd' eq $r20[0], 'ins_regs Rd');
 $t_num+=2;
+# ins_rlist
+my $rh20 = $cub->ins_rlist([20, 134]);
+ok( defined($rh20), 'ins_rlist result');
+ok( 1 == scalar(keys %$rh20), 'ins_rlist size');
+ok( exists $rh20->{'Rd'}, 'ins_rlist has Rd');
+ok( 20 == $rh20->{'Rd'}, 'ins_rlist Rd must be 20');
+$t_num+=4;
 
 # regtrack
 my $rt = Cubin::Ced::RegTrack->new();
