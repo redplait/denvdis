@@ -456,6 +456,10 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return check_dual(cex()) ? &PL_sv_yes : &PL_sv_no;
   }
+  bool ins_bd(std::vector<std::string_view> &res, int v) const {
+    if ( !has_ins() ) return false;
+    return use_bd(ins(), cex(), v, res);
+  }
   bool ins_pred(std::vector<std::string_view> &res, bool is_uni, int v) const {
     if ( !has_ins() ) return false;
     return is_uni ? use_upred(ins(), cex(), v, res) : use_pred(ins(), cex(), v, res);
@@ -1663,6 +1667,14 @@ static SV * new_enum_dualvar(pTHX_ IV ival, SV *name) {
         return name;
 }
 
+#define EMPTY_RES if ( gimme == G_ARRAY) { \
+      XSRETURN_EMPTY; \
+    } else { \
+      ST(0) = &PL_sv_undef; \
+      XSRETURN(1); \
+    }
+
+
 MODULE = Cubin::Ced		PACKAGE = Cubin::Ced
 
 void
@@ -1927,12 +1939,7 @@ by_name(SV *obj, const char *name)
    std::vector<SV *> res;
  PPCODE:
   if ( !e->extract_insn(name, res) ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
   } else {
     if ( gimme == G_ARRAY) {
       auto rsize = res.size();
@@ -1959,12 +1966,7 @@ field_at(SV *obj, IV off)
    auto *f = e->field_at(off);
  PPCODE:
    if ( !f ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
    } else {
     SV *name = newSVpv(f->name.data(), f->name.size());
     if ( gimme == G_ARRAY) {
@@ -1984,6 +1986,7 @@ ins_regs(SV *obj, IV key)
   Cubin::Ced::ins_uregs = 1
   Cubin::Ced::ins_preds = 2
   Cubin::Ced::ins_upreds = 3
+  Cubin::Ced::ins_bd = 4
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
@@ -1991,18 +1994,15 @@ ins_regs(SV *obj, IV key)
    std::vector<std::string_view> res;
    bool ret;
  PPCODE:
-   if ( ix > 1 )
+   if ( 4 == ix )
+     ret = e->ins_bd(res, key);
+   else if ( ix > 1 )
      ret = e->ins_pred(res, 3 == ix, key);
    else
      ret = e->ins_reg(res, 1 == ix, key);
 // warn("ins_reg(%d, ix %d) %d %d\n", key, ix, ret, res.size());
    if ( !ret ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
    } else {
      auto rs = res.size();
      if ( gimme == G_ARRAY) {
@@ -2367,12 +2367,7 @@ ins_branch(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  PPCODE:
   if ( !e->has_ins() ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
   } else {
     long off = 0;
     bool res = e->is_branch(off);
@@ -2431,12 +2426,7 @@ ins_cbank(SV *obj)
   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  PPCODE:
   if ( !e->has_ins() ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
   } else {
     auto cb_off = e->ins_cb(&cb_idx, 1 == ix);
     if ( 0xffff == cb_idx ) {
@@ -2472,12 +2462,7 @@ tab(SV *obj, IV key)
  PPCODE:
   res = e->get_tab(key, &names, &dict);
   if ( !res ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
   } else {
     if ( gimme == G_ARRAY) {
       EXTEND(SP, 2);
@@ -2512,12 +2497,7 @@ tab_fields(SV *obj, IV key)
  PPCODE:
   e->tab_fields(key, names);
   if ( names.empty() ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
   } else {
     if ( gimme == G_ARRAY) {
       auto nsize = names.size();
@@ -2543,12 +2523,7 @@ lcols(SV *obj)
   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  PPCODE:
   if ( !e->get_lxx(indexes, !ix) ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
   } else {
     if ( gimme == G_ARRAY) {
       auto isize = indexes.size();
@@ -2686,12 +2661,7 @@ grep(SV *obj, SV *re)
    rx = (REGEXP *)SvRV(re);
    e->grep_kv(rx, res);
    if ( res.empty() ) {
-     if ( gimme == G_ARRAY) {
-       XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+     EMPTY_RES
   } else {
     if ( gimme == G_ARRAY) {
       auto rsize = res.size();
@@ -3089,12 +3059,7 @@ tab_fields(SV *obj, IV key)
  PPCODE:
   e->base->tab_fields(e->ins, key, names);
   if ( names.empty() ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
   } else {
     if ( gimme == G_ARRAY) {
       auto nsize = names.size();
@@ -3129,12 +3094,7 @@ tab(SV *obj, IV key)
  PPCODE:
   res = e->base->get_tab(e->ins, key, &names, &dict);
   if ( !res ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
   } else {
     if ( gimme == G_ARRAY) {
       EXTEND(SP, 2);
@@ -3240,12 +3200,7 @@ INIT:
     if ( r.first->type == key ) tmp.push_back(&r);
   }
   if ( tmp.empty() ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
   } else {
     if ( gimme == G_ARRAY) {
       auto tsize = tmp.size();
@@ -3509,12 +3464,7 @@ snap(SV *obj)
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
  PPCODE:
   if ( r->snap->empty() ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
   } else {
     auto regs = gprs(r->snap);
     auto prs = merge_preds(r->snap);
@@ -3595,12 +3545,7 @@ cbs(SV *obj)
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
  PPCODE:
   if ( r->cbs.empty() ) {
-    if ( gimme == G_ARRAY) {
-      XSRETURN_EMPTY;
-    } else {
-      ST(0) = &PL_sv_undef;
-      XSRETURN(1);
-    }
+    EMPTY_RES
   } else {
     if ( gimme == G_ARRAY) {
       auto cbsize = r->cbs.size();

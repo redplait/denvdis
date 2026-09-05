@@ -120,7 +120,9 @@ $cub->off(0x398);
 my @p1 = $cub->ins_preds(1);
 ok( 1 == scalar(@p1), 'ins_preds size');
 ok( 'Pd' eq $p1[0], 'ins_preds Pd');
-$t_num+=2;
+my @no_bd = $cub->ins_bd(1);
+ok( !scalar(@no_bd), 'no ins_bd');
+$t_num+=3;
 
 
 # by_name
