@@ -262,17 +262,15 @@ bool NV_renderer::use_bd(const struct nv_instr *i, const NV_extracted &kv, long 
 }
 
 template <typename T>
-bool NV_renderer::_use_pred(const struct nv_instr *i, const NV_extracted &kv,
-  std::vector<std::string_view> &res, T &filter) const
+bool NV_renderer::_use_pred(const struct nv_instr *i, const NV_extracted &kv, T &filter) const
 {
+  bool res = false;
   auto is_xxx = [&](const char *fname, const nv_eattr *ea) -> bool {
     auto ki = kv.find(fname);
     if ( ki == kv.end() ) return false;
-    if ( filter(ea, ki) ) {
-      res.push_back(fname);
-      return true;
-    }
-    return false;
+    auto what = filter(ea, ki);
+    if ( what ) res = true;
+    return what;
   };
   for ( auto r: *m_dis->get_rend(i->n) ) {
     if ( r->type == R_predicate ) {
@@ -286,31 +284,63 @@ bool NV_renderer::_use_pred(const struct nv_instr *i, const NV_extracted &kv,
       if ( ea && !ea->ignore ) is_xxx(rn->name, ea);
     }
   }
-  return !res.empty();
+  return res;
 }
 
-bool NV_renderer::use_pred(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
-  auto isp = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool { return is_pred(ea, kvi) && v == (long)kvi->second; };
-  return _use_pred(i, kv, res, isp);
+bool NV_renderer::use_pred(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &out_res) const {
+  auto isp = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    bool res = is_pred(ea, kvi) && v == (long)kvi->second;
+    if ( res ) out_res.push_back(kvi->first);
+    return res;
+  };
+  return _use_pred(i, kv, isp);
 }
 
-bool NV_renderer::use_upred(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
-  auto isup = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool { return is_upred(ea, kvi) && v == (long)kvi->second; };
-  return _use_pred(i, kv, res, isup);
+bool NV_renderer::use_upred(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &out_res) const {
+  auto isup = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    bool res = is_upred(ea, kvi) && v == (long)kvi->second;
+    if ( res ) out_res.push_back(kvi->first);
+    return res;
+  };
+  return _use_pred(i, kv, isup);
+}
+
+bool NV_renderer::use_pred(const struct nv_instr *i, const NV_extracted &kv, const std::set<long> &keys,
+ std::unordered_map<std::string_view, long> &out_res) const {
+  auto mset = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    if ( !is_pred(ea, kvi) ) return false;
+    auto ki = keys.find((long)kvi->second);
+    if ( ki == keys.end() ) return false;
+    out_res[kvi->first] = *ki;
+    return true;
+  };
+  return _use_pred(i, kv, mset);
+}
+
+bool NV_renderer::use_upred(const struct nv_instr *i, const NV_extracted &kv, const std::set<long> &keys,
+ std::unordered_map<std::string_view, long> &out_res) const {
+  auto mset = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    if ( !is_upred(ea, kvi) ) return false;
+    auto ki = keys.find((long)kvi->second);
+    if ( ki == keys.end() ) return false;
+    out_res[kvi->first] = *ki;
+    return true;
+  };
+  return _use_pred(i, kv, mset);
 }
 
 template <typename T>
-bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv,
-  std::vector<std::string_view> &res, T &filter) const
+bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv, T &filter) const
 {
   int state = 0;
+  bool res = false;
   auto is_xxx = [&](const char *fname, const nv_eattr *ea) -> bool {
     auto ki = kv.find(fname);
 // Err("is_xxx(%s ea) %s %s\n", fname, ea->ename, ki == kv.end() ? "not found" : "found");
     if ( ki == kv.end() ) return false;
     if ( filter(ea, ki) ) {
+      res = true;
 // Err("match is_xxx(%s ea) %s %lX\n", fname, ea->ename, ki->second);
-      res.push_back(fname);
       return true;
     }
     return false;
@@ -376,17 +406,49 @@ bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv,
        break;
     }
   }
-  return !res.empty();
+  return res;
 }
 
-bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
-  auto isr = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool { return is_reg(ea, kvi) && v == (long)kvi->second; };
-  return use_reg(i, kv, res, isr);
+bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &out_res) const {
+  auto isr = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    bool res = is_reg(ea, kvi) && v == (long)kvi->second;
+    if ( res ) out_res.push_back(kvi->first);
+    return res;
+  };
+  return use_reg(i, kv, isr);
 }
 
-bool NV_renderer::use_ureg(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
-  auto isur = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool { return is_ureg(ea, kvi) && v == (long)kvi->second; };
-  return use_reg(i, kv, res, isur);
+bool NV_renderer::use_ureg(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &out_res) const {
+  auto isur = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    bool res = is_ureg(ea, kvi) && v == (long)kvi->second;
+    if ( res ) out_res.push_back(kvi->first);
+    return res;
+  };
+  return use_reg(i, kv, isur);
+}
+
+bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv, const std::set<long> &keys,
+ std::unordered_map<std::string_view, long> &out_res) const {
+  auto mset = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    if ( !is_reg(ea, kvi) ) return false;
+    auto ki = keys.find((long)kvi->second);
+    if ( ki == keys.end() ) return false;
+    out_res[kvi->first] = *ki;
+    return true;
+  };
+  return use_reg(i, kv, mset);
+}
+
+bool NV_renderer::use_ureg(const struct nv_instr *i, const NV_extracted &kv, const std::set<long> &keys,
+ std::unordered_map<std::string_view, long> &out_res) const {
+  auto mset = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    if ( !is_ureg(ea, kvi) ) return false;
+    auto ki = keys.find((long)kvi->second);
+    if ( ki == keys.end() ) return false;
+    out_res[kvi->first] = *ki;
+    return true;
+  };
+  return use_reg(i, kv, mset);
 }
 
 int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &p, unsigned long off)

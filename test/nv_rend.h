@@ -478,15 +478,25 @@ class NV_renderer {
    bool check_ret(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    // generic reg filter per instruction
    template <typename T>
-   bool use_reg(const struct nv_instr *i, const NV_extracted &kvi, std::vector<std::string_view> &res, T &) const;
+   bool use_reg(const struct nv_instr *i, const NV_extracted &kvi, T &) const;
    // check if instruction use some specific register
    bool use_reg(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
    bool use_ureg(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
+   // versions with multiple keys
+   bool use_reg(const struct nv_instr *i, const NV_extracted &kvi, const std::set<long> &,
+     std::unordered_map<std::string_view, long> &res) const;
+   bool use_ureg(const struct nv_instr *i, const NV_extracted &kvi, const std::set<long> &,
+     std::unordered_map<std::string_view, long> &res) const;
    // and the same for predicates
    template <typename T>
-   bool _use_pred(const struct nv_instr *i, const NV_extracted &kvi, std::vector<std::string_view> &res, T &) const;
+   bool _use_pred(const struct nv_instr *i, const NV_extracted &kvi, T &) const;
    bool use_pred(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
    bool use_upred(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
+   // versions with multiple predicates
+   bool use_pred(const struct nv_instr *i, const NV_extracted &kvi, const std::set<long> &,
+     std::unordered_map<std::string_view, long> &res) const;
+   bool use_upred(const struct nv_instr *i, const NV_extracted &kvi, const std::set<long> &,
+     std::unordered_map<std::string_view, long> &res) const;
    // and for BD
    bool use_bd(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
    // reg_pads
