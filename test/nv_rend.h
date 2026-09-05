@@ -487,6 +487,8 @@ class NV_renderer {
    bool _use_pred(const struct nv_instr *i, const NV_extracted &kvi, std::vector<std::string_view> &res, T &) const;
    bool use_pred(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
    bool use_upred(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
+   // and for BD
+   bool use_bd(const struct nv_instr *i, const NV_extracted &kvi, long, std::vector<std::string_view> &res) const;
    // reg_pads
    const NV_Prop *match_compound_prop(const nv_instr *i, const ve_base &) const;
    const NV_Prop *match_compound_prop(const nv_instr *i, const std::list<ve_base> &) const;

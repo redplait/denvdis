@@ -370,17 +370,18 @@ int CEd::parse_tail(int idx, std::string &s)
   return 0;
 }
 
-static const char *s_repl_kind[4] = {
+static const char *s_repl_kind[5] = {
  "Register",
  "Uniform Register",
  "Predicate",
  "Uniform Predicate",
+ "BD",
 };
 
 int CEd::apply_Reg_replace(const std::string &s, std::string &v1, std::string &v2)
 {
   size_t pfx_size = 0;
-  int kind = 0; // 0 - reg, 1 - ureg, 2 - pred, 3 - upred
+  int kind = 0; // 0 - reg, 1 - ureg, 2 - pred, 3 - upred, 4 - bd
   // check what we asked replaces for
   if ( v1.empty() || v1.size() < 2 ) {
     Err("invald first arg for R: %s, line %d\n", s.c_str(), m_ln);
@@ -392,7 +393,8 @@ int CEd::apply_Reg_replace(const std::string &s, std::string &v1, std::string &v
   }
   if ( v1.at(0) == 'U' ) ++pfx_size;
   char c = v1.at(pfx_size);
-  if ( c == 'R' ) { kind = pfx_size++; }
+  if ( c == 'B' ) { kind = 4; ++pfx_size; }
+  else if ( c == 'R' ) { kind = pfx_size++; }
   else if ( c == 'P' ) { kind = 2 + pfx_size++; }
   else {
     Err("dont know how to replace %s: %s, line %d\n", v1.c_str(), s.c_str(), m_ln);
@@ -423,6 +425,8 @@ int CEd::apply_Reg_replace(const std::string &s, std::string &v1, std::string &v
      break;
     case 3: res = use_upred(ins(), cex(), what, fields);
      break;
+    case 4: res = use_bd(ins(), cex(), what, fields);
+     break;
     default: Err("unknown kind %d, %s, line %d\n", kind, s.c_str(), m_ln);
      return 0;
   }
@@ -440,7 +444,7 @@ int CEd::apply_Reg_replace(const std::string &s, std::string &v1, std::string &v
       });
     if ( opt_d ) {
       printf("field %.*s %sfound\n", (int)fname.size(), fname.data(),
-        field == in_s->fields.end() ? "NOT" : ""
+        field == in_s->fields.end() ? "NOT " : ""
       );
     }
     if ( field == in_s->fields.end() ) {

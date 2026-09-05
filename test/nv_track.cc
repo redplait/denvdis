@@ -242,6 +242,25 @@ static int fill_tab_chain_CC(const NV_renderer::NV_pair &p, RegTabChains *tlist,
 static const std::string_view s_UR_a = "Ra_U"sv;
 static const std::string_view s_UR_b = "Rb_U"sv;
 
+bool NV_renderer::use_bd(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
+  // sm70+
+  if ( m_sm < 0x46 ) return false;
+  int state = 0;
+  for ( auto r: *m_dis->get_rend(i->n) ) {
+    if ( r->type == R_opcode ) { state++; continue; }
+    if ( state && r->type == R_enum ) {
+      const render_named *rn = (const render_named *)r;
+      const nv_eattr *ea = find_ea(i, rn->name);
+      if ( !ea || ea->ignore ) continue;
+      if ( !is_bd(ea) ) continue;
+      auto ki = kv.find(rn->name);
+      if ( ki == kv.end() ) continue;
+      if ( (long)ki->second == v ) res.push_back(rn->name);
+    }
+  }
+  return !res.empty();
+}
+
 template <typename T>
 bool NV_renderer::_use_pred(const struct nv_instr *i, const NV_extracted &kv,
   std::vector<std::string_view> &res, T &filter) const
