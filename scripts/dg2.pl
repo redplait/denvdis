@@ -86,7 +86,8 @@ my @g_cycls = ( 0, 0, 0, 0, 0 );
 # second set used for per-function stat
 my @g_rsT = ( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
 # stat for possibly reg pressure descrease - first two are (u)reg total, second two are (u)reg holes count
-my @g_rpT = ( 0, 0, 0, 0 );
+# next 4 items are: 4 - num of functions with holes,  5 - reduced regs, 6 - fully reduced funcs, 7 - partially reduced funcs
+my @g_rpT = ( 0, 0, 0, 0, 0, 0, 0, 0 );
 # for -u
 my $gu_max = 0;
 my($gu_off, %gu_cache);
@@ -153,6 +154,13 @@ sub dump_cycls
   # dump found holes in registers
   printf("; %d holes in regs (%d), %f\n", $g_rpT[2], $g_rpT[0], 1.0 * $g_rpT[2] / $g_rpT[0]) if ( $g_rpT[0] && $g_rpT[2] );
   printf("; %d holes in uregs (%d), %f\n", $g_rpT[3], $g_rpT[1], 1.0 * $g_rpT[3] / $g_rpT[1]) if ( $g_rpT[1] && $g_rpT[3] );
+  if ( $g_rpT[4] ) {
+    printf("; %d functions with holes, can reduce %d holes", $g_rpT[4], $g_rpT[5]);
+    printf(" %f from %d", 1.0 * $g_rpT[5] / $g_rpT[2], $g_rpT[2]) if $g_rpT[2];
+    printf("\n");
+    printf("; %d fully reduced functions %f\n", $g_rpT[6], 1.0 * $g_rpT[6] / $g_rpT[4]) if $g_rpT[6];
+    printf("; %d partially reduced functions %f\n", $g_rpT[7], 1.0 * $g_rpT[7] / $g_rpT[4]) if $g_rpT[7];
+  }
 }
 
 sub next_srT
@@ -2910,9 +2918,10 @@ sub dump_rw0
   my($hr, $uni) = @_;
   return unless defined($hr);
   return unless( scalar keys %$hr );
-  printf(";;; 0Windex %sRegs %d:\n", $uni ? 'U' : '', scalar keys %$hr);
-  foreach my $r ( sort { $a <=> $b } keys %$hr ) {
-    printf(";  %sR%d - %d\n", $uni ? 'U' : '', $r & 0xff, $hr->{$r}->[1]) if ( $hr->{$r}->[0] );
+  my @rw0 = sort { $a <=> $b } grep { $hr->{$_}->[0] } keys %$hr;
+  printf(";;; 0Windex %sRegs %d:\n", $uni ? 'U' : '', scalar @rw0);
+  foreach my $r ( @rw0 ) {
+    printf(";  %sR%d - %d\n", $uni ? 'U' : '', $r & 0xff, $hr->{$r}->[1]);
   }
 }
 
@@ -3006,6 +3015,8 @@ sub dump_T
     printf("\n");
   }
   # check holes in regular registers
+  my %rholes;
+  my $rh_cnt = 0;
   if ( $m_r ) {
     $g_rpT[0] += $m_r;
     $latch = 0;
@@ -3013,10 +3024,13 @@ sub dump_T
       next if ( exists $g_Tr{$i} );
       printf("; RHoles max %d:", $m_r) if ( !$latch++ );
       printf(" R%d", $i);
+      $rholes{$i}++;
+      $rh_cnt++;
       $g_rpT[2]++;
     }
     printf("\n") if $latch;
   }
+  $g_rpT[4]++ if ( $rh_cnt );
   # check holes in uniform registers
   if ( $m_ur ) {
     $g_rpT[1] += $m_ur;
@@ -3041,7 +3055,14 @@ sub dump_T
     printf("\n") if $latch;
   }
   # dump (u)rw0
-  dump_rw0($g_Trw0, 0) if ( defined $g_Trw0 );
+  if ( defined $g_Trw0 ) {
+    if ( $rh_cnt ) {
+      my $red_res = try_est_rholes($g_Trw0, $m_r, $rh_cnt, \%rholes);
+      $g_rpT[6]++ if ( 2 == $red_res );
+      $g_rpT[7]++ if ( 1 == $red_res );
+    }
+    dump_rw0($g_Trw0, 0);
+  }
   dump_rw0($g_Turw0, 1) if ( defined $g_Turw0 );
   if ( $bl_size ) {
     printf("; %d regs, avg %f per block\n", $g_rsT[5], 1.0 * $g_rsT[5] / $bl_size ) if $g_rsT[5];
@@ -3051,6 +3072,36 @@ sub dump_T
     printf("; %d BD, avg %f per block\n", $g_rsT[9], 1.0 * $g_rsT[9] / $bl_size ) if $g_rsT[9];
   }
   next_srT();
+}
+
+# args: g_Trw0 hash ref, max regs, holes count, hash of holes
+# return 2 if we can reduce whole holes set
+# 1 if we can reduce only some last
+# 0 if we can't reduce anything
+sub try_est_rholes
+{
+  my($rw0, $mr, $hc, $holes) = @_;
+  my $res = 0;
+  if ( $g_currsym != $g_start_sym ) {
+    printf("VERDICT: no bcs currsym %s and start %s\n", $g_currsym->[0], $g_start_sym->[0]);
+    return 0;
+  }
+  # check hc from mr backward
+  for ( my $i = 0; $i < $mr; $i++ ) {
+    my $r = $mr - $i;
+    last if ( $r == 1 ); # skip R1 - used for stack
+    next if ( exists $holes->{$r} ); # skip registers already in holes
+    if ( exists($rw0->{$r}) && $rw0->{$r}->[0] ) {
+      last if ( ++$res == $hc );
+      next;
+    }
+    last;
+  }
+  printf("VERDICT: %d from %d\n", $res, $hc);
+  return 0 unless($res);
+  $g_rpT[5] += $res;
+  return 2 if ( $res == $hc );
+  1;
 }
 
 # dump reg track snapshot for current instruction
