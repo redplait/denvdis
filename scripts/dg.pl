@@ -44,6 +44,7 @@ EOF
 use constant MAX_SWAP_DIST => 0x70;
 use constant USCHED => 'usched_info';
 use constant GAIN_LIMIT => 2;
+use constant UR => 0x8000;
 
 sub limit_stall
 {
@@ -179,7 +180,7 @@ sub dump_ruc
 {
   return unless($gu_max);
   printf("max RUC:%d at %X:\n", $gu_max, $gu_off);
-  printf(" %s%d\n", $_ & 0x8000 ? 'UR' : 'R', $_ & ~0x8000) for ( keys %gu_cache );
+  printf(" %s%d\n", $_ & UR ? 'UR' : 'R', $_ & ~UR) for ( keys %gu_cache );
 }
 
 sub dump_rU
@@ -2114,14 +2115,14 @@ sub dump_t2l
   if ( defined($ld->[6]) && keys %{$ld->[6]} ) {
     printf("; t2l registers:\n");
     while( my($r, $who) = each(%{$ld->[6]}) ) {
-      printf(";  %sR%d: at %X lat %d", $r & 0x8000 ? 'U' : '', $r & 0xff, $who->[2], $who->[1]);
+      printf(";  %sR%d: at %X lat %d", $r & UR ? 'U' : '', $r & 0xff, $who->[2], $who->[1]);
       dump_who($who);
     }
   }
   if ( defined($ld->[7]) && keys %{$ld->[7]} ) {
     printf("; t2l predicates:\n");
     while( my($r, $who) = each(%{$ld->[7]}) ) {
-      printf(";  %sP%d at %X lat %d", $r & 0x8000 ? 'U' : '', $r & 0x7, $who->[2], $who->[1]);
+      printf(";  %sP%d at %X lat %d", $r & UR ? 'U' : '', $r & 0x7, $who->[2], $who->[1]);
       dump_who($who);
     }
   }
@@ -2134,7 +2135,7 @@ sub dump_snap
   if ( defined $g ) {
     printf("; used regs:\n");
     while( my($r, $flag) = each(%$g) ) {
-      printf(";  %sR%d: %X", $r & 0x8000 ? 'U' : '', $r & 0xff, $flag);
+      printf(";  %sR%d: %X", $r & UR ? 'U' : '', $r & 0xff, $flag);
       printf(" write") if ( $flag & 0x80 );
       printf(" reuse") if ( $flag & 0x40 );
       printf(" read")  if ( $flag & 0x20 );
@@ -2144,7 +2145,7 @@ sub dump_snap
   if ( defined $pr ) {
     printf("; used predicates:\n");
     while( my($r, $flag) = each(%$pr) ) {
-      printf(";  %sP%d: %d\n", $r & 0x8000 ? 'U' : '', $r & 0x7, $flag);
+      printf(";  %sP%d: %d\n", $r & UR ? 'U' : '', $r & 0x7, $flag);
     }
   }
 }

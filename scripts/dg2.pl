@@ -52,6 +52,7 @@ use constant MAX_SWAP_DIST => 0xa0;
 use constant MIN_SWAP_WINDOW => 6;
 use constant USCHED => 'usched_info';
 use constant GAIN_LIMIT => 2;
+use constant UR => 0x8000;
 
 sub limit_stall
 {
@@ -63,6 +64,9 @@ sub limit_stall
 
 ### globals
 my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm, $g_urz, $g_gattrs);
+# if we need to patch attributes in nv_info with patch_sym_pair - we need keep index of .nv.info section and current symbol index
+# g_start_sym - first symbol for this section (zeroing in sym_reset)
+my($g_nv_idx, $g_currsym, $g_start_sym);
 # stat for barriers, key is ins name, value is [ wait, read, write ] count
 my %g_barstat;
 ### per code section globals
@@ -127,6 +131,8 @@ my($gc_war, $gc_waw);
 my $gcdf;
 
 sub in_lmode { defined($opt_l); }
+
+sub reg_red_mode { defined($opt_t) && defined($opt_T) && !defined($opt_l); }
 
 sub dump_cycls
 {
@@ -313,7 +319,7 @@ sub dump_ruc
 {
   return unless($gu_max);
   printf("max RUC:%d at %X:\n", $gu_max, $gu_off);
-  printf(" %s%d\n", $_ & 0x8000 ? 'UR' : 'R', $_ & ~0x8000) for ( keys %gu_cache );
+  printf(" %s%d\n", $_ & UR ? 'UR' : 'R', $_ & ~UR) for ( keys %gu_cache );
 }
 
 sub dump_rU
@@ -778,7 +784,7 @@ sub post_process_swaps
 #
 # machinery for symbols management
 #
-sub sym_reset { $gs_cidx = 0; }
+sub sym_reset { $gs_cidx = 0; undef $g_start_sym; }
 
 sub sym_name
 {
@@ -832,6 +838,8 @@ sub dump_sym_cmn
   # size
   printf("\t.size %X\n", $sym->[2]) if ( $sym->[2] );
   dump_sym_attr($sym);
+  $g_currsym = $sym; # store latest symbol index
+  $g_start_sym = $g_currsym unless( defined $g_start_sym );
   # dump name label
   printf("%s:\n", $sym->[0]);
 }
@@ -2815,9 +2823,9 @@ sub dump_t2l
     while( my($r, $who) = each(%{$ld->[6]}) ) {
       next unless defined($who);
       if ( defined $who->[1] ) {
-        printf(";  %sR%d: at %X lat %d", $r & 0x8000 ? 'U' : '', $r & 0xff, $who->[2], $who->[1]);
+        printf(";  %sR%d: at %X lat %d", $r & UR ? 'U' : '', $r & 0xff, $who->[2], $who->[1]);
       } else {
-        printf(";  %sR%d: at %X UNK lat", $r & 0x8000 ? 'U' : '', $r & 0xff, $who->[2]);
+        printf(";  %sR%d: at %X UNK lat", $r & UR ? 'U' : '', $r & 0xff, $who->[2]);
       }
       dump_who($who);
     }
@@ -2827,9 +2835,9 @@ sub dump_t2l
     while( my($r, $who) = each(%{$ld->[7]}) ) {
       next unless defined($who);
       if ( defined $who->[1] ) {
-        printf(";  %sP%d at %X lat %d", $r & 0x8000 ? 'U' : '', $r & 0x7, $who->[2], $who->[1]);
+        printf(";  %sP%d at %X lat %d", $r & UR ? 'U' : '', $r & 0x7, $who->[2], $who->[1]);
       } else {
-        printf(";  %sP%d at %X UNK lat", $r & 0x8000 ? 'U' : '', $r & 0x7, $who->[2]);
+        printf(";  %sP%d at %X UNK lat", $r & UR ? 'U' : '', $r & 0x7, $who->[2]);
       }
       dump_who($who);
     }
@@ -2855,7 +2863,7 @@ sub merge_rw0
   my $add = sub {
    my $r = shift;
    if ( $hr->{$r} ) {
-     $tmp{$r} = [ 1, $r & 0x8000 ? $rt->ur_len($r & 0xff) : $rt->r_len($r) ];
+     $tmp{$r} = [ 1, $r & UR ? $rt->ur_len($r & 0xff) : $rt->r_len($r) ];
    } else {
      $tmp{$r} = [ 0, 0 ];
    }
@@ -2870,7 +2878,7 @@ sub merge_rw0
     if ( exists $prev->{$r} ) {
       # check if both old and new marked with 1
       if ( $prev->{$r}->[0] && $hr->{$r} ) {
-        $tmp{$r} = [ 1, $prev->{$r}->[1] + ($r & 0x8000) ? $rt->ur_len($r & 0xff) : $rt->r_len($r) ];
+        $tmp{$r} = [ 1, $prev->{$r}->[1] + ($r & UR) ? $rt->ur_len($r & 0xff) : $rt->r_len($r) ];
       } else {
         $tmp{$r} = [ 0, 0 ];
       }
@@ -2908,7 +2916,7 @@ sub dump_rw0
   }
 }
 
-# args: block, g from snap
+# args: g from snap, block
 sub snap2T
 {
   my($g, $bl) = @_;
@@ -2959,7 +2967,7 @@ sub dump_T
   my $m_ur = 0;
   while( my($r, $ar) = each(%g_Tr) ) {
     my $r_idx = $r & 0xff;
-    if ( $r & 0x8000 ) {
+    if ( $r & UR ) {
       next if ( defined($g_urz) && $r_idx >= $g_urz );
       $m_ur = $r_idx if ( $r_idx > $m_ur );
     } else {
@@ -2970,7 +2978,7 @@ sub dump_T
       printf(";;; Registers used in single block:\n");
       $b_hash{ $_->[0] } = $_ for @$bl;
     }
-    printf(";  %sR%d in %X", $r & 0x8000 ? 'U' : '', $r_idx, $ar->[1]);
+    printf(";  %sR%d in %X", $r & UR ? 'U' : '', $r_idx, $ar->[1]);
     if ( exists $b_hash{ $ar->[1] } ) {
       my $fb = $b_hash{ $ar->[1] };
       printf(" end %X%s", $fb->[1]->[1], get_block_type($fb));
@@ -3014,7 +3022,7 @@ sub dump_T
     $g_rpT[1] += $m_ur;
     $latch = 0;
     for my $i ( 0 .. $m_ur ) {
-      next if ( exists $g_Tr{$i | 0x8000} );
+      next if ( exists $g_Tr{$i | UR} );
       printf("; URHoles max %d:", $m_ur) if ( !$latch++ );
       printf(" UR%d", $i);
       # skip holes up to UR3
@@ -3052,7 +3060,7 @@ sub dump_snap
   if ( defined $g ) {
     printf("; used regs:\n");
     while( my($r, $flag) = each(%$g) ) {
-      printf(";  %sR%d: %X", $r & 0x8000 ? 'U' : '', $r & 0xff, $flag);
+      printf(";  %sR%d: %X", $r & UR ? 'U' : '', $r & 0xff, $flag);
       printf(" write") if ( $flag & 0x80 );
       printf(" reuse") if ( $flag & 0x40 );
       printf(" read")  if ( $flag & 0x20 );
@@ -3062,7 +3070,7 @@ sub dump_snap
   if ( defined $pr ) {
     printf("; used predicates:\n");
     while( my($r, $flag) = each(%$pr) ) {
-      printf(";  %sP%d: %d\n", $r & 0x8000 ? 'U' : '', $r & 0x7, $flag);
+      printf(";  %sP%d: %d\n", $r & UR ? 'U' : '', $r & 0x7, $flag);
     }
   }
 }
@@ -3916,7 +3924,7 @@ TI:
       }
       $close_block->($cop->[0]-1) if ( $need_close );
       $cb = $add_block->($cop->[0])  unless $cb;
-printf("cop %X need_closee %d prev %s\n", $cop->[0], $need_close, defined($prev_block) ? 'Y' : 'N') if defined($opt_d);
+printf("cop %X need_close %d prev %s\n", $cop->[0], $need_close, defined($prev_block) ? 'Y' : 'N') if defined($opt_d);
       if ( $need_close && defined($prev_block) ) { # add link from prev block to this
         $prev_blink->($prev_block);
       }
@@ -4079,7 +4087,7 @@ $g_attrs = Cubin::Attrs->new($g_elf);
 dir("Attrs failed on $ARGV[0]") unless defined($g_attrs);
 printf("%d sections with code\n", scalar(@es)) if defined($opt_v);
 # read attrs from file-wide section .nv.info
-$g_gattrs = $g_attrs->get_sym_attrs(Cubin::Attrs::nv_info($g_elf));
+$g_gattrs = $g_attrs->get_sym_attrs($g_nv_idx = Cubin::Attrs::nv_info($g_elf));
 
 # we have list of sections in @es
 foreach my $s ( @es ) {
