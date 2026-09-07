@@ -261,6 +261,23 @@ bool NV_renderer::use_bd(const struct nv_instr *i, const NV_extracted &kv, long 
   return !res.empty();
 }
 
+bool NV_renderer::use_sb(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
+  int state = 0;
+  for ( auto r: *m_dis->get_rend(i->n) ) {
+    if ( r->type == R_opcode ) { state++; continue; }
+    if ( state && r->type == R_enum ) {
+      const render_named *rn = (const render_named *)r;
+      const nv_eattr *ea = find_ea(i, rn->name);
+      if ( !ea || ea->ignore ) continue;
+      if ( strcmp(ea->ename, "Scoreboard") ) continue;
+      auto ki = kv.find(rn->name);
+      if ( ki == kv.end() ) continue;
+      if ( (long)ki->second == v ) res.push_back(rn->name);
+    }
+  }
+  return !res.empty();
+}
+
 template <typename T>
 bool NV_renderer::_use_pred(const struct nv_instr *i, const NV_extracted &kv, T &filter) const
 {

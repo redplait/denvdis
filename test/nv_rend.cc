@@ -1346,12 +1346,14 @@ bool NV_renderer::check_branch(const struct nv_instr *i, const NV_extracted::con
 }
 
 static bool is_umma(const render_M1 *rt) {
+  if ( !rt->name ) return false;
   if ( strcmp(rt->name, "UMMA") ) return false;
   // check that left is URh
   return rt->left.type == R_enum && !strcmp(rt->left.arg, "URh");
 }
 
 static bool is_umma_AB(const render_M1 *rt) {
+  if ( !rt->name ) return false;
   return !strcmp(rt->name, "UMMAA") || !strcmp(rt->name, "UMMAB");
 }
 
