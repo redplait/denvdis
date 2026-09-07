@@ -847,7 +847,7 @@ sub dump_sym_cmn
   printf("\t.size %X\n", $sym->[2]) if ( $sym->[2] );
   dump_sym_attr($sym);
   $g_currsym = $sym; # store latest symbol index
-  $g_start_sym = $g_currsym unless( defined $g_start_sym );
+  $g_start_sym = $g_currsym if( !defined($g_start_sym) || same_syms($g_start_sym, $g_currsym) );
   # dump name label
   printf("%s:\n", $sym->[0]);
 }
@@ -893,6 +893,15 @@ sub gcheck_sym
     last if ( ++$gs_cidx >= scalar(@gs_syms) );
   }
   return $latch;
+}
+
+# some functions can have aliases or several weak symbols
+# to check if 2 symbols point to ther same address we should check their addresses (index 1) and sections (index 5)
+# args: old symbol, new symbol
+sub same_syms
+{
+  my($os, $ns) = @_;
+  $os->[1] == $ns->[1] && $os->[5] == $ns->[5];
 }
 
 # lame binary search in compound array
