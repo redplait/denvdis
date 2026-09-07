@@ -2888,6 +2888,11 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
   my $need_firstb = 1;
   $need_firstb = 0 if ( scalar(@sorted) && 'ARRAY' eq $sorted[0]->[1] && $sorted[0]->[0] <= $code_off );
   $cb = $add_block->($code_off) if ( $need_firstb );
+  # closure to link curr block in $cb with some prev
+  my $prev_blink = sub {
+    my $pblock = shift;
+    $cb->[3]->{$pblock->[0]} = 1;
+  };
   foreach my $cop ( @sorted ) {
 # we have 8 cases here
 # has block  current operand  what to do
@@ -2914,7 +2919,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
       $close_block->($cop->[0]-1) if ( $need_close );
       $cb = $add_block->($cop->[0])  unless $cb;
       if ( $need_close && defined($prev_block) ) { # add link from prev block to this
-        $prev_block->[3]->{$cb->[0]} = 1;
+        $prev_blink->($prev_block);
       }
       $cb->[3]->{$_} = 0 for ( @{ $cop->[1] } );
       next;
@@ -2925,6 +2930,8 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
       unless($cb) {
         $cb = $add_block->($curr_off);
         $cb->[2] = $cop->[1];
+        # add link from prev block to newly created
+        $prev_blink->($prev_block) if ( defined $prev_block );
         next;
       }
       unless(defined $cb->[2]) {
@@ -2936,6 +2943,8 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
       $close_block->(1+$g_ced->prev_off($curr_off));
       $cb = $add_block->($curr_off);
       $cb->[2] = $cop->[1];
+      # add link from prev block to newly created
+      $prev_blink->($prev_block) if ( defined $prev_block );
       next;
     }
     # marker or dead loop
