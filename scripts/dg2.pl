@@ -1317,6 +1317,8 @@ sub can_swap
   return 0 if ( $curr->[20] || $prev->[20] );
   # 2.6) one of instructions is MBAR
   return 0 if ( is_mbar($curr->[0]) || is_mbar($prev->[0]) );
+  # 2.7) one of instructions is DEPBAR
+  return 0 if ( $curr->[21] || $prev->[21] );
   # 3) has rela
   return 0 if ( $curr->[4] || $prev->[4] );
   # 4) share CC on old SMs
@@ -1642,6 +1644,7 @@ sub dump_ins
       $ar->[12] = $g_ced->check_tab(USCHED, 1);
       $ar->[13] = $cc if $cc;
       $ar->[20] = $dp;
+      $ar->[21] = is_depbar();
       if ( defined($scbd_type) && (3 == $scbd_type) ) { # 3 - BB_ENDING_INST
         # check if this is unconditional bb_end
         $ar->[14] = !( $g_ced->has_pred() );
@@ -2349,7 +2352,7 @@ printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defin
   my @cj;
   for my $i ( 0 .. $lsize - 1 ) {
     my $ins = $il->[$i]->[0];
-    if ( $ins->[5] ) {
+    if ( $ins->[5] || $ins->[21] ) {
       push @cj, [ $ins->[0], $i ];
     }
   }
@@ -2545,7 +2548,7 @@ sub process_lat
   my %in_R;
   for my $i ( 0 .. $lsize - 1 ) {
     my $ins = $il->[$i]->[0];
-    if ( $ins->[5] ) {
+    if ( $ins->[5] || $ins->[21] ) {
 printf("cj %X %d\n", $ins->[0], $ins->[5]) if ( defined $opt_d );
       push @cj, [ $ins->[0], $i ];
     }
@@ -3697,6 +3700,11 @@ sub is_pre
   return ($n eq 'PRET' || $n eq 'PBK' || $n eq 'PCNT' || $n eq 'PEXIT' );
 }
 
+sub is_depbar
+{
+  'DEPBAR' eq $g_ced->ins_name();
+}
+
 # MEM_SCBD_TYPE filled only since sm90
 sub is_bssy
 {
@@ -3894,7 +3902,8 @@ TI:
     * 18 - address of next instruction
     * 19 - relaxed latency from relax_lat
     * 20 - is delay plop instruction
-    * 21 - TBC
+    * 21 - is DEPBAR
+    * 22 - TBC
   [13] - properties for current instruction
   [14] - properties for previous instruction
   [15] - array of pairs [ prev, curr ] for processing at end of block
