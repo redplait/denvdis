@@ -10,7 +10,7 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_e $opt_f $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_T $opt_u $opt_U $opt_v $opt_w $opt_z/;
+use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_e $opt_f $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_T $opt_u $opt_U $opt_v $opt_w $opt_Y $opt_z/;
 
 sub usage()
 {
@@ -39,6 +39,7 @@ Usage: $0 [options] file.cubin
   -U - analyze possible registers reuse
   -v - verbose mode
   -w - skip WaR pass
+  -Y - collect yielding stat
   -z - don't patch usched_info, for debugging only
 EOF
   exit(8);
@@ -119,6 +120,9 @@ my @g_R = ( 0, 0, 0 );
 # stat for -e option, 0 - total adjacent instructions with orthogonal predicates, 1 - eliminated WaWs, 2 - eliminated WaRs
 # 3 - total WaWs, 4 - total WaRs
 my @ge_stat = ( 0, 0, 0, 0, 0 );
+## -Y data - two hashes - for having req_bit_set/no yield and for yield/no req_bit_set
+# key is instruction names, value - count
+my(%g_ynoY, %g_ynoreq);
 ### config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -203,6 +207,37 @@ sub dump_swap_stat
   printf(" overall stalls %d, %f\n", $g_bl[1], $gs_gain * 1.0 / $g_bl[1]) if ( $g_bl[1] );
   printf(" total gain %d (%f avg) gain/old ratio %f\n", $gs_gain, $gs_gain * 1.0 / $gs_ords, $gs_gain * 1.0 / $gs_old_stall);
   printf(" skipped %d, patched %d, bad %d, bad attrs %d\n", $gsp_skipped, $gsp_patched, $gsp_bad, $gsp_bad_attrs) if defined($opt_P);
+}
+
+# -Y stat
+# args: hash reg, header
+sub dump_yhash
+{
+  my($hr, $hdr) = @_;
+  return unless(defined $hr);
+  my @tmp = sort { $b->[1] <=> $a->[1] } map { [ $_, $hr->{$_} ]; } keys %$hr;
+  return unless(scalar @tmp);
+  printf("%s (%d):\n", $hdr, scalar @tmp);
+  foreach my $ip ( @tmp ) {
+    printf("%s\t", $ip->[0]);
+    printf("\t") if ( length($ip->[0]) < 8 );
+    printf("%d\n", $ip->[1]);
+  }
+}
+
+# add instruction having req_bit_set and without yield
+# arg: ins name
+sub add_noY
+{
+  my $iname = shift;
+  $g_ynoY{$iname}++;
+}
+
+# add instruction having yield without req_bit_set
+sub add_Ynoreq
+{
+  my $iname = shift;
+  $g_ynoreq{$iname}++;
 }
 
 # instructions stat
@@ -1473,7 +1508,7 @@ sub process_sched
       store_s_idx($b, 8, $dv) if ( $dv );
     }
     # render
-    if ( defined($opt_b) || in_lmode() ) {
+    if ( defined($opt_Y) || defined($opt_b) || in_lmode() ) {
       my @stat = (0, 0, 0);
       my $curr_stall = $sctx->{'roll'};
       my $s = $g_ced->render_cword($ctrl);
@@ -1489,6 +1524,11 @@ sub process_sched
       my $wrtdb = ($ctrl & 0x000e0) >> 5;  # 3bit write dependency barrier
       my $readb = ($ctrl & 0x00700) >> 8;  # 3bit read  dependency barrier
       my $watdb = ($ctrl & 0x1f800) >> 11; # 6bit wait on dependency barrier
+      if ( defined $opt_Y ) {
+        my $yield = ($ctrl & 0x00010) >> 4;
+        add_Ynoreq($g_ced->ins_name()) if ( $yield && !$watdb );
+        add_noY($g_ced->ins_name()) if ( !$yield && $watdb );
+      }
       # store sched data in block - array at index 4, map at 5
       if ( defined $b ) {
         my $ar;
@@ -4084,7 +4124,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("abdeGglmPpRrSsTtUuvwzC:f:");
+my $state = getopts("abdeGglmPpRrSsTtUuvwYzC:f:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -4094,6 +4134,7 @@ if ( -1 == $#ARGV ) {
 croak("you can track registers only with -g option") if ( defined($opt_t) && !defined($opt_g) );
 croak("-u must be used with -t option") if ( defined($opt_u) && !defined($opt_t) );
 croak("-U must be used with -t option") if ( defined($opt_U) && !defined($opt_t) );
+croak("-Y must be used with -g option") if ( defined($opt_Y) && !defined($opt_g) );
 if ( defined $opt_s ) {
  croak("-s must be used with -l option") unless defined($opt_l);
 }
@@ -4200,6 +4241,10 @@ foreach my $s ( @es ) {
 dump_ruc() if defined($opt_u);
 dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
+if ( defined $opt_Y ) {
+  dump_yhash(\%g_ynoY, 'Instructions having req_bit_set without yield');
+  dump_yhash(\%g_ynoreq, 'Instructions having yield without req_bit_set');
+}
 dump_ins_stat() if defined($opt_S);
 if ( defined $opt_T ) {
   next_srT();
