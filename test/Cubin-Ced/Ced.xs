@@ -460,6 +460,10 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return false;
     return use_bd(ins(), cex(), v, res);
   }
+  bool ins_sb(std::vector<std::string_view> &res, int v) const {
+    if ( !has_ins() ) return false;
+    return use_sb(ins(), cex(), v, res);
+  }
   bool ins_pred(std::vector<std::string_view> &res, bool is_uni, int v) const {
     if ( !has_ins() ) return false;
     return is_uni ? use_upred(ins(), cex(), v, res) : use_pred(ins(), cex(), v, res);
@@ -2049,6 +2053,7 @@ ins_regs(SV *obj, IV key)
   Cubin::Ced::ins_preds = 2
   Cubin::Ced::ins_upreds = 3
   Cubin::Ced::ins_bd = 4
+  Cubin::Ced::ins_sb = 5
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
@@ -2056,7 +2061,9 @@ ins_regs(SV *obj, IV key)
    std::vector<std::string_view> res;
    bool ret;
  PPCODE:
-   if ( 4 == ix )
+   if ( 5 == ix )
+     ret = e->ins_sb(res, key);
+   else if ( 4 == ix )
      ret = e->ins_bd(res, key);
    else if ( ix > 1 )
      ret = e->ins_pred(res, 3 == ix, key);
