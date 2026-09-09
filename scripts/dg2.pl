@@ -123,6 +123,8 @@ my @ge_stat = ( 0, 0, 0, 0, 0 );
 ## -Y data - two hashes - for having req_bit_set/no yield and for yield/no req_bit_set
 # key is instruction names, value - count
 my(%g_ynoY, %g_ynoreq);
+# per-function yields stat - rolling and total
+my @g_ystat = ( 0, 0 );
 ### config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -159,11 +161,14 @@ sub dump_cycls
   printf("; %d holes in regs (%d), %f\n", $g_rpT[2], $g_rpT[0], 1.0 * $g_rpT[2] / $g_rpT[0]) if ( $g_rpT[0] && $g_rpT[2] );
   printf("; %d holes in uregs (%d), %f\n", $g_rpT[3], $g_rpT[1], 1.0 * $g_rpT[3] / $g_rpT[1]) if ( $g_rpT[1] && $g_rpT[3] );
   if ( $g_rpT[4] ) {
-    printf("; %d functions with holes, can reduce %d holes", $g_rpT[4], $g_rpT[5]);
+    printf("; %d functions with holes (%f from total), can reduce %d holes", $g_rpT[4], 1.0 * $g_rpT[4] / $g_cycls[4], $g_rpT[5]);
     printf(" %f from %d", 1.0 * $g_rpT[5] / $g_rpT[2], $g_rpT[2]) if $g_rpT[2];
     printf("\n");
     printf("; %d fully reduced functions %f\n", $g_rpT[6], 1.0 * $g_rpT[6] / $g_rpT[4]) if $g_rpT[6];
     printf("; %d partially reduced functions %f\n", $g_rpT[7], 1.0 * $g_rpT[7] / $g_rpT[4]) if $g_rpT[7];
+  }
+  if ( defined $opt_Y ) {
+    printf("; total %d yields, avg %f per function\n", $g_ystat[1], 1.0 * $g_ystat[1] / $g_cycls[4]) if $g_ystat[1];
   }
 }
 
@@ -173,6 +178,8 @@ sub next_srT
     $g_rsT[$i] += $g_rsT[$i + 5];
     $g_rsT[$i + 5] = 0;
   }
+  $g_ystat[1] += $g_ystat[0];
+  $g_ystat[0] = 0;
 }
 
 sub dump_estat
@@ -1528,6 +1535,7 @@ sub process_sched
         my $yield = ($ctrl & 0x00010) >> 4;
         add_Ynoreq($g_ced->ins_name()) if ( $yield && !$watdb );
         add_noY($g_ced->ins_name()) if ( !$yield && $watdb );
+        $g_ystat[0]++;
       }
       # store sched data in block - array at index 4, map at 5
       if ( defined $b ) {
@@ -3122,6 +3130,7 @@ sub dump_T
     printf("; %d preds, avg %f per block\n", $g_rsT[7], 1.0 * $g_rsT[7] / $bl_size ) if $g_rsT[7];
     printf("; %d upreds, avg %f per block\n", $g_rsT[8], 1.0 * $g_rsT[8] / $bl_size ) if $g_rsT[8];
     printf("; %d BD, avg %f per block\n", $g_rsT[9], 1.0 * $g_rsT[9] / $bl_size ) if $g_rsT[9];
+    printf("; %d yields, avg %f per block\n", $g_ystat[0], 1.0 * $g_ystat[0] / $bl_size ) if $g_ystat[0];
   }
   next_srT();
 }
