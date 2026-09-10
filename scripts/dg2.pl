@@ -123,8 +123,8 @@ my @ge_stat = ( 0, 0, 0, 0, 0 );
 ## -Y data - two hashes - for having req_bit_set/no yield and for yield/no req_bit_set
 # key is instruction names, value - count
 my(%g_ynoY, %g_ynoreq);
-# per-function yields stat - rolling and total
-my @g_ystat = ( 0, 0 );
+# per-function yields stat - rolling and total. next 2 is yield without wait & 3 - wait without yield + 2 for their totals
+my @g_ystat = ( 0, 0, 0, 0, 0, 0 );
 ### config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -169,6 +169,8 @@ sub dump_cycls
   }
   if ( defined $opt_Y ) {
     printf("; total %d yields, avg %f per function\n", $g_ystat[1], 1.0 * $g_ystat[1] / $g_cycls[4]) if $g_ystat[1];
+    printf(";  total %d yields without waits, avg %f per function\n", $g_ystat[4], 1.0 * $g_ystat[4] / $g_cycls[4]) if $g_ystat[4];
+    printf(";  total %d waits without yields, avg %f per function\n", $g_ystat[5], 1.0 * $g_ystat[5] / $g_cycls[4]) if $g_ystat[5];
   }
 }
 
@@ -178,8 +180,14 @@ sub next_srT
     $g_rsT[$i] += $g_rsT[$i + 5];
     $g_rsT[$i + 5] = 0;
   }
-  $g_ystat[1] += $g_ystat[0];
-  $g_ystat[0] = 0;
+  if ( defined $opt_Y ) {
+    $g_ystat[1] += $g_ystat[0];
+    $g_ystat[0] = 0;
+    $g_ystat[4] += $g_ystat[2];
+    $g_ystat[2] = 0;
+    $g_ystat[5] += $g_ystat[3];
+    $g_ystat[3] = 0;
+  }
 }
 
 sub dump_estat
@@ -238,6 +246,7 @@ sub add_noY
 {
   my $iname = shift;
   $g_ynoY{$iname}++;
+  $g_ystat[3]++;
 }
 
 # add instruction having yield without req_bit_set
@@ -245,6 +254,7 @@ sub add_Ynoreq
 {
   my $iname = shift;
   $g_ynoreq{$iname}++;
+  $g_ystat[2]++;
 }
 
 # instructions stat
@@ -3131,6 +3141,8 @@ sub dump_T
     printf("; %d upreds, avg %f per block\n", $g_rsT[8], 1.0 * $g_rsT[8] / $bl_size ) if $g_rsT[8];
     printf("; %d BD, avg %f per block\n", $g_rsT[9], 1.0 * $g_rsT[9] / $bl_size ) if $g_rsT[9];
     printf("; %d yields, avg %f per block\n", $g_ystat[0], 1.0 * $g_ystat[0] / $bl_size ) if $g_ystat[0];
+    printf(";  %d yields without wait, avg %f per block\n", $g_ystat[2], 1.0 * $g_ystat[2] / $bl_size ) if $g_ystat[2];
+    printf(";  %d wait without yields, avg %f per block\n", $g_ystat[3], 1.0 * $g_ystat[3] / $bl_size ) if $g_ystat[3];
   }
   next_srT();
 }
