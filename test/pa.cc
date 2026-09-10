@@ -244,7 +244,7 @@ int main(int argc, char **argv)
           succ++;
           forms += pa.fsize();
           if ( opt_V ) pa.verify(off);
-          if ( opt_s ) pa.print_fsummary(stdout);
+          if ( opt_s || opt_k ) pa.print_fsummary(stdout);
         }
       }
     }

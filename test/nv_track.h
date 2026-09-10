@@ -192,6 +192,19 @@ struct reg_pad {
   ~reg_pad() {
     if ( snap ) delete snap;
   }
+  // slow but can be used before finalize_rt
+  template <typename T>
+  bool has_write(unsigned long from, const std::vector<T> &hl) const {
+    return std::any_of(hl.cbegin(), hl.cend(), [&](const T &item) {
+      return item.off >= from && (item.kind & 0x8000);
+    });
+  }
+  template <typename T>
+  bool has_write(unsigned long from, unsigned long eob, const std::vector<T> &hl) const {
+    return std::any_of(hl.cbegin(), hl.cend(), [&](const T &item) {
+      return (item.off >= from) && (item.off < eob) && (item.kind & 0x8000);
+    });
+  }
   // boring stuff
   _reg_history::RH check_reuse(int op) const {
     if ( op < ISRC_A) return 0;

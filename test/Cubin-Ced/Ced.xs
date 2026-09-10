@@ -3833,6 +3833,21 @@ p(SV *obj, IV key, unsigned long from = 0)
   RETVAL
 
 SV *
+wpr(SV *obj, int key, unsigned long from)
+ ALIAS:
+  Cubin::Ced::RegTrack::wupr = 1
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &rs = (ix == 1) ? r->upred: r->pred;
+   auto rs_iter = rs.find(key);
+ CODE:
+  if ( rs_iter == rs.end() ) RETVAL = &PL_sv_undef;
+  else RETVAL = r->has_write(from, rs_iter->second) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
+
+SV *
 p_write(SV *obj, int key)
  INIT:
    reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
