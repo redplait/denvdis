@@ -1705,11 +1705,12 @@ bool NV_renderer::check_cbank_t(T tptr, const render_base *rb, const NV_extracte
   return true;
 }
 
-const NV_field *NV_renderer::has_rsimm(const NV_rlist *rl, const struct nv_instr *i) const {
+const NV_field *NV_renderer::has_rsimm(const NV_rlist *rl, const struct nv_instr *i, std::string_view *name) const {
   if ( i->target_index ) {
     auto vi = find(i->vas, i->target_index);
     if ( !vi ) return nullptr;
     if ( vi->kind != NV_RSImm ) return nullptr;
+    if ( name ) *name = i->target_index;
     return find(i->fields, i->target_index);
   }
   // BSSY & WARPSYNC just has single RSImm field - try to find it
@@ -1720,6 +1721,7 @@ const NV_field *NV_renderer::has_rsimm(const NV_rlist *rl, const struct nv_instr
     auto vi = find(i->vas, rn->name);
     if ( !vi ) continue;
     if ( vi->kind != NV_RSImm ) continue;
+    if ( name ) *name = rn->name;
     return find(i->fields, rn->name);
   }
   return nullptr;

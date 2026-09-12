@@ -322,6 +322,24 @@ int CEd::parse_tail(int idx, std::string &s)
         return 0;
     }
     return _patch_pred(atoi(s.c_str() + idx + 1), has_not, true);
+  } else if ( c == 'j' ) {
+    if ( !skip_spaces('j') ) return 0;
+    long off = atol(s.c_str() + idx);
+    std::string_view attr_name;
+    // check if we have RSImm field to patch
+    auto field = has_rsimm(m_rend, ins(), &attr_name);
+    if ( !field ) {
+      Err("no RSImm fields, line %d\n", m_ln);
+      return 0;
+    }
+    off -= m_dis->off_next();
+    if ( !patch(field, off, attr_name) ) return 0;
+    if ( !flush_buf() ) {
+      Err("instr %s flush failed\n", s.c_str());
+      return 0;
+    }
+    m_state = WantOff;
+    return 1;
   } else if ( c == 'p' ) { // actually this is hardest part, bcs
      // fields args have different formats depending from it's type - like int/float
      // field can be part of table and current value can be bad combination - for this I postpone actual patching
