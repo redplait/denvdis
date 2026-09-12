@@ -475,6 +475,7 @@ class NV_renderer {
    bool extract(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    bool conv_simm(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    bool check_branch(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
+   const NV_field *has_rsimm(const NV_rlist *rl, const struct nv_instr *i) const;
    bool check_ret(const struct nv_instr *i, const NV_extracted::const_iterator &kvi, long &res) const;
    // generic reg filter per instruction
    template <typename T>

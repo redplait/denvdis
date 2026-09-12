@@ -1705,6 +1705,26 @@ bool NV_renderer::check_cbank_t(T tptr, const render_base *rb, const NV_extracte
   return true;
 }
 
+const NV_field *NV_renderer::has_rsimm(const NV_rlist *rl, const struct nv_instr *i) const {
+  if ( i->target_index ) {
+    auto vi = find(i->vas, i->target_index);
+    if ( !vi ) return nullptr;
+    if ( vi->kind != NV_RSImm ) return nullptr;
+    return find(i->fields, i->target_index);
+  }
+  // BSSY & WARPSYNC just has single RSImm field - try to find it
+  for ( auto ri: *rl ) {
+    if ( is_tail(i, ri) ) break;
+    if ( ri->type != R_value ) continue;
+    const render_named *rn = (const render_named *)ri;
+    auto vi = find(i->vas, rn->name);
+    if ( !vi ) continue;
+    if ( vi->kind != NV_RSImm ) continue;
+    return find(i->fields, rn->name);
+  }
+  return nullptr;
+}
+
 int NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, const NV_extracted &kv,
   NV_labels *labs, long *out_addr) const
 {
