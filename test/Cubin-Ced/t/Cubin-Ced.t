@@ -130,7 +130,20 @@ ok( 'Pd' eq $p1[0], 'ins_preds Pd');
 my @no_bd = $cub->ins_bd(1);
 ok( !scalar(@no_bd), 'no ins_bd');
 $t_num+=3;
-
+# ins_pall
+my $pall = $cub->ins_pall();
+ok( defined($pall), 'ins_pall');
+is( scalar keys %$pall, 1, 'ins_pall res size');
+ok( exists $pall->{'Pd'}, 'ins_pall res has Pd');
+my $rall = $cub->ins_rall();
+ok( defined($rall), 'ins_rall');
+is( scalar keys %$rall, 1, 'ins_rall res size');
+ok( exists $rall->{'Ra'}, 'ins_rall res has Ra');
+if ( exists $rall->{'Ra'} ) {
+ is($rall->{'Ra'}, 7, 'ins_rall Rs must be 7');
+ $t_num++;
+}
+$t_num+=6;
 
 # by_name
 my $tx = $cub->by_name('TXA');

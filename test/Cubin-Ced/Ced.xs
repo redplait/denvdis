@@ -462,17 +462,33 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return check_dual(cex()) ? &PL_sv_yes : &PL_sv_no;
   }
+  bool ins_bdall(std::unordered_map<std::string_view, long> &res) const {
+    if ( !has_ins() ) return false;
+    return used_bd(ins(), cex(), res);
+  }
   bool ins_bd(std::vector<std::string_view> &res, int v) const {
     if ( !has_ins() ) return false;
     return use_bd(ins(), cex(), v, res);
+  }
+  bool ins_sball(std::unordered_map<std::string_view, long> &res) const {
+    if ( !has_ins() ) return false;
+    return used_sb(ins(), cex(), res);
   }
   bool ins_sb(std::vector<std::string_view> &res, int v) const {
     if ( !has_ins() ) return false;
     return use_sb(ins(), cex(), v, res);
   }
+  bool ins_predall(bool is_uni, std::unordered_map<std::string_view, long> &res) const {
+    if ( !has_ins() ) return false;
+    return is_uni ? used_upred(ins(), cex(), res) : used_pred(ins(), cex(), res);
+  }
   bool ins_pred(std::vector<std::string_view> &res, bool is_uni, int v) const {
     if ( !has_ins() ) return false;
     return is_uni ? use_upred(ins(), cex(), v, res) : use_pred(ins(), cex(), v, res);
+  }
+  bool ins_regall(bool is_uni, std::unordered_map<std::string_view, long> &res) const {
+    if ( !has_ins() ) return false;
+    return is_uni ? used_ureg(ins(), cex(), res) : used_reg(ins(), cex(), res);
   }
   bool ins_reg(std::vector<std::string_view> &res, bool is_uni, int v) const {
     if ( !has_ins() ) return false;
@@ -1999,6 +2015,48 @@ field_at(SV *obj, IV off)
       XSRETURN(1);
     }
    }
+
+SV *
+ins_rall(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_urall = 1
+  Cubin::Ced::ins_pall = 2
+  Cubin::Ced::ins_upall = 3
+  Cubin::Ced::ins_sball = 4
+  Cubin::Ced::ins_bdall = 5
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   std::unordered_map<std::string_view, long> res;
+   bool ret = false;
+   const char *called_name = GvNAME(CvGV(cv));
+CODE:
+   switch(ix) {
+     case 0: ret = e->ins_regall(false, res);
+      break;
+     case 1: ret = e->ins_regall(true, res);
+      break;
+     case 2: ret = e->ins_predall(false, res);
+      break;
+     case 3: ret = e->ins_predall(true, res);
+      break;
+     case 4: ret = e->ins_sball(res);
+      break;
+     case 5: ret = e->ins_bdall(res);
+      break;
+     default:
+      croak("unknown ix %d in %s", ix, called_name ? called_name : "ins_Xall");
+   }
+   if ( !ret || res.empty() ) {
+    RETVAL = &PL_sv_undef; // nothing was found
+   } else { // make new hashmap and return ref to it
+     HV *hv = newHV();
+     for ( auto &ri: res ) {
+       hv_store(hv, ri.first.data(), ri.first.size(), newSViv(ri.second), 0);
+     }
+     RETVAL = newRV_noinc((SV*)hv);
+  }
+ OUTPUT:
+  RETVAL
 
 SV *
 ins_rlist(SV *obj, SV *ar)
