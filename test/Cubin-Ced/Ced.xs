@@ -399,6 +399,12 @@ class Ced_perl: public CEd_base {
   int patch_tab(int t_idx, int v);
   int patch_cb(unsigned long v1, unsigned long v2);
   // instruction properties
+  SV *ins_rsimm() const {
+    if ( !ins() ) return &PL_sv_undef;
+    auto field = has_rsimm(m_rend, ins());
+    if ( !field ) return &PL_sv_undef;
+    return newSVpv(field->name.data(), field->name.size());
+  }
   template <auto nv_instr::*fptr>
   SV *ins_intxxx() const {
     if ( !ins() ) return &PL_sv_undef;
@@ -2183,10 +2189,12 @@ ins_false(SV *obj)
 
 SV *
 ins_target(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_rsimm = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->ins_target();
+   RETVAL = (ix == 1) ? e->ins_rsimm() : e->ins_target();
  OUTPUT:
   RETVAL
 
@@ -2253,19 +2261,12 @@ ins_cc(SV *obj)
 
 SV *
 ins_line(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_alt = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->ins_line();
- OUTPUT:
-  RETVAL
-
-SV *
-ins_alt(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   RETVAL = e->ins_alt();
+   RETVAL = (1 == ix) ? e->ins_alt() : e->ins_line();
  OUTPUT:
   RETVAL
 

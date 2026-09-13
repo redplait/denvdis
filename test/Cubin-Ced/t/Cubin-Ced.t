@@ -46,7 +46,7 @@ ok( $cub->off(0), 'zero off' );
 # stat returns flush/rdr/dirty
 my $rstat = $cub->stat();
 $t_num++;
-ok( 1 == $rstat->[1], 'rdr count' );
+is( $rstat->[1], 1, 'rdr count' );
 $t_num++;
 ok( !$rstat->[2], 'is dirty' );
 
@@ -63,7 +63,7 @@ ok( defined($cub->render()), 'render' );
 $t_num+=2;
 ok( 'MOV' eq $cub->ins_name(), 'ins_name' );
 my $itype = $cub->ins_itype();
-ok( 2 == $itype, 'itype'); # BCST
+is( $itype, 2, 'itype'); # BCST
 
 my $ef = $cub->efields();
 $t_num++;
@@ -91,15 +91,15 @@ is( 16, $cub->get_off(), 'next offset should be 16' );
 
 # ins_regs - for instruction at 0x10 R20 must be Rd
 my @r20 = $cub->ins_regs(20);
-ok( 1 == scalar(@r20), 'ins_regs size');
+is( scalar(@r20), 1, 'ins_regs size');
 ok( 'Rd' eq $r20[0], 'ins_regs Rd');
 $t_num+=2;
 # ins_rlist
 my $rh20 = $cub->ins_rlist([20, 134]);
 ok( defined($rh20), 'ins_rlist result');
-ok( 1 == scalar(keys %$rh20), 'ins_rlist size');
+is( scalar(keys %$rh20), 1, 'ins_rlist size');
 ok( exists $rh20->{'Rd'}, 'ins_rlist has Rd');
-ok( 20 == $rh20->{'Rd'}, 'ins_rlist Rd must be 20');
+is( $rh20->{'Rd'}, 20, 'ins_rlist Rd must be 20');
 $t_num+=4;
 
 # regtrack
@@ -125,7 +125,7 @@ $t_num+=9;
 # ins_preds - at 0x398 Pd
 $cub->off(0x398);
 my @p1 = $cub->ins_preds(1);
-ok( 1 == scalar(@p1), 'ins_preds size');
+is( scalar(@p1), 1, 'ins_preds size');
 ok( 'Pd' eq $p1[0], 'ins_preds Pd');
 my @no_bd = $cub->ins_bd(1);
 ok( !scalar(@no_bd), 'no ins_bd');
