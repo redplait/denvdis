@@ -333,7 +333,7 @@ int CEd::parse_tail(int idx, std::string &s)
       return 0;
     }
     off -= m_dis->off_next();
-    if ( !patch(field, off, attr_name) ) return 0;
+    if ( !patch(field, field->scale ? off / field->scale : off, attr_name) ) return 0;
     if ( !flush_buf() ) {
       Err("instr %s flush failed\n", s.c_str());
       return 0;
