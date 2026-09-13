@@ -242,7 +242,9 @@ static int fill_tab_chain_CC(const NV_renderer::NV_pair &p, RegTabChains *tlist,
 static const std::string_view s_UR_a = "Ra_U"sv;
 static const std::string_view s_UR_b = "Rb_U"sv;
 
-bool NV_renderer::use_bd(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
+template <typename T>
+bool NV_renderer::_use_bd(const struct nv_instr *i, const NV_extracted &kv, T &cb) const {
+  bool res = false;
   // sm70+
   if ( m_sm < 0x46 ) return false;
   int state = 0;
@@ -255,13 +257,34 @@ bool NV_renderer::use_bd(const struct nv_instr *i, const NV_extracted &kv, long 
       if ( !is_bd(ea) ) continue;
       auto ki = kv.find(rn->name);
       if ( ki == kv.end() ) continue;
-      if ( (long)ki->second == v ) res.push_back(rn->name);
+      if ( cb(ki, rn) ) res = true;
     }
   }
-  return !res.empty();
+  return res;
 }
 
-bool NV_renderer::use_sb(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
+bool NV_renderer::use_bd(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
+  auto isb = [&](NV_extracted::const_iterator &kvi, const render_named *rn) -> bool {
+    if ( (long)kvi->second == v ) {
+      res.push_back(rn->name);
+      return true;
+    }
+    return false;
+  };
+  return _use_bd(i, kv, isb);
+}
+
+bool NV_renderer::used_bd(const struct nv_instr *i, const NV_extracted &kv, std::unordered_map<std::string_view, long> &res) const {
+  auto isbd = [&](NV_extracted::const_iterator &kvi, const render_named *rn) -> bool {
+    res[rn->name] = (long)kvi->second;
+    return true;
+  };
+  return _use_bd(i, kv, isbd);
+}
+
+template <typename T>
+bool NV_renderer::_use_sb(const struct nv_instr *i, const NV_extracted &kv, T &cb) const {
+  bool res = false;
   int state = 0;
   for ( auto r: *m_dis->get_rend(i->n) ) {
     if ( r->type == R_opcode ) { state++; continue; }
@@ -272,10 +295,29 @@ bool NV_renderer::use_sb(const struct nv_instr *i, const NV_extracted &kv, long 
       if ( strcmp(ea->ename, "Scoreboard") ) continue;
       auto ki = kv.find(rn->name);
       if ( ki == kv.end() ) continue;
-      if ( (long)ki->second == v ) res.push_back(rn->name);
+      if ( cb(ki, rn) ) res = true;
     }
   }
-  return !res.empty();
+  return res;
+}
+
+bool NV_renderer::use_sb(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &res) const {
+  auto isb = [&](NV_extracted::const_iterator &kvi, const render_named *rn) -> bool {
+    if ( (long)kvi->second == v ) {
+      res.push_back(rn->name);
+      return true;
+    }
+    return false;
+  };
+  return _use_sb(i, kv, isb);
+}
+
+bool NV_renderer::used_sb(const struct nv_instr *i, const NV_extracted &kv, std::unordered_map<std::string_view, long> &res) const {
+  auto isb = [&](NV_extracted::const_iterator &kvi, const render_named *rn) -> bool {
+    res[rn->name] = (long)kvi->second;
+    return true;
+  };
+  return _use_sb(i, kv, isb);
 }
 
 template <typename T>
@@ -313,6 +355,15 @@ bool NV_renderer::use_pred(const struct nv_instr *i, const NV_extracted &kv, lon
   return _use_pred(i, kv, isp);
 }
 
+bool NV_renderer::used_pred(const struct nv_instr *i, const NV_extracted &kv, std::unordered_map<std::string_view, long> &out_res) const {
+  auto isp = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    if ( !is_pred(ea, kvi) ) return false;
+    out_res[kvi->first] = kvi->second;
+    return true;
+  };
+  return _use_pred(i, kv, isp);
+}
+
 bool NV_renderer::use_upred(const struct nv_instr *i, const NV_extracted &kv, long v, std::vector<std::string_view> &out_res) const {
   auto isup = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
     bool res = is_upred(ea, kvi) && v == (long)kvi->second;
@@ -320,6 +371,15 @@ bool NV_renderer::use_upred(const struct nv_instr *i, const NV_extracted &kv, lo
     return res;
   };
   return _use_pred(i, kv, isup);
+}
+
+bool NV_renderer::used_upred(const struct nv_instr *i, const NV_extracted &kv, std::unordered_map<std::string_view, long> &out_res) const {
+  auto isp = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    if ( !is_upred(ea, kvi) ) return false;
+    out_res[kvi->first] = kvi->second;
+    return true;
+  };
+  return _use_pred(i, kv, isp);
 }
 
 bool NV_renderer::use_pred(const struct nv_instr *i, const NV_extracted &kv, const std::set<long> &keys,
@@ -456,6 +516,15 @@ bool NV_renderer::use_reg(const struct nv_instr *i, const NV_extracted &kv, cons
   return use_reg(i, kv, mset);
 }
 
+bool NV_renderer::used_reg(const struct nv_instr *i, const NV_extracted &kv, std::unordered_map<std::string_view, long> &out_res) const {
+  auto isr = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    if ( !is_reg(ea, kvi) ) return false;
+    out_res[kvi->first] = kvi->second;
+    return true;
+  };
+  return use_reg(i, kv, isr);
+}
+
 bool NV_renderer::use_ureg(const struct nv_instr *i, const NV_extracted &kv, const std::set<long> &keys,
  std::unordered_map<std::string_view, long> &out_res) const {
   auto mset = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
@@ -466,6 +535,15 @@ bool NV_renderer::use_ureg(const struct nv_instr *i, const NV_extracted &kv, con
     return true;
   };
   return use_reg(i, kv, mset);
+}
+
+bool NV_renderer::used_ureg(const struct nv_instr *i, const NV_extracted &kv, std::unordered_map<std::string_view, long> &out_res) const {
+  auto isur = [&](const nv_eattr *ea, NV_extracted::const_iterator &kvi) -> bool {
+    if ( !is_ureg(ea, kvi) ) return false;
+    out_res[kvi->first] = kvi->second;
+    return true;
+  };
+  return use_reg(i, kv, isur);
 }
 
 int NV_renderer::track_regs(reg_pad *rtdb, const NV_rlist *rend, const NV_pair &p, unsigned long off)
