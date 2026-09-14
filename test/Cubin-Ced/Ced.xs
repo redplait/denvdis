@@ -395,6 +395,7 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return 0;
     return _patch_pred(v, is_not, false);
   }
+  SV *try_patch_jimm(long na);
   int patch_field(const char *fname, SV *v);
   int patch_tab(int t_idx, int v);
   int patch_cb(unsigned long v1, unsigned long v2);
@@ -862,6 +863,16 @@ SV *Ced_perl::extract_instrs(REGEXP *rx) const {
     if ( nmatch > 0 ) av_push(av, newSVpv( it->first.data(), it->first.size() ));
   }
   return newRV_noinc((SV*)av);
+}
+
+SV *Ced_perl::try_patch_jimm(long na) {
+  if ( !has_ins() ) return &PL_sv_undef;
+  auto field = has_rsimm(m_rend, ins());
+  if ( !field ) return &PL_sv_no;
+  na -= m_dis->off_next();
+  int res = patch(field, field->scale ? na / field->scale : na, field->name);
+  ex()[field->name] = na;
+  return res ? &PL_sv_yes : &PL_sv_no;
 }
 
 // patched CEd::process_p, too many changes to extract parts in CEd_base
@@ -2858,6 +2869,15 @@ patch_tab(SV *obj, int idx, int v)
      RETVAL = &PL_sv_undef;
    else
      RETVAL = e->patch_tab(idx, v) ? &PL_sv_yes : &PL_sv_no;
+ OUTPUT:
+  RETVAL
+
+SV *
+patch_jimm(SV *obj, long new_addr)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   RETVAL = e->try_patch_jimm(new_addr);
  OUTPUT:
   RETVAL
 
