@@ -869,7 +869,7 @@ SV *Ced_perl::try_patch_jimm(long na) {
   if ( !has_ins() ) return &PL_sv_undef;
   auto field = has_rsimm(m_rend, ins());
   if ( !field ) return &PL_sv_no;
-  na -= m_dis->off_next();
+  na -= m_dis->offset();
   int res = patch(field, field->scale ? na / field->scale : na, field->name);
   ex()[field->name] = na;
   return res ? &PL_sv_yes : &PL_sv_no;

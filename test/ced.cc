@@ -324,7 +324,10 @@ int CEd::parse_tail(int idx, std::string &s)
     return _patch_pred(atoi(s.c_str() + idx + 1), has_not, true);
   } else if ( c == 'j' ) {
     if ( !skip_spaces('j') ) return 0;
-    long off = atol(s.c_str() + idx);
+    char *end;
+    long off = strtol(s.c_str() + idx, &end, 0x10);
+    if ( end && *end )
+      Err("unkknown j tail %s, line %d\n", end, m_ln);
     std::string_view attr_name;
     // check if we have RSImm field to patch
     auto field = has_rsimm(m_rend, ins(), &attr_name);
@@ -332,7 +335,9 @@ int CEd::parse_tail(int idx, std::string &s)
       Err("no RSImm fields, line %d\n", m_ln);
       return 0;
     }
-    off -= m_dis->off_next();
+    auto next = m_dis->offset();
+ if ( opt_d ) printf("off %lX next %lX diff %lX\n", off, next, off - next);
+    off -= next;
     if ( !patch(field, field->scale ? off / field->scale : off, attr_name) ) return 0;
     if ( !flush_buf() ) {
       Err("instr %s flush failed\n", s.c_str());
