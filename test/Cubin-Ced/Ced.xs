@@ -777,7 +777,7 @@ int Ced_perl::try_swap(UV off) {
 
 int Ced_perl::replace(const char *s)
 {
-  int add_res = add(s, 0);
+  int add_res = add_with_off(s, m_dis->offset());
   if ( !add_res || m_forms.empty() ) {
     Err("cannot parse %s\n", s);
     return 0;
