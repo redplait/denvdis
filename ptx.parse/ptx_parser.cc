@@ -255,7 +255,7 @@ int PTXParser::cmp_letter(const std::string_view &must_be, char letter) {
      return must_be == "bf16" || must_be == "bf16x2";
      break;
     case 'H':
-      return must_be.ends_with("x2");
+      return must_be.ends_with("x2") || must_be.ends_with("x4");
      break;
     case 'B':
       return c == 'b';
@@ -290,8 +290,11 @@ int PTXParser::cmp_type(const std::string_view &must_be, char letter, const std:
       one_type += what;
       if ( one_type == must_be ) return 1;
      break;
-    case 'N':
     case 'H':
+      if ( what == "64" ) {
+        return must_be == "f16x4" || must_be == "bf16x4";
+      }
+    case 'N':
       if ( what == "32" ) {
         return must_be == "f16x2" || must_be == "bf16x2" || must_be == "u16x2" || must_be == "s16x2";
       } else

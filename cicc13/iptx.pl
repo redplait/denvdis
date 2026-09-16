@@ -518,6 +518,7 @@ my %gk_tabs = (
   1 * 8 + 0 => 'relu', # cvt/fma/min/max, test    byte ptr [r12+1], 1
   1 * 8 + 1 => 'ftz',
   1 * 8 + 2 => 'noftz',
+  1 * 8 + 3 => 'sat', # hz why not next but used for cvt only
   1 * 8 + 4 => 'sat',        # test    byte ptr [r12+1], 10h
   1 * 8 + 5 => 'satfinite',  # test    byte ptr [r12+1], 20h
   1 * 8 + 7 => 'tab282F2A0', # mma/tcgen05.mma .sp/.sp::ordered_metadata
@@ -540,6 +541,7 @@ my %gk_tabs = (
   3 * 8 + 7 => 'tab282E7E0', # cmp     byte ptr [r12+3], 0/js
 # 4
   4 * 8 + 0 => 'tab282E7C0', # test    byte ptr [r12+4], 1
+# 4 * 8 + 4 => mul.wide/mad.wide
   4 * 8 + 6 => 'tab282DFE0', # mov.type & cvt 01 - type with .pred
   4 * 8 + 7 => 'tab282EC40', # scope/ss like .gpu .cluster
 # 5 - full
