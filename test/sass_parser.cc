@@ -1464,7 +1464,17 @@ int ParseSASS::enum_tail(int idx, const std::string_view &head)
   return 1;
 }
 
-int ParseSASS::add(const std::string &s, int idx)
+int ParseSASS::add(const std::string &s, int idx) {
+  m_curr_off = 0;
+  return _add(s, idx);
+}
+
+int ParseSASS::add_with_off(const std::string &s, unsigned long off, int idx) {
+  m_curr_off = off;
+  return _add(s, idx);
+}
+
+int ParseSASS::_add(const std::string &s, int idx)
 {
   int ares = add_internal(s, idx);
   if ( !ares ) return 0;

@@ -32,6 +32,7 @@ class ParseSASS: public NV_renderer
    { }
    virtual int init(const std::string &s) = 0;
    int add(const std::string &s, int idx = 0);
+   int add_with_off(const std::string &s, unsigned long, int idx = 0);
    inline int fsize() const {
      return (int)m_forms.size();
    }
@@ -77,6 +78,7 @@ class ParseSASS: public NV_renderer
   }
   protected:
    int init_guts();
+   int _add(const std::string &s, int idx = 0);
    int add_internal(const std::string &s, int idx);
    struct LTuple {
      const render_base *first;
@@ -305,6 +307,7 @@ class ParseSASS: public NV_renderer
      float m_f;
      double m_d;
    };
+   unsigned long m_curr_off = 0;
    int m_numv = 0;
    char m_minus = 0;
    char m_tilda = 0; // ~ for @invert

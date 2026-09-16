@@ -30,7 +30,7 @@ class MyParseSASS: public ParseSASS
      m_rtdb->clear();
    }
    int add_with_rt(const std::string &s, unsigned long off) {
-     int res = add(s);
+     int res = add_with_off(s, off);
      if ( res ) {
        const one_form *of = &m_forms.at(0);
        NV_pair p;
@@ -238,7 +238,7 @@ int main(int argc, char **argv)
         if ( opt_T )
           add_res = pa.add_with_rt(what, off);
         else
-          add_res = pa.add(what);
+          add_res = pa.add_with_off(what, off);
         if ( !add_res ) printf("[!] %d %s\n", ln, what.c_str());
         else {
           succ++;

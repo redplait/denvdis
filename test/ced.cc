@@ -282,7 +282,7 @@ int CEd::parse_tail(int idx, std::string &s)
     return apply_Reg_replace(s, v1, v2);
   } else if ( 'r' == c ) { // 'r' for replace some instruction. parser in base class ParseSASS
     if ( !skip_spaces('r') ) return 0;
-    int add_res = add(s, idx);
+    int add_res = add_with_off(s, m_dis->offset(), idx);
     if ( !add_res || m_forms.empty() ) {
       Err("cannot parse %s, line %d\n", s.c_str(), m_ln);
       return 0;
