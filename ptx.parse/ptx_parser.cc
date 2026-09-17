@@ -133,7 +133,7 @@ int PTXParser::try_split(std::string &s) {
     if ( c == ';' || !c ) return 1;
     break;
   }
-  if ( curr == s.size() ) return 1;
+  if ( curr >= s.size() ) return 1;
   // store tail
   m_tail = { s.data() + curr, s.size() - curr };
   return !m_body.empty();
@@ -173,6 +173,10 @@ int PTXParser::fill_attrs() {
   }
   // always use SpaceTab
   collected.push_back( { -2, &SpaceTab } );
+  // cas for atom
+  if ( !strcmp("atom", first->name) ) {
+    collected.push_back( { -3, &s_cas } );
+  }
   // traverse tabs in non-zero masks
   for ( int i = 0; i < PTXIns::MaskSize; ++i ) {
     auto c = ored_mask[i];
@@ -279,7 +283,8 @@ int PTXParser::cmp_letter(const std::string_view &must_be, char letter) {
 int PTXParser::cmp_type(const std::string_view &must_be, char letter, const std::string_view &what) {
   std::string one_type;
   switch(letter) {
-    case 'B':
+    case 'B': // sust.p has single form B32 but accept b16 & b8
+      if ( what == "32" && (must_be == "b16" || must_be == "b8") ) return 1;
     case 'F':
        one_type.push_back(tolower(letter));
        one_type += what;
@@ -293,7 +298,7 @@ int PTXParser::cmp_type(const std::string_view &must_be, char letter, const std:
       one_type = "u";
       one_type += what;
       if ( one_type == must_be ) return 1;
-      if ( what == "8" ) return must_be == "b1";
+      if ( what == "8" ) return must_be == "b1" || must_be == "s4" || must_be == "u4";
      break;
     case 'H':
       if ( what == "64" ) {
