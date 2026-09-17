@@ -558,6 +558,7 @@ my %gk_tabs = (
 #  6 * 8 + 2 - texture address?
   6 * 8 + 3 => 'tab282E760', # geom - texture mode?
   6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
+  6 * 8 + 5 => 'ds',
   6 * 8 + 6 => 'tab282E640', # occurs only in print handler for cp.async.bulk.tensor
   6 * 8 + 7 => 'tab282E620', # cta_group
 # 7 - full

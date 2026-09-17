@@ -1,3 +1,10 @@
 
 .exch
 .cas
+.or
+.min
+.max
+.inc
+.dec
+.popc
+.add
