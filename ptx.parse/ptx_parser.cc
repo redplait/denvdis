@@ -6,6 +6,7 @@
 
 // from https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces-state-spaces-tab
 const static PTXTab SpaceTab = {
+ "param",
  "reg",
  "sreg",
  "const",
@@ -71,8 +72,10 @@ int PTXParser::split_body() {
       prev = ++curr;
     }
   }
-  if ( prev != curr ) // last
-    m_attrs[idx++] = { prev, { m_body.c_str() + prev, curr - prev } };
+  if ( prev != curr ) { // last
+    std::string_view last{ m_body.c_str() + prev, curr - prev };
+    if ( !last.empty() && last.at(0) ) m_attrs[idx++] = { prev, std::move(last) };
+  }
   m_attrs_lim = idx;
   return !m_attrs.empty();
 }
@@ -117,16 +120,17 @@ int PTXParser::try_split(std::string &s) {
   if ( c == '.' ) return 0;
   for ( ; curr < s.size(); ++curr ) {
     c = s.at(curr);
-    if ( isspace(c) ) break;
-    if ( c == ';' ) return 1;
+    if ( isspace(c) || !c ) break;
+    if ( c == ';' ) return !m_body.empty();
     m_body.push_back(tolower(c));
   }
   if ( m_body.starts_with("//") ) return 0;
+  if ( !c ) return !m_body.empty();
   // strip spaces after body
   for ( ++curr ; curr < s.size(); ++curr ) {
     c = s.at(curr);
     if ( isspace(c) ) continue;
-    if ( c == ';' ) return 1;
+    if ( c == ';' || !c ) return 1;
     break;
   }
   if ( curr == s.size() ) return 1;
@@ -261,7 +265,7 @@ int PTXParser::cmp_letter(const std::string_view &must_be, char letter) {
       return c == 'b';
      break;
     case 'I':
-      return c == 's' || c == 'u';
+      return c == 's' || c == 'u' || c == 'b';
      break;
     case 'Q':
       return c == 'e' || must_be.starts_with("ue");
@@ -289,6 +293,7 @@ int PTXParser::cmp_type(const std::string_view &must_be, char letter, const std:
       one_type = "u";
       one_type += what;
       if ( one_type == must_be ) return 1;
+      if ( what == "8" ) return must_be == "b1";
      break;
     case 'H':
       if ( what == "64" ) {
