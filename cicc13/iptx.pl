@@ -282,7 +282,7 @@ sub filter_or
     if ( !$found ) {
       @res = @$ar; # copy first mask array
     } else {
-      # apply and
+      # apply or
       foreach my $ai ( 0 .. MaskSize ) {
         $res[$ai] |= $ar->[$ai];
       }
@@ -292,7 +292,6 @@ sub filter_or
   if ( !$found ) {
     printf("not found\n");
   } else {
-    nand(\@res, \@rem);
     dump_mask(\@res);
     dump_mtabs(\@res, '') if defined($opt_d);
   }
