@@ -4,7 +4,15 @@
 
 int opt_v = 0;
 
-void dump_res(ParseRes *pr) {
+void dump_res(ParseRes *pr, const std::unordered_map<int, PTXDot> *rem) {
+  if ( rem ) {
+    if ( rem->empty() ) return;
+    printf("--- rem attrs %ld:\n", rem->size());
+    for ( auto &name: *rem ) {
+      auto rlen = name.second.second.size();
+      printf(" col %d %.*s len %d\n", name.second.first, rlen, name.second.second.data(), rlen);
+    }
+  }
   if ( pr->forms.empty() ) return;
   int latch = 0;
   for ( auto &f: pr->forms ) {
@@ -44,11 +52,12 @@ void usage(const char *prog)
 
 int main(int argc, char **argv)
 {
-  int c, opt_t = 0;
+  int c, opt_t = 0, opt_r = 0;
   while(1) {
-    c = getopt(argc, argv, "dtv");
+    c = getopt(argc, argv, "drtv");
     if ( c == -1 ) break;
     switch(c) {
+      case 'r': opt_r = 1; break;
       case 't': opt_t = 1; break;
       case 'v': opt_v |= 1; break;
       case 'd': opt_v |= 2; break;
@@ -63,7 +72,7 @@ int main(int argc, char **argv)
     auto res = p.parse(str, opt_t, opt_v);
     p.dump(stdout);
     if ( res ) {
-      dump_res(res);
+      dump_res(res, opt_r ? &p.rem_attrs() : nullptr);
       delete res;
     }
   }
