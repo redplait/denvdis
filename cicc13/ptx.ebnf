@@ -1914,7 +1914,7 @@ cvta_to0 = "cvta.to" [ tab282F560 tab282EC40 tab282F800 ] ; cvta.to	00	I[32|64]
 
 mapa0 = "mapa" [ tab282F560 tab282EC40 ] ; mapa	00u	I[32|64]
 
-getctarank0 = "getctarank" [ tab282F560 tab282EC40 ] ; getctarank	u0	I[32|64]
+getctarank0 = "getctarank" [ tab282F560 tab282EC40 ds ] ; getctarank	u0	I[32|64]
 
 cctl0 = "cctl" [ tab282EC40 tab282E960 ] ; cctl	M	
 

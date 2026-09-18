@@ -482,6 +482,8 @@ my %gn_tabs = (
  'wmma.store.d' => 'tab282F2F0',
  'mma' => 'tab282F2F0',
  '_mma' => 'tab282F2F0',
+ # ds
+ 'getctarank' => 'ds',
  # nosleep
  'mbarrier.try_wait' => 'nosleep',
  'mbarrier.try_wait.parity' => 'nosleep',
@@ -651,25 +653,30 @@ my %gk_tabs = (
  16 * 8 + 7 => 'cp_mask',
 );
 
-# collect all tables for some instruction
+# collect all uniq tables for some instruction
 # args: arr from g_ops
 sub gather_tabs
 {
   my $op = shift;
   my $ar = $op->[1];
-  my @res;
+  my(@res, %stored);
   my $idx = 0;
   foreach my $m ( @$ar ) {
     foreach my $i ( 0 .. 7 ) {
       next unless ( $m & (1 << $i) );
       my $key = $idx * 8 + $i;
       next unless exists $gk_tabs{$key};
-      push @res, $gk_tabs{$key};
+      my $tname = $gk_tabs{$key};
+      push @res, $tname;
+      $stored{$tname} //= 1;
     }
     ++$idx;
   }
   # check gn_tabs
-  push @res, $gn_tabs{ $op->[3] } if exists($gn_tabs{ $op->[3] });
+  if ( exists($gn_tabs{ $op->[3] }) ) {
+    my $tname = $gn_tabs{ $op->[3] };
+    push @res, $tname unless ( exists($stored{$tname}) );
+  }
   return scalar(@res) ? \@res : undef;
 }
 
@@ -677,7 +684,7 @@ sub gather_tabs
 my %g_tcache;
 
 # args - hash with instruction names (or undef for all)
-sub gen_ebpf
+sub gen_ebnf
 {
   my $ih = shift;
   my $res = 0;
@@ -1060,6 +1067,16 @@ sub dump_C_tab
   $res;
 }
 
+# gen table name
+sub C_tabname {
+ my $tgn = shift;
+ if ( $tgn =~ /^tab/ ) {
+   return 's_' . $tgn;
+  } else {
+   return 's_tab_' . $tgn;
+  }
+}
+
 sub gen_C {
  # header
  printf("// Dont edit this file - it was generated %s by %s -C\n", scalar(localtime), $0);
@@ -1073,7 +1090,7 @@ sub gen_C {
        next;
      }
      my $tab = $gk_tabs{$k};
-     my $tab_name = 's_' . $tab;
+     my $tab_name = C_tabname($tab);
      if ( exists $g_tcache{$tab} ) {
        push @mask, $tab_name;
        next;
@@ -1137,16 +1154,13 @@ sub gen_C {
      if ( exists $gn_names{$tgn} ) {
        $tab_name = $gn_names{$tgn};
      } else {
+       my $dumped = exists $g_tcache{$tgn};
        my $ar = get_trows($gn_tabs{$op_name});
        unless( defined $ar ) {
          printf("cant read known table for %s\n", $gn_tabs{$op_name});
        } else {
-         if ( $tgn =~ /^tab/ ) {
-           $tab_name = 's_' . $tgn;
-         } else {
-           $tab_name = 's_tab_' . $tgn;
-         }
-         dump_C_tab($tab_name, $ar);
+         $tab_name = C_tabname($tgn);
+         dump_C_tab($tab_name, $ar) unless( $dumped );
          $gn_names{$tgn} = $tab_name;
        }
      }
@@ -1274,7 +1288,7 @@ if ( defined $opt_e ) {
   # read for what instructions
   my %ins;
   $ins{$_} = 1 foreach @ARGV;
-  gen_ebpf(scalar(keys %ins) ? \%ins : undef);
+  gen_ebnf(scalar(keys %ins) ? \%ins : undef);
   exit;
 }
 # -C - gen tabs for parser
