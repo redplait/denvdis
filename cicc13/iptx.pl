@@ -472,6 +472,13 @@ OUTER:
 # I can only hope there will be single attribute per instruction
 # pls keep this hash ordered by key
 my %gn_tabs = (
+ # fence - cluster/sys
+ 'fence' => 'tab282EC40',
+ # ds
+ 'getctarank' => 'ds',
+ # nosleep
+ 'mbarrier.try_wait' => 'nosleep',
+ 'mbarrier.try_wait.parity' => 'nosleep',
  'istypep' => 'istypep',
  'pmevent' => 'tab282E1E0',
  'vmad' => 'tab282E460',
@@ -482,11 +489,6 @@ my %gn_tabs = (
  'wmma.store.d' => 'tab282F2F0',
  'mma' => 'tab282F2F0',
  '_mma' => 'tab282F2F0',
- # ds
- 'getctarank' => 'ds',
- # nosleep
- 'mbarrier.try_wait' => 'nosleep',
- 'mbarrier.try_wait.parity' => 'nosleep',
 );
 
 =pod
@@ -582,6 +584,7 @@ my %gk_tabs = (
   8 * 8 + 7 => 'tab282E360', # vote mode
 # 9
   9 * 8 + 0 => 'tab282FC80', # redOp
+  9 * 8 + 1 => 'tab282F3A0',
   9 * 8 + 2 => 'tab282F3A0', # redOp with popc
   9 * 8 + 3 => 'tab282FC80', # .add, .min, .max
   9 * 8 + 4 => 'cas', # atom with 0M00

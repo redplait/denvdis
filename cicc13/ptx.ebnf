@@ -1057,13 +1057,13 @@ cp_async.bulk.tensor19 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab28
 
 tab282F3A0 = [ ".and" | ".xor" | ".popc" ]
 
-cp_reduce.async.bulk.tensor0 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsM	
+cp_reduce.async.bulk.tensor0 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E520 tab282F3A0 tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsM	
 
-cp_reduce.async.bulk.tensor1 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E520 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk.tensor	MsMU	
+cp_reduce.async.bulk.tensor1 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E520 tab282F3A0 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk.tensor	MsMU	
 
-cp_reduce.async.bulk.tensor2 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsM	
+cp_reduce.async.bulk.tensor2 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E520 tab282F3A0 tab282F3A0 ] ; cp.reduce.async.bulk.tensor	MsM	
 
-cp_reduce.async.bulk.tensor3 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E520 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk.tensor	MsMU	
+cp_reduce.async.bulk.tensor3 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E520 tab282F3A0 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk.tensor	MsMU	
 
 tab282E550 = [ ".asc::b32" | ".asc::b64" ]
 
@@ -1097,17 +1097,17 @@ cp_async.bulk12 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 
 
 cp_async.bulk13 = "cp.async.bulk" [ tab282E6A0 tab282EC40 tab282E550 tab282E520 cache_hint ] ; cp.async.bulk	MMuU	
 
-cp_reduce.async.bulk0 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 ] ; cp.reduce.async.bulk	MMuM	I[32|64]
+cp_reduce.async.bulk0 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk	MMuM	I[32|64]
 
 cp_reduce.async.bulk1 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk	MMuM	B[32|64]
 
-cp_reduce.async.bulk2 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 ] ; cp.reduce.async.bulk	MMu	I[32|64]
+cp_reduce.async.bulk2 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk	MMu	I[32|64]
 
 cp_reduce.async.bulk3 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk	MMu	B[32|64]
 
 cp_reduce.async.bulk4 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMu	F[32|64]
 
-cp_reduce.async.bulk5 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 cache_hint ] ; cp.reduce.async.bulk	MMuU	I[32|64]
+cp_reduce.async.bulk5 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk	MMuU	I[32|64]
 
 cp_reduce.async.bulk6 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk	MMuU	B[32|64]
 
@@ -1123,17 +1123,17 @@ cp_reduce.async.bulk10 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 ta
 
 cp_reduce.async.bulk11 = "cp.reduce.async.bulk" [ noftz tab282E6A0 tab282E520 tab282FC80 cache_hint ] ; cp.reduce.async.bulk	MMuU	E16
 
-cp_reduce.async.bulk12 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 ] ; cp.reduce.async.bulk	MMuM	I[32|64]
+cp_reduce.async.bulk12 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk	MMuM	I[32|64]
 
 cp_reduce.async.bulk13 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk	MMuM	B[32|64]
 
-cp_reduce.async.bulk14 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 ] ; cp.reduce.async.bulk	MMu	I[32|64]
+cp_reduce.async.bulk14 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk	MMu	I[32|64]
 
 cp_reduce.async.bulk15 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; cp.reduce.async.bulk	MMu	B[32|64]
 
 cp_reduce.async.bulk16 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282FC80 ] ; cp.reduce.async.bulk	MMu	F[32|64]
 
-cp_reduce.async.bulk17 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 cache_hint ] ; cp.reduce.async.bulk	MMuU	I[32|64]
+cp_reduce.async.bulk17 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk	MMuU	I[32|64]
 
 cp_reduce.async.bulk18 = "cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 cache_hint ] ; cp.reduce.async.bulk	MMuU	B[32|64]
 
@@ -1197,15 +1197,15 @@ st_async7 = "st.async" [ tab282EC40 tab282E900 tab282EC40 vec tab282E520 ] ; st.
 
 st_async8 = "st.async" [ tab282EC40 tab282E900 tab282EC40 vec tab282E520 ] ; st.async	M0M	F[32|64]
 
-red_async0 = "red.async" [ tab282EC40 tab282E900 tab282EC40 tab282E520 ] ; red.async	M0M	I[32|64]
+red_async0 = "red.async" [ tab282EC40 tab282E900 tab282EC40 tab282E520 tab282F3A0 ] ; red.async	M0M	I[32|64]
 
 red_async1 = "red.async" [ tab282EC40 tab282E900 tab282EC40 tab282E520 tab282F3A0 ] ; red.async	M0M	B[32|64]
 
-red_async2 = "red.async" [ tab282EC40 tab282E900 mmio tab282EC40 tab282E520 ] ; red.async	M0	I[32|64]
+red_async2 = "red.async" [ tab282EC40 tab282E900 mmio tab282EC40 tab282E520 tab282F3A0 ] ; red.async	M0	I[32|64]
 
 red_async3 = "red.async" [ tab282EC40 tab282E900 mmio tab282EC40 tab282E520 tab282F3A0 ] ; red.async	M0	B[32|64]
 
-red_async4 = "red.async" [ tab282EC40 tab282E900 tab282EC40 tab282E520 ] ; red.async	M0M	I[32|64]
+red_async4 = "red.async" [ tab282EC40 tab282E900 tab282EC40 tab282E520 tab282F3A0 ] ; red.async	M0M	I[32|64]
 
 red_async5 = "red.async" [ tab282EC40 tab282E900 tab282EC40 tab282E520 tab282F3A0 ] ; red.async	M0M	B[32|64]
 
@@ -1289,7 +1289,7 @@ atom1 = "atom" [ tab282F560 noftz tab282EC40 tab282E900 tab282EC40 vec tab282FC8
 
 atom2 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282FC80 ] ; atom	0M0	F64
 
-atom3 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; atom	0M0	I[32|64]
+atom3 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; atom	0M0	I[32|64]
 
 atom4 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; atom	0M0	B[32|64]
 
@@ -1315,7 +1315,7 @@ atom13 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 vec tab282FC80 cac
 
 atom14 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282FC80 cache_hint ] ; atom	0M0U	F64
 
-atom15 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 cache_hint ] ; atom	0M0U	I[32|64]
+atom15 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 cache_hint ] ; atom	0M0U	I[32|64]
 
 atom16 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 cache_hint ] ; atom	0M0U	B[32|64]
 
@@ -1335,7 +1335,7 @@ atom23 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 vec tab282FC80 des
 
 atom24 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282FC80 desc ] ; atom	0M0U	F64
 
-atom25 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 desc ] ; atom	0M0U	I[32|64]
+atom25 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 desc ] ; atom	0M0U	I[32|64]
 
 atom26 = "atom" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 desc ] ; atom	0M0U	B[32|64]
 
@@ -1345,7 +1345,7 @@ red1 = "red" [ noftz tab282EC40 tab282E900 tab282EC40 vec tab282FC80 ] ; red	M0	
 
 red2 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282FC80 ] ; red	M0	F64
 
-red3 = "red" [ tab282EC40 tab282E900 tab282EC40 ] ; red	M0	I[32|64]
+red3 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; red	M0	I[32|64]
 
 red4 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; red	M0	B[32|64]
 
@@ -1359,7 +1359,7 @@ red8 = "red" [ tab282EC40 tab282E900 tab282EC40 vec tab282FC80 cache_hint ] ; re
 
 red9 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282FC80 cache_hint ] ; red	M0U	F64
 
-red10 = "red" [ tab282EC40 tab282E900 tab282EC40 cache_hint ] ; red	M0U	I[32|64]
+red10 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282F3A0 cache_hint ] ; red	M0U	I[32|64]
 
 red11 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282F3A0 cache_hint ] ; red	M0U	B[32|64]
 
@@ -1379,7 +1379,7 @@ red18 = "red" [ tab282EC40 tab282E900 tab282EC40 vec tab282FC80 desc ] ; red	M0U
 
 red19 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282FC80 desc ] ; red	M0U	F64
 
-red20 = "red" [ tab282EC40 tab282E900 tab282EC40 desc ] ; red	M0U	I[32|64]
+red20 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282F3A0 desc ] ; red	M0U	I[32|64]
 
 red21 = "red" [ tab282EC40 tab282E900 tab282EC40 tab282F3A0 desc ] ; red	M0U	B[32|64]
 
@@ -1932,7 +1932,7 @@ cvt_pack2 = "cvt.pack" [ tab282F560 sat ] ; cvt.pack	1112	I[2|4]I32B32
 
 tab282F440 = [ ".acc::f16" | ".acc::f32" ]
 
-multimem_ld_reduce0 = "multimem.ld_reduce" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F440 ] ; multimem.ld_reduce	0M	I[32|64]
+multimem_ld_reduce0 = "multimem.ld_reduce" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 tab282F440 ] ; multimem.ld_reduce	0M	I[32|64]
 
 multimem_ld_reduce1 = "multimem.ld_reduce" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 tab282F440 ] ; multimem.ld_reduce	0M	B[32|64]
 
@@ -1958,7 +1958,7 @@ multimem_st4 = "multimem.st" [ tab282F560 tab282EC40 tab282E900 tab282EC40 vec ]
 
 multimem_st5 = "multimem.st" [ tab282F560 tab282EC40 tab282E900 tab282EC40 vec ] ; multimem.st	M0	Q[8|16|32]
 
-multimem_red0 = "multimem.red" [ tab282F560 tab282EC40 tab282E900 tab282EC40 ] ; multimem.red	M0	I[32|64]
+multimem_red0 = "multimem.red" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; multimem.red	M0	I[32|64]
 
 multimem_red1 = "multimem.red" [ tab282F560 tab282EC40 tab282E900 tab282EC40 tab282F3A0 ] ; multimem.red	M0	B[32|64]
 
@@ -1972,7 +1972,7 @@ multimem_cp.async.bulk0 = "multimem.cp.async.bulk" [ tab282E6A0 tab282E520 ] ; m
 
 multimem_cp.async.bulk1 = "multimem.cp.async.bulk" [ tab282E6A0 tab282E520 cp_mask ] ; multimem.cp.async.bulk	MMux	
 
-multimem_cp.reduce.async.bulk0 = "multimem.cp.reduce.async.bulk" [ tab282E6A0 tab282E520 ] ; multimem.cp.reduce.async.bulk	MMu	I[32|64]
+multimem_cp.reduce.async.bulk0 = "multimem.cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; multimem.cp.reduce.async.bulk	MMu	I[32|64]
 
 multimem_cp.reduce.async.bulk1 = "multimem.cp.reduce.async.bulk" [ tab282E6A0 tab282E520 tab282F3A0 ] ; multimem.cp.reduce.async.bulk	MMu	B[32|64]
 
@@ -2152,9 +2152,9 @@ tcgen05_ld.red0 = "tcgen05.ld.red" [ tab282F560 tab282FC80 sync aligned tab282EC
 
 tcgen05_ld.red1 = "tcgen05.ld.red" [ tab282F560 tab282FC80 sync aligned tab282ECE0 tab282F7A0 nan abs ] ; tcgen05.ld.red	ddMC	F32
 
-tcgen05_ld.red2 = "tcgen05.ld.red" [ tab282F560 sync aligned tab282ECE0 tab282F7A0 ] ; tcgen05.ld.red	ddM	I32
+tcgen05_ld.red2 = "tcgen05.ld.red" [ tab282F560 tab282F3A0 sync aligned tab282ECE0 tab282F7A0 ] ; tcgen05.ld.red	ddM	I32
 
-tcgen05_ld.red3 = "tcgen05.ld.red" [ tab282F560 sync aligned tab282ECE0 tab282F7A0 ] ; tcgen05.ld.red	ddMC	I32
+tcgen05_ld.red3 = "tcgen05.ld.red" [ tab282F560 tab282F3A0 sync aligned tab282ECE0 tab282F7A0 ] ; tcgen05.ld.red	ddMC	I32
 
 tab282F830 = [ ".self" | ".clustershared" ]
 
@@ -2756,7 +2756,7 @@ sust_p0 = "sust.p" [ tab282E960 vec tab282E760 tab282E480 ] ; sust.p	is0	B32
 
 sured_b0 = "sured.b" [ tab282E760 tab282F3A0 tab282E480 ] ; sured.b	is0	B32
 
-sured_b1 = "sured.b" [ tab282E760 tab282E480 ] ; sured.b	is0	I[32|64]
+sured_b1 = "sured.b" [ tab282E760 tab282F3A0 tab282E480 ] ; sured.b	is0	I[32|64]
 
 sured_p0 = "sured.p" [ tab282E760 tab282F3A0 tab282E480 ] ; sured.p	is0	B32
 
@@ -2829,17 +2829,17 @@ barrier_arrive0 = "barrier.arrive" [ aligned ] ; barrier.arrive	uu
 
 bar_warp0 = "bar.warp" [ tab282E7C0 sync aligned ] ; bar.warp	u	
 
-bar_red0 = "bar.red" [ tab282F560 tab282F310 ] ; bar.red	0uP	I32
+bar_red0 = "bar.red" [ tab282F560 tab282F3A0 tab282F310 ] ; bar.red	0uP	I32
 
-bar_red1 = "bar.red" [ tab282F560 tab282F310 ] ; bar.red	0uuP	I32
+bar_red1 = "bar.red" [ tab282F560 tab282F3A0 tab282F310 ] ; bar.red	0uuP	I32
 
 bar_red2 = "bar.red" [ tab282F560 tab282F3A0 tab282F310 ] ; bar.red	0uP	P
 
 bar_red3 = "bar.red" [ tab282F560 tab282F3A0 tab282F310 ] ; bar.red	0uuP	P
 
-barrier_red0 = "barrier.red" [ tab282F560 aligned ] ; barrier.red	0uP	I32
+barrier_red0 = "barrier.red" [ tab282F560 tab282F3A0 aligned ] ; barrier.red	0uP	I32
 
-barrier_red1 = "barrier.red" [ tab282F560 aligned ] ; barrier.red	0uuP	I32
+barrier_red1 = "barrier.red" [ tab282F560 tab282F3A0 aligned ] ; barrier.red	0uuP	I32
 
 barrier_red2 = "barrier.red" [ tab282F560 tab282F3A0 aligned ] ; barrier.red	0uP	P
 
@@ -2856,17 +2856,17 @@ bar_cta.arrive0 = "bar.cta.arrive" ; bar.cta.arrive	uu
 
 barrier_cta.arrive0 = "barrier.cta.arrive" [ aligned ] ; barrier.cta.arrive	uu	
 
-bar_cta.red0 = "bar.cta.red" [ tab282F560 ] ; bar.cta.red	0uP	I32
+bar_cta.red0 = "bar.cta.red" [ tab282F560 tab282F3A0 ] ; bar.cta.red	0uP	I32
 
-bar_cta.red1 = "bar.cta.red" [ tab282F560 ] ; bar.cta.red	0uuP	I32
+bar_cta.red1 = "bar.cta.red" [ tab282F560 tab282F3A0 ] ; bar.cta.red	0uuP	I32
 
 bar_cta.red2 = "bar.cta.red" [ tab282F560 tab282F3A0 ] ; bar.cta.red	0uP	P
 
 bar_cta.red3 = "bar.cta.red" [ tab282F560 tab282F3A0 ] ; bar.cta.red	0uuP	P
 
-barrier_cta.red0 = "barrier.cta.red" [ tab282F560 aligned ] ; barrier.cta.red	0uP	I32
+barrier_cta.red0 = "barrier.cta.red" [ tab282F560 tab282F3A0 aligned ] ; barrier.cta.red	0uP	I32
 
-barrier_cta.red1 = "barrier.cta.red" [ tab282F560 aligned ] ; barrier.cta.red	0uuP	I32
+barrier_cta.red1 = "barrier.cta.red" [ tab282F560 tab282F3A0 aligned ] ; barrier.cta.red	0uuP	I32
 
 barrier_cta.red2 = "barrier.cta.red" [ tab282F560 tab282F3A0 aligned ] ; barrier.cta.red	0uP	P
 
