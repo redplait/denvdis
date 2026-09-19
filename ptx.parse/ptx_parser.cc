@@ -17,6 +17,16 @@ const static PTXTab SpaceTab = {
  "tex",
 };
 
+// for mma/tcgen05.mma
+const static PTXTab block_scale = {
+ "block_scale",
+};
+
+// for cp.async
+const static PTXTab wait_tab = {
+ "wait",
+};
+
 void PTXParser::Err(const char *fmt, ...) const
 {
  va_list args;
@@ -173,9 +183,22 @@ int PTXParser::fill_attrs() {
   }
   // always use SpaceTab
   collected.push_back( { -2, &SpaceTab } );
+  // check 4:7 & 6:0
+  int add39 = 0;
+  if ( ored_mask[39] || ored_mask[48] ) {
+    add39 = 1;
+    collected.push_back( { 39, &s_tab_ds } );
+  }
   // cas for atom
   if ( !strcmp("atom", first->name) ) {
-    collected.push_back( { -3, &s_cas } );
+    collected.push_back( { -3, &s_tab_cas } );
+    if ( !add39 ) collected.push_back( { 39, &s_tab_ds } );
+  } else if ( !strcmp("cp.async.bulk.prefetch.tensor", first->name) ) {
+    collected.push_back( { 40, &s_tab282E6A0 } );
+  } else if ( !strcmp("mma", first->name) || !strcmp("tcgen05.mma", first->name) ) {
+    collected.push_back( { -4, &block_scale } );
+  } else if ( !strcmp("cp.async", first->name) ) {
+    collected.push_back( { -5, &wait_tab } );
   }
   // traverse tabs in non-zero masks
   for ( int i = 0; i < PTXIns::MaskSize; ++i ) {
@@ -197,6 +220,21 @@ int PTXParser::fill_attrs() {
     for ( auto &coll: collected ) {
       auto found = coll.second->find( ai->second.second );
       if ( found == coll.second->end() ) continue;
+      // some special processing for strange async.shared::cta from table proxykind
+      if ( coll.second == &s_tab_proxykind && ai->second.second == "async" && i + 1 < m_attrs_lim ) {
+        auto ai2 = m_attrs.find(i + 1); // find next attr at index + 1
+        if ( ai2 != m_attrs.end() ) {
+          std::string comp{ ai->second.second };
+          comp += "::";
+          comp += ai2->second.second;
+// printf("try comp %s\n", comp.c_str());
+          auto found2 = coll.second->find( comp );
+          if ( found2 != coll.second->end() ) {
+            rem.push_back(i++); // remove async
+            found = found2;
+          }
+        }
+      }
 #ifdef PR_ATTRS_MULTIMAP
       m_curr->attrs.insert( { coll.first, *found } );
 #else
@@ -280,8 +318,9 @@ int PTXParser::cmp_letter(const std::string_view &must_be, char letter) {
   return 0;
 }
 
-int PTXParser::cmp_type(const std::string_view &must_be, char letter, const std::string_view &what) {
+int PTXParser::cmp_type(const std::string_view &must_be, char letter, const std::string_view &what, int verbose) {
   std::string one_type;
+  if ( verbose ) fprintf(m_log_fp, "cmp_type %.*s with letter %c\n", must_be.size(), must_be.data(), letter);
   switch(letter) {
     case 'B': // sust.p has single form B32 but accept b16 & b8
       if ( what == "32" && (must_be == "b16" || must_be == "b8") ) return 1;
@@ -330,7 +369,7 @@ int PTXParser::cmp_type(const std::string_view &must_be, char letter, const std:
      break;
     case 'Q': // see https://docs.nvidia.com/cuda/parallel-thread-execution/#operand-types-for-packed-floating-point-instruction-type
       if ( what == "8" ) {
-        return must_be == "e4m3" || must_be == "e5m2" || must_be == "e3m4" || must_be == "e2m3" || must_be == "e3m2" ||
+        return must_be == "e4m3" || must_be == "e5m2" || must_be == "e3m4" || must_be == "e2m3" || must_be == "e3m2" || must_be == "e2m1" ||
           must_be == "ue8m0" || must_be == "ue4m3" || must_be == "s2f6";
       } else if ( what == "16" ) {
         return (must_be.at(0) == 'e' || must_be.starts_with("ue") || must_be.starts_with("s2f6") ) && must_be.ends_with("x2");
@@ -349,7 +388,7 @@ int PTXParser::cmp_types(const std::string_view &curr, char letter, std::list<st
   if ( verb ) fprintf(m_log_fp, "cmp_types: %.*s\n", curr.size(), curr.data());
   for ( auto sv: res ) {
     if ( verb & 2 ) fprintf(m_log_fp, "> %c%.*s\n", letter, sv.size(), sv.data());
-    if ( cmp_type(curr, letter, sv) ) return 1;
+    if ( cmp_type(curr, letter, sv, verb) ) return 1;
   }
   return 0;
 }
@@ -378,7 +417,7 @@ int PTXParser::try_type(const char *fmt, int verb) {
         if ( isdigit(*curr) ) continue;
         std::string_view dig{start, size_t(curr - start) };
  if ( verb & 2 ) fprintf(m_log_fp, "L<dig> %c%.*s\n", c_fmt, dig.size(), dig.data());
-        if ( !cmp_type(*ti, c_fmt, dig) ) return 0;
+        if ( !cmp_type(*ti, c_fmt, dig, verb) ) return 0;
         ++ti;
         if ( ti == m_curr->types.cend() ) return 0;
         break;
@@ -387,7 +426,7 @@ int PTXParser::try_type(const char *fmt, int verb) {
       if ( !*curr ) {
         std::string_view dig{start, size_t(curr - start) };
  if ( verb & 2 ) fprintf(m_log_fp, "Last<dig> %c%.*s\n", c_fmt, dig.size(), dig.data());
-        if ( !cmp_type(*ti, c_fmt, dig) ) return 0;
+        if ( !cmp_type(*ti, c_fmt, dig, verb) ) return 0;
         c_fmt = 0;
         ++ti;
         break;
@@ -463,6 +502,10 @@ ParseRes *PTXParser::parse(std::string &s, int process_tail, int verbose) {
   }
   m_curr = new ParseRes;
   collect_types(forms);
+  if ( verbose ) {
+    fprintf(m_log_fp, "collected %ld types:\n", m_curr->types.size());
+    for ( auto tn: m_curr->types ) fprintf(m_log_fp, " %.*s\n", tn.size(), tn.data());
+  }
   // lets select forms
   for ( auto &f: *forms ) {
     if ( process_tail ) {

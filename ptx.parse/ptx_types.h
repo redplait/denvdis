@@ -117,7 +117,7 @@ class PTXParser {
   int try_type(const char *, int);
   int cmp_types(const std::string_view &curr, char letter, std::list<std::string_view> &res, int);
   int cmp_letter(const std::string_view &must_be, char letter);
-  int cmp_type(const std::string_view &curr, char letter, const std::string_view &);
+  int cmp_type(const std::string_view &curr, char letter, const std::string_view &, int);
   // list of filtered forms in ParseRes.forms, fill ParseRes.attrs, remove matched from m_attrs
   int fill_attrs();
   size_t m_body_start;
