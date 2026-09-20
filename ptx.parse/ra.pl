@@ -14,7 +14,8 @@ while( $str = <> ) {
     next;
   }
   if ( $str =~ /^--- rem attrs/ ) {
-    next if ( $body =~ /\.$/ );
+    # skip obviously incomplete instructions
+    next if ( $body =~ /\.$/ || $body =~ /\::$/ );
     ++$bad_ins;
     $state = 1;
     next;
