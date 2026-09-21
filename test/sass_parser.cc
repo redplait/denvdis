@@ -288,7 +288,8 @@ int ParseSASS::set_num_value(const nv_vattr *vas, const char *name, one_form &of
   }
   if ( vas->kind == NV_SImm || vas->kind == NV_SSImm || vas->kind == NV_RSImm ) {
     long l = (long)m_v;
-    if ( m_minus ) l = -l;
+    if ( vas->kind == NV_RSImm ) l -= m_curr_off;
+    else if ( m_minus ) l = -l;
     of.l_kv[name] = l;
   } else if ( vas->kind == NV_BITSET || vas->kind == NV_UImm )
     of.l_kv[name] = m_v;
