@@ -870,7 +870,7 @@ SV *Ced_perl::try_patch_jimm(long na) {
   auto field = has_rsimm(m_rend, ins());
   if ( !field ) return &PL_sv_no;
   na -= m_dis->offset();
-  int res = patch(field, field->scale ? na / field->scale : na, field->name);
+  int res = patch(field, na, field->name);
   ex()[field->name] = na;
   return res ? &PL_sv_yes : &PL_sv_no;
 }
@@ -1007,7 +1007,7 @@ int Ced_perl::patch_field(const char *fname, SV *v)
     return res;
   }
   if ( field ) {
-    int res = patch(field, field->scale ? m_v / field->scale : m_v, fname);
+    int res = patch(field, m_v, fname);
     ex()[field->name] = m_v;
     return res;
   }
