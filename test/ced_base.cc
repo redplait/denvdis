@@ -288,8 +288,7 @@ int CEd_base::generic_ins(const nv_instr *ins, NV_extracted &kv)
      v = kvi->second;
     else
      v = get_def_value(ins, f.name);
-    if ( f.scale ) v /= f.scale;
-    m_dis->put(f.mask, f.mask_size, v);
+    m_dis->put(f.mask, f.mask_size, f.scale ? v / f.scale : v);
   }
   if ( opt_d ) printf("end enums\n");
   // tabs

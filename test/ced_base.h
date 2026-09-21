@@ -134,7 +134,7 @@ class CEd_base: public CElf<ParseSASS> {
    virtual void patch_error(const std::string_view &what) = 0;
    virtual void patch_tab_error(const char *what) = 0;
    int patch(const NV_field *nf, unsigned long v, const std::string_view &what) {
-     if ( !m_dis->put(nf->mask, nf->mask_size, v) )
+     if ( !m_dis->put(nf->mask, nf->mask_size, nf->scale ? v / nf->scale : v) )
      {
        patch_error(what);
        return 0;
@@ -143,7 +143,7 @@ class CEd_base: public CElf<ParseSASS> {
      return 1;
    }
    int patch(const NV_field *nf, unsigned long v, const char *what) {
-     if ( !m_dis->put(nf->mask, nf->mask_size, v) )
+     if ( !m_dis->put(nf->mask, nf->mask_size, nf->scale ? v / nf->scale : v) )
      {
        patch_error(what);
        return 0;

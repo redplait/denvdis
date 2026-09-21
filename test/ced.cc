@@ -338,7 +338,7 @@ int CEd::parse_tail(int idx, std::string &s)
     auto next = m_dis->offset();
  if ( opt_d ) printf("off %lX next %lX diff %lX\n", off, next, off - next);
     off -= next;
-    if ( !patch(field, field->scale ? off / field->scale : off, attr_name) ) return 0;
+    if ( !patch(field, off, attr_name) ) return 0;
     if ( !flush_buf() ) {
       Err("instr %s flush failed\n", s.c_str());
       return 0;
@@ -583,7 +583,6 @@ int CEd::process_p(std::string &p, int idx, std::string &tail)
     return res;
   }
   if ( field ) {
-    if ( field->scale ) m_v /= field->scale;
     if ( opt_d ) fprintf(m_out, "write field %s %lX\n", p.c_str(), m_v);
     return patch(field, m_v, p.c_str());
   }
