@@ -122,7 +122,7 @@ my @g_R = ( 0, 0, 0 );
 my @ge_stat = ( 0, 0, 0, 0, 0 );
 ## -Y data - two hashes - for having req_bit_set/no yield and for yield/no req_bit_set
 # key is instruction names, value - count
-my(%g_ynoY, %g_ynoreq);
+my(%g_ynoY, %g_ynoY_p, %g_ynoreq, %g_ynoreq_p);
 # per-function yields stat - rolling and total. next 2 is yield without wait & 3 - wait without yield + 2 for their totals
 my @g_ystat = ( 0, 0, 0, 0, 0, 0 );
 ### config data
@@ -241,19 +241,28 @@ sub dump_yhash
 }
 
 # add instruction having req_bit_set and without yield
-# arg: ins name
+# arg: ins name, has predicate
 sub add_noY
 {
-  my $iname = shift;
-  $g_ynoY{$iname}++;
+  my($iname, $has_p) = @_;
+  if ( $has_p ) {
+    $g_ynoY_p{$iname}++;
+  } else {
+    $g_ynoY{$iname}++;
+  }
   $g_ystat[3]++;
 }
 
 # add instruction having yield without req_bit_set
+# arg: ins name, has predicate
 sub add_Ynoreq
 {
-  my $iname = shift;
-  $g_ynoreq{$iname}++;
+  my($iname, $has_p) = @_;
+  if ( $has_p ) {
+    $g_ynoreq_p{$iname}++;
+  } else {
+    $g_ynoreq{$iname}++;
+  }
   $g_ystat[2]++;
 }
 
@@ -1543,8 +1552,8 @@ sub process_sched
       my $watdb = ($ctrl & 0x1f800) >> 11; # 6bit wait on dependency barrier
       if ( defined $opt_Y ) {
         my $yield = ($ctrl & 0x00010) >> 4;
-        add_Ynoreq($g_ced->ins_name()) if ( $yield && !$watdb );
-        add_noY($g_ced->ins_name()) if ( !$yield && $watdb );
+        add_Ynoreq($g_ced->ins_name(), $g_ced->has_pred()) if ( $yield && !$watdb );
+        add_noY($g_ced->ins_name(), $g_ced->has_pred()) if ( !$yield && $watdb );
         $g_ystat[0]++;
       }
       # store sched data in block - array at index 4, map at 5
@@ -4264,7 +4273,9 @@ dump_rU() if ( defined $opt_U );
 dump_barstat() if defined($opt_b);
 if ( defined $opt_Y ) {
   dump_yhash(\%g_ynoY, 'Instructions having req_bit_set without yield');
+  dump_yhash(\%g_ynoY_p, 'Instructions with predicates having req_bit_set without yield');
   dump_yhash(\%g_ynoreq, 'Instructions having yield without req_bit_set');
+  dump_yhash(\%g_ynoreq_p, 'Instructions with predicates having yield without req_bit_set');
 }
 dump_ins_stat() if defined($opt_S);
 if ( defined $opt_T ) {
