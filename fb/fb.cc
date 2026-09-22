@@ -136,7 +136,8 @@ class CFatBin {
    inline bool compressed(const fat_text_header &ft) const {
      return ft.flags & FATBIN_FLAG_COMPRESS || ft.flags & FATBIN_FLAG_COMPRESS2 || z_compressed(ft);
    }
-   // from https://zhuanlan.zhihu.com/p/29424681490
+   void dump_binC(section *) const;
+  // from https://zhuanlan.zhihu.com/p/29424681490
    size_t decompress(const uint8_t *input, size_t input_size, uint8_t *output, size_t output_size);
    Elf_Half n_sec = 0, m_ctrl = 0, m_fb = 0;
    unsigned long fb_size;
@@ -206,6 +207,21 @@ size_t CFatBin::decompress(const uint8_t *input, size_t input_size, uint8_t *out
     return opos;
 }
 
+void CFatBin::dump_binC(section *sec) const {
+  auto fbc = (const __fatBinC_Wrapper_t *)sec->get_data();
+  auto up = sec->get_size() / sizeof(__fatBinC_Wrapper_t);
+  for ( size_t i = 0; i < up; i++ ) {
+    if ( fbc[i].magic != FATBINC_MAGIC ) {
+      fprintf(stderr, "invalid ctrl %ld magic %X\n", i, fbc[i].magic);
+      continue;
+    }
+    if ( fbc[i].filename_or_fatbins )
+     printf("[%ld] version %d off %p %p\n", i, fbc[i].version, fbc[i].data, fbc[i].filename_or_fatbins);
+    else
+     printf("[%ld] version %d off %p\n", i, fbc[i].version, fbc[i].data);
+  }
+}
+
 int CFatBin::open(const char *fn, int opt_h, int opt_v)
 {
   if ( !reader.load(fn) ) {
@@ -239,7 +255,10 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
     fprintf(stderr, "invalid ctrl section magic %X\n", fbc->magic);
     return 0;
   }
-  printf("version %d off %p\n", fbc->version, fbc->data);
+  if ( opt_v )
+    dump_binC(sec);
+  else
+    printf("version %d off %p\n", fbc->version, fbc->data);
   // try to find section at address fbc->data
   for ( Elf_Half i = 0; i < n_sec; ++i ) {
     section *sec = reader.sections[i];
