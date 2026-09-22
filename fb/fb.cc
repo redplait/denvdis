@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include "elfio/elfio.hpp"
 #include <unordered_map>
+#include <optional>
 #include <zstd.h>
 
 static const char hexes[] = "0123456789ABCDEF";
@@ -126,6 +127,21 @@ class CFatBin {
    // try to replace file at index idx to file rf
    int try_replace(int idx, const char *rf);
  protected:
+   template <typename T>
+   std::optional<int> try_find(T v) const {
+     std::optional<int> res;
+     for ( Elf_Half i = 0; i < n_sec; ++i ) {
+       section *sec = reader.sections[i];
+       auto st = sec->get_type();
+       if ( st == SHT_NOBITS || !sec->get_size() ) continue;
+       auto sa = sec->get_address();
+       if ( sa <= (Elf64_Addr)v && (sa + sec->get_size() > (Elf64_Addr)v) ) {
+         res.emplace(i);
+         return res;
+       }
+     }
+     return res;
+   }
    typedef std::unordered_map<int, std::pair<ptrdiff_t, fat_text_header> > FBItems;
    FBItems m_map;
    int _extract(const FBItems::iterator &, const char *, FILE *);
@@ -215,9 +231,14 @@ void CFatBin::dump_binC(section *sec) const {
       fprintf(stderr, "invalid ctrl %ld magic %X\n", i, fbc[i].magic);
       continue;
     }
-    if ( fbc[i].filename_or_fatbins )
-     printf("[%ld] version %d off %p %p\n", i, fbc[i].version, fbc[i].data, fbc[i].filename_or_fatbins);
-    else
+    if ( fbc[i].filename_or_fatbins ) {
+     auto ins = try_find(fbc[i].filename_or_fatbins);
+     if ( ins.has_value() )
+       printf("[%ld] version %d off %p %p -> %s\n", i, fbc[i].version, fbc[i].data,
+        fbc[i].filename_or_fatbins, reader.sections[ins.value()]->get_name().c_str());
+     else
+       printf("[%ld] version %d off %p %p\n", i, fbc[i].version, fbc[i].data, fbc[i].filename_or_fatbins);
+    } else
      printf("[%ld] version %d off %p\n", i, fbc[i].version, fbc[i].data);
   }
 }
@@ -266,7 +287,7 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
     if ( st == SHT_NOBITS || !sec->get_size() ) continue;
     auto sa = sec->get_address();
     if ( sa == (Elf64_Addr)fbc->data ||
-         ((sa < (Elf64_Addr)fbc->data) && (sa + sec->get_size() > (Elf64_Addr)fbc->data))
+         ((sa <= (Elf64_Addr)fbc->data) && (sa + sec->get_size() > (Elf64_Addr)fbc->data))
        )
     {
       m_fb = i;
