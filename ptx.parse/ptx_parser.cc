@@ -26,6 +26,10 @@ const static PTXTab block_scale = {
 const static PTXTab wait_tab = {
  "wait",
 };
+const static PTXTab defer_tab = {
+ "defer",
+};
+
 
 void PTXParser::Err(const char *fmt, ...) const
 {
@@ -199,6 +203,9 @@ int PTXParser::fill_attrs() {
     collected.push_back( { -4, &block_scale } );
   } else if ( !strcmp("cp.async", first->name) ) {
     collected.push_back( { -5, &wait_tab } );
+    collected.push_back( { -6, &defer_tab } );
+  } else if ( !strcmp("ld", first->name) ) {
+    collected.push_back( { 83, &s_tab_nc } );
   }
   // traverse tabs in non-zero masks
   for ( int i = 0; i < PTXIns::MaskSize; ++i ) {
