@@ -472,8 +472,6 @@ OUTER:
 # I can only hope there will be single attribute per instruction
 # pls keep this hash ordered by key
 my %gn_tabs = (
- # fence - cluster/sys
- 'fence' => 'tab282EC40',
  # ds
  'getctarank' => 'ds',
  # nosleep
