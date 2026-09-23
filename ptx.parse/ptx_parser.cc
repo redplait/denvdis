@@ -218,6 +218,7 @@ int PTXParser::fill_attrs() {
     auto ai = m_attrs.find(i);
     if ( ai == m_attrs.end() ) continue;
     for ( auto &coll: collected ) {
+// printf("tty %.*s in %d\n", ai->second.second.size(), ai->second.second.data(), coll.first);
       auto found = coll.second->find( ai->second.second );
       if ( found == coll.second->end() ) continue;
       // some special processing for strange async.shared::cta from table proxykind
@@ -289,7 +290,7 @@ int PTXParser::cmp_letter(const std::string_view &must_be, char letter) {
      return 1;
      break;
     case 'P':
-     return must_be == "pred";
+     return 1; // must_be == "pred";
      break;
     case 'T':
      return must_be.starts_with("tf");
@@ -515,7 +516,10 @@ ParseRes *PTXParser::parse(std::string &s, int process_tail, int verbose) {
       if ( m_curr->types.empty() ) m_curr->forms.push_back(f);
       continue;
     }
-    if ( m_curr->types.empty() ) continue;
+    if ( m_curr->types.empty() ) {
+      if ( !strcmp(f->ops, "P") ) m_curr->forms.push_back(f);
+      continue;
+    }
     if ( verbose ) fprintf(m_log_fp, "-- try_type %s\n", f->ops);
     if ( try_type(f->ops, verbose) ) {
       if ( verbose ) fprintf(m_log_fp, "[+] matched\n");
