@@ -118,6 +118,24 @@ struct  __attribute__((__packed__)) fat_text_header
     uint64_t decompressed_size;
 };
 
+// limited symbols without name - for relocs only
+struct rsymbol
+{
+  Elf64_Addr addr;
+  Elf_Xword size = 0;
+  Elf_Half section;
+  unsigned char bind = 0,
+                type = 0;
+};
+
+struct Rel {
+  Elf_Word sym;
+  unsigned type;
+  Elf_Sxword add = 0;
+};
+
+using SOff = std::pair<Elf_Half, Elf64_Addr>;
+
 class CFatBin {
  public:
    // returns non-zero when succeed
@@ -127,6 +145,13 @@ class CFatBin {
    // try to replace file at index idx to file rf
    int try_replace(int idx, const char *rf);
  protected:
+   // boring symbols & relocs stuff
+   std::vector<rsymbol> m_rsyms;
+   std::unordered_map<Elf64_Addr, Rel> m_ctrl_rels;
+   void read_ctrl_rels(int opt_v);
+   int read_rsyms(int s_idx);
+   template <typename T>
+   std::optional<SOff> check_ctrl(T *off, const unsigned char *base) const;
    template <typename T>
    std::optional<int> try_find(T v) const {
      std::optional<int> res;
@@ -155,7 +180,7 @@ class CFatBin {
    void dump_binC(section *) const;
   // from https://zhuanlan.zhihu.com/p/29424681490
    size_t decompress(const uint8_t *input, size_t input_size, uint8_t *output, size_t output_size);
-   Elf_Half n_sec = 0, m_ctrl = 0, m_fb = 0;
+   Elf_Half n_sec = 0, m_ctrl = 0, m_fb = 0, m_ctrl_rel = 0;
    unsigned long fb_size;
    elfio reader;
    std::string rdr_fname;
@@ -243,6 +268,69 @@ void CFatBin::dump_binC(section *sec) const {
   }
 }
 
+int CFatBin::read_rsyms(int s_idx) {
+  symbol_section_accessor symbols( reader, reader.sections[s_idx] );
+  Elf_Xword sym_no = symbols.get_symbols_num();
+  if ( !sym_no ) return 0;
+  m_rsyms.reserve(sym_no);
+  for ( Elf_Xword i = 0; i < sym_no; ++i )
+  {
+    rsymbol sym;
+    std::string name;
+    unsigned char other;
+    symbols.get_symbol( i, name, sym.addr, sym.size, sym.bind, sym.type, sym.section, other );
+    m_rsyms.push_back(sym);
+  }
+  return 1;
+}
+
+void CFatBin::read_ctrl_rels(int opt_v) {
+  int sym_idx = -1;
+  for ( Elf_Half i = 0; i < n_sec; ++i ) {
+    section *sec = reader.sections[i];
+    auto st = sec->get_type();
+    if ( st == SHT_NOBITS || !sec->get_size() ) continue;
+    if ( st == SHT_SYMTAB ) { sym_idx = i; continue; }
+    if ( st == SHT_REL || st == SHT_RELA ) {
+      auto slink = sec->get_info();
+      if ( slink == m_ctrl ) {
+        m_ctrl_rel = i;
+      }
+    }
+  }
+// printf("m_ctrl_rel %d\n", m_ctrl_rel);
+  if ( !m_ctrl_rel ) return;
+  if ( sym_idx > 0 ) read_rsyms(sym_idx);
+  // read relocs
+  const_relocation_section_accessor rsa( reader, reader.sections[m_ctrl_rel]);
+  auto n = rsa.get_entries_num();
+  for ( Elf_Xword ri = 0; ri < n; ri++ ) {
+    Rel rel;
+    Elf64_Addr addr;
+    if ( rsa.get_entry(ri, addr, rel.sym, rel.type, rel.add) ) {
+      m_ctrl_rels[addr] = rel;
+      if ( opt_v ) printf("rel[%ld] sym %d type %d addr %lX add %ld\n", ri, rel.sym, rel.type, addr, rel.add);
+    }
+  }
+}
+
+template <typename T>
+std::optional<SOff> CFatBin::check_ctrl(T *off, const unsigned char *base) const {
+  std::optional<SOff> res;
+  auto diff = (unsigned char *)off - base;
+  auto ri = m_ctrl_rels.find(diff);
+  if ( ri == m_ctrl_rels.end() ) return res;
+  // check type - R_X86_64_64 .eq. 1
+  if ( ri->second.type != 1 ) {
+    fprintf(stderr, "unknown rel type %d at %lX\n", ri->second.type, diff);
+    return res;
+  }
+  const rsymbol &sym = m_rsyms.at(ri->second.sym);
+// printf("check_ctrl off %lX section %d\n", diff, sym.section);
+  res.emplace( std::make_pair( sym.section, sym.addr + ri->second.add ));
+  return res;
+}
+
 int CFatBin::open(const char *fn, int opt_h, int opt_v)
 {
   if ( !reader.load(fn) ) {
@@ -270,16 +358,33 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
     fprintf(stderr, "cannot find control section\n");
     return 0;
   }
+  read_ctrl_rels(opt_v);
   section *sec = reader.sections[m_ctrl];
   auto fbc = (const __fatBinC_Wrapper_t *)sec->get_data();
   if ( fbc->magic != FATBINC_MAGIC ) {
     fprintf(stderr, "invalid ctrl section magic %X\n", fbc->magic);
     return 0;
   }
+  unsigned char *base = (unsigned char *)fbc;
+  auto first_pair = check_ctrl(&fbc->data, base);
   if ( opt_v )
     dump_binC(sec);
-  else
-    printf("version %d off %p\n", fbc->version, fbc->data);
+  else {
+    if ( first_pair.has_value() )
+      printf("version %d section %d off %lX\n", fbc->version, first_pair.value().first, first_pair.value().second);
+    else
+      printf("version %d off %p\n", fbc->version, fbc->data);
+  }
+  if ( first_pair.has_value() ) {
+    section *sec = reader.sections[first_pair.value().first];
+    auto st = sec->get_type();
+    if ( st == SHT_NOBITS || !sec->get_size() ) return 0;
+    if ( sec->get_size() < sizeof(fatBinaryHeader) ) {
+      fprintf(stderr, "fatbim section is too small: %lX\n", sec->get_size());
+      return 0;
+    }
+    m_fb = first_pair.value().first;
+  } else {
   // try to find section at address fbc->data
   for ( Elf_Half i = 0; i < n_sec; ++i ) {
     section *sec = reader.sections[i];
@@ -298,7 +403,7 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
       }
       break;
     }
-  }
+  } }
   if ( !m_fb ) {
     fprintf(stderr, "cannot find fatbin section\n");
     return 0;
@@ -337,7 +442,7 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
           HexDump(stdout, (const unsigned char *)fth, fth->header_size);
         break;
       }
-      if ( opt_v ) printf("off %p\n", sec->get_address() + (const char *)fth - data);
+      if ( opt_v ) printf("off %lX\n", sec->get_address() + (const char *)fth - data);
       if ( opt_h )
         HexDump(stdout, (const unsigned char *)fth, fth->header_size);
       // keep all fth data in single line for easy grepping
@@ -359,7 +464,7 @@ int CFatBin::open(const char *fn, int opt_h, int opt_v)
     }
     fb_hdr = (const fatBinaryHeader *)next_fb;
     if ( opt_v )
-      printf("next %p\n", sec->get_address() + (const char *)fb_hdr - data);
+      printf("next %lX\n", sec->get_address() + (const char *)fb_hdr - data);
   }
   return 1;
 }
