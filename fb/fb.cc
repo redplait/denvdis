@@ -250,21 +250,30 @@ size_t CFatBin::decompress(const uint8_t *input, size_t input_size, uint8_t *out
 
 void CFatBin::dump_binC(section *sec) const {
   auto fbc = (const __fatBinC_Wrapper_t *)sec->get_data();
+  unsigned char *base = (unsigned char *)fbc;
   auto up = sec->get_size() / sizeof(__fatBinC_Wrapper_t);
   for ( size_t i = 0; i < up; i++ ) {
     if ( fbc[i].magic != FATBINC_MAGIC ) {
       fprintf(stderr, "invalid ctrl %ld magic %X\n", i, fbc[i].magic);
       continue;
     }
-    if ( fbc[i].filename_or_fatbins ) {
+    auto d_pair = check_ctrl(&fbc[i].data, base);
+    auto d2_pair = check_ctrl(&fbc[i].filename_or_fatbins, base);
+    if ( d_pair.has_value() )
+      printf("[%ld] version %d section %d off %lX", i, fbc[i].version, d_pair.value().first, d_pair.value().second);
+    else
+      printf("[%ld] version %d off %p", i, fbc[i].version, fbc[i].data);
+    if ( d2_pair.has_value() ) {
+      printf(" -> section %d (%s) off %lX", d2_pair.value().first,
+        reader.sections[d2_pair.value().first]->get_name().c_str(), d2_pair.value().second);
+    } else if ( fbc[i].filename_or_fatbins ) {
      auto ins = try_find(fbc[i].filename_or_fatbins);
      if ( ins.has_value() )
-       printf("[%ld] version %d off %p %p -> %s\n", i, fbc[i].version, fbc[i].data,
-        fbc[i].filename_or_fatbins, reader.sections[ins.value()]->get_name().c_str());
+       printf(" %p -> %s", fbc[i].filename_or_fatbins, reader.sections[ins.value()]->get_name().c_str());
      else
-       printf("[%ld] version %d off %p %p\n", i, fbc[i].version, fbc[i].data, fbc[i].filename_or_fatbins);
-    } else
-     printf("[%ld] version %d off %p\n", i, fbc[i].version, fbc[i].data);
+       printf(" %p", fbc[i].filename_or_fatbins);
+    }
+    putc('\n', stdout);
   }
 }
 
