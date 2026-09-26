@@ -12,7 +12,7 @@ sed-like tool for inline patching of sass instructions within cubin files. See d
 
 Practical [example](https://redplait.blogspot.com/2025/09/practical-ced-usage-extracting-sm.html) - how to read SR_MACHINE_ID registers
 
-To extract/replace files inside FatBinary use tool from [fb](https://github.com/redplait/denvdis/tree/master/fb)sub-dir - it also have some limited support of object files ([x86-64](https://redplait.blogspot.com/2026/09/fatbin-tools-for-object-files.html) only).
+To extract/replace files inside FatBinary use tool from [fb](https://github.com/redplait/denvdis/tree/master/fb) sub-dir - it also have some limited support of object files ([x86-64](https://redplait.blogspot.com/2026/09/fatbin-tools-for-object-files.html) only).
 You can't replace compressed ELF files, so use _nvcc -no-compress_
 
 ### nvd
@@ -51,10 +51,11 @@ By default all 3 trying to load corresponding sm_xx.so from current directory - 
 ## PTX parser
 is the result of [RE](https://redplait.blogspot.com/2026/06/re-of-ptx-grammar-from-ptxas-part-4.html) and is therefore almost certainly incomplete and, in places, incorrect
 
-Currently [iptx.pl -kf](https://github.com/redplait/denvdis/blob/master/cicc13/iptx.pl) shows 11 still unknown masks from 121
+Currently [iptx.pl -kf](https://github.com/redplait/denvdis/blob/master/cicc13/iptx.pl) shows 8 still unknown masks from 121
 
-I was able to identify 5 of them as instructions properties - so in total 6 masks are still unknown - this is 5%
+I was able to identify 5 of them as instructions properties - so in total 3 masks are still unknown - this is 2.5%
 
  * [EBNF](https://github.com/redplait/denvdis/blob/master/cicc13/ptx.ebnf) grammar
  * [PTX parser](https://github.com/redplait/denvdis/tree/master/ptx.parse) + some [doc](https://redplait.blogspot.com/2026/08/parser-of-ptx-instructions.html)
+ * [test](https://redplait.blogspot.com/2026/09/ptx-asm-in-llvm-ir.html) ptx parser on cicc shows that it uses 5-7% of instructions with undocumented attributes
  * [Perl binding](https://github.com/redplait/denvdis/tree/master/ptx.parse/PTX-Parse)
