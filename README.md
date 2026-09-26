@@ -12,6 +12,9 @@ sed-like tool for inline patching of sass instructions within cubin files. See d
 
 Practical [example](https://redplait.blogspot.com/2025/09/practical-ced-usage-extracting-sm.html) - how to read SR_MACHINE_ID registers
 
+To extract/replace files inside FatBinary use tool from [fb](https://github.com/redplait/denvdis/tree/master/fb)sub-dir - it also have some limited support of object files ([x86-64](https://redplait.blogspot.com/2026/09/fatbin-tools-for-object-files.html) only).
+You can't replace compressed ELF files, so use _nvcc -no-compress_
+
 ### nvd
 sass disassembler - of course not a complete replica of nvdisasm (however you can have syntax compatible with nvdisasm with -c option), instead it can show
  * values of all encoding fields with -O option
