@@ -7,7 +7,7 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_B $opt_b $opt_C $opt_d $opt_e $opt_f $opt_i $opt_m $opt_o $opt_k $opt_L $opt_l $opt_t $opt_T $opt_U $opt_w/;
+use vars qw/$opt_a $opt_B $opt_b $opt_C $opt_d $opt_e $opt_f $opt_i $opt_m $opt_N $opt_o $opt_k $opt_L $opt_l $opt_t $opt_T $opt_U $opt_w/;
 
 sub usage()
 {
@@ -27,6 +27,7 @@ Usage: $0 [options] md.txt
  -l - generate fake ptx with all tables
  -L process output from ptx/colsetp.pl
  -m - ignore psedo-instructions
+ -N - try compare NVPTX*.td
  -t - verify tabs and dump still unused
  -T - filter by type
  -U - dump instruction not presented in cicc
@@ -383,6 +384,75 @@ sub read_ops2
       printf("at %d %s\n", $max_op->[0], $max_op->[2]);
     }
   }
+}
+
+# args: hash to applied map, str
+sub try_ins {
+  my($ah, $str) = @_;
+  # filter
+  return 0 unless defined($str);
+  return 0 if ( $str eq '}}' || $str eq '1' || $str eq '2' );
+  return 0 if ( $str =~ /^\.pred/ );
+  return 0 if ( $str =~ /^\.reg/ );
+  return 0 if ( $str =~ /^\.param/ );
+  return 0 if ( $str =~ /^(?:64|32|16)/ );
+  my @chain = split /(?:\.|::)/, $str;
+  my $name = $chain[0];
+  return 0 unless( $name );
+  if ( exists $g_ins{$name} ) {
+    $ah->{$name}++;
+    return 1;
+  }
+  for ( my $i = 1; $i <= 5 && $i < scalar(@chain); $i++ ) {
+     $name .= '.' . $chain[$i];
+     if ( exists $g_ins{$name} ) {
+       $ah->{$name}++;
+       return 1;
+     }
+  }
+  # dump unknown
+  printf("unknwn instr %s\n", $str);
+  0;
+}
+
+# parse .td files from ARGV and check against g_ins
+sub apply_nvptx
+{
+  my %applied; # key is instruction name
+  foreach my $fn ( @ARGV ) {
+    my($fh, $str, $what);
+    if ( !open($fh, '<', $fn) ) {
+      carp("can't open $fn");
+      next;
+    }
+    while( $str = <$fh> ) {
+      chomp $str;
+      next if ( $str =~ /^\s*\/\// );
+      # <"instr">
+      if ( $str =~ /<\"([^\"]+)\"/ ) {
+        try_ins(\%applied, $1);
+        next;
+      }
+      # strconcat
+      if ( $str =~ /^\s*\"([^\$]+)\$/ ) {
+        try_ins(\%applied, $1);
+        next;
+      }
+      if ( $str =~ /^\s+\"([^\"]+)\"/ ) {
+        try_ins(\%applied, $1);
+        next;
+      }
+    }
+    close $fh;
+  }
+  # dump not in .td files
+  my $latch = 0;
+  foreach my $iname ( sort keys %g_ins ) {
+    next if ( exists $applied{$iname} );
+    printf("--- not used instructions:\n") unless ( $latch++ );
+    printf(" %s\n", $iname);
+  }
+  printf("total %d\n", $latch);
 }
 
 # read ptx.txt and check in g_ins every instruction
@@ -1275,7 +1345,7 @@ sub filter_types
 }
 
 # main
-my $status = getopts("Bb:aCdefikLl:motT:Uw");
+my $status = getopts("Bb:aCdefikLl:mNotT:Uw");
 usage() if ( !$status );
 
 read_ops2('ptx_ops2.txt');
@@ -1377,4 +1447,6 @@ if ( defined $opt_i ) {
   try_maskB(\%mh);
 } elsif ( defined $opt_f ) {
   do_freq();
+} elsif ( defined $opt_N ) {
+  apply_nvptx();
 } else { apply_ptx('ptx.txt'); }
