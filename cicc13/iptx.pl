@@ -405,13 +405,15 @@ sub try_ins {
     $ah->{$name}++;
     return 1;
   }
+  my $res = 0;
   for ( my $i = 1; $i <= 5 && $i < scalar(@chain); $i++ ) {
      $name .= '.' . $chain[$i];
      if ( exists $g_ins{$name} ) {
        $ah->{$name}++;
-       return 1;
+       $res |= 1;
      }
   }
+  return $res if ( $res );
   # dump unknown
   printf("unknwn instr %s\n", $str);
   0;
@@ -546,10 +548,13 @@ OUTER:
   close $fh;
   printf("found %d bad %d\n", $found, $bad);
   if ( defined $opt_U ) {
+    my $cnt = 0;
     foreach my $o ( sort keys %g_ins ) {
       next if ( exists $in_cicc{ $o } );
       printf("%s\n", $o);
+      $cnt++;
     }
+    printf("total %d\n", $cnt);
   }
 }
 
