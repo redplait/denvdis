@@ -392,6 +392,8 @@ sub try_ins {
   # filter
   return 0 unless defined($str);
   return 0 if ( $str eq '}}' || $str eq '1' || $str eq '2' );
+  return 0 if ( $str eq 'f16' || $str eq 'f32' || $str eq 'f64' );
+  return 0 if ( $str eq 'b16' || $str eq 'b32' || $str eq 'b64' );
   return 0 if ( $str =~ /^\.pred/ );
   return 0 if ( $str =~ /^\.reg/ );
   return 0 if ( $str =~ /^\.param/ );
@@ -433,7 +435,21 @@ sub apply_nvptx
         try_ins(\%applied, $1);
         next;
       }
-      # strconcat
+      # strconcat - skip all till first "
+      if ( $str =~ /strconcat\s*\(([^\"]*)\"([^\"]+)/ ) {
+        try_ins(\%applied, $2);
+        next;
+      }
+      # inst_name = ""
+      if ( $str =~ /inst_name\s*=\s*\"([^\"]+)/ ) {
+        try_ins(\%applied, $1);
+        next;
+      }
+      # asm_str = ""
+      if ( $str =~ /asm_str\s*=\s*\"([^\"]+)/ ) {
+        try_ins(\%applied, $1);
+        next;
+      }
       if ( $str =~ /^\s*\"([^\$]+)\$/ ) {
         try_ins(\%applied, $1);
         next;
