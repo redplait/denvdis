@@ -391,9 +391,13 @@ sub try_ins {
   my($ah, $str) = @_;
   # filter
   return 0 unless defined($str);
-  return 0 if ( $str eq '}}' || $str eq '1' || $str eq '2' );
+  $str =~ s/^\s+//;
+  $str =~ s/\s+$//;
+  return 0 if ( $str =~ /^\/\// );
+  return 0 if ( $str eq '}}' || $str eq '1' || $str eq '2' || $str eq '_' || $str eq '[' );
   return 0 if ( $str eq 'f16' || $str eq 'f32' || $str eq 'f64' );
-  return 0 if ( $str eq 'b16' || $str eq 'b32' || $str eq 'b64' );
+  return 0 if ( $str eq 's16' || $str eq 's32' || $str eq 's64' );
+  return 0 if ( $str eq 'b16' || $str eq 'bf16' || $str eq 'b32' || $str eq 'b64' );
   return 0 if ( $str =~ /^\.pred/ );
   return 0 if ( $str =~ /^\.reg/ );
   return 0 if ( $str =~ /^\.param/ );
@@ -415,7 +419,7 @@ sub try_ins {
   }
   return $res if ( $res );
   # dump unknown
-  printf("unknwn instr %s\n", $str);
+  printf("unknwn instr %s\n", $str) unless defined($opt_U);
   0;
 }
 
@@ -478,6 +482,9 @@ sub apply_nvptx
     }
     close $fh;
   }
+  # actually it used shf.l & shf.r
+  $applied{'shf.l'}++;
+  $applied{'shf.r'}++;
   # dump instructions not in .td files
   dump_unused_ptx(\%applied);
 }
