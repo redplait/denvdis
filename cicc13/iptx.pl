@@ -405,11 +405,11 @@ sub try_ins {
   my @chain = split /(?:\.|::)/, $str;
   my $name = $chain[0];
   return 0 unless( $name );
+  my $res = 0;
   if ( exists $g_ins{$name} ) {
     $ah->{$name}++;
-    return 1;
+    $res |= 1;
   }
-  my $res = 0;
   for ( my $i = 1; $i <= 5 && $i < scalar(@chain); $i++ ) {
      $name .= '.' . $chain[$i];
      if ( exists $g_ins{$name} ) {
@@ -456,6 +456,11 @@ sub apply_nvptx
         try_ins(\%applied, $1);
         next;
       }
+      # < something ""
+      if ( $str =~ /<([^\"]*)\"([^\"]+)\"/ ) {
+        try_ins(\%applied, $2);
+        next;
+      }
       # strconcat - skip all till first "
       if ( $str =~ /strconcat\s*\(([^\"]*)\"([^\"]+)/ ) {
         try_ins(\%applied, $2);
@@ -485,6 +490,10 @@ sub apply_nvptx
   # actually it used shf.l & shf.r
   $applied{'shf.l'}++;
   $applied{'shf.r'}++;
+  # setmaxnreg too
+  $applied{'setmaxnreg.inc'}++;
+  $applied{'setmaxnreg.dec'}++;
+
   # dump instructions not in .td files
   dump_unused_ptx(\%applied);
 }
@@ -540,7 +549,7 @@ OUTER:
         next;
       }
     }
-    # try all
+    # try tail
     foreach my $i ( 1 .. scalar(@chain) - 1 ) {
       $name = $name . '.' . $chain[$i];
       if ( exists $g_ins{$name} ) {
