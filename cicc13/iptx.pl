@@ -419,6 +419,21 @@ sub try_ins {
   0;
 }
 
+# arg - hash with used instructions
+sub dump_unused_ptx
+{
+  my $ur = shift;
+  my $latch = 0;
+  foreach my $iname ( sort keys %g_ins ) {
+    next if ( exists $ur->{$iname} );
+    printf("--- not used instructions:\n") unless ( $latch++ );
+    printf(" %s\n", $iname);
+  }
+  my $klen = scalar(keys %g_ins);
+  printf("total %d from %d (%f)\n", $latch, $klen, 1.0 - (1.0 * $latch / $klen));
+
+}
+
 # parse .td files from ARGV and check against g_ins
 sub apply_nvptx
 {
@@ -463,14 +478,8 @@ sub apply_nvptx
     }
     close $fh;
   }
-  # dump not in .td files
-  my $latch = 0;
-  foreach my $iname ( sort keys %g_ins ) {
-    next if ( exists $applied{$iname} );
-    printf("--- not used instructions:\n") unless ( $latch++ );
-    printf(" %s\n", $iname);
-  }
-  printf("total %d\n", $latch);
+  # dump instructions not in .td files
+  dump_unused_ptx(\%applied);
 }
 
 # read ptx.txt and check in g_ins every instruction
@@ -548,13 +557,7 @@ OUTER:
   close $fh;
   printf("found %d bad %d\n", $found, $bad);
   if ( defined $opt_U ) {
-    my $cnt = 0;
-    foreach my $o ( sort keys %g_ins ) {
-      next if ( exists $in_cicc{ $o } );
-      printf("%s\n", $o);
-      $cnt++;
-    }
-    printf("total %d\n", $cnt);
+    dump_unused_ptx(\%in_cicc);
   }
 }
 
