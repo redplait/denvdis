@@ -374,14 +374,18 @@ sub read_ops2
   }
   close $fh;
   # dump results
-  $g_total_mask = \@mask;
-  unless ( defined($opt_e) || defined($opt_C) ) {
-    dump_mask(\@mask);
-    printf("length of mask %d\n", bcnt(\@mask));
+  if ( defined $opt_U ) {
     printf("%d uniq ins\n", scalar keys %g_ins);
-    if ( $max_op ) {
-      printf("longest mask: %d ", $max_mask);
-      printf("at %d %s\n", $max_op->[0], $max_op->[2]);
+  } else {
+    $g_total_mask = \@mask;
+    unless ( defined($opt_e) || defined($opt_C) ) {
+      dump_mask(\@mask);
+      printf("length of mask %d\n", bcnt(\@mask));
+      printf("%d uniq ins\n", scalar keys %g_ins);
+      if ( $max_op ) {
+        printf("longest mask: %d ", $max_mask);
+        printf("at %d %s\n", $max_op->[0], $max_op->[2]);
+      }
     }
   }
 }
@@ -434,13 +438,17 @@ sub dump_unused_ptx
     printf(" %s\n", $iname);
   }
   my $klen = scalar(keys %g_ins);
-  printf("total %d from %d (%f)\n", $latch, $klen, 1.0 - (1.0 * $latch / $klen));
+  printf("total %d from %d (cov %f)\n", $latch, $klen, 1.0 - (1.0 * $latch / $klen));
 
 }
 
 # parse .td files from ARGV and check against g_ins
 sub apply_nvptx
 {
+  unless( scalar @ARGV ) {
+    printf("where is list of .td files?\n");
+    return 0;
+  }
   my %applied; # key is instruction name
   foreach my $fn ( @ARGV ) {
     my($fh, $str, $what);
