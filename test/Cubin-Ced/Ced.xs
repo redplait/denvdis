@@ -557,8 +557,8 @@ class Ced_perl: public CEd_base {
     res = ins()->mask;
     return true;
   }
-  bool is_branch(long &off) {
-    return 0 != NV_renderer::collect_labels(m_rend, ins(), cex(), nullptr, &off);
+  std::pair<int, const nv_vattr *> is_branch(long &off) {
+    return NV_renderer::collect_labels(m_rend, ins(), cex(), nullptr, &off);
   }
   std::optional<long> ins_cb(unsigned short *cb_idx, bool is_pure) {
     if ( !has_ins() ) return std::nullopt;
@@ -1424,7 +1424,8 @@ HV *Ced_perl::make_kv()
 
 bool Ced_perl::collect_labels(long *res) {
   if ( !has_ins() ) return false;
-  return NV_renderer::collect_labels(m_rend, ins(), cex(), nullptr, res);
+  auto ret = NV_renderer::collect_labels(m_rend, ins(), cex(), nullptr, res);
+  return ret.first;
 }
 
 // return merged map of (u)preds from track_snap
@@ -2548,15 +2549,19 @@ ins_branch(SV *obj)
     EMPTY_RES
   } else {
     long off = 0;
-    bool res = e->is_branch(off);
-    if ( !res || gimme != G_ARRAY ) {
-      ST(0) = res ? &PL_sv_yes : &PL_sv_no;
+    auto res = e->is_branch(off);
+    if ( !res.first || gimme != G_ARRAY ) {
+      ST(0) = res.first ? &PL_sv_yes : &PL_sv_no;
       XSRETURN(1);
     } else {
-      EXTEND(SP, 2);
-      mXPUSHs(res ? &PL_sv_yes : &PL_sv_no);
+      int need_name = res.first ? 3 : 2;
+      EXTEND(SP, need_name);
+      mXPUSHs(res.first ? &PL_sv_yes : &PL_sv_no);
       mXPUSHi(off);
-      XSRETURN(2);
+      if ( need_name > 2 ) {
+        mPUSHs(newSVpv(res.second->name.data(), res.second->name.size()));
+      }
+      XSRETURN(need_name);
     }
   }
 

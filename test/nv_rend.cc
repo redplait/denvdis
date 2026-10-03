@@ -1727,7 +1727,7 @@ const NV_field *NV_renderer::has_rsimm(const NV_rlist *rl, const struct nv_instr
   return nullptr;
 }
 
-int NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, const NV_extracted &kv,
+std::pair<int, const nv_vattr *> NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, const NV_extracted &kv,
   NV_labels *labs, long *out_addr) const
 {
   for ( auto ri: *rl ) {
@@ -1743,16 +1743,16 @@ int NV_renderer::collect_labels(const NV_rlist *rl, const struct nv_instr *i, co
       long addr = check_rel(i) ? branch_off + m_dis->off_next() : branch_off;
       if ( labs ) labs->try_emplace(addr,0);
       if ( out_addr ) *out_addr = addr;
-      return 1;
+      return {1, vi};
     }
     if ( check_branch(i, kvi, branch_off) ) {
       long addr = branch_off + m_dis->off_next();
       if ( labs ) labs->try_emplace(addr,0);
       if ( out_addr ) *out_addr = addr;
-      return 2;
+      return {2, vi};
     }
   }
-  return 0;
+  return {0, nullptr};
 }
 
 int NV_renderer::render(const NV_rlist *rl, std::string &res, const struct nv_instr *i,

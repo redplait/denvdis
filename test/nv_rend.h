@@ -300,7 +300,7 @@ class NV_renderer {
    int make_tab_row(int optv, const struct nv_instr *ins, const NV_tab_fields *tf,
      const NV_extracted &kv, std::vector<unsigned short> &res, int ignore) const;
 
-   int collect_labels(const NV_rlist *, const struct nv_instr *, const NV_extracted &, NV_labels *, long *out_addr) const;
+   std::pair<int, const nv_vattr *> collect_labels(const NV_rlist *, const struct nv_instr *, const NV_extracted &, NV_labels *, long *out_addr) const;
    bool check_dual(const NV_extracted &) const;
    template <typename C>
    void render_rel(std::string &res, const NV_rel *, const C &) const;
