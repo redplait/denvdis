@@ -455,6 +455,8 @@ You can check if you still have pending tables with $cub->ptabs method
 
 =item * ins_target
 
+=item * ins_branch, in wantarray returns (has branch, offset, field name)
+
 =item * ins_brt
 
 =item * ins_cc
@@ -513,7 +515,10 @@ You can check if you still have pending tables with $cub->ptabs method
   a[0] - is_ignore
   a[1] - print
   a[2] - has default value
-  a[3] - default value if a[2] is non-zero
+  a[3] - enum name
+  a[4] - default value if a[2] is non-zero
+
+=item * grep_efield(regex) - returns ref to hash like efields, but you can grep by enum names via regex in arg
 
 =item * vfields - returns ref to hash of imm value fields, key is field name, value is kind or ref to array where
   a[0] - kind of imm value - like NV_UImm/NV_F32Imm/etc and

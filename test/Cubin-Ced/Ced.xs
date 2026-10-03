@@ -1225,13 +1225,15 @@ SV *Ced_perl::extract_cb() const {
 // 0 - ignore
 // 1 - print
 // 2 - has_def_value
-// 3 - def value if presents
+// 3 - enum name
+// 4 - def value if presents
 SV *Ced_perl::make_enum_arr(const nv_eattr *ea) const
 {
   AV *av = newAV();
   av_push(av, ea->ignore ? &PL_sv_yes : &PL_sv_no);
   av_push(av, ea->print ? &PL_sv_yes : &PL_sv_no);
   av_push(av, ea->has_def_value ? &PL_sv_yes : &PL_sv_no);
+  av_push(av, newSVpv( ea->ename, strlen(ea->ename)) );
   if ( ea->has_def_value )
     av_push(av, newSViv(ea->def_value));
   return newRV_noinc((SV*)av);
