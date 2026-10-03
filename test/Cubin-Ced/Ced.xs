@@ -574,6 +574,7 @@ class Ced_perl: public CEd_base {
     render(m_rend, res, ins(), cex(), nullptr, 1);
     return !res.empty();
   }
+  SV *grep_efield(REGEXP *) const;
   bool grep_kv(REGEXP *, std::vector<std::string_view> &) const;
   SV *special_kv(NV_extracted::const_iterator &);
   SV *get_kv(const std::string_view &fname) {
@@ -1336,6 +1337,27 @@ SV *Ced_perl::make_enum(const char *name)
   // store this hv in cache
   m_cached_hvs[key] = curr;
   return newRV_inc((SV *)curr);
+}
+
+SV *Ced_perl::grep_efield(REGEXP *rx) const {
+  if ( !has_ins() ) return &PL_sv_undef;
+  if ( !ins()->eas.size() ) return &PL_sv_undef;
+  HV *hv = nullptr;
+  auto &eas = ins()->eas;
+  for ( size_t i = 0; i < eas.size(); ++i ) {
+    auto &ea = get_it(eas, i);
+    // filter by ea->ename
+    SV *scream = newSVpv(ea.ea->ename, strlen(ea.ea->ename));
+    STRLEN retlen;
+    char *input = SvPVutf8(scream, retlen);
+    I32 nmatch = pregexec(rx, input, input + retlen, input, 0, scream, 0);
+    SvREFCNT_dec(scream);
+    if (nmatch > 0 ) {
+      if ( !hv ) hv = newHV();
+      hv_store(hv, ea.name.data(), ea.name.size(), make_enum_arr(ea.ea), 0);
+    }
+  }
+  return !hv ? &PL_sv_undef : newRV_inc((SV *)hv);
 }
 
 bool Ced_perl::grep_kv(REGEXP *rx, std::vector<std::string_view> &res) const
@@ -2476,6 +2498,23 @@ efields(SV *obj)
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
    RETVAL = (ix == 1) ? e->extract_vfields() : e->extract_efields();
+ OUTPUT:
+  RETVAL
+
+SV *
+grep_efield(SV *obj, SV *re)
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   REGEXP *rx = nullptr;
+ CODE:
+   if ( !SvROK(re) || SvTYPE(SvRV(re)) != SVt_REGEXP ) {
+     if ( SvROK(re) )
+       croak("grep_efield: arg must be regexp, ref type %d", SvTYPE(SvRV(re)));
+     else
+       croak("grep_efield: arg must be regexp, type %d", SvTYPE(re));
+   }
+   rx = (REGEXP *)SvRV(re);
+   RETVAL = e->grep_efield(rx);
  OUTPUT:
   RETVAL
 
