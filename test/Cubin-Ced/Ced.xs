@@ -250,6 +250,8 @@ class Ced_perl: public CEd_base {
     if ( !m_urz.has_value() ) return &PL_sv_undef;
     return newSViv(m_urz.value());
   }
+  bool regex_match(REGEXP *, const char *what) const;
+  bool regex_match(REGEXP *, const std::string_view &) const;
   SV *extract_instrs() const;
   SV *extract_instrs(REGEXP *) const;
   bool extract_insn(const char *, std::vector<SV *> &);
@@ -504,7 +506,13 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return false;
     return is_uni ? use_ureg(ins(), cex(), v, res) : use_reg(ins(), cex(), v, res);
   }
-
+  SV *prmt() const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    if ( strcmp(ins()->name, "PRMT") && strcmp(ins()->name, "UPRMT") ) return &PL_sv_undef;
+    unsigned long mask = 0;
+    if ( !check_prmt(ins(), m_rend, cex(), mask) ) return &PL_sv_undef;
+    return newSVuv(mask);
+  }
   SV *check_false() const {
     if ( !has_ins() ) return &PL_sv_undef;
     return always_false(ins(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
@@ -850,18 +858,31 @@ SV *Ced_perl::extract_instrs() const {
   return newRV_noinc((SV*)av);
 }
 
+static bool _regex_match(REGEXP *rx, SV *scream) {
+  STRLEN retlen;
+  char *input = SvPVutf8(scream, retlen);
+  I32 nmatch = pregexec(rx, input, input + retlen, input, 0, scream, 0);
+  SvREFCNT_dec(scream);
+  return nmatch > 0;
+}
+
+bool Ced_perl::regex_match(REGEXP *rx, const char *what) const {
+  SV *scream = newSVpv(what, strlen(what));
+  return _regex_match(rx, scream);
+}
+
+bool Ced_perl::regex_match(REGEXP *rx, const std::string_view &what) const {
+  SV *scream = newSVpv(what.data(), what.size());
+  return _regex_match(rx, scream);
+}
+
 SV *Ced_perl::extract_instrs(REGEXP *rx) const {
   if ( !m_sorted ) return &PL_sv_undef;
   AV *av = newAV();
   for ( auto it = m_sorted->begin(); it != m_sorted->end(); ++it )
   {
-    auto s = it->first.data();
-    SV *scream = newSVpv(s, it->first.size());
-    STRLEN retlen;
-    char *input = SvPVutf8(scream, retlen);
-    I32 nmatch = pregexec(rx, input, input + retlen, input, 0, scream, 0);
-    SvREFCNT_dec(scream);
-    if ( nmatch > 0 ) av_push(av, newSVpv( it->first.data(), it->first.size() ));
+    if ( regex_match(rx, it->first) )
+      av_push(av, newSVpv( it->first.data(), it->first.size() ));
   }
   return newRV_noinc((SV*)av);
 }
@@ -1349,12 +1370,7 @@ SV *Ced_perl::grep_efield(REGEXP *rx) const {
   for ( size_t i = 0; i < eas.size(); ++i ) {
     auto &ea = get_it(eas, i);
     // filter by ea->ename
-    SV *scream = newSVpv(ea.ea->ename, strlen(ea.ea->ename));
-    STRLEN retlen;
-    char *input = SvPVutf8(scream, retlen);
-    I32 nmatch = pregexec(rx, input, input + retlen, input, 0, scream, 0);
-    SvREFCNT_dec(scream);
-    if (nmatch > 0 ) {
+    if ( regex_match(rx, ea.ea->ename) ) {
       if ( !hv ) hv = newHV();
       hv_store(hv, ea.name.data(), ea.name.size(), make_enum_arr(ea.ea), 0);
     }
@@ -1366,13 +1382,8 @@ bool Ced_perl::grep_kv(REGEXP *rx, std::vector<std::string_view> &res) const
 {
   if ( !has_ins() ) return false;
   for ( auto &kvi: cex() ) {
-    auto s = kvi.first.data();
-    SV *scream = newSVpv(s, kvi.first.size());
-    STRLEN retlen;
-    char *input = SvPVutf8(scream, retlen);
-    I32 nmatch = pregexec(rx, input, input + retlen, input, 0, scream, 0);
-    SvREFCNT_dec(scream);
-    if (nmatch > 0 ) res.push_back(kvi.first);
+    if ( regex_match(rx, kvi.first) )
+      res.push_back(kvi.first);
   }
   return !res.empty();
 }
@@ -2274,10 +2285,12 @@ ins_conv(SV *obj)
 
 SV *
 ins_false(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_prmt = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->check_false();
+   RETVAL = (1 == ix) ? e->prmt() : e->check_false();
  OUTPUT:
   RETVAL
 
