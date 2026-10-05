@@ -2440,10 +2440,12 @@ ins_text(SV *obj)
 
 SV *
 ins_pred(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_dcnt = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = e->ins_pred();
+   RETVAL = (1 == ix) ? e->ins_dcnt() : e->ins_pred();
  OUTPUT:
   RETVAL
 
@@ -2455,16 +2457,6 @@ grep_pred(SV *obj, const char *key)
    RETVAL = e->ins_pred(key);
  OUTPUT:
   RETVAL
-
-SV *
-ins_dcnt(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   RETVAL = e->ins_dcnt();
- OUTPUT:
-  RETVAL
-
 
 SV *
 ins_lat(SV *obj)
@@ -2645,8 +2637,6 @@ SV *get_pred(SV *obj)
 
 void
 ins_rf(SV *obj)
- ALIAS:
-  Cubin::Ced::ins_cbank_pure = 1
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
