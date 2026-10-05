@@ -565,6 +565,7 @@ class Ced_perl: public CEd_base {
     res = ins()->mask;
     return true;
   }
+  int ins_rf(pTHX_ bool warray);
   std::pair<int, const nv_vattr *> is_branch(long &off) {
     return NV_renderer::collect_labels(m_rend, ins(), cex(), nullptr, &off);
   }
@@ -827,6 +828,36 @@ SV *Ced_perl::nop()
     return &PL_sv_no;
   }
   return &PL_sv_yes;
+}
+
+int Ced_perl::ins_rf(pTHX_ bool warray)
+{
+  dSP;
+  int res = 1;
+  std::pair<nv_pred, NVP_ops> pair;
+  auto has = is_rf(ins(), pair);
+  if ( !res ) {
+    mXPUSHs(&PL_sv_no);
+  } else {
+    if ( !warray )
+      mXPUSHs(&PL_sv_yes);
+    else {
+      // for wantarray return
+      // 0 - yes
+      // 1 - result from nv_pred
+      // 2 - NVP_ops
+      res = 3;
+      EXTEND(SP, res);
+      mPUSHs(&PL_sv_yes);
+      if ( pair.first )
+       mPUSHi( pair.first(cex()) );
+      else
+       mPUSHi(0);
+      mPUSHi(pair.second);
+    }
+  }
+  PUTBACK;
+  return res;
 }
 
 bool Ced_perl::make_render(RItems &res, const NV_rlist *rend) {
@@ -2611,6 +2642,25 @@ SV *get_pred(SV *obj)
    RETVAL = e->get_pred();
  OUTPUT:
   RETVAL
+
+void
+ins_rf(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_cbank_pure = 1
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ PPCODE:
+  if ( !e->has_ins() ) {
+    EMPTY_RES
+  } else {
+    // stolen from https://www.reddit.com/r/perl/comments/lom4l7/perlxs_how_to_make_a_common_subroutine/
+    PUTBACK;
+    int stack_size = e->ins_rf(aTHX_ gimme == G_ARRAY);
+    SPAGAIN;
+    XSRETURN(stack_size);
+  }
 
 void
 ins_cbank(SV *obj)

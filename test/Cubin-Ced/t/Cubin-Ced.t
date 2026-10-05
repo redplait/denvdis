@@ -48,7 +48,7 @@ my $rstat = $cub->stat();
 $t_num++;
 is( $rstat->[1], 1, 'rdr count' );
 $t_num++;
-ok( !$rstat->[2], 'is dirty' );
+isnt( $rstat->[2], 'is dirty' );
 
 
 $t_num++;
@@ -81,9 +81,9 @@ ok( defined $cub->get_enum('Rd'), 'Rd in get_enum');
 
 $t_num+=2;
 my $tc = $cub->tab_count();
-ok( !$tc, 'tab_count');
+isnt( $tc, 'tab_count');
 my $tf = $cub->check_tab('usched_info', 1);
-ok( !defined($tf), 'check_tab' );
+isnt( defined($tf), 'check_tab' );
 
 $t_num+=2;
 ok( $cub->next(), 'next');
@@ -128,7 +128,7 @@ my @p1 = $cub->ins_preds(1);
 is( scalar(@p1), 1, 'ins_preds size');
 ok( 'Pd' eq $p1[0], 'ins_preds Pd');
 my @no_bd = $cub->ins_bd(1);
-ok( !scalar(@no_bd), 'no ins_bd');
+isnt( scalar(@no_bd), 'no ins_bd');
 $t_num+=3;
 # ins_pall
 my $pall = $cub->ins_pall();
@@ -144,6 +144,10 @@ if ( exists $rall->{'Ra'} ) {
  $t_num++;
 }
 $t_num+=6;
+# ins_rf
+my @rf = $cub->ins_rf();
+isnt( $rf[0], 'ins_rf');
+$t_num++;
 
 # by_name
 my $tx = $cub->by_name('TXA');
@@ -159,7 +163,7 @@ my @bni = $cub->by_name('ISCADD');
 ok( scalar(@bni), 'by_name');
 $t_num+=3;
 foreach my $ig ( @bni ) {
-  ok( !defined($ig->ins_conv()), 'no ins_conv for ISCADD');
+  isnt( defined($ig->ins_conv()), 'no ins_conv for ISCADD');
   $t_num++;
 }
 
@@ -177,9 +181,4 @@ $t_num+=2;
 
 # done_testing must be last
 done_testing($t_num);
-
-#########################
-
-# Insert your test code below, the Test::More module is use()ed here so read
-# its man page ( perldoc Test::More ) for help writing this test script.
 
