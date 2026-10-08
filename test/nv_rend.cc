@@ -100,6 +100,7 @@ const char *NV_renderer::s_ltypes[] = {
  "Atf",
 };
 
+// keep it in sync with NV_LType
 const char *NV_renderer::s_labels[] = {
  "BRANCH_TARGET",
  "LABEL",
@@ -1073,10 +1074,10 @@ int NV_renderer::validate_tabs(const struct nv_instr *ins, NV_extracted &res)
   return 1;
 }
 
-bool NV_renderer::check_prmt(const struct nv_instr *ins, const NV_rlist *rend, const NV_extracted &kv, unsigned long &mask) const
+std::optional<std::pair<unsigned long, const char *> > NV_renderer::check_prmt(const struct nv_instr *ins, const NV_rlist *rend, const NV_extracted &kv) const
 {
   int state = 0;
-  mask = 0;
+  std::optional<std::pair<unsigned long, const char *> > res;
   for ( auto &r: *rend ) {
     if ( r->type == R_opcode ) {
       state = 1;
@@ -1088,13 +1089,13 @@ bool NV_renderer::check_prmt(const struct nv_instr *ins, const NV_rlist *rend, c
       if ( is_tail(vi, rn) ) break;
       if ( state && (vi->kind == NV_SImm || vi->kind == NV_UImm) ) {
         auto kvi = kv.find(rn->name);
-        if ( kvi == kv.end() ) return false;
-        mask = (int)kvi->second;
-        return true;
+        if ( kvi == kv.end() ) return res;
+        res.emplace( std::make_pair( kvi->second, rn->name) );
+        return res;
       }
     }
   }
-  return false;
+  return res;
 }
 
 bool NV_renderer::check_lut(const struct nv_instr *ins, const NV_rlist *rend, const NV_extracted &kv, int &idx) const

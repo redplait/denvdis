@@ -425,7 +425,7 @@ class NV_renderer {
    // check for some @PXX != PT
    bool has_predicate(const NV_rlist *, const NV_extracted &kv) const;
    // PRMT mask
-   bool check_prmt(const struct nv_instr *, const NV_rlist *r, const NV_extracted &kv, unsigned long &mask) const;
+   std::optional<std::pair<unsigned long, const char *> > check_prmt(const struct nv_instr *, const NV_rlist *r, const NV_extracted &kv) const;
    // LUT imm
    bool check_lut(const struct nv_instr *, const NV_rlist *r, const NV_extracted &kv, int &idx) const;
    // check for xxSETP
@@ -597,7 +597,7 @@ class NV_renderer {
     scond_hits = 0;
    // static fields
    static const char *s_fmts[];
-   static const char *s_labels[];
+   static const char *s_labels[]; // index is NV_LType
    static const char *s_ltypes[];
    static std::unordered_map<int, std::pair<const char *, const char *> > s_sms;
 };
