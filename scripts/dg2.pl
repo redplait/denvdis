@@ -86,6 +86,8 @@ my @g_cycls = ( 0, 0, 0, 0, 0 );
 # used resources - reg, uniform regs, pred, uniform preds, score boards
 # second set used for per-function stat
 my @g_rsT = ( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
+# count of registers used in single block, regular at index 0, uniform at 1
+my @g_sbrT = ( 0, 0 );
 # stat for possibly reg pressure descrease - first two are (u)reg total, second two are (u)reg holes count
 # next 4 items are: 4 - num of functions with holes,  5 - reduced regs, 6 - fully reduced funcs, 7 - partially reduced funcs
 my @g_rpT = ( 0, 0, 0, 0, 0, 0, 0, 0 );
@@ -180,6 +182,7 @@ sub next_srT
     $g_rsT[$i] += $g_rsT[$i + 5];
     $g_rsT[$i + 5] = 0;
   }
+  $g_sbrT[0] = $g_sbrT[1] = 0;
   if ( defined $opt_Y ) {
     $g_ystat[1] += $g_ystat[0];
     $g_ystat[0] = 0;
@@ -3066,6 +3069,9 @@ sub dump_T
       printf(";;; Registers used in single block:\n");
       $b_hash{ $_->[0] } = $_ for @$bl;
     }
+    # store to g_sbrT
+    if ( $r & UR ) { $g_sbrT[1]++; }
+    else { $g_sbrT[0]++; }
     printf(";  %sR%d in %X", $r & UR ? 'U' : '', $r_idx, $ar->[1]);
     if ( exists $b_hash{ $ar->[1] } ) {
       my $fb = $b_hash{ $ar->[1] };
@@ -3152,6 +3158,8 @@ sub dump_T
     printf("; %d yields, avg %f per block\n", $g_ystat[0], 1.0 * $g_ystat[0] / $bl_size ) if $g_ystat[0];
     printf(";  %d yields without wait, avg %f per block\n", $g_ystat[2], 1.0 * $g_ystat[2] / $bl_size ) if $g_ystat[2];
     printf(";  %d wait without yields, avg %f per block\n", $g_ystat[3], 1.0 * $g_ystat[3] / $bl_size ) if $g_ystat[3];
+    printf("; %d single block registers (%f from total)\n", $g_sbrT[0], 1.0 * $g_sbrT[0] / $g_rsT[5]) if ( $g_rsT[5] && $g_sbrT[0] );
+    printf("; %d single block uregisters (%f from total)\n", $g_sbrT[1], 1.0 * $g_sbrT[1] / $g_rsT[6]) if ( $g_rsT[6] && $g_sbrT[1] );
   }
   next_srT();
 }
