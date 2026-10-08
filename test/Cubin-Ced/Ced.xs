@@ -509,9 +509,9 @@ class Ced_perl: public CEd_base {
   SV *prmt() const {
     if ( !has_ins() ) return &PL_sv_undef;
     if ( strcmp(ins()->name, "PRMT") && strcmp(ins()->name, "UPRMT") ) return &PL_sv_undef;
-    unsigned long mask = 0;
-    if ( !check_prmt(ins(), m_rend, cex(), mask) ) return &PL_sv_undef;
-    return newSVuv(mask);
+    auto res = check_prmt(ins(), m_rend, cex());
+    if ( !res.has_value() ) return &PL_sv_undef;
+    return newSVuv(res.value().first);
   }
   SV *check_false() const {
     if ( !has_ins() ) return &PL_sv_undef;
@@ -2317,7 +2317,7 @@ ins_conv(SV *obj)
 SV *
 ins_false(SV *obj)
  ALIAS:
-  Cubin::Ced::ins_prmt = 1
+  Cubin::Ced::has_prmt = 1
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
