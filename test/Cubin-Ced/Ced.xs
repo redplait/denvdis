@@ -506,9 +506,11 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return false;
     return is_uni ? use_ureg(ins(), cex(), v, res) : use_reg(ins(), cex(), v, res);
   }
+  bool is_prmt() const {
+    return !strcmp(ins()->name, "PRMT") || !strcmp(ins()->name, "UPRMT");
+  }
   SV *prmt() const {
-    if ( !has_ins() ) return &PL_sv_undef;
-    if ( strcmp(ins()->name, "PRMT") && strcmp(ins()->name, "UPRMT") ) return &PL_sv_undef;
+    if ( !has_ins() || !is_prmt() ) return &PL_sv_undef;
     auto res = check_prmt(ins(), m_rend, cex());
     if ( !res.has_value() ) return &PL_sv_undef;
     return newSVuv(res.value().first);
@@ -565,6 +567,7 @@ class Ced_perl: public CEd_base {
     res = ins()->mask;
     return true;
   }
+  int ins_prmt(pTHX_ bool warray);
   int ins_rf(pTHX_ bool warray);
   std::pair<int, const nv_vattr *> is_branch(long &off) {
     return NV_renderer::collect_labels(m_rend, ins(), cex(), nullptr, &off);
@@ -828,6 +831,27 @@ SV *Ced_perl::nop()
     return &PL_sv_no;
   }
   return &PL_sv_yes;
+}
+
+int Ced_perl::ins_prmt(pTHX_ bool warray)
+{
+  dSP;
+  int sres = 1;
+  auto res = check_prmt( ins(), m_rend, cex() );
+  if ( !res.has_value() ) {
+    mXPUSHs(&PL_sv_undef);
+  } else {
+    if ( !warray )
+      mXPUSHu(res.value().first);
+    else {
+      sres = 2;
+      EXTEND(SP, sres);
+      mPUSHu(res.value().first);
+      mPUSHp(res.value().second, strlen(res.value().second));
+    }
+  }
+  PUTBACK;
+  return sres;
 }
 
 int Ced_perl::ins_rf(pTHX_ bool warray)
@@ -2651,6 +2675,24 @@ ins_rf(SV *obj)
     SPAGAIN;
     XSRETURN(stack_size);
   }
+
+void
+ins_prmt(SV *obj)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ PPCODE:
+  if ( !e->has_ins() || !e->is_prmt() ) {
+    EMPTY_RES
+  } else {
+    // stolen from https://www.reddit.com/r/perl/comments/lom4l7/perlxs_how_to_make_a_common_subroutine/
+    PUTBACK;
+    int stack_size = e->ins_prmt(aTHX_ gimme == G_ARRAY);
+    SPAGAIN;
+    XSRETURN(stack_size);
+  }
+
 
 void
 ins_cbank(SV *obj)
