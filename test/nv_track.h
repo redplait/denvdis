@@ -200,6 +200,16 @@ struct reg_pad {
     });
   }
   template <typename T>
+  bool collect_refs(const std::vector<T> &hl, std::set<unsigned long> &res) const {
+    unsigned long old = -1;
+    for ( auto &it: hl ) {
+      if ( old == it.off ) continue;
+      res.insert(it.off);
+      old = it.off;
+    }
+    return !res.empty();
+  }
+  template <typename T>
   bool has_write(unsigned long from, unsigned long eob, const std::vector<T> &hl) const {
     return std::any_of(hl.cbegin(), hl.cend(), [&](const T &item) {
       return (item.off >= from) && (item.off < eob) && (item.kind & 0x8000);
