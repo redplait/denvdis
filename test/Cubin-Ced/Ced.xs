@@ -3918,6 +3918,40 @@ ccs(SV *obj, unsigned long from = 0)
   RETVAL
 
 SV *
+rs_xrefs(SV *obj, int key)
+ ALIAS:
+  Cubin::Ced::RegTrack::urs_xrefs = 1
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   auto &rs = (ix == 1) ? r->ugpr: r->gpr;
+   auto rs_iter = rs.find(key);
+ PPCODE:
+   if ( rs_iter == rs.end() ) { EMPTY_RES; }
+   else {
+     std::set<unsigned long> xrefs;
+     if ( !r->collect_refs(rs_iter->second, xrefs) ) { EMPTY_RES; }
+     else {
+       if ( gimme == G_ARRAY) {
+         auto rsize = xrefs.size();
+         EXTEND(SP, rsize);
+         for ( auto si: xrefs ) {
+           mPUSHu(si);
+         }
+         XSRETURN(rsize);
+       } else {
+         AV *av = newAV();
+         std::for_each(xrefs.cbegin(), xrefs.cend(), [&av](unsigned long off) {
+           av_push(av, newSVuv(off));
+         });
+         mXPUSHs(newRV_noinc((SV*)av));
+         XSRETURN(1);
+       }
+     }
+   }
+
+SV *
 rs_nw(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::urs_nw = 1
