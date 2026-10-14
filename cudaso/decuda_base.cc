@@ -110,7 +110,7 @@ void decuda_base::_read_sections() {
     auto st = sec->get_type();
     // fill some sections
     if ( st == ELFIO::SHT_PROGBITS ) {
-      if ( sec->get_name() == ".text" ) { s_text = sec; continue; }
+      if ( sec->get_name() == ".text" ) { if ( !s_text.has_value() ) s_text = sec; continue; }
       if ( sec->get_name() == ".rodata" ) { s_rodata = sec; continue; }
       if ( sec->get_name() == ".data" ) { s_data = sec; continue; }
       if ( sec->get_name() == ".data.rel.ro" ) { s_data_rel = sec; continue; }
@@ -137,7 +137,7 @@ int decuda_base::read() {
     }
     // fill some sections
     if ( st == ELFIO::SHT_PROGBITS ) {
-      if ( sec->get_name() == ".text" ) { s_text = sec; continue; }
+      if ( sec->get_name() == ".text" ) { if ( !s_text.has_value() ) s_text = sec; continue; }
       if ( sec->get_name() == ".rodata" ) { s_rodata = sec; continue; }
       if ( sec->get_name() == ".data" ) { s_data = sec; continue; }
       if ( sec->get_name() == ".data.rel.ro" ) { s_data_rel = sec; continue; }

@@ -18,6 +18,7 @@ int ctr_str::proc_section(ELFIO::section *s) {
   const unsigned long *s_body = (const unsigned long *)s->get_data();
   for ( m_idx = 0; m_idx < s_end; ++m_idx ) {
     if ( !s_body[m_idx] ) continue;
+// printf("%lX %lX - %lX\n", s_body[m_idx], s_text.value()->get_address(), s_text.value()->get_size());
     if ( !in_sec(s_text, s_body[m_idx]) ) continue;
     m_latch = false;
     res += process_item(di, s_body[m_idx]);
