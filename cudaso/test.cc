@@ -1,4 +1,5 @@
 #include "decuda.h"
+#include "ctr_str.h"
 #include "de_bg.h"
 #include "de_cupti.h"
 #include "de_merc.h"
@@ -17,6 +18,7 @@ void usage(const char *prog)
 {
   printf("%s usage: [options] libcubin.so\n", prog);
   printf("Options:\n");
+  printf("-c - extract string from ctros\n");
   printf("-d - show disasm\n");
   printf("-m - run de_merc\n");
   printf("-p - hack ptxas\n");
@@ -24,6 +26,12 @@ void usage(const char *prog)
   printf("-t - dump symbols\n");
   printf("-v - verbose mode\n");
   exit(6);
+}
+
+template <typename T>
+void proc_hack(T &dc) {
+  dc.read();
+  if ( opt_t ) dc.dump_syms();
 }
 
 template <typename T>
@@ -43,13 +51,15 @@ void process(T *dc) {
 int main(int argc, char **argv) {
   int c;
   int do_dbg = 0,
+      do_ctors = 0,
       hack_merc = 0,
       do_cupti = 0,
       hack_ptx = 0;
   while(1) {
-    c = getopt(argc, argv, "s:CDdmtpv");
+    c = getopt(argc, argv, "s:cCDdmtpv");
     if ( c == -1 ) break;
     switch(c) {
+      case 'c': do_ctors = 1; break;
       case 's': s_arg = optarg; break;
       case 'd': opt_d = 1; break;
       case 'C': do_cupti = 1; break;
@@ -65,14 +75,17 @@ int main(int argc, char **argv) {
     usage(argv[0]);
     return 6;
   }
-  if ( do_dbg || do_cupti || hack_ptx || hack_merc ) {
+  if ( do_dbg || do_cupti || hack_ptx || hack_merc || do_ctors ) {
     ELFIO::elfio *rdr = new ELFIO::elfio;
     if ( !rdr->load(argv[optind]) ) {
       delete rdr;
       fprintf(stderr, "cannot load ELF %s\n", argv[optind]);
       return 2;
     }
-    if ( hack_ptx ) {
+    if ( do_ctors ) {
+      ctr_str p(rdr);
+      proc_hack(p);
+    } else if ( hack_ptx ) {
       de_ptx p(rdr);
       process(&p);
     } else if ( hack_merc ) {

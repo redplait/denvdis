@@ -102,6 +102,25 @@ int decuda_base::cmp_str(ELFIO::section *s, uint64_t off, const char *what) {
   return !strcmp(rs, what);
 }
 
+void decuda_base::_read_sections() {
+  is_32 = m_rdr->get_class() == ELFIO::ELFCLASS32;
+  n_sec = m_rdr->sections.size();
+  for ( ELFIO::Elf_Half i = 0; i < n_sec; ++i ) {
+    ELFIO::section *sec = m_rdr->sections[i];
+    auto st = sec->get_type();
+    // fill some sections
+    if ( st == ELFIO::SHT_PROGBITS ) {
+      if ( sec->get_name() == ".text" ) { s_text = sec; continue; }
+      if ( sec->get_name() == ".rodata" ) { s_rodata = sec; continue; }
+      if ( sec->get_name() == ".data" ) { s_data = sec; continue; }
+      if ( sec->get_name() == ".data.rel.ro" ) { s_data_rel = sec; continue; }
+    }
+    if ( st == ELFIO::SHT_NOBITS ) {
+      if ( sec->get_name() == ".bss" ) { s_bss = sec; continue; }
+    }
+  }
+}
+
 int decuda_base::read() {
   is_32 = m_rdr->get_class() == ELFIO::ELFCLASS32;
   // enum sections

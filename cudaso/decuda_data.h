@@ -2,6 +2,7 @@
 #include "decuda_base.h"
 #ifdef WITH_CEREAL
 #include <cereal/types/vector.hpp>
+#include <cereal/types/map.hpp>
 #endif
 
 struct one_intf {
@@ -12,6 +13,20 @@ struct one_intf {
   template <class Archive>
   void serialize( Archive & ar ) {
     ar( CEREAL_NVP(uuid), CEREAL_NVP(addr), CEREAL_NVP(size) );
+  }
+#endif
+};
+
+// key is name from m_syms so we can use string_view
+// value is pair<ptr, original function>
+struct one_forward {
+  uint64_t off = 0;
+  uint64_t cb = 0;
+  uint64_t flag_addr = 0;
+#ifdef WITH_CEREAL
+  template <class Archive>
+  void serialize( Archive & ar ) {
+    ar( CEREAL_NVP(off), CEREAL_NVP(cb), CEREAL_NVP(flag_addr) );
   }
 #endif
 };
@@ -34,6 +49,7 @@ struct decuda_data {
   inline bool has_flag_sztab() const {
      return (m_flag_sztab_addr != 0) && (m_flag_sztab_size != 0);
   }
+  std::map<std::string, one_forward > m_forwards;
 #ifdef WITH_CEREAL
   std::string pivot_name;
   ELFIO::Elf64_Addr m_pivot = 0;
@@ -44,7 +60,7 @@ struct decuda_data {
     ar( CEREAL_NVP(m_api_gate), CEREAL_NVP(m_api_data), CEREAL_NVP(m_intf_tab), CEREAL_NVP(m_intfs),
       CEREAL_NVP(m_trace_fn), CEREAL_NVP(m_trace_flag), CEREAL_NVP(m_trace_key),
       CEREAL_NVP(m_flag_sztab_addr), CEREAL_NVP(m_dbgtab_addr), CEREAL_NVP(m_flag_sztab_size),
-      CEREAL_NVP(m_flag_sztab), CEREAL_NVP(m_dbgtab), CEREAL_NVP(pivot_name), CEREAL_NVP(m_pivot)
+      CEREAL_NVP(m_flag_sztab), CEREAL_NVP(m_dbgtab), CEREAL_NVP(m_forwards), CEREAL_NVP(pivot_name), CEREAL_NVP(m_pivot)
     );
   }
 #endif

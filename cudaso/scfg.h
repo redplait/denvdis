@@ -7,6 +7,7 @@
 
 constexpr const char *json_deb = "cudadeb.json";
 constexpr const char *json_cuda = "cuda.json";
+constexpr const char *cuda_so1_path = "/usr/lib/x86_64-linux-gnu/libcuda.so.1";
 
 #endif
 

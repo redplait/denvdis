@@ -9,7 +9,7 @@ int patch_tlg(uint64_t delta, char, const Tlg &);
 constexpr const char *de_api = "GetCUDADebuggerAPI";
 
 struct bg_api {
-  uint64_t addr = 0;
+  uint64_t addr = 0; // offset of de_api
   uint64_t sub = 0;
   std::string name;
 #ifdef WITH_CEREAL

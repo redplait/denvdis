@@ -434,6 +434,7 @@ int simple_hook_debg(void *addr, FILE *fp, de_bg_data *d) {
   vlog("init res: %X\n", res);
   patch_tlg(delta, 'z', d->m_tlg);
   if ( !d->m_bg_log ) return 0;
+  vlog("patch dbg_trace at %p\n", d->m_bg_log + delta);
   return patch_dbg_trace(fp, d->m_bg_log + delta);
 }
 

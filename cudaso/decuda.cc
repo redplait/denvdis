@@ -257,14 +257,14 @@ int decuda::resolve_indirects()
       if ( in_sec(s_data, addr) && read(*s_data, addr, val) ) {
         one_forward of{ addr, val };
         if ( di.setup(val) ) try_dbg_flag(&di, of.flag_addr, m_res.m_trace_fn, check_bss);
-        m_forwards[s.first] = of;
+        m_res.m_forwards[s.first] = of;
       }
     });
   }
   if ( m_res.m_trace_fn && di.setup(m_res.m_trace_fn) ) {
     try_dbg_key(&di, m_res.m_trace_flag, m_res.m_trace_key, check_bss);
   }
-  return !m_forwards.empty();
+  return !m_res.m_forwards.empty();
 }
 
 const unsigned char first_intf[16] = {
@@ -420,9 +420,9 @@ void decuda::dump_res() const {
   }
   if ( m_res.m_dbgtab_addr )
     printf("dbgtab %lX size %d\n", m_res.m_dbgtab_addr, m_res.m_dbgtab.size());
-  if ( !m_forwards.empty() ) {
-    printf("%ld forwards:\n", m_forwards.size());
-    for ( auto &fi: m_forwards ) {
+  if ( !m_res.m_forwards.empty() ) {
+    printf("%ld forwards:\n", m_res.m_forwards.size());
+    for ( auto &fi: m_res.m_forwards ) {
       printf("%.*s: %lX %lX", fi.first.size(), fi.first.data(), fi.second.off, fi.second.cb);
       if ( fi.second.flag_addr ) printf(" dbg_flag at %lX\n", fi.second.flag_addr);
       else fputc('\n', stdout);
@@ -472,8 +472,8 @@ int decuda::patch_dbg(FILE *fp, uint64_t delta, const struct dbg_patch *tab, int
 {
   int res = 0;
   for ( int i = 0; i < tab_size; ++i ) {
-    auto fi = m_forwards.find(tab[i].name);
-    if ( fi == m_forwards.end() ) {
+    auto fi = m_res.m_forwards.find(tab[i].name);
+    if ( fi == m_res.m_forwards.end() ) {
       fprintf(fp, "patch_dbg: cannot find %s\n", tab[i].name);
       continue;
     }
@@ -597,7 +597,7 @@ void decuda::_verify(FILE *out_fp, std::function<void(uint64_t, rtmem_storage &)
    check_dword(out_fp, m_res.m_trace_key, delta, "trace_key", rs);
  const my_phdr *curr = nullptr;
  // enum and dump
- for ( auto &fi: m_forwards ) {
+ for ( auto &fi: m_res.m_forwards ) {
    auto addr = delta + fi.second.off;
    if ( !curr ) curr = rs.check(addr);
    if ( !curr ) {

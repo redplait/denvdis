@@ -12,6 +12,11 @@ class decuda: public decuda_base {
      decuda_base(rdr)
    {
    }
+   decuda(ELFIO::elfio *rdr, const decuda_data *dd):
+     decuda_base(rdr)
+   {
+     m_res = *dd;
+   }
    void verify(FILE *fp) const {
      _verify(fp, nullptr);
    }
@@ -51,14 +56,6 @@ class decuda: public decuda_base {
      }
      return nullptr;
    }
-   // key is name from m_syms so we can use string_view
-   // value is pair<ptr, original function>
-   struct one_forward {
-     uint64_t off;
-     uint64_t cb;
-     uint64_t flag_addr = 0;
-   };
-   std::map<std::string_view, one_forward > m_forwards;
 };
 
 decuda *get_decuda(const char *);

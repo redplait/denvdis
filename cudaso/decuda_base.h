@@ -87,6 +87,7 @@ class decuda_base {
    void store(Archive &a) {}
 #endif
  protected:
+   void _read_sections();
    virtual int _read() = 0;
    bool in_sec(const std::optional<ELFIO::section *> &s, uint64_t addr) const {
      if ( !s.has_value() ) return false;

@@ -40,9 +40,11 @@ struct wr_raii {
   pthread_rwlock_t *m_lock;
 };
 
+typedef int (*Tcuinit)(unsigned int);
 typedef void *(*Tdlsym)(void*, const char*);
 typedef long (*Texp_tab)(const void **, unsigned char *);
 static Tdlsym real_sym = NULL;
+static Tcuinit real_cuinit = NULL;
 static Texp_tab real_exp_tab = NULL; // original cuGetExportTable
 
 #ifdef HOOK_nvPTX
@@ -145,7 +147,7 @@ static void init_dlsym(void) {
       archive( s_cudata );
       has_cudata = true;
     } else {
-     vlog("cannot open deb.json at %s\n", js_name.c_str());
+     vlog("cannot open cuda.json at %s\n", js_name.c_str());
     }
   }
 }
@@ -162,6 +164,13 @@ void hook_de_bg() {
     exit(3);
   }
   simple_hook_debg(api, s_log, &s_de_data);
+}
+
+// cuInit hook - see proto in https://docs.nvidia.com/cuda/cuda-driver-api/group__CUDA__INITIALIZE.html
+int my_cuinit(unsigned int Flags) {
+  auto res = real_cuinit(Flags);
+  vlog("cuInit(%d) %d\n", Flags, res);
+  return res;
 }
 
 // cuGetExportTable hook
@@ -251,6 +260,11 @@ void* dlsym(void* handle, const char* symbol) {
     if ( !strcmp(symbol, "DebugAgentMain") ) {
       sh_deb = handle;
       pthread_once(&once_de_bg, hook_de_bg);
+    } else if ( !strcmp(symbol, "cuInit") ) {
+      sh_cuda = handle;
+      if ( !real_cuinit )
+        real_cuinit = (Tcuinit)real_sym(handle, symbol);
+      if ( real_cuinit ) return (void *)&my_cuinit;
     } else if ( !strcmp(symbol, de_api) ) {
       sh_deb = handle;
       pthread_once(&once_de_bg, hook_de_bg);
