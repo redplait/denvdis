@@ -3,12 +3,16 @@
 
 const char *ctr_str::look_like_str(unsigned long sa) {
   if ( !in_sec(s_rodata, sa) ) return nullptr;
-  auto s = sdata(s_rodata, sa);
+  const unsigned char *s = (const unsigned char *)sdata(s_rodata, sa);
   if ( !s ) return nullptr;
   if ( !s[0] ) return nullptr;
-  if ( !isalnum(s[0]) || s[0] > 0x7f || s[1] > 0x7f ) return nullptr;
-  if ( s[1] != 0 ) return s;
-  return nullptr;
+  if ( !isalnum(s[0]) || s[0] > 0x7f || !s[1] ) return nullptr;
+  // check first 6 symbols
+  for ( int i = 1; i < 7; ++i ) {
+    if ( !s[i] ) break;
+    if ( s[i] > 0x7f ) return nullptr;
+  }
+  return (const char *)s;
 }
 
 int ctr_str::proc_section(ELFIO::section *s) {

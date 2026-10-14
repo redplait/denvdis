@@ -1,0 +1,4225 @@
+[10] at 43FA40:
+ disable-fp-call-folding
+ Disable constant-folding of FP intrinsics and libcalls.
+[12] at 461000:
+ dom-conditions-max-uses
+[13] at 461340:
+ max-interleave-group-factor
+ Maximum factor for an interleaved access group (default = 8)
+[14] at 461560:
+ print-summary-global-ids
+ Print the global id for each value when reading the module summary
+ expand-constant-exprs
+ Expand constant expressions to instructions for testing purposes
+[15] at 461960:
+ Import full type definitions for ThinLTO.
+ import-full-type-definitions
+ Force disable the lazy-loading on-demand of metadata when loading bitcode for importing.
+ disable-ondemand-mds-loading
+[16] at 461A40:
+ bitcode-mdindex-threshold
+ Number of metadatas above which we emit an index to enable lazy-loading
+ bitcode-flush-threshold
+ The threshold (unit M) for flushing LLVM bitcode.
+ write-relbf-to-summary
+ Write relative block frequency to function summary 
+ combined-index-memprof-context
+[17] at 462250:
+ print-inst-addrs
+ Print addresses of instructions when dumping
+ print-inst-debug-locs
+ Pretty print debug locations of instructions when dumping
+ print-prof-data
+ Pretty print perf data (branch weights, etc) when dumping
+[18] at 462810:
+ Disable autoupgrade of debug info
+ disable-auto-upgrade-debug-info
+[19] at 462860:
+ use-constant-int-for-fixed-length-splat
+ Use ConstantInt's native fixed-length vector splat support.
+ use-constant-fp-for-fixed-length-splat
+ Use ConstantFP's native fixed-length vector splat support.
+ use-constant-int-for-scalable-splat
+ Use ConstantInt's native scalable vector splat support.
+ use-constant-fp-for-scalable-splat
+ Use ConstantFP's native scalable vector splat support.
+[20] at 463050:
+ enable-fs-discriminator
+ Enable adding flow sensitive discriminators
+ pick-merged-source-locations
+ Preserve line and column number when merging locations.
+[22] at 463430:
+ Verify dominator info (time consuming)
+ verify-dom-info
+[23] at 4634A0:
+ non-global-value-max-name-size
+ Maximum size for the name of non-global values.
+[25] at 4639D0:
+ Disables inttoptr/ptrtoint roundtrip optimization
+ disable-i2p-p2i-opt
+[28] at 4980C0:
+ propagate-attrs
+ Propagate attributes in index
+ import-constants-with-refs
+ Import constant global variables with references
+[30] at 498CD0:
+ opt-bisect-funcs
+ function names
+[31] at 498F10:
+ time-passes
+ cl::location(x) specified more than once!
+ Time each pass, printing elapsed time for each on exit
+ time-passes-per-run
+ cl::location(x) specified more than once!
+ Time each pass run, printing elapsed time for each run on exit
+[33] at 49AD90:
+ use-dereferenceable-at-point-semantics
+ Deref attributes and metadata infer facts at definition only
+[34] at 49AF90:
+ verify-noalias-scope-decl-dom
+ Ensure that llvm.experimental.noalias.scope.decl for identical scopes are not dominating
+[35] at 49B4A0:
+ disable-bitcode-version-upgrade
+ Disable automatic bitcode upgrade for version mismatch
+ LLVM_OVERRIDE_PRODUCER
+[36] at 49B6C0:
+ remarks-section
+ Emit a section containing remark diagnostics metadata. By default, this is enabled for the following formats: bitstream.
+[44] at 49D650:
+ disable-basic-aa
+[46] at 49D750:
+ verify-assumption-cache
+ Enable verification of assumption cache
+[47] at 49D960:
+ basic-aa-recphi
+[48] at 49E040:
+ dom-tree-reachability-max-bbs-to-explore
+ Max number of BBs to explore for reachability analysis
+[49] at 49E260:
+ capture-tracking-max-uses-to-explore
+ Maximal number of uses to explore.
+[50] at 49E480:
+ enable-unsafe-globalsmodref-alias-results
+[51] at 49E4E0:
+ available-load-scan-limit
+ Use this to specify the default maximum number of instructions to scan backward from a given instruction, when searching for available loaded value
+[53] at 49FC10:
+ Verify loop info (time consuming)
+ verify-loop-info
+[54] at 49FC80:
+ object-size-offset-visitor-max-visit-instructions
+ Maximum number of instructions for ObjectSizeOffsetVisitor to look at
+[55] at 49FCE0:
+ memprof-report-hinted-sizes
+ Report total allocation sizes of hinted allocations
+ memprof-keep-all-not-cold-contexts
+ Keep all non-cold contexts (increases cloning overheads)
+ memprof-cloning-cold-threshold
+ Min percent of cold bytes to hint alloc cold during cloning
+ memprof-callsite-cold-threshold
+ Min percent of cold bytes at a callsite to discard non-cold contexts
+ memprof-min-percent-max-cold-size
+ Min percent of max cold bytes for critical cold context
+[57] at 4A0FA0:
+ partial-profile
+ Specify the current profile is used as a partial profile.
+ scale-partial-sample-profile-working-set-size
+ If true, scale the working set size of the partial sample profile by the partial profile ratio to reflect the size of the program being compiled.
+ partial-sample-profile-working-set-size-scale-factor
+ The scale factor used to scale the working set size of the partial sample profile along with the partial profile ratio. This includes the factor of the profile counter per block and the factor to scale the working set size to use the same shared thresholds as PGO.
+[58] at 4A1580:
+ stack-safety-max-iterations
+ stack-safety-print
+ stack-safety-run
+[60] at 4A30E0:
+ enable-scoped-noalias
+[61] at 4A3140:
+ costmodel-reduxcost
+ Recognize reduction patterns.
+ cache-line-size
+ Use this to override the target cache line size when specified by the user.
+ min-page-size
+ Use this to override the target's minimum page size.
+ predictable-branch-threshold
+ Use this to override the target's predictable branch threshold (%).
+[62] at 4A3950:
+ enable-tbaa
+[63] at 4A3BF0:
+ pattern
+ pass-remarks
+ Enable optimization remarks from passes whose name match the given regular expression
+ pattern
+ pass-remarks-missed
+ Enable missed optimization remarks from passes whose name match the given regular expression
+ pattern
+ pass-remarks-analysis
+ Enable optimization analysis remarks from passes whose name match the given regular expression
+[64] at 4A3DF0:
+ hexagon-fast-math
+ Enable Fast Math processing
+[66] at 4A4080:
+ asm-macro-max-nesting-depth
+ The maximum nesting depth allowed for assembly macros.
+[67] at 4A4280:
+ static-func-full-module-prefix
+ Use full module build paths in the profile counter names for static functions.
+ static-func-strip-dirname-prefix
+ Strip specified level of directory name from source path in the profile counter name for static functions.
+ enable-name-compression
+ Enable name/filename string compression
+ enable-vtable-value-profiling
+ If true, the virtual table address will be instrumented to know the types of a C++ pointer. The information is used in indirect call promotion to do selective vtable-based comparison.
+ enable-vtable-profile-use
+ If ThinLTO and WPD is enabled and this option is true, vtable profiles will be used by ICP pass for more efficient indirect call sequence. If false, type profiles won't be used.
+[68] at 4A4B90:
+ profile-summary-contextless
+ Merge context profiles before calculating thresholds.
+ profile-summary-cutoff-hot
+ A count is hot if it exceeds the minimum count to reach this percentile of total counts.
+ profile-summary-cutoff-cold
+ A count is cold if it is below the minimum count to reach this percentile of total counts.
+ profile-summary-huge-working-set-size-threshold
+ The code working set size is considered huge if the number of blocks required to reach the -profile-summary-cutoff-hot percentile exceeds this count.
+ profile-summary-large-working-set-size-threshold
+ The code working set size is considered large if the number of blocks required to reach the -profile-summary-cutoff-hot percentile exceeds this count.
+ profile-summary-hot-count
+ A fixed hot count that overrides the count derived from profile-summary-cutoff-hot
+ profile-summary-cold-count
+ A fixed cold count that overrides the count derived from profile-summary-cutoff-cold
+[69] at 4A5830:
+ profile-symbol-list-cutoff
+ Cutoff value about how many symbols in profile symbol list will be used. This is very useful for performance debugging
+ generate-merged-base-profiles
+ When generating nested context-sensitive profiles, always generate extra base profile for function with all its context profiles merged into it.
+[70] at 4A5C30:
+ profile-isfs
+ Profile uses flow sensitive discriminators
+[72] at 4A7070:
+ internalize-public-api-file
+ filename
+ A file containing list of symbol names to preserve
+ internalize-public-api-list
+ list
+ A list of symbol names to preserve
+[73] at 4A74F0:
+ max-deopt-or-unreachable-succ-check-depth
+ Set the maximum path length when checking whether a basic block is followed by a block that either has a terminating deoptimizing call or is terminated with an unreachable
+[74] at 4A7710:
+ phicse-debug-hash
+ Perform extra assertion checking to verify that PHINodes's hash function is well-behaved w.r.t. its isEqual predicate
+ phicse-num-phi-smallsize
+ When the basic block contains not more than this number of PHI nodes, perform a (faster!) exhaustive search instead of set-driven one.
+ max-phi-entries-increase-after-removing-empty-block
+ Stop removing an empty block if removing it will introduce more than this number of phi entries in its successor
+[75] at 4A7D30:
+ scev-cheap-expansion-budget
+ When performing SCEV expansion only if it is cheap to do, this controls the budget that is considered cheap (default = 4)
+[78] at 4A99D0:
+ alias-set-saturation-threshold
+ The maximum total number of memory locations alias sets may contain before degradation
+[80] at 4AA690:
+ check-bfi-unknown-block-queries
+ Check if block frequency is queried for an unknown block for debugging missed BFI updates
+ use-iterative-bfi-inference
+ Apply an iterative post-processing to infer correct BFI counts
+ iterative-bfi-max-iterations-per-block
+ Iterative inference: maximum number of update iterations per block
+ iterative-bfi-precision
+ Iterative inference: delta convergence precision; smaller values typically lead to better results at the cost of worsen runtime
+[82] at 4ABDC0:
+ icp-remaining-percent-threshold
+ The percentage threshold against remaining unpromoted indirect call count for the promotion
+ icp-total-percent-threshold
+ The percentage threshold against total count for the promotion
+ icp-minimum-count-threshold
+ Minimum absolute count for promotion candidate
+ icp-max-prom
+ Max number of promotions for a single indirect call callsite
+ icp-max-num-vtables
+ Max number of vtables annotated for a vtable load instruction.
+[83] at 4AC7A0:
+ disable-last-run-tracking
+ Disable last run tracking
+[84] at 4ACAA0:
+ memdep-block-scan-limit
+ The number of instructions to scan in a block in memory dependency analysis (default = 100)
+ memdep-block-number-limit
+ The number of blocks to scan during memory dependency analysis (default = 200)
+[85] at 4AD070:
+ dot-cfg-mssa
+ file name for generated dot file
+ memssa-check-limit
+ The maximum number of stores/phis MemorySSAwill consider trying to walk past (default = 100)
+ verify-memoryssa
+ cl::location(x) specified more than once!
+ Enable verification of MemorySSA.
+[86] at 4AD730:
+ gvn-add-phi-translation
+ Enable phi-translation of add instructions
+[87] at 4AD940:
+ erlang
+ erlang-compatible garbage collector
+ ocaml
+ ocaml 3.10-compatible GC
+ shadow-stack
+ Very portable GC for uncooperative code generators
+ statepoint-example
+ an example strategy for statepoint
+ CoreCLR-compatible GC
+ coreclr
+[89] at 4AE2C0:
+ instcombine-guard-widening-window
+ How wide an instruction window to bypass looking for another guard
+[90] at 4AE8B0:
+ Disable converting i32 opts into i16 opts
+[91] at 4AEE20:
+ instcombine-max-copied-from-constant-users
+ Maximum users to visit in copy from constant transform
+ enable-infer-alignment-pass
+ Enable the InferAlignment pass, disabling alignment inference in InstCombine
+[92] at 4AF560:
+ instcombine-negator-enabled
+ Should we attempt to sink negations?
+ instcombine-negator-max-depth
+ What is the maximal lookup depth when trying to check for viability of negation sinking.
+[93] at 4AF9E0:
+ Maximum number phis to handle in intptr/ptrint folding
+ instcombine-max-num-phis
+[94] at 4AFA40:
+ instcombine-verify-known-bits
+ Verify that computeKnownBits() and SimplifyDemandedBits() are consistent
+ instcombine-simplify-vector-elts-depth
+ Depth limit when simplifying vector instructions and their operands
+[96] at 4AFFD0:
+ assume-preserve-all
+ enable preservation of all attributes. even those that are unlikely to be useful
+ enable-knowledge-retention
+ enable preservation of attributes throughout code transformation
+[97] at 4B0400:
+ Verify loop lcssa form (time consuming)
+ verify-loop-lcssa
+[98] at 4B0680:
+ enable-double-float-shrink
+ Enable unsafe double to float shrinking for math lib calls
+ optimize-hot-cold-new
+ Enable hot/cold operator new library calls
+ optimize-existing-hot-cold-new
+ Enable optimization of existing hot/cold operator new library calls
+ Value to pass to hot/cold operator new for cold allocation
+ cold-new-hint-value
+ Value to pass to hot/cold operator new for notcold (warm) allocation
+ notcold-new-hint-value
+ Value to pass to hot/cold operator new for hot allocation
+ hot-new-hint-value
+[100] at 4B1D50:
+ cfg-func-name
+ The name of a function (or its substring) whose CFG is viewed/printed.
+ cfg-dot-filename-prefix
+ The prefix used for the CFG dot file names.
+ cfg-hide-unreachable-paths
+ cfg-hide-deoptimize-paths
+ cfg-hide-cold-paths
+ Hide blocks with relative frequency below the given value
+ Show heat colors in CFG
+ cfg-heat-colors
+ Use raw weights for labels. Use percentages as default.
+ cfg-raw-weights
+ cfg-weights
+ Show edges labeled with weights
+[101] at 4B29F0:
+ allow-incomplete-ir
+ Allow incomplete IR on a best effort basis (references to unknown metadata will be dropped)
+[102] at 4B2C10:
+ None
+ NOTYPE
+ Object
+ TLS
+ OBJECT
+ Function
+ FUNC
+ Section
+ SECTION
+ File
+ FILE
+ Common
+ COMMON
+ Unknown
+ GNU_IFunc
+ OS Specific
+ IFUNC
+ Proc Specific
+[103] at 4B2F80:
+ Tag_File
+ Tag_Section
+ Tag_Symbol
+ Tag_CPU_raw_name
+ Tag_CPU_name
+ Tag_CPU_arch
+ Tag_CPU_arch_profile
+ Tag_ARM_ISA_use
+ Tag_THUMB_ISA_use
+ Tag_FP_arch
+ Tag_WMMX_arch
+ Tag_Advanced_SIMD_arch
+ Tag_MVE_arch
+ Tag_PCS_config
+ Tag_ABI_PCS_R9_use
+ Tag_ABI_PCS_RW_data
+ Tag_ABI_PCS_RO_data
+ Tag_ABI_PCS_GOT_use
+ Tag_ABI_PCS_wchar_t
+ Tag_ABI_FP_rounding
+ Tag_ABI_FP_denormal
+ Tag_ABI_FP_exceptions
+ Tag_ABI_FP_user_exceptions
+ Tag_ABI_FP_number_model
+ Tag_ABI_align_needed
+ Tag_ABI_align_preserved
+ Tag_ABI_enum_size
+ Tag_ABI_HardFP_use
+ Tag_ABI_VFP_args
+ Tag_ABI_WMMX_args
+ Tag_ABI_optimization_goals
+ Tag_ABI_FP_optimization_goals
+ Tag_compatibility
+ Tag_CPU_unaligned_access
+ Tag_FP_HP_extension
+ Tag_ABI_FP_16bit_format
+ Tag_MPextension_use
+ Tag_DIV_use
+ Tag_DSP_extension
+ Tag_PAC_extension
+ Tag_BTI_extension
+ Tag_BTI_use
+ Tag_PACRET_use
+ Tag_nodefaults
+ Tag_also_compatible_with
+ Tag_T2EE_use
+ Tag_conformance
+ Tag_Virtualization_use
+ Tag_VFP_arch
+ Tag_VFP_HP_extension
+ Tag_ABI_align8_needed
+ Tag_ABI_align8_preserved
+[107] at 4B37B0:
+ LIBNVVM_DISABLE_CONCURRENT_API
+[108] at 4B37F0:
+ CL-36836380
+ Cuda compilation tools, release 13.1, V13.1.80
+ Build cuda_13.1.r13.1/compiler.36836380_0
+[109] at 4B4170:
+ bar
+ bar
+ bar
+ load
+ pluginfilename
+ Load the specified plugin
+[111] at 4B8C30:
+ lnk-disable-allopts
+ Disable all lnk Optimization passes
+[114] at 4B8E10:
+ disable-basicaa
+[115] at 4B8F90:
+ print-all-alias-modref-info
+ print-no-aliases
+ print-may-aliases
+ print-partial-aliases
+ print-must-aliases
+ print-no-modref
+ print-ref
+ print-mod
+ print-modref
+ print-must
+ print-mustref
+ print-mustmod
+ print-mustmodref
+ evaluate-aa-metadata
+[116] at 4B9B10:
+ alias-set-saturation-threshold
+ The maximum number of pointers may-alias sets may contain before degradation
+[117] at 4B9DB0:
+ basicaa-recphi
+[119] at 4BA9B0:
+ print-bpi
+ Print the branch probability info.
+ print-bpi-func-name
+ The option to specify the name of the function whose branch probability info is printed.
+[120] at 4BAD10:
+ cfg-func-name
+ The name of a function (or its substring) whose CFG is viewed/printed.
+[122] at 4BB1A0:
+ da-delinearize
+ Try to delinearize array references.
+[123] at 4BB340:
+ enable-unsafe-globalsmodref-alias-results
+[125] at 4BB720:
+ available-load-scan-limit
+ Use this to specify the default maximum number of instructions to scan backward from a given instruction, when searching for available loaded value
+[126] at 4BB8C0:
+ verify-loop-info
+ cl::location(x) specified more than once!
+ Verify loop info (time consuming)
+[127] at 4BBBA0:
+ memdep-block-scan-limit
+ The number of instructions to scan in a block in memory dependency analysis (default = 100)
+ memdep-block-number-limit
+ The number of blocks to scan during memory dependency analysis (default = 1000)
+[128] at 4BC0C0:
+ memssa-check-limit
+ The maximum number of stores/phis MemorySSAwill consider trying to walk past (default = 100)
+ verify-memoryssa
+ Verify MemorySSA in legacy printer pass.
+[130] at 4BC9B0:
+ enable-objc-arc-opts
+ enable/disable all ARC Optimizations
+ cl::location(x) specified more than once!
+[131] at 4BCBA0:
+ profile-summary-cutoff-hot
+ A count is hot if it exceeds the minimum count to reach this percentile of total counts.
+ profile-summary-cutoff-cold
+ A count is cold if it is below the minimum count to reach this percentile of total counts.
+ profile-sample-accurate
+ If the sample profile is accurate, we will mark all un-sampled callsite as cold. Otherwise, treat un-sampled callsites as if we have no profile.
+ profile-summary-huge-working-set-size-threshold
+ The code working set size is considered huge if the number of blocks required to reach the -profile-summary-cutoff-hot percentile exceeds this count.
+[133] at 4BD660:
+ only-simple-regions
+ Show only simple regions in the graphviz viewer
+[135] at 4BE6E0:
+ enable-scoped-noalias
+[137] at 4C1440:
+ costmodel-reduxcost
+ Recognize reduction patterns.
+[138] at 4C15E0:
+ enable-tbaa
+[140] at 4C1B70:
+ ignore
+[141] at 4C1C30:
+ verify-assumption-cache
+ Enable verification of assumption cache
+[143] at 4C2070:
+ icp-remaining-percent-threshold
+ The percentage threshold against remaining unpromoted indirect call count for the promotion
+ icp-total-percent-threshold
+ The percentage threshold against total count for the promotion
+ icp-max-prom
+ Max number of promotions for a single indirect call callsite
+[144] at 4C2510:
+ print-summary-global-ids
+ Print the global id for each value when reading the module summary
+[145] at 4C26B0:
+ Import full type definitions for ThinLTO.
+ import-full-type-definitions
+ Force disable the lazy-loading on-demand of metadata when loading bitcode for importing.
+ disable-ondemand-mds-loading
+[146] at 4C2790:
+ bitcode-mdindex-threshold
+ Number of metadatas above which we emit an index to enable lazy-loading
+ write-relbf-to-summary
+ Write relative block frequency to function summary 
+[147] at 4C2A90:
+ use-dbg-addr
+ Use llvm.dbg.addr for all local variables
+[148] at 4C2C10:
+ verify-dom-info
+ cl::location(x) specified more than once!
+ Verify dominator info (time consuming)
+[153] at 4DCAC0:
+ opt-bisect-limit
+ Maximum optimization to perform
+[154] at 4DCC70:
+ safepoint-ir-verifier-print-only
+[155] at 4DCDE0:
+ non-global-value-max-name-size
+ Maximum size for the name of non-global values.
+[156] at 4DD180:
+ pattern
+ pass-remarks
+ Enable optimization remarks from passes whose name match the given regular expression
+ pattern
+ pass-remarks-missed
+ Enable missed optimization remarks from passes whose name match the given regular expression
+ pattern
+ pass-remarks-analysis
+ Enable optimization analysis remarks from passes whose name match the given regular expression
+[158] at 4DD3D0:
+ LLVM_OVERRIDE_PRODUCER
+[159] at 4DD400:
+ static-func-full-module-prefix
+ Use full module build paths in the profile counter names for static functions.
+ static-func-strip-dirname-prefix
+ Strip specified level of directory name from source path in the profile counter name for static functions.
+[161] at 4DE3C0:
+ debug-counter
+ Comma separated list of debug counter skip and count
+ cl::location(x) specified more than once!
+[163] at 4DE5D0:
+ view-background
+ Execute graph viewer in the background. Creates tmp file litter.
+[164] at 4DE760:
+ rng-seed
+ seed
+ Seed for the random number generator
+[165] at 4DE930:
+ disable-symbolication
+ Disable symbolizing crash backtraces.
+ cl::location(x) specified more than once!
+[166] at 4DEB20:
+ stats
+ Enable statistics output from program (available with Asserts)
+ stats-json
+ Display statistics as json data
+[167] at 4DEE10:
+ track-memory
+ Enable -time-passes memory tracking (this may be slow)
+ info-output-file
+ filename
+ File to append -stats and -timer output to
+ cl::location(x) specified more than once!
+[170] at 4E0170:
+ instcombine-guard-widening-window
+ How wide an instruction window to bypass looking for another guard
+[172] at 4E0780:
+ instcombine-max-num-phis
+ Maximum number phis to handle in intptr/ptrint folding
+[173] at 4E0920:
+ bounds-checking-single-trap
+ Use one trap block per function
+[174] at 4E0AA0:
+ default-gcov-version
+ gcov-exit-block-before-body
+[175] at 4E0E30:
+ disable-icp
+ Disable indirect call promotion
+ Max number of promotions for this compilation
+ icp-cutoff
+ Skip Callsite up to this number for this compilation
+ icp-csskip
+ icp-lto
+ Run indirect-call promotion in LTO mode
+ Run indirect-call promotion in SamplePGO mode
+ icp-samplepgo
+ Run indirect-call promotion for call instructions only
+ icp-call-only
+ icp-invoke-only
+ Run indirect-call promotion for invoke instruction only
+ Dump IR after transformation happens
+ icp-dumpafter
+[179] at 4E4420:
+ pgo-memop-count-threshold
+ The minimum count to optimize memory intrinsic calls
+ disable-memop-opt
+ Disable optimize
+ pgo-memop-percent-threshold
+ The percentage threshold for the memory intrinsic calls optimization
+ pgo-memop-max-version
+ The max version for the optimized memory  intrinsic calls
+ pgo-memop-scale-count
+ Scale the memop size counts using the basic  block count value
+[181] at 4E53F0:
+ Instrument memory accesses
+ tsan-instrument-memory-accesses
+ Instrument function entry and exit
+ tsan-instrument-func-entry-exit
+ tsan-handle-cxx-exceptions
+ Handle C++ exceptions (insert cleanup blocks for unwinding)
+ tsan-instrument-atomics
+ Instrument atomics
+ tsan-instrument-memintrinsics
+ Instrument memintrinsics (memset/memcpy/memmove)
+[183] at 4E72A0:
+ dfsan-preserve-alignment
+ respect alignment requirements provided by input IR
+ dfsan-abilist
+ File listing native ABI functions and how the pass treats them
+ dfsan-args-abi
+ Use the argument ABI rather than the TLS ABI
+ dfsan-combine-pointer-labels-on-load
+ Combine the label of the pointer with the label of the data when loading from memory.
+ dfsan-combine-pointer-labels-on-store
+ Combine the label of the pointer with the label of the data when storing in memory.
+ dfsan-debug-nonzero-labels
+ Insert calls to __dfsan_nonzero_label on observing a parameter, load or return with a nonzero label
+[184] at 4E7B60:
+ esan-cache-frag
+ Detect data cache fragmentation
+ esan-working-set
+ Measure the working set size
+ esan-instrument-loads-and-stores
+ Instrument loads and stores
+ esan-instrument-memintrinsics
+ Instrument memintrinsics (memset/memcpy/memmove)
+ esan-instrument-fastpath
+ Instrument fastpath
+ esan-aux-field-info
+ Generate binary with auxiliary struct field information
+ esan-assume-intra-cache-line
+ Assume each memory access touches just one cache line, for better performance but with a potential loss of accuracy.
+[186] at 4E9370:
+ cvp-max-functions-per-value
+ The maximum number of functions to track per lattice value
+[187] at 4E9520:
+ enable-nonnull-arg-prop
+ Try to propagate nonnull argument attributes from callsites to caller functions.
+ disable-nounwind-inference
+ Stop inferring nounwind attribute during function-attrs pass
+[189] at 4EAA90:
+ enable-coldcc-stress-test
+ Enable stress test of coldcc by adding calling conv to all internal functions.
+ coldcc-rel-freq
+ Maximum block frequency, expressed as a percentage of caller's entry frequency, for a call site to be considered cold for enablingcoldcc
+[191] at 4EBC30:
+ internalize-public-api-file
+ filename
+ A file containing list of symbol names to preserve
+ internalize-public-api-list
+ list
+ A list of symbol names to preserve
+[193] at 4EC610:
+ mergefunc-sanity
+ How many functions in module could be used for MergeFunctions pass sanity check. '0' disables this check. Works only with '-debug' key.
+ mergefunc-preserve-debug-info
+ Preserve debug info in thunk when mergefunc transformations are made.
+[195] at 4ED9A0:
+ sample-profile-file
+ filename
+ Profile file loaded by -sample-profile
+ sample-profile-max-propagate-iterations
+ Maximum number of iterations to go through when propagating sample block/edge weights through the CFG.
+ Emit a warning if less than N% of records in the input profile are matched to the IR.
+ sample-profile-check-record-coverage
+ Emit a warning if less than N% of samples in the input profile are matched to the IR.
+ sample-profile-check-sample-coverage
+ no-warn-sample-unused
+ Use this option to turn off/on warnings about function with samples but without debug information to use those samples. 
+[197] at 4EE620:
+ extract-blocks-file
+ filename
+ A file containing list of basic blocks to extract
+ extract-blocks-erase-funcs
+ Erase the existing functions
+[198] at 4EE960:
+ force-attribute
+ Add an attribute to a function. This should be a pair of 'function-name:attribute-name', for example -force-attribute=foo:noinline. This option can be specified multiple times.
+[199] at 4EEB10:
+ adce-remove-control-flow
+ adce-remove-loops
+[200] at 4EEDF0:
+ consthoist-with-block-frequency
+ Enable the use of the block frequency analysis to reduce the chance to execute const materialization more frequently than without hoisting.
+[201] at 4EEF90:
+ cvp-dont-process-adds
+[202] at 4EF100:
+ enable-dse-partial-overwrite-tracking
+ Enable partial-overwrite tracking in DSE
+ enable-dse-partial-store-merging
+ Enable partial store merging in DSE
+[204] at 4EF4B0:
+ float2int-max-integer-bw
+ Max integer bitwidth to consider in float2int(default=64)
+[206] at 4F0180:
+ gvn-max-hoisted
+ Max number of instructions to hoist (default unlimited = -1)
+ gvn-hoist-max-bbs
+ Max number of basic blocks on the path between hoisting locations (default = 4, unlimited = -1)
+ gvn-hoist-max-depth
+ Hoist instructions from the beginning of the BB up to the maximum specified depth (default = 100, unlimited = -1)
+ gvn-hoist-max-chain-length
+ Maximum length of dependent chains to hoist (default = 10, unlimited = -1)
+[208] at 4F1170:
+ irce-loop-size-cutoff
+ irce-print-changed-loops
+ irce-print-range-checks
+ irce-max-exit-prob-reciprocal
+ irce-skip-profitability-checks
+ irce-allow-unsigned-latch
+[210] at 4F20D0:
+ disable-licm-promotion
+ Disable memory promotion in LICM pass
+ licm-max-num-uses-traversed
+ Max num uses visited for identifying load invariance in loop using invariant start (default = 8)
+[211] at 4F2660:
+ use-lir-code-size-heurs
+ Use loop idiom recognition code size heuristics when compilingwith -Os/-Oz
+[212] at 4F2800:
+ loop-interchange-threshold
+ Interchange if you gain more than this number
+[213] at 4F29B0:
+ runtime-check-per-loop-load-elim
+ Max number of memchecks allowed per eliminated load on average
+ loop-load-elimination-scev-check-threshold
+ The maximum number of SCEV checks allowed for Loop Load Elimination
+[214] at 4F2CE0:
+ loop-predication-enable-iv-truncation
+ loop-predication-enable-count-down-loop
+ loop-predication-skip-profitability-checks
+ loop-predication-latch-probability-scale
+ scale factor for the latch probability. Value should be greater than 1. Lower values are ignored
+[215] at 4F3290:
+ reroll-num-tolerated-failed-matches
+ The maximum number of failures to tolerate during fuzzy matching. (default: 400)
+[216] at 4F3440:
+ rotation-max-header-size
+ The default maximum header size for automatic loop rotation
+[217] at 4F35F0:
+ sink-freq-percent-threshold
+ Do not sink instructions that require cloning unless they execute less than this percent of the time.
+ max-uses-for-sinking
+ Do not sink instructions that have too many uses.
+[219] at 4F4560:
+ allow-unroll-and-jam
+ Allows loops to be unroll-and-jammed.
+ unroll-and-jam-count
+ Use this unroll count for all loops including those with unroll_and_jam_count pragma values, for testing purposes
+ unroll-and-jam-threshold
+ Threshold to use for inner loop when doing unroll and jam.
+ pragma-unroll-and-jam-threshold
+ Unrolled size limit for loops with an unroll_and_jam(full) or unroll_count pragma.
+[222] at 4F6A40:
+ licm-versioning-invariant-threshold
+ LoopVersioningLICM's minimum allowed percentageof possible invariant instructions per loop
+ licm-versioning-max-depth-threshold
+ LoopVersioningLICM's threshold for maximum allowed loop nest/depth
+[223] at 4F6D70:
+ likely-branch-weight
+ Weight of the branch likely to be taken (default = 2000)
+ unlikely-branch-weight
+ Weight of the branch unlikely to be taken (default = 1)
+[224] at 4F70A0:
+ Controls which instructions are value numbered
+ newgvn-vn
+ Controls which instructions we create phi of ops for
+ newgvn-phi
+ enable-store-refinement
+ enable-phi-of-ops
+[225] at 4F74B0:
+ sroa-random-shuffle-slices
+ sroa-strict-inbounds
+[226] at 4F7AE0:
+ disable-separate-const-offset-from-gep
+ Do not separate the constant offset from a GEP instruction
+ reassociate-geps-verify-no-dead-code
+ Verify this pass produces no dead code
+[227] at 4F7DF0:
+ enable-nontrivial-unswitch
+ Forcibly enables non-trivial loop unswitching rather than following the configuration passed into the pass.
+ unswitch-threshold
+ The cost threshold for unswitching a loop.
+[228] at 4F8110:
+ bonus-inst-threshold
+ Control the number of bonus instructions (default = 1)
+ keep-loops
+ Preserve canonical loop structure (default = true)
+ switch-to-lookup
+ Convert switches to lookup tables (default = false)
+ forward-switch-cond
+ Forward switch condition to phi ops (default = false)
+ sink-common-insts
+ Sink common instructions (default = false)
+[230] at 4F8CA0:
+ spec-exec-max-speculation-cost
+ Speculative execution is not applied to basic blocks where the cost of the instructions to speculatively execute exceeds this limit.
+ spec-exec-max-not-hoisted
+ Speculative execution is not applied to basic blocks where the number of instructions that would not be speculatively executed exceeds this limit.
+ spec-exec-only-if-divergent-target
+ Speculative execution is applied only to targets with divergent branches, even if the pass was configured to apply only to all targets.
+[231] at 4F9140:
+ structurizecfg-skip-uniform-regions
+ Force whether the StructurizeCFG pass skips uniform regions
+[232] at 4F92E0:
+ callsite-splitting-duplication-threshold
+ Only allow instructions before a call, if their cost is below DuplicationThreshold
+[233] at 4F9490:
+ loop-prefetch-writes
+ Prefetch write addresses
+ prefetch-distance
+ Number of instructions to prefetch ahead
+ min-prefetch-stride
+ Min stride to add prefetches
+ max-prefetch-iters-ahead
+ Max number of iterations to prefetch ahead
+[234] at 4F9A50:
+ Turn on DominatorTree and LoopInfo verification after Loop Distribution
+ loop-distribute-verify
+ loop-distribute-non-if-convertible
+ Whether to distribute into a loop that may not be if-convertible by the loop vectorizer
+ loop-distribute-scev-check-threshold
+ The maximum number of SCEV checks allowed for Loop Distribution
+ loop-distribute-scev-check-threshold-with-pragma
+ The maximum number of SCEV checks allowed for Loop Distribution for loop marked with #pragma loop distribute(enable)
+ Enable the new, experimental LoopDistribution Pass
+ enable-loop-distribute
+[235] at 4F9FE0:
+ guards-predicate-pass-branch-weight
+ The probability of a guard failing is assumed to be the reciprocal of this value (default = 1 << 20)
+[236] at 4FA190:
+ spp-all-backedges
+ spp-counted-loop-trip-width
+ spp-split-backedge
+ spp-no-entry
+ spp-no-call
+ spp-no-backedge
+[237] at 4FA9E0:
+ spp-print-liveset
+ spp-print-liveset-size
+ spp-print-base-pointers
+ spp-rematerialization-threshold
+ rs4gc-clobber-non-live
+ cl::location(x) specified more than once!
+ rs4gc-allow-statepoint-with-no-deopt-info
+[238] at 4FAE70:
+ aggregate-extracted-args
+ Aggregate arguments to code-extracted functions
+[240] at 4FB540:
+ verify-loop-lcssa
+ cl::location(x) specified more than once!
+ Verify loop lcssa form (time consuming)
+[241] at 4FB730:
+ unroll-runtime-epilog
+ Allow runtime unrolled loops to be unrolled with epilog instead of prolog.
+ unroll-verify-domtree
+ Verify domtree after unrolling
+[242] at 4FBA40:
+ unroll-peel-max-count
+ Max average trip count which will cause loop peeling.
+ unroll-force-peel-count
+ Force a peel count regardless of profiling information.
+[243] at 4FBD70:
+ unroll-runtime-multi-exit
+ Allow runtime unrolling for loops with multiple exits, when epilog is generated
+[244] at 4FBF10:
+ loop-version-annotate-no-alias
+ Add no-alias annotation for instructions that are disambiguated by memchecks
+[245] at 4FC0B0:
+ verify-predicateinfo
+ Verify PredicateInfo in legacy printer pass.
+[247] at 4FC680:
+ phi-node-folding-threshold
+ simplifycfg-dup-ret
+ simplifycfg-sink-common
+ simplifycfg-hoist-cond-stores
+ simplifycfg-merge-cond-stores
+ simplifycfg-merge-cond-stores-aggressively
+ speculate-one-expensive-inst
+ Allow exactly one expensive instruction to be speculatively executed
+ max-speculation-depth
+[248] at 4FD0D0:
+ rewrite-map-file
+ Symbol Rewrite Map
+ filename
+[249] at 4FD2A0:
+ no-discriminators
+ Disable generation of discriminator information.
+[253] at 4FEF80:
+ vplan-verify-hcfg
+ Verify VPlan H-CFG.
+[254] at 4FF120:
+ enable-if-conversion
+ Enable if-conversion during vectorization.
+ pragma-vectorize-memory-check-threshold
+ The maximum allowed number of runtime memory checks with a vectorize(enable) pragma.
+ vectorize-scev-check-threshold
+ The maximum number of SCEV checks allowed.
+ pragma-vectorize-scev-check-threshold
+ The maximum number of SCEV checks allowed with a vectorize(enable) pragma
+[273] at 504520:
+ process-alloca-always
+ wmma-memory-space-opt
+ process-builtin-assume
+ dump-process-builtin-assume
+ strong-global-assumptions
+ param-always-point-to-global
+ cl::location(x) specified more than once!
+ dump-ir-before-memory-space-opt
+ dump-ir-after-memory-space-opt
+ track-indir-load
+ track-int2ptr
+[278] at 506190:
+ select-kernel-list
+ list
+ select-kernel-range
+[284] at 507EB0:
+ cudaGetParameterBufferV2
+ cudaLaunchDeviceV2
+[286] at 5082E0:
+ nvvm-reflect-enable
+ NVVM reflection, enabled by default
+ name=<int>
+[288] at 508B70:
+ fast
+ Fast suboptimal list scheduling
+ linearize
+ Linearize DAG, no scheduling
+[290] at 509860:
+ sched-high-latency-cycles
+ Roughly estimate the number of cycles that 'long latency'instructions take for targets with no itinerary
+[291] at 509A10:
+ vliw-td
+ VLIW scheduler
+[292] at 509AA0:
+ enable-memcpy-dag-opt
+ Gang up loads and stores generated by inlining of memcpy
+ ldstmemcpy-glue-max
+ Number limit for gluing ld/st of memcpy.
+[293] at 509DC0:
+ fast-isel-abort
+ Enable abort calls when "fast" instruction selection fails to lower an instruction: 0 disable the abort, 1 will abort but for args, calls and terminators, 2 will also abort for argument lowering, and 3 will never fallback to SelectionDAG.
+ fast-isel-report-on-fallback
+ Emit a diagnostic when "fast" instruction selection falls back to SelectionDAG.
+ use-mbpi
+ use Machine Branch Probability Info
+[294] at 50A590:
+ erlang
+ erlang-compatible garbage collector
+ ocaml
+ ocaml 3.10-compatible GC
+ shadow-stack
+ Very portable GC for uncooperative code generators
+ statepoint-example
+ an example strategy for statepoint
+ coreclr
+ CoreCLR-compatible GC
+[296] at 50B3D0:
+ early-ifcvt-limit
+ Maximum number of instructions per speculated block.
+ stress-early-ifcvt
+ Turn all knobs to 11
+[297] at 50B6E0:
+ memcmp-num-loads-per-block
+ The number of loads per basic block for inline expansion of memcmp that is only being compared against zero.
+[298] at 50B890:
+ ifcvt-fn-start
+ ifcvt-fn-stop
+ ifcvt-limit
+ disable-ifcvt-simple
+ disable-ifcvt-simple-false
+ disable-ifcvt-triangle
+ disable-ifcvt-triangle-rev
+ disable-ifcvt-triangle-false
+ disable-ifcvt-triangle-false-rev
+ disable-ifcvt-diamond
+ disable-ifcvt-forked-diamond
+ ifcvt-branch-fold
+[299] at 50C4A0:
+ imp-null-check-page-size
+ The page size of the target in bytes
+ imp-null-max-insts-to-consider
+ The max number of instructions to consider hoisting loads over (the algorithm is quadratic over this number)
+[300] at 50C7D0:
+ lower-interleaved-accesses
+ Enable lowering interleaved accesses to intrinsics
+[301] at 50C970:
+ live-debug-variables
+ Enable the live debug variables pass
+[302] at 50CB10:
+ use-segment-set-for-physregs
+ Use segment set for the computation of the live ranges of physregs.
+[306] at 50E170:
+ static-likely-prob
+ branch probability threshold in percentageto be considered very likely
+ profile-likely-prob
+ branch probability threshold in percentage to be considered very likely when profile is available
+[307] at 50E470:
+ machine-combiner-inc-threshold
+ Incremental depth computation will be used for basic blocks with more instructions.
+ machine-combiner-dump-subst-intrs
+ Dump all substituted intrs
+ machine-combiner-verify-pattern-order
+ Verify that the generated patterns are ordered by increasing latency
+[310] at 50EE30:
+ verify-machine-dom-info
+ cl::location(x) specified more than once!
+ Verify machine dominator info (time consuming)
+[311] at 50F020:
+ align-all-functions
+ Force the alignment of all functions.
+[312] at 50F2C0:
+ MachineLICM should avoid speculation
+ avoid-speculation
+ MachineLICM should hoist even cheap instructions
+ hoist-cheap-insts
+ sink-insts-to-avoid-spills
+ MachineLICM should sink instructions into loops to avoid register spills
+ hoist-const-stores
+ Hoist invariant stores
+[313] at 50F800:
+ print-regmask-num-regs
+ Number of registers to limit to when printing regmask operands in IR dumps. unlimited = -1
+[314] at 50F9B0:
+ enable-linkonceodr-outlining
+ Enable the machine outliner on linkonceodr functions
+[315] at 50FB50:
+ enable-pipeliner
+ Enable Software Pipelining
+ enable-pipeliner-opt-size
+ Enable SWP at Os.
+ pipeliner-max-mii
+ Size limit for the MII.
+ pipeliner-max-stages
+ Maximum stages allowed in the generated scheduled.
+ pipeliner-prune-deps
+ Prune dependences between unrelated Phi nodes.
+ pipeliner-prune-loop-carried
+ Prune loop carried order dependences.
+ pipeliner-ignore-recmii
+ Ignore RecMII
+[316] at 5100C0:
+ enable-subreg-liveness
+ Enable subregister liveness tracking.
+[318] at 511160:
+ machine-sink-split
+ Split critical edges during machine sinking
+ machine-sink-bfi
+ Use block frequency info to find successors to sink
+ machine-sink-split-probability-threshold
+ Percentage threshold for splitting single-instruction critical edge. If the branch threshold is higher than this threshold, we allow speculative execution of up to 1 instruction to avoid branching to splitted critical edge
+[319] at 5115F0:
+ canon-nth-function
+ Function number to canonicalize.
+ canon-nth-basicblock
+ BasicBlock number to canonicalize.
+[321] at 511BD0:
+ aggressive-ext-opt
+ Aggressive extension optimization
+ disable-peephole
+ Disable the peephole optimizer
+ disable-adv-copy-opt
+ Disable advanced copy optimization
+ disable-non-allocatable-phys-copy-opt
+ Disable non-allocatable physical register copy optimization
+ rewrite-phi-limit
+ Limit the length of PHI chains to lookup
+ recurrence-chain-limit
+ Maximum length of recurrence chain when evaluating the benefit of commuting operands
+[322] at 5124A0:
+ Disable critical edge splitting during PHI elimination
+ disable-phi-elim-edge-splitting
+ phi-elim-split-all-critical-edges
+ Split all critical edges during PHI elimination
+ Do not use an early exit if isLiveOutPastPHIs returns true.
+ no-phi-elim-live-out-early-exit
+[323] at 512710:
+ post-RA-scheduler
+ Enable scheduling after register allocation
+ none
+ Break post-RA scheduling anti-dependencies: "critical", "all", or "none"
+ break-anti-dependencies
+ Debug control MBBs that are scheduled
+ postra-sched-debugdiv
+ Debug control MBBs that are scheduled
+ postra-sched-debugmod
+[324] at 512B30:
+ warn-stack-size
+ Warn for stack size bigger than the given number
+[325] at 512CE0:
+ basic
+ basic register allocator
+[326] at 512D70:
+ fast
+ fast register allocator
+[328] at 513BE0:
+ pbqp
+ PBQP register allocator
+ pbqp-coalescing
+ Attempt coalescing during PBQP register allocation.
+[329] at 513DF0:
+ stress-regalloc
+ Limit all regclasses to N registers
+[330] at 513FC0:
+ join-liveintervals
+ Coalesce copies (default=true)
+ terminal-rule
+ Apply the terminal rule
+ join-splitedges
+ Coalesce copies on split edges (default=subtarget)
+ join-globalcopies
+ Coalesce copies that span blocks (default=subtarget)
+ verify-coalescing
+ Verify machine instrs before and after register coalescing
+[331] at 514710:
+ safestack-use-pointer-address
+[332] at 514890:
+ safe-stack-layout
+ enable safe stack layout
+[333] at 514A30:
+ enable-aa-sched-mi
+ Enable use of AA during MI DAG construction
+ use-tbaa-in-sched-mi
+ Enable use of TBAA during MI DAG construction
+ dag-maps-huge-region
+ The limit to use while constructing the DAG prior to scheduling, at which point a trade-off is made to avoid excessive compile time.
+ dag-maps-reduction-size
+ A huge scheduling region will have maps reduced by this many nodes at a time. Defaults to HugeRegion / 2.
+[334] at 515020:
+ enable-shrink-wrap
+ enable the shrink-wrapping pass
+[335] at 5151B0:
+ no-stack-coloring
+ Disable stack coloring
+ protect-from-escaped-allocas
+ Do not optimize lifetime zones that are broken
+ stackcoloring-lifetime-start-on-first-use
+ Treat stack lifetimes as starting on first use, not on START marker.
+[336] at 515620:
+ enable-patchpoint-liveness
+ Enable PatchPoint Liveness Analysis Pass
+[337] at 5157C0:
+ enable-selectiondag-sp
+[338] at 515940:
+ no-stack-slot-sharing
+ Suppress slot sharing during stack coloring
+ ssc-dce-limit
+[339] at 515C50:
+ tail-dup-size
+ Maximum instructions to consider tail duplicating
+ tail-dup-indirect-size
+ Maximum instructions to consider tail duplicating blocks that end with indirect branches.
+ tail-dup-verify
+ Verify sanity of PHI instructions during taildup
+ tail-dup-limit
+[340] at 516250:
+ disable-sched-hazard
+ Disable hazard detection during preRA scheduling
+[341] at 5163F0:
+ jump-is-expensive
+ Do not create extra branches to split comparison logic.
+ min-jump-table-entries
+ Set minimum number of entries to use a jump table.
+ max-jump-table-size
+ Set maximum size of jump tables; zero for no limit.
+ optsize-jump-table-density
+ Minimum density for building a jump table in an optsize function
+ min-predictable-branch
+ Minimum percentage (0-100) that a condition must be either true or false to assume that the condition is predictable
+[343] at 519510:
+ Use TargetSchedModel for latency lookup
+ schedmodel
+ Use InstrItineraryData for latency lookup
+ scheditins
+[344] at 5195F0:
+ twoaddr-reschedule
+ Coalesce copies by rescheduling (default=true)
+ dataflow-edge-limit
+ Maximum number of dataflow edges to traverse when evaluating the benefit of commuting operands
+[345] at 519910:
+ Clone multicolor basic blocks but do not demote cross scopes
+ disable-demotion
+ Do not remove implausible terminators or other similar cleanups
+ disable-cleanups
+ demote-catchswitch-only
+ Demote catchswitch BBs only (for wasm EH)
+[346] at 519B80:
+ combiner-global-alias-analysis
+ Enable DAG combiner's use of IR alias analysis
+ combiner-use-tbaa
+ Enable DAG combiner's use of TBAA
+ combiner-stress-load-slicing
+ Bypass the profitability model of load slicing
+ combiner-split-load-index
+ DAG combiner may split indexing from loads
+[347] at 51A150:
+ fast-isel-sink-local-values
+ Sink local values in FastISel
+[348] at 51A2F0:
+ enable-legalize-types-checking
+[349] at 51A460:
+ disable-dfa-sched
+ Disable use of DFA during scheduling
+ dfa-sched-reg-pressure-threshold
+ Track reg pressure and switch priority to in-depth
+[350] at 51A780:
+ limit-float-precision
+ Generate low-precision inline sequences for some float libcalls
+ cl::location(x) specified more than once!
+ switch-peel-threshold
+ Set the case probability threshold for peeling the case from a switch statement. A value greater than 100 will void this optimization
+[351] at 51AB10:
+ dag-dump-verbose
+ Display more information when dumping selection DAG nodes.
+[352] at 51ACA0:
+ agg-antidep-debugdiv
+ Debug control for aggressive anti-dep breaker
+ agg-antidep-debugmod
+[353] at 51AD90:
+ enable-tail-merge
+ tail-merge-threshold
+ Max number of predecessors to consider tail merging
+ tail-merge-size
+ Min number of instructions to consider tail merging
+[354] at 51B4B0:
+ verify-cfiinstrs
+ Verify Call Frame Information instructions
+[355] at 51B650:
+ dfa-instr-limit
+ If present, stops packetizing after N instructions
+[356] at 51B800:
+ view-edge-bundles
+ Pop up a window to show edge bundle graphs
+[357] at 51B990:
+ disable-spill-hoist
+ Disable inline spill hoisting
+[359] at 51BB50:
+ verify-regalloc
+ cl::location(x) specified more than once!
+ Verify during register allocation
+[360] at 51BD40:
+ print-regusage
+ print register usage details collected for analysis.
+[361] at 51BEE0:
+ safe-stack-coloring
+ enable safe stack coloring
+[362] at 51C080:
+ stackmap-version
+ Specify the stackmap encoding version (default = 3)
+[364] at 51E0D0:
+ nvptx-no-f16-math
+ NVPTX Specific: Disable generation of f16 math ops.
+[366] at 51F610:
+ nvvm-intr-range-sm
+ SM variant
+[367] at 51F7C0:
+ enable-bfi64
+ Enable generation of 64-bit BFI instructions
+[369] at 5204C0:
+ nvptx-sched4reg
+ NVPTX Specific: schedule for register pressue
+ nvptx-fma-level
+ NVPTX Specific: FMA contraction (0: don't do it 1: do it  2: do it aggressively
+ nvptx-prec-divf32
+ NVPTX Specifies: 0 use div.approx, 1 use div.full, 2 use IEEE Compliant F32 div.rnd with ftz allowed, 3 use IEEE Compliant F32 div.rnd with no ftz.
+ nvptx-prec-sqrtf32
+ NVPTX Specific: 0 use sqrt.approx, 1 use sqrt.rn.
+ nvptx-add-scalar-move-for-vector-load
+ NVPTX add scalar moves for vector loads
+[381] at 521E40:
+ CL-36836380
+ Cuda compilation tools, release 13.1, V13.1.80
+ Build cuda_13.1.r13.1/compiler.36836380_0
+[382] at 521EA0:
+ profgen
+ profuse
+ Name for file that contains profile information
+ proffile
+ sep-comp
+ The file is being compiled under separate compilation mode.
+ merge-pgo-atomics
+ merge pgo atomic counters
+[385] at 528590:
+ Abort when the max iterations for devirtualization CGSCC repeat pass is reached
+ abort-on-max-devirt-iterations-reached
+[386] at 5285E0:
+ callgraph-heat-colors
+ Show heat colors in call-graph
+ callgraph-show-weights
+ Show edges labeled with weights
+ callgraph-multigraph
+ Show call-multigraph (do not remove parallel edges)
+ callgraph-dot-filename-prefix
+ The prefix used for the CallGraph dot file names.
+[387] at 529180:
+ da-delinearize
+ Try to delinearize array references.
+ da-disable-delinearization-checks
+ Disable checks that try to statically verify validity of delinearized subscripts. Enabling this option may result in incorrect dependence vectors for languages that allow the subscript of one dimension to underflow or overflow into another dimension.
+ da-miv-max-level-threshold
+ Maximum depth allowed for the recursive algorithm used to explore MIV direction vectors.
+[390] at 529AC0:
+ no-ir-sim-branch-matching
+ disable similarity matching, and outlining, across branches for debugging purposes.
+ no-ir-sim-indirect-calls
+ disable outlining indirect calls.
+ only allow matching call instructions if the name and type signature match.
+ ir-sim-calls-by-name
+ Don't match or outline intrinsics
+ no-ir-sim-intrinsics
+[392] at 52A4A0:
+ only-simple-regions
+ Show only simple regions in the graphviz viewer
+[393] at 52A720:
+ safepoint-ir-verifier-print-only
+[394] at 52A770:
+ Print a '-passes' compatible string describing the pipeline (best-effort only).
+ print-pipeline-passes
+[397] at 52CE90:
+ no-kernel-info-end-lto
+ remove the kernel-info pass at the end of the full LTO pipeline
+[398] at 52D090:
+ aggressive-instcombine-max-scan-instrs
+ Max number of instructions to scan for aggressive instcombine.
+ strncmp-inline-threshold
+ The maximum length of a constant string for a builtin string cmp call eligible for inlining. The default value is 3.
+ memchr-inline-threshold
+ The maximum length of a constant string to inline a memchr call.
+[400] at 52FA20:
+ Use one trap block per function
+ bounds-checking-single-trap
+[401] at 52FA70:
+ disable-chr
+ Disable CHR for all functions
+ force-chr
+ Apply CHR for all functions
+ chr-bias-threshold
+ CHR considers a branch bias greater than this ratio as biased
+ chr-merge-threshold
+ CHR merges a group of N branches/selects where N >= this value
+ chr-module-list
+ Specify file to retrieve the list of modules to apply CHR to
+ chr-function-list
+ Specify file to retrieve the list of functions to apply CHR to
+ chr-dup-threshold
+ Max number of duplications by CHR for a region
+[403] at 530DF0:
+ default-gcov-version
+ gcov-atomic-counter
+ Make counter updates atomic
+[407] at 5349C0:
+ lower-allow-check-percentile-cutoff-hot
+ Hot percentile cutoff.
+ lower-allow-check-random-rate
+ Probability value in the range [0.0, 1.0] of unconditional pseudo-random checks.
+[410] at 537860:
+ memprof-match-hot-cold-new
+ Match allocation profiles onto existing hot/cold operator new calls
+ memprof-print-match-info
+ Print matching stats for each allocation context in this module's profiles
+ memprof-salvage-stale-profile
+ Salvage stale MemProf profile
+ memprof-attach-calleeguids
+ Attach calleeguids as value profile metadata for indirect calls.
+ memprof-matching-cold-threshold
+ Min percent of cold bytes matched to hint allocation cold
+[412] at 5392B0:
+ profile-context-root
+ A function name, assumed to be global, which will be treated as the root of an interesting graph, which will be profiled independently from other similar graphs.
+[414] at 53AEC0:
+ pgo-memop-count-threshold
+ The minimum count to optimize memory intrinsic calls
+ disable-memop-opt
+ Disable optimize
+ pgo-memop-percent-threshold
+ The percentage threshold for the memory intrinsic calls optimization
+ pgo-memop-max-version
+ The max version for the optimized memory  intrinsic calls
+ pgo-memop-scale-count
+ Scale the memop size counts using the basic  block count value
+ pgo-memop-optimize-memcmp-bcmp
+ Size-specialize memcmp and bcmp calls
+ memop-value-prof-max-opt-size
+ Optimize the memop size <= this value
+[415] at 53BCA0:
+ sanitizer-metadata-weak-callbacks
+ Declare callbacks extern weak, and only call if non-null.
+ sanitizer-metadata-nosanitize-attr
+ Mark some metadata features uncovered in functions with associated no_sanitize attributes.
+ Emit PCs for covered functions.
+ sanitizer-metadata-covered
+ Emit PCs for atomic operations.
+ sanitizer-metadata-atomics
+ sanitizer-metadata-uar
+ Emit PCs for start of functions that are subject for use-after-return checking
+[417] at 53D2E0:
+ Instrument memory accesses
+ tsan-instrument-memory-accesses
+ Instrument function entry and exit
+ tsan-instrument-func-entry-exit
+ tsan-handle-cxx-exceptions
+ Handle C++ exceptions (insert cleanup blocks for unwinding)
+ tsan-instrument-atomics
+ Instrument atomics
+ tsan-instrument-memintrinsics
+ Instrument memintrinsics (memset/memcpy/memmove)
+ tsan-distinguish-volatile
+ Emit special instrumentation for accesses to volatiles
+ tsan-instrument-read-before-write
+ Do not eliminate read instrumentation for read-before-writes
+ Emit special compound instrumentation for reads-before-writes
+ tsan-compound-read-before-write
+[418] at 53DE30:
+ tysan-writes-always-set-type
+ Writes always set the type
+[420] at 53EC40:
+ attributor-manifest-internal
+ Manifest Attributor internal string attributes.
+ max-heap-to-stack-size
+ attributor-max-potential-values
+ Maximum number of potential values to be tracked for each position.
+ cl::location(x) specified more than once!
+ attributor-max-potential-values-iterations
+ Maximum number of iterations we keep dismantling potential values.
+[421] at 53F0D0:
+ extract-blocks-file
+ filename
+ A file containing list of basic blocks to extract
+ extract-blocks-erase-funcs
+ Erase the existing functions
+[422] at 53F510:
+ cvp-max-functions-per-value
+ The maximum number of functions to track per lattice value
+[423] at 53F730:
+ avail-extern-to-local
+ Convert available_externally into locals, renaming them to avoid link-time clashes.
+ avail-extern-gv-in-addrspace-to-local
+ Convert available_externally global variables into locals if they are in specificed addrspace, renaming them to avoid link-time clashes.
+[425] at 53FE80:
+ force-attribute
+ Add an attribute to a function. This can be a pair of 'function-name:attribute-name', to apply an attribute to a specific function. For example -force-attribute=foo:noinline. Specifying only an attribute will apply the attribute to every function in the module. This option can be specified multiple times.
+ force-remove-attribute
+ Remove an attribute from a function. This can be a pair of 'function-name:attribute-name' to remove an attribute from a specific function. For example -force-remove-attribute=foo:noinline. Specifying only an attribute will remove the attribute from all functions in the module. This option can be specified multiple times.
+ forceattrs-csv-path
+ Path to CSV file containing lines of function names and attributes to add to them in the form of `f1,attr1` or `f2,attr2=str`.
+[426] at 540520:
+ enable-nonnull-arg-prop
+ Try to propagate nonnull argument attributes from callsites to caller functions.
+ disable-nounwind-inference
+ Stop inferring nounwind attribute during function-attrs pass
+ disable-nofree-inference
+ Stop inferring nofree attribute during function-attrs pass
+ disable-thinlto-funcattrs
+ Don't propagate function-attrs in thinLTO
+[428] at 541CF0:
+ enable-vfe
+ Enable virtual function elimination
+[429] at 541F00:
+ optimize-non-fmv-callers
+ Statically resolve calls to versioned functions from non-versioned callers.
+ enable-coldcc-stress-test
+ Enable stress test of coldcc by adding calling conv to all internal functions.
+ coldcc-rel-freq
+ Maximum block frequency, expressed as a percentage of caller's entry frequency, for a call site to be considered cold for enabling coldcc
+[430] at 542520:
+ hot-cold-static-analysis
+ hotcoldsplit-threshold
+ Base penalty for splitting cold code (as a multiple of TCC_Basic)
+ enable-cold-section
+ Enable placement of extracted cold functions into a separate section after hot-cold splitting.
+ Name for the section containing cold functions extracted by hot-cold splitting.
+ hotcoldsplit-cold-section-name
+ hotcoldsplit-max-params
+ Maximum number of parameters for a split function
+ hotcoldsplit-cold-probability-denom
+ Divisor of cold branch probability.BranchProbability = 1/ColdBranchProbDenom
+[431] at 542F80:
+ enable-linkonceodr-ir-outlining
+ Enable the IR outliner on linkonceodr functions
+ ir-outlining-no-cost
+ Debug option to outline greedily, without restriction that calculated benefit outweighs cost
+[435] at 5455F0:
+ mergefunc-verify
+ How many functions in a module could be used for MergeFunctions to pass a basic correctness check. '0' disables this check. Works only with '-debug' key.
+ mergefunc-preserve-debug-info
+ Preserve debug info in thunk when mergefunc transformations are made.
+ mergefunc-use-aliases
+ Allow mergefunc to create aliases
+[436] at 545C00:
+ ctx-prof-promote-alwaysinline
+ If using a contextual profile in this module, and an indirect call target is marked as alwaysinline, perform indirect call promotion for that target. If multiple targets for an indirect call site fit this description, they are all promoted.
+[439] at 547650:
+ funcspec-max-iters
+ The maximum number of iterations function specialization is run
+[441] at 549710:
+ func-profile-similarity-threshold
+ Consider a profile matches a function if the similarity of their callee sequences is above the specified percentile.
+ The minimum number of basic blocks required for a function to run stale profile call graph matching.
+ min-func-count-for-cg-matching
+ The minimum number of call anchors required for a function to run stale profile call graph matching.
+ min-call-count-for-cg-matching
+ load-func-profile-for-cg-matching
+ Load top-level profiles that the sample reader initially skipped for the call-graph matching (only meaningful for extended binary format)
+ salvage-stale-profile-max-callsites
+ The maximum number of callsites in a function, above which stale profile matching will be skipped.
+[442] at 549E00:
+ Do pseudo probe verification
+ verify-pseudo-probe
+ verify-pseudo-probe-funcs
+ The option to specify the name of the functions to verify.
+ Update pseudo probe distribution factor
+ update-pseudo-probe
+[443] at 54A130:
+ strip-global-constants
+ Removes debug compile units which reference to non-existing global constants
+[445] at 54B8C0:
+ Enable generation of calls to objc_claimAutoreleasedReturnValue
+ arc-contract-use-objc-claim-rv
+[446] at 54B910:
+ arc-opt-max-ptr-states
+ Maximum number of ptr states the optimizer keeps track of
+[447] at 54BB30:
+ adce-remove-control-flow
+ adce-remove-loops
+[448] at 54BF10:
+ callsite-splitting-duplication-threshold
+ Only allow instructions before a call, if their cost is below DuplicationThreshold
+[449] at 54C130:
+ consthoist-with-block-frequency
+ Enable the use of the block frequency analysis to reduce the chance to execute const materialization more frequently than without hoisting.
+ consthoist-gep
+ Try hoisting constant gep expressions
+ consthoist-min-num-to-rebase
+ Do not rebase if number of dependent constants of a Base is less than this number.
+[450] at 54C750:
+ constraint-elimination-max-rows
+ Maximum number of rows to keep in constraint system
+ constraint-elimination-dump-reproducers
+ Dump IR to reproduce successful transformations.
+[453] at 54DBC0:
+ View the CFG before DFA Jump Threading
+ dfa-jump-view-cfg-before
+ Exit early if an unpredictable value come from the same loop
+ dfa-early-exit-heuristic
+ dfa-max-path-length
+ Max number of blocks searched to find a threading path
+ dfa-max-num-visited-paths
+ Max number of blocks visited while enumerating paths around a switch
+ dfa-max-num-paths
+ Max number of paths enumerated around a switch
+ dfa-cost-threshold
+ Maximum cost accepted for the transformation
+[455] at 54E530:
+ earlycse-mssa-optimization-cap
+ Enable imprecision in EarlyCSE in pathological cases, in exchange for faster compile. Caps the MemorySSA clobbering calls.
+ earlycse-debug-hash
+ Perform extra assertion checking to verify that SimpleValue's hash function is well-behaved w.r.t. its isEqual predicate
+[456] at 54E9E0:
+ float2int-max-integer-bw
+ Max integer bitwidth to consider in float2int(default=64)
+[458] at 54F8B0:
+ gvn-max-hoisted
+ Max number of instructions to hoist (default unlimited = -1)
+ gvn-hoist-max-bbs
+ Max number of basic blocks on the path between hoisting locations (default = 4, unlimited = -1)
+ gvn-hoist-max-depth
+ Hoist instructions from the beginning of the BB up to the maximum specified depth (default = 100, unlimited = -1)
+ gvn-hoist-max-chain-length
+ Maximum length of dependent chains to hoist (default = 10, unlimited = -1)
+[459] at 5500C0:
+ guard-widening-widen-branch-guards
+ Whether or not we should widen guards  expressed as branches by widenable conditions
+[461] at 550D70:
+ irce-loop-size-cutoff
+ irce-print-changed-loops
+ irce-print-range-checks
+ irce-skip-profitability-checks
+ irce-min-eliminated-checks
+ irce-allow-unsigned-latch
+ irce-allow-narrow-latch
+ If set to true, IRCE may eliminate wide range checks in loops with narrow latch condition.
+ irce-max-type-size-for-overflow-check
+ Maximum size of range check type for which can be produced runtime overflow check of its limit's computation
+ irce-print-scaled-boundary-range-checks
+[462] at 551FA0:
+ assume-default-is-flat-addrspace
+ The default address space is assumed as the flat address space. This is mainly for test purpose.
+[463] at 5522E0:
+ jump-table-to-switch-size-threshold
+ Only split jump tables with size less or equal than JumpTableSizeThreshold.
+ jump-table-to-switch-function-size-threshold
+ Only split jump tables containing functions whose sizes are less or equal than this threshold.
+[464] at 5527F0:
+ jump-threading-threshold
+ Max block size to duplicate for jump threading
+ jump-threading-implication-search-threshold
+ The number of predecessors to search for a stronger condition to use to thread over a weaker condition
+ jump-threading-phi-threshold
+ Max PHIs in BB to duplicate for jump threading
+ jump-threading-across-loop-headers
+ Allow JumpThreading to thread across loop headers, for testing
+[466] at 554840:
+ loop-prefetch-writes
+ Prefetch write addresses
+ prefetch-distance
+ Number of instructions to prefetch ahead
+ min-prefetch-stride
+ Min stride to add prefetches
+ max-prefetch-iters-ahead
+ Max number of iterations to prefetch ahead
+[467] at 555000:
+ loop-deletion-enable-symbolic-execution
+ Break backedge through symbolic execution of 1st iteration attempting to prove that the backedge is never taken
+[468] at 555210:
+ loop-distribute-verify
+ Turn on DominatorTree and LoopInfo verification after Loop Distribution
+ loop-distribute-non-if-convertible
+ Whether to distribute into a loop that may not be if-convertible by the loop vectorizer
+ loop-distribute-scev-check-threshold
+ The maximum number of SCEV checks allowed for Loop Distribution
+ loop-distribute-scev-check-threshold-with-pragma
+ The maximum number of SCEV checks allowed for Loop Distribution for loop marked with #pragma clang loop distribute(enable)
+ enable-loop-distribute
+ Enable the new, experimental LoopDistribution Pass
+[469] at 555920:
+ loop-flatten-cost-threshold
+ Limit on the cost of instructions that can be repeated due to loop flattening
+ loop-flatten-assume-no-overflow
+ Assume that the product of the two iteration trip counts will never overflow
+ loop-flatten-widen-iv
+ Widen the loop induction variables, if possible, so overflow checks won't reject flattening
+ loop-flatten-version-loops
+ Version loops if flattened loop could overflow
+[471] at 5564B0:
+ disable-loop-idiom-all
+ Options to disable Loop Idiom Recognize Pass.
+ disable-loop-idiom-memset
+ Proceed with loop idiom recognize pass, but do not convert loop(s) to memset.
+ disable-loop-idiom-memcpy
+ Proceed with loop idiom recognize pass, but do not convert loop(s) to memcpy.
+ disable-loop-idiom-strlen
+ Proceed with loop idiom recognize pass, but do not convert loop(s) to strlen.
+ disable-loop-idiom-wcslen
+ Proceed with loop idiom recognize pass, enable conversion of loop(s) to wcslen.
+ use-lir-code-size-heurs
+ Use loop idiom recognition code size heuristics when compiling with -Os/-Oz
+[473] at 557770:
+ runtime-check-per-loop-load-elim
+ Max number of memchecks allowed per eliminated load on average
+ loop-load-elimination-scev-check-threshold
+ The maximum number of SCEV checks allowed for Loop Load Elimination
+[474] at 557B90:
+ loop-predication-enable-iv-truncation
+ loop-predication-enable-count-down-loop
+ loop-predication-skip-profitability-checks
+ loop-predication-latch-probability-scale
+ scale factor for the latch probability. Value should be greater than 1. Lower values are ignored
+ loop-predication-predicate-widenable-branches-to-deopt
+ Whether or not we should predicate guards expressed as widenable branches to deoptimize blocks
+ loop-predication-insert-assumes-of-predicated-guards-conditions
+ Whether or not we should insert assumes of conditions of predicated guards
+[475] at 558730:
+ rotation-max-header-size
+ The default maximum header size for automatic loop rotation
+ rotation-prepare-for-lto
+ Run loop-rotation in the prepare-for-lto stage. This option should be used for testing only.
+[476] at 558B50:
+ enable-loop-simplifycfg-term-folding
+[477] at 558BA0:
+ sink-freq-percent-threshold
+ Do not sink instructions that require cloning unless they execute less than this percent of the time.
+ max-uses-for-sinking
+ Do not sink instructions that have too many uses.
+[479] at 55A000:
+ allow-unroll-and-jam
+ Allows loops to be unroll-and-jammed.
+ unroll-and-jam-count
+ Use this unroll count for all loops including those with unroll_and_jam_count pragma values, for testing purposes
+ unroll-and-jam-threshold
+ Threshold to use for inner loop when doing unroll and jam.
+ pragma-unroll-and-jam-threshold
+ Unrolled size limit for loops with an unroll_and_jam(full) or unroll_count pragma.
+[481] at 55C130:
+ licm-versioning-invariant-threshold
+ LoopVersioningLICM's minimum allowed percentage of possible invariant instructions per loop
+ licm-versioning-max-depth-threshold
+ LoopVersioningLICM's threshold for maximum allowed loop nest/depth
+[482] at 55C560:
+ likely-branch-weight
+ Weight of the branch likely to be taken (default = 2000)
+ unlikely-branch-weight
+ Weight of the branch unlikely to be taken (default = 1)
+[484] at 55D040:
+ enable-memcpyopt-without-libcalls
+ Enable memcpyopt even when libcalls are disabled
+[485] at 55D240:
+ Controls which instructions are value numbered
+ newgvn-vn
+ Controls which instructions we create phi of ops for
+ newgvn-phi
+ enable-store-refinement
+ enable-phi-of-ops
+[487] at 55D700:
+ spp-all-backedges
+ spp-counted-loop-trip-width
+ spp-split-backedge
+ spp-no-entry
+ spp-no-call
+ spp-no-backedge
+[489] at 55E760:
+ spp-print-liveset
+ spp-print-liveset-size
+ spp-print-base-pointers
+ spp-rematerialization-threshold
+ rs4gc-clobber-non-live
+ cl::location(x) specified more than once!
+ rs4gc-allow-statepoint-with-no-deopt-info
+ rs4gc-remat-derived-at-uses
+[490] at 55EE20:
+ sroa-skip-mem2reg
+[491] at 55F370:
+ disable-separate-const-offset-from-gep
+ Do not separate the constant offset from a GEP instruction
+ reassociate-geps-verify-no-dead-code
+ Verify this pass produces no dead code
+[495] at 561D50:
+ spec-exec-max-speculation-cost
+ Speculative execution is not applied to basic blocks where the cost of the instructions to speculatively execute exceeds this limit.
+ spec-exec-max-not-hoisted
+ Speculative execution is not applied to basic blocks where the number of instructions that would not be speculatively executed exceeds this limit.
+ spec-exec-only-if-divergent-target
+ Speculative execution is applied only to targets with divergent branches, even if the pass was configured to apply only to all targets.
+[497] at 562A10:
+ structurizecfg-skip-uniform-regions
+ Force whether the StructurizeCFG pass skips uniform regions
+ structurizecfg-relaxed-uniform-regions
+ Allow relaxed uniform region checks
+[498] at 562E20:
+ tre-disable-entrycount-recompute
+ Force disabling recomputing of function entry count, on successful tail recursion elimination.
+[499] at 563030:
+ Disable generation of discriminator information.
+ no-discriminators
+[500] at 563090:
+ aggregate-extracted-args
+ Aggregate arguments to code-extracted functions
+[503] at 566300:
+ use-source-filename-for-promoted-locals
+ Uses the source file name instead of the Module hash. This requires that the source filename has a unique name / path to avoid name collisions.
+ thinlto-move-symbols
+ Move the symbols with the given name. This will delete these symbols wherever they are originally defined, and make sure their linkage is External where they are imported. It is meant to be used with the name of contextual profiling roots.
+[504] at 566720:
+ guards-predicate-pass-branch-weight
+ The probability of a guard failing is assumed to be the reciprocal of this value (default = 1 << 20)
+[505] at 566940:
+ enable-noalias-to-md-conversion
+ Convert noalias attributes to metadata during inlining.
+ use-noalias-intrinsic-during-inlining
+ Use the llvm.experimental.noalias.scope.decl intrinsic during inlining.
+ preserve-alignment-assumptions-during-inlining
+ Convert align attributes to assumptions during inlining.
+ max-inst-checked-for-throw-during-inlining
+ the maximum number of instructions analyzed for may throw during attribute inference in inlined body
+[506] at 567150:
+ ignore-redundant-instrumentation
+ Ignore redundant instrumentation
+[507] at 567360:
+ unroll-peel-count
+ Set the unroll peeling count, for testing purposes
+ unroll-allow-peeling
+ Allows loops to be peeled when the dynamic trip count is known to be low.
+ unroll-allow-loop-nests-peeling
+ Allows loop nests to be peeled.
+ unroll-peel-max-count
+ Max average trip count which will cause loop peeling.
+ unroll-force-peel-count
+ Force a peel count regardless of profiling information.
+ disable-advanced-peeling
+ Disable advance peeling. Issues for convergent targets (D134803).
+[508] at 567F70:
+ loop-rotate-multi
+ Allow loop rotation multiple times in order to reach a better latch exit
+[509] at 568270:
+ Allow unrolling in presence of 'convergent' instructions.
+ unroll-runtime-epilog
+ Allow runtime unrolled loops to be unrolled with epilog instead of prolog.
+ unroll-verify-domtree
+ Verify domtree after unrolling
+ unroll-verify-loopinfo
+ Verify loopinfo after unrolling
+ waterfall-unrolling-num-loops
+[510] at 568F80:
+ unroll-runtime-multi-exit
+ Allow runtime unrolling for loops with multiple exits, when epilog is generated
+ unroll-runtime-other-exit-predictable
+ Assume the non latch exit block to be predictable
+[511] at 5694B0:
+ loop-version-annotate-no-alias
+ Add no-alias annotation for instructions that are disambiguated by memchecks
+[512] at 5696C0:
+ rename-exclude-function-prefixes
+ Prefixes for functions that don't need to be renamed, separated by a comma
+ rename-exclude-alias-prefixes
+ Prefixes for aliases that don't need to be renamed, separated by a comma
+ Prefixes for global values that don't need to be renamed, separated by a comma
+ rename-exclude-global-prefixes
+ Prefixes for structs that don't need to be renamed, separated by a comma
+ rename-exclude-struct-prefixes
+ rename-only-inst
+ only rename the instructions in the function
+[513] at 569DA0:
+ pgo-warn-misexpect
+ Use this option to turn on/off warnings about incorrect usage of llvm.expect intrinsics.
+ misexpect-tolerance
+ Prevents emitting diagnostics when profile counts are within N% of the threshold..
+[514] at 56A1B0:
+ move-auto-init-threshold
+ Maximum instructions to analyze per moved initialization
+[515] at 56A3D0:
+ verify-predicateinfo
+ Verify PredicateInfo in legacy printer pass.
+[517] at 56B210:
+ sample-profile-max-propagate-iterations
+ Maximum number of iterations to go through when propagating sample block/edge weights through the CFG.
+ Emit a warning if less than N% of records in the input profile are matched to the IR.
+ sample-profile-check-record-coverage
+ Emit a warning if less than N% of samples in the input profile are matched to the IR.
+ sample-profile-check-sample-coverage
+ no-warn-sample-unused
+ Use this option to turn off/on warnings about function with samples but without debug information to use those samples. 
+ sample-profile-use-profi
+ Use profi to infer block and edge counts.
+[518] at 56B860:
+ rewrite-map-file
+ Symbol Rewrite Map
+ filename
+[519] at 56BAC0:
+ max-booleans-in-control-flow-hub
+ Set the maximum number of outgoing blocks for using a boolean value to record the exiting block in the ControlFlowHub.
+[520] at 56BCE0:
+ enable-evl-indvar-simplify
+ Enable EVL-based induction variable simplify Pass
+[526] at 570730:
+ sbvec-print-pass-pipeline
+ Prints the pass pipeline and returns.
+ sbvec-passes
+ Comma-separated list of vectorizer passes. If not set we run the predefined pipeline.
+ sbvec-allow-files
+ Run the vectorizer only on file paths that match any in the list of comma-separated regex's.
+[527] at 570E00:
+ disable-vector-combine
+ Disable all vector combine transforms
+ disable-binop-extract-shuffle
+ Disable binop extract to shuffle transforms
+ vector-combine-max-scan-instrs
+ Max number of instructions to scan for vector combining.
+[528] at 571420:
+ vplan-print-in-dot-format
+ Use dot format instead of plain text when dumping VPlans
+[537] at 5742D0:
+ process-alloca-always
+ wmma-memory-space-opt
+ process-builtin-assume
+ dump-process-builtin-assume
+ strong-global-assumptions
+ param-always-point-to-global
+ cl::location(x) specified more than once!
+ dump-ir-before-memory-space-opt
+ dump-ir-after-memory-space-opt
+ track-indir-load
+ track-int2ptr
+[543] at 577160:
+ select-kernel-list
+ list
+ select-kernel-range
+[547] at 577EC0:
+ cudaGetParameterBufferV2
+ cudaLaunchDeviceV2
+[549] at 578090:
+ nvvm-reflect-enable
+ NVVM reflection, enabled by default
+ nvvm-reflect-add
+ name=<int>
+ A key=value pair. Replace __nvvm_reflect(name) with value.
+ cl::alias must only have one cl::aliasopt(...) specified!
+[550] at 5786C0:
+ force-instr-ref-livedebugvalues
+ Use instruction-ref based LiveDebugValues with normal DBG_VALUE inputs
+ experimental-debug-variable-locations
+ Use experimental new value-tracking variable locations
+ livedebugvalues-input-bb-limit
+ Maximum input basic blocks before DBG_VALUE limit applies
+ livedebugvalues-input-dbg-value-limit
+ Maximum input DBG_VALUE insts supported by debug range extension
+[551] at 578EB0:
+ debug-ata-max-blocks
+ Maximum num basic blocks before debug info dropped
+ mem-loc-frag-fill
+ print-debug-ata
+ debug-ata-coalesce-frags
+[552] at 579310:
+ enable-tail-merge
+ tail-merge-threshold
+ Max number of predecessors to consider tail merging
+ tail-merge-size
+ Min number of instructions to consider tail merging
+[554] at 57ABC0:
+ enable-complex-deinterleaving
+ Enable generation of complex instructions
+[555] at 57ADD0:
+ early-ifcvt-limit
+ Maximum number of instructions per speculated block.
+ stress-early-ifcvt
+ Turn all knobs to 11
+[556] at 57B1E0:
+ view-edge-bundles
+ Pop up a window to show edge bundle graphs
+[557] at 57B3E0:
+ expand-div-rem-bits
+ div and rem instructions on integers with more than <N> bits are expanded.
+[558] at 57B600:
+ expand-fp-convert-bits
+ fp convert instructions on integers with more than <N> bits are expanded.
+[559] at 57B820:
+ memcmp-num-loads-per-block
+ The number of loads per basic block for inline expansion of memcmp that is only being compared against zero.
+ max-loads-per-memcmp
+ Set maximum number of loads used in expanded memcmp
+ max-loads-per-memcmp-opt-size
+ Set maximum number of loads used in expanded memcmp for -Os/Oz
+[560] at 57BE00:
+ fixup-scs-extend-slot-size
+ Allow spill in spill slot of greater size than register size
+ fixup-allow-gcptr-in-csr
+ Allow passing GC Pointer arguments in callee saved registers
+ fixup-scs-enable-copy-propagation
+ Enable simple copy propagation during register reloading
+ fixup-max-csr-statepoints
+ Max number of statepoints allowed to pass GC Ptrs in registers
+[561] at 57C5F0:
+ enable-global-merge
+ Enable the global merge pass
+ global-merge-max-offset
+ Set maximum offset for global merge pass
+ global-merge-group-by-use
+ Improve global merge pass to look at uses
+ global-merge-all-const
+ Merge all const globals without looking at uses
+ global-merge-ignore-single-use
+ Improve global merge pass to ignore globals only used alone
+ global-merge-on-const
+ Enable global merge pass on constants
+ global-merge-on-external
+ Enable global merge pass on external linkage
+ global-merge-min-data-size
+ The minimum size in bytes of each global that should considered in merging.
+[562] at 57D5D0:
+ disable-cgdata-for-merging
+ Disable codegen data for function merging. Local merging is still enabled within a module.
+[563] at 57D7E0:
+ force-hardware-loops
+ Force hardware loops intrinsics to be inserted
+ force-hardware-loop-phi
+ Force hardware loop counter to be updated through a phi
+ force-nested-hardware-loop
+ Force allowance of nested hardware loops
+ hardware-loop-decrement
+ Set the loop decrement value
+ hardware-loop-counter-bitwidth
+ Set the loop counter bitwidth
+ force-hardware-loop-guard
+ Force generation of loop guard intrinsic
+[564] at 57E3F0:
+ lower-interleaved-accesses
+ Enable lowering interleaved accesses to intrinsics
+[565] at 57E600:
+ disable-interleaved-load-combine
+ Disable combining of interleaved loads
+[566] at 57E810:
+ live-debug-variables
+ Enable the live debug variables pass
+[567] at 57EA20:
+ use-segment-set-for-physregs
+ Use segment set for the computation of the live ranges of physregs.
+[569] at 57EC40:
+ print-slotindexes
+ When printing machine IR, annotate instructions and blocks with SlotIndexes when available
+[572] at 5811F0:
+ static-likely-prob
+ branch probability threshold in percentage to be considered very likely
+ profile-likely-prob
+ branch probability threshold in percentage to be considered very likely when profile is available
+[573] at 5815B0:
+ mcp-use-is-copy-instr
+ enable-spill-copy-elim
+[574] at 581B00:
+ csuses-threshold
+ Threshold for the size of CSUses
+ Enable PRE in MachineCSE
+ aggressive-machine-cse
+ Override the profitability heuristics for Machine CSE
+[575] at 5820D0:
+ Verify machine dominator info (time consuming)
+ verify-machine-dom-info
+[576] at 582140:
+ align-all-functions
+ Force the alignment of all functions in log2 format (e.g. 4 means align on 16B boundaries).
+[577] at 582360:
+ dropped-variable-stats-mir
+ Dump dropped debug variables stats for MIR passes
+[578] at 582570:
+ print-mi-addrs
+ Print addresses of MachineInstrs when dumping
+[580] at 582E60:
+ print-regmask-num-regs
+ Number of registers to limit to when printing regmask operands in IR dumps. unlimited = -1
+[581] at 583080:
+ enable-subreg-liveness
+ Enable subregister liveness tracking.
+[583] at 584A60:
+ machine-sink-split
+ Split critical edges during machine sinking
+ machine-sink-bfi
+ Use block frequency info to find successors to sink
+ machine-sink-split-probability-threshold
+ Percentage threshold for splitting single-instruction critical edge. If the branch threshold is higher than this threshold, we allow speculative execution of up to 1 instruction to avoid branching to splitted critical edge
+ Do not try to find alias store for a load if there is a in-path block whose instruction number is higher than this threshold.
+ machine-sink-load-instrs-threshold
+ Do not try to find alias store for a load if the block number in the straight line is higher than this threshold.
+ machine-sink-load-blocks-threshold
+ sink-insts-to-avoid-spills
+ Sink instructions into cycles to avoid register spills
+ machine-sink-cycle-limit
+ The maximum number of instructions considered for cycle sinking.
+[584] at 585550:
+ misched-fusion
+ Enable scheduling for macro fusion.
+[585] at 585760:
+ simplify-mir
+ Leave out unnecessary information when printing MIR
+ mir-debug-loc
+ Print MIR debug-locations
+[587] at 585CA0:
+ aggressive-ext-opt
+ Aggressive extension optimization
+ disable-peephole
+ Disable the peephole optimizer
+ disable-adv-copy-opt
+ Disable advanced copy optimization
+ disable-non-allocatable-phys-copy-opt
+ Disable non-allocatable physical register copy optimization
+ rewrite-phi-limit
+ Limit the length of PHI chains to lookup
+ recurrence-chain-limit
+ Maximum length of recurrence chain when evaluating the benefit of commuting operands
+[588] at 586880:
+ Disable critical edge splitting during PHI elimination
+ disable-phi-elim-edge-splitting
+ phi-elim-split-all-critical-edges
+ Split all critical edges during PHI elimination
+ Do not use an early exit if isLiveOutPastPHIs returns true.
+ no-phi-elim-live-out-early-exit
+[589] at 586E60:
+ post-RA-scheduler
+ Enable scheduling after register allocation
+ none
+ break-anti-dependencies
+ Break post-RA scheduling anti-dependencies: "critical", "all", or "none"
+ Debug control MBBs that are scheduled
+ postra-sched-debugdiv
+ Debug control MBBs that are scheduled
+ postra-sched-debugmod
+[590] at 5871B0:
+ mem-intrinsic-expand-size
+ Set minimum mem intrinsic size to expand in IR
+[592] at 587930:
+ rafast-ignore-missing-defs
+ fast
+ fast register allocator
+[595] at 588F80:
+ stress-regalloc
+ Limit all regclasses to N registers
+[596] at 5891B0:
+ join-liveintervals
+ Coalesce copies (default=true)
+ terminal-rule
+ Apply the terminal rule
+ join-splitedges
+ Coalesce copies on split edges (default=subtarget)
+ join-globalcopies
+ Coalesce copies that span blocks (default=subtarget)
+ verify-coalescing
+ Verify machine instrs before and after register coalescing
+ late-remat-update-threshold
+ During rematerialization for a copy, if the def instruction has many other copy uses to be rematerialized, delay the multiple separate live interval update work and do them all at once after all those rematerialization are done. It will save a lot of repeated work. 
+ If the valnos size of an interval is larger than the threshold, it is regarded as a large interval. 
+ large-interval-size-threshold
+ For a large interval, if it is coalesced with other live intervals many times more than the threshold, stop its coalescing to control the compile time. 
+ large-interval-freq-threshold
+[597] at 589E50:
+ print-regusage
+ print register usage details collected for analysis.
+[598] at 58A060:
+ safestack-use-pointer-address
+ safe-stack-coloring
+ enable safe stack coloring
+[599] at 58A460:
+ safe-stack-layout
+ enable safe stack layout
+[600] at 58A670:
+ enable-aa-sched-mi
+ Enable use of AA during MI DAG construction
+ use-tbaa-in-sched-mi
+ Enable use of TBAA during MI DAG construction
+ Use TargetSchedModel for latency lookup
+ schedmodel
+ Use InstrItineraryData for latency lookup
+ scheditins
+ dag-maps-huge-region
+ The limit to use while constructing the DAG prior to scheduling, at which point a trade-off is made to avoid excessive compile time.
+ dag-maps-reduction-size
+ A huge scheduling region will have maps reduced by this many nodes at a time. Defaults to HugeRegion / 2.
+[601] at 58AF10:
+ cold-operand-threshold
+ Maximum frequency of path for an operand to be considered cold.
+ cold-operand-max-cost-multiplier
+ Maximum cost multiplier of TCC_expensive for the dependence slice of a cold operand to be considered inexpensive.
+ select-opti-loop-gradient-gain-threshold
+ Gradient gain threshold (%).
+ select-opti-loop-cycle-gain-threshold
+ Minimum gain per loop (in cycles) threshold.
+ select-opti-loop-relative-gain-threshold
+ Minimum relative gain per loop threshold (1/X). Defaults to 12.5%
+ mispredict-default-rate
+ Default mispredict rate (initialized to 25%).
+ disable-loop-level-heuristics
+ Disable loop-level heuristics.
+[602] at 58BA10:
+ enable-shrink-wrap
+ enable the shrink-wrapping pass
+ enable-shrink-wrap-region-split
+ enable splitting of the restore block if possible
+[603] at 58BE20:
+ enable-split-loopiv-heuristic
+ Enable loop iv regalloc heuristic
+[604] at 58BE80:
+ no-stack-coloring
+ Disable stack coloring
+ protect-from-escaped-allocas
+ Do not optimize lifetime zones that are broken
+ stackcoloring-lifetime-start-on-first-use
+ Treat stack lifetimes as starting on first use, not on START marker.
+[605] at 58C480:
+ stackmap-version
+ Specify the stackmap encoding version (default = 3)
+[606] at 58C6A0:
+ enable-selectiondag-sp
+ disable-check-noreturn-call
+[607] at 58CA80:
+ no-stack-slot-sharing
+ Suppress slot sharing during stack coloring
+ ssc-dce-limit
+[608] at 58CE90:
+ tail-dup-size
+ Maximum instructions to consider tail duplicating
+ tail-dup-indirect-size
+ Maximum instructions to consider tail duplicating blocks that end with indirect branches.
+ Maximum predecessors (maximum successors at the same time) to consider tail duplicating blocks.
+ tail-dup-pred-size
+ Maximum successors (maximum predecessors at the same time) to consider tail duplicating blocks.
+ tail-dup-succ-size
+ tail-dup-verify
+ Verify sanity of PHI instructions during taildup
+ tail-dup-limit
+[609] at 58D760:
+ disable-sched-hazard
+ Disable hazard detection during preRA scheduling
+ acc-reassoc
+ Enable reassociation of accumulation chains
+ Minimum length of accumulator chains required for the optimization to kick in
+ acc-min-depth
+ Maximum number of branches in the accumulator tree
+ acc-max-width
+[610] at 58DC40:
+ jump-is-expensive
+ Do not create extra branches to split comparison logic.
+ min-jump-table-entries
+ Set minimum number of entries to use a jump table.
+ max-jump-table-size
+ Set maximum size of jump tables.
+ optsize-jump-table-density
+ Minimum density for building a jump table in an optsize function
+ disable-strictnode-mutation
+ Don't mutate strict-float node to a legalize node
+[612] at 592D60:
+ huge-size-for-split
+ A threshold of live range size which may cause high compile time cost in global splitting.
+[613] at 592F80:
+ sched-model-force-enable-intervals
+ Force the use of resource intervals in the schedule model
+[614] at 593190:
+ twoaddr-reschedule
+ Coalesce copies by rescheduling (default=true)
+ dataflow-edge-limit
+ Maximum number of dataflow edges to traverse when evaluating the benefit of commuting operands
+[615] at 5935B0:
+ ms-secure-hotpatch-functions-file
+ filename
+ A file containing list of mangled function names to mark for Windows Secure Hot-Patching
+ ms-secure-hotpatch-functions-list
+ list
+ A list of mangled function names to mark for Windows Secure Hot-Patching
+[616] at 593A30:
+ Clone multicolor basic blocks but do not demote cross scopes
+ disable-demotion
+ Do not remove implausible terminators or other similar cleanups
+ disable-cleanups
+ demote-catchswitch-only
+ Demote catchswitch BBs only (for wasm EH)
+[617] at 593D10:
+ sm_100
+ sm_100a
+ sm_100f
+ sm_101
+ sm_101a
+ sm_101f
+ sm_102
+ sm_102a
+ sm_102f
+ sm_103
+ sm_103a
+ sm_103f
+ sm_110
+ sm_110a
+ sm_110f
+ sm_120
+ sm_120a
+ sm_120f
+ sm_121
+ sm_121a
+ sm_121f
+ sm_20
+ sm_21
+ sm_30
+ sm_32
+ sm_35
+ sm_37
+ sm_50
+ sm_52
+ sm_53
+ sm_60
+ sm_61
+ sm_62
+ sm_70
+ sm_72
+ sm_73
+ sm_75
+ sm_80
+ sm_82
+ sm_86
+ sm_87
+ sm_88
+ sm_89
+ sm_90
+ sm_90a
+[618] at 594150:
+ nvptx-lower-global-ctor-dtor
+ Lower GPU ctor / dtors to globals on the device.
+[620] at 595150:
+ nvptx-no-f16-math
+ NVPTX Specific: Disable generation of f16 math ops.
+[626] at 598170:
+ bar
+ bar
+ bar
+ heavy-const-expr-size
+ This option is a no-op and will be removed
+ remat-loop-trip
+[627] at 5986B0:
+ lnk-disable-allopts
+ Disable all lnk Optimization passes
+[629] at 5988F0:
+ print-all-alias-modref-info
+ print-no-aliases
+ print-may-aliases
+ print-partial-aliases
+ print-must-aliases
+ print-no-modref
+ print-ref
+ print-mod
+ print-modref
+ evaluate-aa-metadata
+[630] at 5997A0:
+ max-devirt-iterations
+[633] at 59A1B0:
+ ddg-simplify
+ Simplify DDG by merging nodes that have less interesting edges.
+ ddg-pi-blocks
+ Create pi-block nodes.
+[634] at 59A5C0:
+ dot-ddg-only
+ simple ddg dot graph
+ dot-ddg-filename-prefix
+ The prefix used for the DDG dot file names.
+[635] at 59AA40:
+ enable-detailed-function-properties
+ Whether or not to compute detailed function properties.
+ big-basic-block-instruction-threshold
+ The minimum number of instructions a basic block should contain before being considered big.
+ medium-basic-block-instruction-threshold
+ The minimum number of instructions a basic block should contain before being considered medium-sized.
+ call-with-many-arguments-threshold
+ The minimum number of arguments a function call must have before it is considered having many arguments.
+[636] at 59B230:
+ IR2Vec Options
+ ir2vec-vocab-path
+ Path to the vocabulary file for IR2Vec
+ ir2vec-opc-weight
+ Weight for opcode embeddings
+ ir2vec-type-weight
+ Weight for type embeddings
+ ir2vec-arg-weight
+ Weight for argument embeddings
+[640] at 59E3C0:
+ default-trip-count
+ Use this to specify the default trip count of a loop
+ temporal-reuse-threshold
+ Use this to specify the max. distance between array elements accessed in a loop so that the elements are classified to have temporal reuse
+[642] at 5A0A40:
+ enable-objc-arc-opts
+ enable/disable all ARC Optimizations
+[643] at 5A0AC0:
+ INVALID
+ float
+ double
+ int8_t
+ uint8_t
+ int16_t
+ uint16_t
+ int32_t
+ uint32_t
+ int64_t
+ uint64_t
+[644] at 5A0BF0:
+ codegen-data-generate
+ Emit CodeGen Data into custom sections
+ codegen-data-use-path
+ File path to where .cgdata file is read
+ codegen-data-thinlto-two-rounds
+ Enable two-round ThinLTO code generation. The first round emits codegen data, while the second round uses the emitted codegen data for further optimizations.
+[645] at 5A1250:
+ indexed-codegen-data-read-function-map-names
+ Read function map names in indexed CodeGenData. Can be disabled to save memory and time for final consumption of the indexed CodeGenData in production.
+[647] at 5A1E60:
+ openmp-ir-builder-optimistic-attributes
+ Use optimistic attributes describing 'as-if' properties of runtime calls.
+ openmp-ir-builder-unroll-threshold-factor
+ Factor for the unroll threshold to account for code simplifications still taking place
+[648] at 5A2290:
+ omp_no_openmp
+ omp_no_openmp_routines
+ omp_no_parallelism
+ omp_no_openmp_constructs
+ ompx_spmd_amenable
+ ompx_no_call_asm
+ ompx_aligned_barrier
+[651] at 5A2920:
+ memprof-lifetime-access-density-cold-threshold
+ The threshold the lifetime access density (accesses per byte per lifetime sec) must be under to consider an allocation cold
+ memprof-ave-lifetime-cold-threshold
+ The average lifetime (s) for an allocation to be considered cold
+ memprof-min-ave-lifetime-access-density-hot-threshold
+ The minimum TotalLifetimeAccessDensity / AllocCount for an allocation to be considered hot
+ memprof-use-hot-hints
+ Enable use of hot hints (only supported for unambigously hot allocations)
+[654] at 5A5040:
+ sbvec-stop-at
+ Vectorize if the invocation count is < than this. 0 disables vectorization.
+ sbvec-stop-bndl
+ Vectorize up to this many bundles.
+[655] at 5A5470:
+ sbvec-vec-reg-bits
+ Override the vector register size in bits, which is otherwise found by querying TTI.
+ sbvec-allow-non-pow2
+ Allow non-power-of-2 vectorization.
+ sbvec-collect-seeds
+ Collect these seeds. Use empty for none or a comma-separated list of 'stores' and 'loads'.
+[656] at 5A5AF0:
+ sbvec-cost-threshold
+ Vectorization cost threshold.
+[657] at 5A5D10:
+ sbvec-seed-bundle-size-limit
+ Limit the size of the seed bundle to cap compilation time.
+ sbvec-seed-groups-limit
+ Limit the number of collected seeds groups in a BB to cap compilation time.
+[661] at 5A6A40:
+ trim-var-locs
+[662] at 5A6AA0:
+ erlang
+ erlang-compatible garbage collector
+[664] at 5A81D0:
+ ocaml
+ ocaml 3.10-compatible collector
+[666] at 5A9800:
+ Fast suboptimal list scheduling
+ fast
+ Linearize DAG, no scheduling
+ linearize
+[668] at 5AA7A0:
+ sched-high-latency-cycles
+ Roughly estimate the number of cycles that 'long latency' instructions take for targets with no itinerary
+[669] at 5AA9C0:
+ vliw-td
+ VLIW scheduler
+[670] at 5AAA60:
+ insert-assert-align
+ Insert the experimental `assertalign` node.
+ limit-float-precision
+ Generate low-precision inline sequences for some float libcalls
+ cl::location(x) specified more than once!
+ switch-peel-threshold
+ Set the case probability threshold for peeling the case from a switch statement. A value greater than 100 will void this optimization
+[671] at 5AB0D0:
+ enable-memcpy-dag-opt
+ Gang up loads and stores generated by inlining of memcpy
+ ldstmemcpy-glue-max
+ Number limit for gluing ld/st of memcpy.
+ has-predecessor-max-steps
+ DAG combiner limit number of steps when searching DAG for predecessor nodes
+[672] at 5AB6F0:
+ dag-dump-verbose
+ Display more information when dumping selection DAG nodes.
+[673] at 5AB8F0:
+ fast-isel-abort
+ Enable abort calls when "fast" instruction selection fails to lower an instruction: 0 disable the abort, 1 will abort but for args, calls and terminators, 2 will also abort for argument lowering, and 3 will never fallback to SelectionDAG.
+ fast-isel-report-on-fallback
+ Emit a diagnostic when "fast" instruction selection falls back to SelectionDAG.
+ use-mbpi
+ use Machine Branch Probability Info
+[674] at 5AC260:
+ use-registers-for-deopt-values
+ Allow using registers for non pointer deopt args
+ use-registers-for-gc-values-in-landing-pad
+ Allow using registers for gc pointer in landing pad
+ max-registers-for-gc-values
+ Max number of VRegs allowed to pass GC pointer meta args in
+[675] at 5AC880:
+ emulate-old-livedebugvalues
+ Act like old LiveDebugValues did
+ livedebugvalues-max-stack-slots
+ livedebugvalues-stack-ws-limit
+[676] at 5ACCD0:
+ agg-antidep-debugdiv
+ Debug control for aggressive anti-dep breaker
+ agg-antidep-debugmod
+[677] at 5ACDC0:
+ The text prefix to use for cold basic block clusters
+ bbsections-cold-text-prefix
+ bbsections-detect-source-drift
+ This checks if there is a fdo instr. profile hash mismatch for this function
+[678] at 5AD1E0:
+ partial-unrolling-threshold
+ Threshold for partial unrolling
+[679] at 5AD3E0:
+ trap-unreachable
+ Enable generating trap for unreachable
+ no-trap-after-noreturn
+ Do not emit a trap instruction for 'unreachable' IR instructions after noreturn calls, even if --trap-unreachable is set.
+[680] at 5AD7D0:
+ expandvp-override-evl-transform
+ Options: <empty>|Legal|Discard|Convert. If non-empty, ignore TargetTransformInfo and always use this transformation for the %evl parameter (Used in testing).
+ expandvp-override-mask-transform
+ Options: <empty>|Legal|Discard|Convert. If non-empty, Ignore TargetTransformInfo and always use this transformation for the %mask parameter (Used in testing).
+[681] at 5ADCC0:
+ ifcvt-fn-start
+ ifcvt-fn-stop
+ ifcvt-limit
+ disable-ifcvt-simple
+ disable-ifcvt-simple-false
+ disable-ifcvt-triangle
+ disable-ifcvt-triangle-rev
+ disable-ifcvt-triangle-false
+ disable-ifcvt-diamond
+ disable-ifcvt-forked-diamond
+ ifcvt-branch-fold
+[682] at 5AEB30:
+ imp-null-check-page-size
+ The page size of the target in bytes
+ imp-null-max-insts-to-consider
+ The max number of instructions to consider hoisting loads over (the algorithm is quadratic over this number)
+[683] at 5AEF60:
+ restrict-statepoint-remat
+ Restrict remat for statepoint operands
+[685] at 5AF1A0:
+ mcfg-func-name
+ The name of a function (or its substring) whose CFG is viewed/printed.
+ mcfg-dot-filename-prefix
+ The prefix used for the Machine CFG dot file names.
+ dot-mcfg-only
+ Print only the CFG without blocks body
+[686] at 5AF7F0:
+ machine-combiner-inc-threshold
+ Incremental depth computation will be used for basic blocks with more instructions.
+ machine-combiner-dump-subst-intrs
+ Dump all substituted intrs
+ machine-combiner-verify-pattern-order
+ Verify that the generated patterns are ordered by increasing latency
+[687] at 5AFE00:
+ mfs-psi-cutoff
+ Percentile profile summary cutoff used to determine cold blocks. Unused if set to zero.
+ mfs-count-threshold
+ Minimum number of times a block must be executed to be retained.
+ mfs-split-ehcode
+ Splits all EH code and it's descendants by default.
+[688] at 5B0420:
+ enable-linkonceodr-outlining
+ Enable the machine outliner on linkonceodr functions
+ machine-outliner-reruns
+ Number of times to rerun the outliner after the initial outline
+ outliner-benefit-threshold
+ The minimum size in bytes before an outlining candidate is accepted
+ outliner-leaf-descendants
+ Consider all leaf descendants of internal nodes of the suffix tree as candidates for outlining (if false, only leaf children are considered)
+ disable-global-outlining
+ Disable global outlining only by ignoring the codegen data generation or use
+ append-content-hash-outlined-name
+ This appends the content hash to the globally outlined function name. It's beneficial for enhancing the precision of the stable hash and for ordering the outlined functions.
+[690] at 5B20B0:
+ mir-strip-debugify-only
+ Should mir-strip-debug only strip debug info from debugified modules by default
+[691] at 5B2110:
+ canon-nth-function
+ Function number to canonicalize.
+[692] at 5B2340:
+ improved-fs-discriminator
+ New FS discriminators encoding (incompatible with the original encoding)
+[693] at 5B2540:
+ show-fs-branchprob
+ Print setting flow sensitive branch probabilities
+ fs-profile-debug-prob-diff-threshold
+ Only show debug message if the branch probability is greater than this value (in percentage).
+ fs-profile-debug-bw-threshold
+ Only show debug message if the source branch weight is greater  than this value.
+ fs-viewbfi-before
+ View BFI before MIR loader
+ fs-viewbfi-after
+ View BFI after MIR loader
+[694] at 5B2F30:
+ mir-vreg-namer-use-stable-hash
+ Use Stable Hashing for MIR VReg Renaming
+[695] at 5B3140:
+ regalloc-evict-interactive-channel-base
+ Base file path for the interactive mode. The incoming filename should have the name <regalloc-evict-interactive-channel-base>.in, while the outgoing name should be <regalloc-evict-interactive-channel-base>.out
+ mlregalloc-max-eviction-count
+ The maximum number of times a live range can be evicted before preventing it from being evicted
+ index_to_evict
+[697] at 5B3B60:
+ pipeliner-swap-branch-targets-mve
+ Swap target blocks of a conditional branch for MVE expander
+[698] at 5B3D70:
+ Verify during register allocation
+ verify-regalloc
+[699] at 5B3DE0:
+ basic
+ basic register allocator
+[700] at 5B3E80:
+ pbqp
+ PBQP register allocator
+ pbqp-coalescing
+ Attempt coalescing during PBQP register allocation.
+[701] at 5B4120:
+ enable-patchpoint-liveness
+ Enable PatchPoint Liveness Analysis Pass
+[702] at 5B4330:
+ disable-type-promotion
+ Disable type promotion pass
+[703] at 5B4540:
+ The number of searches per loop in the window algorithm. 0 means no search number limit.
+ window-search-num
+ The ratio of searches per loop in the window algorithm. 100 means search all positions in the loop, while 0 means not performing any search.
+ window-search-ratio
+ The coefficient used when initializing II in the window algorithm.
+ window-ii-coeff
+ The lower limit of the scheduling region in the window algorithm.
+ window-region-limit
+ The lower limit of the difference between best II and base II in the window algorithm. If the difference is smaller than this lower limit, window scheduling will not be performed.
+ window-diff-limit
+ The upper limit of II in the window algorithm.
+ window-ii-limit
+[704] at 5B4780:
+ nvptx-use-max-local-array-alignment
+ Use maximum alignment for local memory
+[705] at 5B4A80:
+ nvptx-traverse-address-aliasing-limit
+ Depth limit for finding address space through traversal
+[706] at 5B4DD0:
+ Override unique ID of ctor/dtor globals.
+ nvptx-lower-global-ctor-dtor-id
+ nvptx-emit-init-fini-kernel
+ Emit kernels to call ctor/dtor globals.
+[711] at 5B5F80:
+ interactive-model-runner-echo-reply
+ The InteractiveModelRunner will echo back to stderr the data received from the host (for debugging purposes).
+[713] at 5B61C0:
+ S_COMPILE
+ S_REGISTER_16t
+ S_CONSTANT_16t
+ S_UDT_16t
+ S_SSEARCH
+ S_SKIP
+ S_CVRESERVE
+ S_OBJNAME_ST
+ S_ENDARG
+ S_COBOLUDT_16t
+ S_MANYREG_16t
+ S_RETURN
+ S_ENTRYTHIS
+ S_BPREL16
+ S_LDATA16
+ S_GDATA16
+ S_PUB16
+ S_LPROC16
+ S_GPROC16
+ S_THUNK16
+ S_BLOCK16
+ S_WITH16
+ S_LABEL16
+ S_CEXMODEL16
+ S_VFTABLE16
+ S_REGREL16
+ S_BPREL32_16t
+ S_LDATA32_16t
+ S_GDATA32_16t
+ S_PUB32_16t
+ S_LPROC32_16t
+ S_GPROC32_16t
+ S_THUNK32_ST
+ S_BLOCK32_ST
+ S_WITH32_ST
+ S_LABEL32_ST
+ S_CEXMODEL32
+ S_VFTABLE32_16t
+ S_REGREL32_16t
+ S_LTHREAD32_16t
+ S_GTHREAD32_16t
+ S_SLINK32
+ S_LPROCMIPS_16t
+ S_GPROCMIPS_16t
+ S_PROCREF_ST
+ S_DATAREF_ST
+ S_ALIGN
+ S_LPROCREF_ST
+ S_OEM
+ S_TI16_MAX
+ S_REGISTER_ST
+ S_CONSTANT_ST
+ S_UDT_ST
+ S_COBOLUDT_ST
+ S_MANYREG_ST
+ S_BPREL32_ST
+ S_LDATA32_ST
+ S_GDATA32_ST
+ S_PUB32_ST
+ S_LPROC32_ST
+ S_GPROC32_ST
+ S_VFTABLE32
+ S_REGREL32_ST
+ S_LTHREAD32_ST
+ S_GTHREAD32_ST
+ S_LPROCMIPS_ST
+ S_GPROCMIPS_ST
+ S_COMPILE2_ST
+ S_MANYREG2_ST
+ S_LPROCIA64_ST
+ S_GPROCIA64_ST
+ S_LOCALSLOT_ST
+ S_PARAMSLOT_ST
+ S_GMANPROC_ST
+ S_LMANPROC_ST
+ S_RESERVED1
+ S_RESERVED2
+ S_RESERVED3
+ S_RESERVED4
+ S_LMANDATA_ST
+ S_GMANDATA_ST
+ S_MANFRAMEREL_ST
+ S_MANREGISTER_ST
+ S_MANSLOT_ST
+ S_MANMANYREG_ST
+ S_MANREGREL_ST
+ S_MANMANYREG2_ST
+ S_MANTYPREF
+ S_UNAMESPACE_ST
+ S_ST_MAX
+ S_WITH32
+ S_MANYREG
+ S_LPROCMIPS
+ S_GPROCMIPS
+ S_MANYREG2
+ S_LPROCIA64
+ S_GPROCIA64
+ S_LOCALSLOT
+ S_PARAMSLOT
+ S_MANFRAMEREL
+ S_MANREGISTER
+ S_MANSLOT
+ S_MANMANYREG
+ S_MANREGREL
+ S_MANMANYREG2
+ S_DATAREF
+ S_ANNOTATIONREF
+ S_TOKENREF
+ S_GMANPROC
+ S_LMANPROC
+ S_ATTR_FRAMEREL
+ S_ATTR_REGISTER
+ S_ATTR_REGREL
+ S_ATTR_MANYREG
+ S_SEPCODE
+ S_LOCAL_2005
+ S_DEFRANGE_2005
+ S_DEFRANGE2_2005
+ S_DISCARDED
+ S_LPROCMIPS_ID
+ S_GPROCMIPS_ID
+ S_LPROCIA64_ID
+ S_GPROCIA64_ID
+ S_DEFRANGE_HLSL
+ S_GDATA_HLSL
+ S_LDATA_HLSL
+ S_LOCAL_DPC_GROUPSHARED
+ S_DEFRANGE_DPC_PTR_TAG
+ S_DPC_SYM_TAG_MAP
+ S_POGODATA
+ S_INLINESITE2
+ S_MOD_TYPEREF
+ S_REF_MINIPDB
+ S_PDBMAP
+ S_GDATA_HLSL32
+ S_LDATA_HLSL32
+ S_GDATA_HLSL32_EX
+ S_LDATA_HLSL32_EX
+ S_FASTLINK
+ S_INLINEES
+ S_END
+ S_INLINESITE_END
+ S_PROC_ID_END
+ S_THUNK32
+ S_TRAMPOLINE
+ S_SECTION
+ S_COFFGROUP
+ S_EXPORT
+ S_LPROC32
+ S_GPROC32
+ S_LPROC32_ID
+ S_GPROC32_ID
+ S_LPROC32_DPC
+ S_LPROC32_DPC_ID
+ S_REGISTER
+ S_PUB32
+ S_PROCREF
+ S_LPROCREF
+ S_ENVBLOCK
+ S_INLINESITE
+ S_LOCAL
+ S_DEFRANGE
+ S_DEFRANGE_SUBFIELD
+ S_DEFRANGE_REGISTER
+ S_DEFRANGE_FRAMEPOINTER_REL
+ S_DEFRANGE_SUBFIELD_REGISTER
+ S_DEFRANGE_FRAMEPOINTER_REL_FULL_SCOPE
+ S_DEFRANGE_REGISTER_REL
+ S_BLOCK32
+ S_LABEL32
+ S_OBJNAME
+ S_COMPILE2
+ S_COMPILE3
+ S_FRAMEPROC
+ S_CALLSITEINFO
+ S_FILESTATIC
+ S_HEAPALLOCSITE
+ S_FRAMECOOKIE
+ S_ARMSWITCHTABLE
+ S_CALLEES
+ S_CALLERS
+ S_UDT
+ S_COBOLUDT
+ S_BUILDINFO
+ S_BPREL32
+ S_REGREL32
+ S_CONSTANT
+ S_MANCONSTANT
+ S_LDATA32
+ S_GDATA32
+ S_LMANDATA
+ S_GMANDATA
+ S_LTHREAD32
+ S_GTHREAD32
+ S_UNAMESPACE
+ S_ANNOTATION
+ S_HOTPATCHFUNC
+ LF_POINTER
+ LF_MODIFIER
+ LF_PROCEDURE
+ LF_MFUNCTION
+ LF_LABEL
+ LF_ARGLIST
+ LF_FIELDLIST
+ LF_ARRAY
+ LF_CLASS
+ LF_STRUCTURE
+ LF_INTERFACE
+ LF_UNION
+ LF_ENUM
+ LF_TYPESERVER2
+ LF_VFTABLE
+ LF_VTSHAPE
+ LF_BITFIELD
+ LF_BCLASS
+ LF_BINTERFACE
+ LF_VBCLASS
+ LF_IVBCLASS
+ LF_VFUNCTAB
+ LF_STMEMBER
+ LF_METHOD
+ LF_MEMBER
+ LF_NESTTYPE
+ LF_ONEMETHOD
+ LF_ENUMERATE
+ LF_INDEX
+ LF_FUNC_ID
+ LF_MFUNC_ID
+ LF_BUILDINFO
+ LF_SUBSTR_LIST
+ LF_STRING_ID
+ LF_UDT_SRC_LINE
+ LF_UDT_MOD_SRC_LINE
+ LF_METHODLIST
+ LF_PRECOMP
+ LF_ENDPRECOMP
+ LF_MODIFIER_16t
+ LF_POINTER_16t
+ LF_ARRAY_16t
+ LF_CLASS_16t
+ LF_STRUCTURE_16t
+ LF_UNION_16t
+ LF_ENUM_16t
+ LF_PROCEDURE_16t
+ LF_MFUNCTION_16t
+ LF_COBOL0_16t
+ LF_COBOL1
+ LF_BARRAY_16t
+ LF_NULLLEAF
+ LF_NOTTRAN
+ LF_DIMARRAY_16t
+ LF_VFTPATH_16t
+ LF_PRECOMP_16t
+ LF_OEM_16t
+ LF_TYPESERVER_ST
+ LF_SKIP_16t
+ LF_ARGLIST_16t
+ LF_DEFARG_16t
+ LF_LIST
+ LF_FIELDLIST_16t
+ LF_DERIVED_16t
+ LF_BITFIELD_16t
+ LF_METHODLIST_16t
+ LF_DIMCONU_16t
+ LF_DIMCONLU_16t
+ LF_DIMVARU_16t
+ LF_DIMVARLU_16t
+ LF_REFSYM
+ LF_BCLASS_16t
+ LF_VBCLASS_16t
+ LF_IVBCLASS_16t
+ LF_ENUMERATE_ST
+ LF_FRIENDFCN_16t
+ LF_INDEX_16t
+ LF_MEMBER_16t
+ LF_STMEMBER_16t
+ LF_METHOD_16t
+ LF_NESTTYPE_16t
+ LF_VFUNCTAB_16t
+ LF_FRIENDCLS_16t
+ LF_ONEMETHOD_16t
+ LF_VFUNCOFF_16t
+ LF_TI16_MAX
+ LF_ARRAY_ST
+ LF_CLASS_ST
+ LF_STRUCTURE_ST
+ LF_UNION_ST
+ LF_ENUM_ST
+ LF_COBOL0
+ LF_BARRAY
+ LF_DIMARRAY_ST
+ LF_VFTPATH
+ LF_PRECOMP_ST
+ LF_OEM
+ LF_ALIAS_ST
+ LF_OEM2
+ LF_SKIP
+ LF_DEFARG_ST
+ LF_DERIVED
+ LF_DIMCONU
+ LF_DIMCONLU
+ LF_DIMVARU
+ LF_DIMVARLU
+ LF_FRIENDFCN_ST
+ LF_MEMBER_ST
+ LF_STMEMBER_ST
+ LF_METHOD_ST
+ LF_NESTTYPE_ST
+ LF_FRIENDCLS
+ LF_ONEMETHOD_ST
+ LF_VFUNCOFF
+ LF_NESTTYPEEX_ST
+ LF_MEMBERMODIFY_ST
+ LF_MANAGED_ST
+ LF_ST_MAX
+ LF_TYPESERVER
+ LF_DIMARRAY
+ LF_ALIAS
+ LF_DEFARG
+ LF_FRIENDFCN
+ LF_NESTTYPEEX
+ LF_MEMBERMODIFY
+ LF_MANAGED
+ LF_STRIDED_ARRAY
+ LF_HLSL
+ LF_MODIFIER_EX
+ LF_VECTOR
+ LF_MATRIX
+ LF_NUMERIC
+ LF_CHAR
+ LF_SHORT
+ LF_USHORT
+ LF_LONG
+ LF_ULONG
+ LF_REAL32
+ LF_REAL64
+ LF_REAL80
+ LF_REAL128
+ LF_QUADWORD
+ LF_UQUADWORD
+ LF_REAL48
+ LF_COMPLEX32
+ LF_COMPLEX64
+ LF_COMPLEX80
+ LF_COMPLEX128
+ LF_VARSTRING
+ LF_OCTWORD
+ LF_UOCTWORD
+ LF_DECIMAL
+ LF_DATE
+ LF_UTF8STRING
+ LF_REAL16
+ LF_PAD0
+ LF_PAD1
+ LF_PAD2
+ LF_PAD3
+ LF_PAD4
+ LF_PAD5
+ LF_PAD6
+ LF_PAD7
+ LF_PAD8
+ LF_PAD9
+ LF_PAD10
+ LF_PAD11
+ LF_PAD12
+ LF_PAD13
+ LF_PAD14
+ LF_PAD15
+ ERR
+ TEB
+ TIMER
+ EFAD1
+ EFAD2
+ EFAD3
+ VFRAME
+ HANDLE
+ PARAMS
+ LOCALS
+ TID
+ ENV
+ CMDLN
+ NONE
+ AL
+ CL
+ DL
+ BL
+ AH
+ CH
+ DH
+ BH
+ AX
+ CX
+ DX
+ BX
+ SP
+ BP
+ SI
+ DI
+ EAX
+ ECX
+ EDX
+ EBX
+ ESP
+ EBP
+ ESI
+ EDI
+ ES
+ CS
+ SS
+ DS
+ FS
+ GS
+ IP
+ FLAGS
+ EIP
+ EFLAGS
+ TEMP
+ TEMPH
+ QUOTE
+ PCDR3
+ PCDR4
+ PCDR5
+ PCDR6
+ PCDR7
+ CR0
+ CR1
+ CR2
+ CR3
+ CR4
+ DR0
+ DR1
+ DR2
+ DR3
+ DR4
+ DR5
+ DR6
+ DR7
+ GDTR
+ GDTL
+ IDTR
+ IDTL
+ LDTR
+ TR
+ PSEUDO1
+ PSEUDO2
+ PSEUDO3
+ PSEUDO4
+ PSEUDO5
+ PSEUDO6
+ PSEUDO7
+ PSEUDO8
+ PSEUDO9
+ ST0
+ ST1
+ ST2
+ ST3
+ ST4
+ ST5
+ ST6
+ ST7
+ CTRL
+ STAT
+ TAG
+ FPIP
+ FPCS
+ FPDO
+ FPDS
+ ISEM
+ FPEIP
+ FPEDO
+ MM0
+ MM1
+ MM2
+ MM3
+ MM4
+ MM5
+ MM6
+ MM7
+ XMM0
+ XMM1
+ XMM2
+ XMM3
+ XMM4
+ XMM5
+ XMM6
+ XMM7
+ MXCSR
+ EDXEAX
+ EMM0L
+ EMM1L
+ EMM2L
+ EMM3L
+ EMM4L
+ EMM5L
+ EMM6L
+ EMM7L
+ EMM0H
+ EMM1H
+ EMM2H
+ EMM3H
+ EMM4H
+ EMM5H
+ EMM6H
+ EMM7H
+ MM00
+ MM01
+ MM10
+ MM11
+ MM20
+ MM21
+ MM30
+ MM31
+ MM40
+ MM41
+ MM50
+ MM51
+ MM60
+ MM61
+ MM70
+ MM71
+ BND0
+ BND1
+ BND2
+ XMM8
+ XMM9
+ XMM10
+ XMM11
+ XMM12
+ XMM13
+ XMM14
+ XMM15
+ SIL
+ DIL
+ BPL
+ SPL
+ RAX
+ RBX
+ RCX
+ RDX
+ RSI
+ RDI
+ RBP
+ RSP
+ R8
+ R9
+ R10
+ R11
+ R12
+ R13
+ R14
+ R15
+ R8B
+ R9B
+ R10B
+ R11B
+ R12B
+ R13B
+ R14B
+ R15B
+ R8W
+ R9W
+ R10W
+ R11W
+ R12W
+ R13W
+ R14W
+ R15W
+ R8D
+ R9D
+ R10D
+ R11D
+ R12D
+ R13D
+ R14D
+ R15D
+ AMD64_YMM0
+ AMD64_YMM1
+ AMD64_YMM2
+ AMD64_YMM3
+ AMD64_YMM4
+ AMD64_YMM5
+ AMD64_YMM6
+ AMD64_YMM7
+ AMD64_YMM8
+ AMD64_YMM9
+ AMD64_YMM10
+ AMD64_YMM11
+ AMD64_YMM12
+ AMD64_YMM13
+ AMD64_YMM14
+ AMD64_YMM15
+ AMD64_XMM16
+ AMD64_XMM17
+ AMD64_XMM18
+ AMD64_XMM19
+ AMD64_XMM20
+ AMD64_XMM21
+ AMD64_XMM22
+ AMD64_XMM23
+ AMD64_XMM24
+ AMD64_XMM25
+ AMD64_XMM26
+ AMD64_XMM27
+ AMD64_XMM28
+ AMD64_XMM29
+ AMD64_XMM30
+ AMD64_XMM31
+ AMD64_YMM16
+ AMD64_YMM17
+ AMD64_YMM18
+ AMD64_YMM19
+ AMD64_YMM20
+ AMD64_YMM21
+ AMD64_YMM22
+ AMD64_YMM23
+ AMD64_YMM24
+ AMD64_YMM25
+ AMD64_YMM26
+ AMD64_YMM27
+ AMD64_YMM28
+ AMD64_YMM29
+ AMD64_YMM30
+ AMD64_YMM31
+ AMD64_ZMM0
+ AMD64_ZMM1
+ AMD64_ZMM2
+ AMD64_ZMM3
+ AMD64_ZMM4
+ AMD64_ZMM5
+ AMD64_ZMM6
+ AMD64_ZMM7
+ AMD64_ZMM8
+ AMD64_ZMM9
+ AMD64_ZMM10
+ AMD64_ZMM11
+ AMD64_ZMM12
+ AMD64_ZMM13
+ AMD64_ZMM14
+ AMD64_ZMM15
+ AMD64_ZMM16
+ AMD64_ZMM17
+ AMD64_ZMM18
+ AMD64_ZMM19
+ AMD64_ZMM20
+ AMD64_ZMM21
+ AMD64_ZMM22
+ AMD64_ZMM23
+ AMD64_ZMM24
+ AMD64_ZMM25
+ AMD64_ZMM26
+ AMD64_ZMM27
+ AMD64_ZMM28
+ AMD64_ZMM29
+ AMD64_ZMM30
+ AMD64_ZMM31
+ AMD64_K0
+ AMD64_K1
+ AMD64_K2
+ AMD64_K3
+ AMD64_K4
+ AMD64_K5
+ AMD64_K6
+ AMD64_K7
+ ARM_NOREG
+ ARM_R0
+ ARM_R1
+ ARM_R2
+ ARM_R3
+ ARM_R4
+ ARM_R5
+ ARM_R6
+ ARM_R7
+ ARM_R8
+ ARM_R9
+ ARM_R10
+ ARM_R11
+ ARM_R12
+ ARM_SP
+ ARM_LR
+ ARM_PC
+ ARM_CPSR
+ ARM_FPSCR
+ ARM_FPEXC
+ ARM_FS0
+ ARM_FS1
+ ARM_FS2
+ ARM_FS3
+ ARM_FS4
+ ARM_FS5
+ ARM_FS6
+ ARM_FS7
+ ARM_FS8
+ ARM_FS9
+ ARM_FS10
+ ARM_FS11
+ ARM_FS12
+ ARM_FS13
+ ARM_FS14
+ ARM_FS15
+ ARM_FS16
+ ARM_FS17
+ ARM_FS18
+ ARM_FS19
+ ARM_FS20
+ ARM_FS21
+ ARM_FS22
+ ARM_FS23
+ ARM_FS24
+ ARM_FS25
+ ARM_FS26
+ ARM_FS27
+ ARM_FS28
+ ARM_FS29
+ ARM_FS30
+ ARM_FS31
+ ARM_FS32
+ ARM_FS33
+ ARM_FS34
+ ARM_FS35
+ ARM_FS36
+ ARM_FS37
+ ARM_FS38
+ ARM_FS39
+ ARM_FS40
+ ARM_FS41
+ ARM_FS42
+ ARM_FS43
+ ARM_FS44
+ ARM_FS45
+ ARM_FS46
+ ARM_FS47
+ ARM_FS48
+ ARM_FS49
+ ARM_FS50
+ ARM_FS51
+ ARM_FS52
+ ARM_FS53
+ ARM_FS54
+ ARM_FS55
+ ARM_FS56
+ ARM_FS57
+ ARM_FS58
+ ARM_FS59
+ ARM_FS60
+ ARM_FS61
+ ARM_FS62
+ ARM_FS63
+ ARM_ND0
+ ARM_ND1
+ ARM_ND2
+ ARM_ND3
+ ARM_ND4
+ ARM_ND5
+ ARM_ND6
+ ARM_ND7
+ ARM_ND8
+ ARM_ND9
+ ARM_ND10
+ ARM_ND11
+ ARM_ND12
+ ARM_ND13
+ ARM_ND14
+ ARM_ND15
+ ARM_ND16
+ ARM_ND17
+ ARM_ND18
+ ARM_ND19
+ ARM_ND20
+ ARM_ND21
+ ARM_ND22
+ ARM_ND23
+ ARM_ND24
+ ARM_ND25
+ ARM_ND26
+ ARM_ND27
+ ARM_ND28
+ ARM_ND29
+ ARM_ND30
+ ARM_ND31
+ ARM_NQ0
+ ARM_NQ1
+ ARM_NQ2
+ ARM_NQ3
+ ARM_NQ4
+ ARM_NQ5
+ ARM_NQ6
+ ARM_NQ7
+ ARM_NQ8
+ ARM_NQ9
+ ARM_NQ10
+ ARM_NQ11
+ ARM_NQ12
+ ARM_NQ13
+ ARM_NQ14
+ ARM_NQ15
+ ARM64_NOREG
+ ARM64_W0
+ ARM64_W1
+ ARM64_W2
+ ARM64_W3
+ ARM64_W4
+ ARM64_W5
+ ARM64_W6
+ ARM64_W7
+ ARM64_W8
+ ARM64_W9
+ ARM64_W10
+ ARM64_W11
+ ARM64_W12
+ ARM64_W13
+ ARM64_W14
+ ARM64_W15
+ ARM64_W16
+ ARM64_W17
+ ARM64_W18
+ ARM64_W19
+ ARM64_W20
+ ARM64_W21
+ ARM64_W22
+ ARM64_W23
+ ARM64_W24
+ ARM64_W25
+ ARM64_W26
+ ARM64_W27
+ ARM64_W28
+ ARM64_W29
+ ARM64_W30
+ ARM64_WZR
+ ARM64_X0
+ ARM64_X1
+ ARM64_X2
+ ARM64_X3
+ ARM64_X4
+ ARM64_X5
+ ARM64_X6
+ ARM64_X7
+ ARM64_X8
+ ARM64_X9
+ ARM64_X10
+ ARM64_X11
+ ARM64_X12
+ ARM64_X13
+ ARM64_X14
+ ARM64_X15
+ ARM64_X16
+ ARM64_X17
+ ARM64_X18
+ ARM64_X19
+ ARM64_X20
+ ARM64_X21
+ ARM64_X22
+ ARM64_X23
+ ARM64_X24
+ ARM64_X25
+ ARM64_X26
+ ARM64_X27
+ ARM64_X28
+ ARM64_FP
+ ARM64_LR
+ ARM64_SP
+ ARM64_ZR
+ ARM64_NZCV
+ ARM64_S0
+ ARM64_S1
+ ARM64_S2
+ ARM64_S3
+ ARM64_S4
+ ARM64_S5
+ ARM64_S6
+ ARM64_S7
+ ARM64_S8
+ ARM64_S9
+ ARM64_S10
+ ARM64_S11
+ ARM64_S12
+ ARM64_S13
+ ARM64_S14
+ ARM64_S15
+ ARM64_S16
+ ARM64_S17
+ ARM64_S18
+ ARM64_S19
+ ARM64_S20
+ ARM64_S21
+ ARM64_S22
+ ARM64_S23
+ ARM64_S24
+ ARM64_S25
+ ARM64_S26
+ ARM64_S27
+ ARM64_S28
+ ARM64_S29
+ ARM64_S30
+ ARM64_S31
+ ARM64_D0
+ ARM64_D1
+ ARM64_D2
+ ARM64_D3
+ ARM64_D4
+ ARM64_D5
+ ARM64_D6
+ ARM64_D7
+ ARM64_D8
+ ARM64_D9
+ ARM64_D10
+ ARM64_D11
+ ARM64_D12
+ ARM64_D13
+ ARM64_D14
+ ARM64_D15
+ ARM64_D16
+ ARM64_D17
+ ARM64_D18
+ ARM64_D19
+ ARM64_D20
+ ARM64_D21
+ ARM64_D22
+ ARM64_D23
+ ARM64_D24
+ ARM64_D25
+ ARM64_D26
+ ARM64_D27
+ ARM64_D28
+ ARM64_D29
+ ARM64_D30
+ ARM64_D31
+ ARM64_Q0
+ ARM64_Q1
+ ARM64_Q2
+ ARM64_Q3
+ ARM64_Q4
+ ARM64_Q5
+ ARM64_Q6
+ ARM64_Q7
+ ARM64_Q8
+ ARM64_Q9
+ ARM64_Q10
+ ARM64_Q11
+ ARM64_Q12
+ ARM64_Q13
+ ARM64_Q14
+ ARM64_Q15
+ ARM64_Q16
+ ARM64_Q17
+ ARM64_Q18
+ ARM64_Q19
+ ARM64_Q20
+ ARM64_Q21
+ ARM64_Q22
+ ARM64_Q23
+ ARM64_Q24
+ ARM64_Q25
+ ARM64_Q26
+ ARM64_Q27
+ ARM64_Q28
+ ARM64_Q29
+ ARM64_Q30
+ ARM64_Q31
+ ARM64_FPSR
+ ARM64_FPCR
+ ARM64_B0
+ ARM64_B1
+ ARM64_B2
+ ARM64_B3
+ ARM64_B4
+ ARM64_B5
+ ARM64_B6
+ ARM64_B7
+ ARM64_B8
+ ARM64_B9
+ ARM64_B10
+ ARM64_B11
+ ARM64_B12
+ ARM64_B13
+ ARM64_B14
+ ARM64_B15
+ ARM64_B16
+ ARM64_B17
+ ARM64_B18
+ ARM64_B19
+ ARM64_B20
+ ARM64_B21
+ ARM64_B22
+ ARM64_B23
+ ARM64_B24
+ ARM64_B25
+ ARM64_B26
+ ARM64_B27
+ ARM64_B28
+ ARM64_B29
+ ARM64_B30
+ ARM64_B31
+ ARM64_H0
+ ARM64_H1
+ ARM64_H2
+ ARM64_H3
+ ARM64_H4
+ ARM64_H5
+ ARM64_H6
+ ARM64_H7
+ ARM64_H8
+ ARM64_H9
+ ARM64_H10
+ ARM64_H11
+ ARM64_H12
+ ARM64_H13
+ ARM64_H14
+ ARM64_H15
+ ARM64_H16
+ ARM64_H17
+ ARM64_H18
+ ARM64_H19
+ ARM64_H20
+ ARM64_H21
+ ARM64_H22
+ ARM64_H23
+ ARM64_H24
+ HasFP
+ ARM64_H25
+ ARM64_H26
+ ARM64_H27
+ ARM64_H28
+ ARM64_H29
+ ARM64_H30
+ ARM64_H31
+ Code
+ Function
+ Managed
+ MSIL
+ HasIRET
+ HasFRET
+ IsNoReturn
+ IsUnreachable
+ HasCustomCallingConv
+ IsNoInline
+ HasOptimizedDebugInfo
+ IsParameter
+ IsAddressTaken
+ IsCompilerGenerated
+ IsAggregate
+ IsAggregated
+ IsAliased
+ IsAlias
+ IsReturnValue
+ ManagedPresent
+ NoDataAlign
+ LTCG
+ IsOptimizedOut
+ IsEnregisteredGlobal
+ IsEnregisteredStatic
+ Copy
+ XorStackPointer
+ XorFramePointer
+ NoDbgInfo
+ EC
+ HotPatch
+ SecurityChecks
+ XorR13
+ Cpp
+ Fortran
+ Masm
+ Pascal
+ Basic
+ Cobol
+ Link
+ Cvtres
+ Cvtpgd
+ CSharp
+ VB
+ ILAsm
+ Java
+ HLSL
+ JScript
+ Rust
+ Swift
+ ObjC
+ ObjCpp
+ AliasObj
+ Go
+ CVTCIL
+ MSILModule
+ Sdl
+ PGO
+ TrampIncremental
+ None
+ Exp
+ None
+ MD5
+ SHA1
+ SHA256
+ Intel8080
+ Intel8086
+ Intel80286
+ Intel80386
+ Intel80486
+ Pentium
+ PentiumPro
+ Pentium3
+ MIPS
+ MIPS16
+ MIPS32
+ MIPS64
+ MIPSI
+ MIPSII
+ MIPSIII
+ MIPSIV
+ MIPSV
+ M68000
+ M68010
+ M68020
+ M68030
+ M68040
+ Alpha
+ Alpha21164
+ Alpha21164A
+ Alpha21264
+ Alpha21364
+ PPC601
+ PPC603
+ PPC604
+ PPC620
+ PPCFP
+ PPCBE
+ SH3
+ SH3E
+ SH3DSP
+ SH4
+ SHMedia
+ ARM3
+ ARM4
+ ARM4T
+ ARM5
+ ARM5T
+ ARM6
+ ARM_XMAC
+ ARM_WMMX
+ ARM7
+ Omni
+ Ia64
+ Ia64_2
+ CEE
+ AM33
+ M32R
+ TriCore
+ X64
+ EBC
+ Thumb
+ ARMNT
+ ARM64
+ HybridX86ARM64
+ ARM64EC
+ ARM64X
+ Unknown
+ D3D11_Shader
+ HasAlloca
+ HasSetJmp
+ HasLongJmp
+ HasInlineAssembly
+ HasExceptionHandling
+ MarkedInline
+ HasStructuredExceptionHandling
+ Naked
+ AsynchronousExceptionHandling
+ NoStackOrderingForSecurityChecks
+ Inlined
+ StrictSecurityChecks
+ SafeBuffers
+ EncodedLocalBasePointerMask
+ EncodedParamBasePointerMask
+ ProfileGuidedOptimization
+ ValidProfileCounts
+ OptimizedForSpeed
+ GuardCfg
+ GuardCfw
+ Symbols
+ Lines
+ StringTable
+ FileChecksums
+ FrameData
+ InlineeLines
+ CrossScopeImports
+ CrossScopeExports
+ ILLines
+ FuncMDTokenMap
+ TypeMDTokenMap
+ MergedAssemblyInput
+ CoffSymbolRVA
+ IsConstant
+ IsData
+ IsPrivate
+ HasNoName
+ HasExplicitOrdinal
+ IsForwarder
+ Standard
+ ThisAdjustor
+ Vcall
+ Pcode
+ UnknownLoad
+ BranchIsland
+ IMAGE_SCN_TYPE_NOLOAD
+ IMAGE_SCN_TYPE_NO_PAD
+ IMAGE_SCN_CNT_CODE
+ IMAGE_SCN_CNT_INITIALIZED_DATA
+ IMAGE_SCN_CNT_UNINITIALIZED_DATA
+ IMAGE_SCN_LNK_OTHER
+ IMAGE_SCN_LNK_INFO
+ IMAGE_SCN_LNK_REMOVE
+ IMAGE_SCN_LNK_COMDAT
+ IMAGE_SCN_GPREL
+ IMAGE_SCN_MEM_PURGEABLE
+ IMAGE_SCN_MEM_16BIT
+ IMAGE_SCN_MEM_LOCKED
+ IMAGE_SCN_MEM_PRELOAD
+ IMAGE_SCN_ALIGN_1BYTES
+ IMAGE_SCN_ALIGN_2BYTES
+ IMAGE_SCN_ALIGN_4BYTES
+ IMAGE_SCN_ALIGN_8BYTES
+ IMAGE_SCN_ALIGN_16BYTES
+ IMAGE_SCN_ALIGN_32BYTES
+ IMAGE_SCN_ALIGN_64BYTES
+ IMAGE_SCN_ALIGN_128BYTES
+ IMAGE_SCN_ALIGN_256BYTES
+ IMAGE_SCN_ALIGN_512BYTES
+ IMAGE_SCN_ALIGN_1024BYTES
+ IMAGE_SCN_ALIGN_2048BYTES
+ IMAGE_SCN_ALIGN_4096BYTES
+ IMAGE_SCN_ALIGN_8192BYTES
+ IMAGE_SCN_LNK_NRELOC_OVFL
+ IMAGE_SCN_MEM_DISCARDABLE
+ IMAGE_SCN_MEM_NOT_CACHED
+ IMAGE_SCN_MEM_NOT_PAGED
+ IMAGE_SCN_MEM_SHARED
+ IMAGE_SCN_MEM_EXECUTE
+ IMAGE_SCN_MEM_READ
+ IMAGE_SCN_MEM_WRITE
+ Packed
+ HasConstructorOrDestructor
+ HasOverloadedOperator
+ Nested
+ ContainsNestedClass
+ HasOverloadedAssignmentOperator
+ HasConversionOperator
+ ForwardReference
+ Scoped
+ HasUniqueName
+ Private
+ Protected
+ Public
+ Sealed
+ Intrinsic
+ Pseudo
+ Vanilla
+ NoInherit
+ NoConstruct
+ Virtual
+ CompilerGenerated
+ Static
+ Friend
+ IntroducingVirtual
+ PureVirtual
+ PureIntroducingVirtual
+ Near16
+ Far16
+ Huge16
+ BasedOnSegment
+ BasedOnValue
+ BasedOnSegmentValue
+ BasedOnAddress
+ BasedOnSegmentAddress
+ BasedOnType
+ BasedOnSelf
+ Near32
+ Far32
+ Near64
+ Pointer
+ LValueReference
+ PointerToDataMember
+ PointerToMemberFunction
+ RValueReference
+ Unknown
+ SingleInheritanceData
+ MultipleInheritanceData
+ VirtualInheritanceData
+ GeneralData
+ SingleInheritanceFunction
+ MultipleInheritanceFunction
+ VirtualInheritanceFunction
+ GeneralFunction
+ Const
+ Volatile
+ Unaligned
+ NearC
+ FarC
+ NearPascal
+ FarPascal
+ NearFast
+ FarFast
+ NearStdCall
+ FarStdCall
+ NearSysCall
+ FarSysCall
+ ThisCall
+ MipsCall
+ Generic
+ AlphaCall
+ PpcCall
+ SHCall
+ ArmCall
+ AM33Call
+ TriCall
+ SH5Call
+ M32RCall
+ ClrCall
+ Inline
+ NearVector
+ Swift
+ CxxReturnUdt
+ Constructor
+ ConstructorWithVirtualBases
+ Near
+ Far
+ Int8
+ UInt8
+ Int16
+ UInt16
+ Int32
+ UInt32
+ Pointer
+ UInt8ShiftLeft
+ UInt16ShiftLeft
+ Int8ShiftLeft
+ Int16ShiftLeft
+[714] at 5C82D0:
+ void*
+ HRESULT*
+ signed char*
+ unsigned char*
+ char*
+ wchar_t*
+ char16_t*
+ char32_t*
+ char8_t*
+ unsigned __int8*
+ short*
+ unsigned short*
+ unsigned __int16*
+ long*
+ unsigned long*
+ int*
+ unsigned*
+ unsigned __int64*
+ unsigned __int128*
+ float*
+ double*
+ long double*
+ bool*
+[716] at 5C88A0:
+ LF_POINTER
+ LF_MODIFIER
+ LF_PROCEDURE
+ LF_MFUNCTION
+ LF_LABEL
+ LF_ARGLIST
+ LF_FIELDLIST
+ LF_ARRAY
+ LF_CLASS
+ LF_STRUCTURE
+ LF_INTERFACE
+ LF_UNION
+ LF_ENUM
+ LF_TYPESERVER2
+ LF_VFTABLE
+ LF_VTSHAPE
+ LF_BITFIELD
+ LF_BCLASS
+ LF_BINTERFACE
+ LF_VBCLASS
+ LF_IVBCLASS
+ LF_VFUNCTAB
+ LF_STMEMBER
+ LF_METHOD
+ LF_MEMBER
+ LF_NESTTYPE
+ LF_ONEMETHOD
+ LF_ENUMERATE
+ LF_INDEX
+ LF_FUNC_ID
+ LF_MFUNC_ID
+ LF_BUILDINFO
+ LF_SUBSTR_LIST
+ LF_STRING_ID
+ LF_UDT_SRC_LINE
+ LF_UDT_MOD_SRC_LINE
+ LF_METHODLIST
+ LF_PRECOMP
+ LF_ENDPRECOMP
+ LF_MODIFIER_16t
+ LF_POINTER_16t
+ LF_ARRAY_16t
+ LF_CLASS_16t
+ LF_STRUCTURE_16t
+ LF_UNION_16t
+ LF_ENUM_16t
+ LF_PROCEDURE_16t
+ LF_MFUNCTION_16t
+ LF_COBOL0_16t
+ LF_COBOL1
+ LF_BARRAY_16t
+ LF_NULLLEAF
+ LF_NOTTRAN
+ LF_DIMARRAY_16t
+ LF_VFTPATH_16t
+ LF_PRECOMP_16t
+ LF_OEM_16t
+ LF_TYPESERVER_ST
+ LF_SKIP_16t
+ LF_ARGLIST_16t
+ LF_DEFARG_16t
+ LF_LIST
+ LF_FIELDLIST_16t
+ LF_DERIVED_16t
+ LF_BITFIELD_16t
+ LF_METHODLIST_16t
+ LF_DIMCONU_16t
+ LF_DIMCONLU_16t
+ LF_DIMVARU_16t
+ LF_DIMVARLU_16t
+ LF_REFSYM
+ LF_BCLASS_16t
+ LF_VBCLASS_16t
+ LF_IVBCLASS_16t
+ LF_ENUMERATE_ST
+ LF_FRIENDFCN_16t
+ LF_INDEX_16t
+ LF_MEMBER_16t
+ LF_STMEMBER_16t
+ LF_METHOD_16t
+ LF_NESTTYPE_16t
+ LF_VFUNCTAB_16t
+ LF_FRIENDCLS_16t
+ LF_ONEMETHOD_16t
+ LF_VFUNCOFF_16t
+ LF_TI16_MAX
+ LF_ARRAY_ST
+ LF_CLASS_ST
+ LF_STRUCTURE_ST
+ LF_UNION_ST
+ LF_ENUM_ST
+ LF_COBOL0
+ LF_BARRAY
+ LF_DIMARRAY_ST
+ LF_VFTPATH
+ LF_PRECOMP_ST
+ LF_OEM
+ LF_ALIAS_ST
+ LF_OEM2
+ LF_SKIP
+ LF_DEFARG_ST
+ LF_DERIVED
+ LF_DIMCONU
+ LF_DIMCONLU
+ LF_DIMVARU
+ LF_DIMVARLU
+ LF_FRIENDFCN_ST
+ LF_MEMBER_ST
+ LF_STMEMBER_ST
+ LF_METHOD_ST
+ LF_NESTTYPE_ST
+ LF_FRIENDCLS
+ LF_ONEMETHOD_ST
+ LF_VFUNCOFF
+ LF_NESTTYPEEX_ST
+ LF_MEMBERMODIFY_ST
+ LF_MANAGED_ST
+ LF_ST_MAX
+ LF_TYPESERVER
+ LF_DIMARRAY
+ LF_ALIAS
+ LF_DEFARG
+ LF_FRIENDFCN
+ LF_NESTTYPEEX
+ LF_MEMBERMODIFY
+ LF_MANAGED
+ LF_STRIDED_ARRAY
+ LF_HLSL
+ LF_MODIFIER_EX
+ LF_VECTOR
+ LF_MATRIX
+ LF_NUMERIC
+ LF_CHAR
+ LF_SHORT
+ LF_USHORT
+ LF_LONG
+ LF_ULONG
+ LF_REAL32
+ LF_REAL64
+ LF_REAL80
+ LF_REAL128
+ LF_QUADWORD
+ LF_UQUADWORD
+ LF_REAL48
+ LF_COMPLEX32
+ LF_COMPLEX64
+ LF_COMPLEX80
+ LF_COMPLEX128
+ LF_VARSTRING
+ LF_OCTWORD
+ LF_UOCTWORD
+ LF_DECIMAL
+ LF_DATE
+ LF_UTF8STRING
+ LF_REAL16
+ LF_PAD0
+ LF_PAD1
+ LF_PAD2
+ LF_PAD3
+ LF_PAD4
+ LF_PAD5
+ LF_PAD6
+ LF_PAD7
+ LF_PAD8
+ LF_PAD9
+ LF_PAD10
+ LF_PAD11
+ LF_PAD12
+ LF_PAD13
+ LF_PAD14
+ LF_PAD15
+[718] at 5CB2B0:
+ add-linkage-names-to-declaration-call-origins
+ Add DW_AT_linkage_name to function declaration DIEs referenced by DW_AT_call_origin attributes. Enabled by default for -gsce debugger tuning.
+ emit-func-debug-line-table-offsets
+ Include line table offset in function's debug info and emit end sequence after each function's line data.
+[719] at 5CB6C0:
+ enable-legalize-types-checking
+[720] at 5CBBA0:
+ disable-dfa-sched
+ Disable use of DFA during scheduling
+ dfa-sched-reg-pressure-threshold
+ Track reg pressure and switch priority to in-depth
+[721] at 5CBFB0:
+ verify-cfiinstrs
+ Verify Call Frame Information instructions
+[722] at 5CC1C0:
+ dfa-instr-limit
+ If present, stops packetizing after N instructions
+[723] at 5CC3E0:
+ print-all-reaching-defs
+ Used for test purpuses
+[724] at 5CC5E0:
+ jumptable-in-function-section
+ Putting Jump Table in function section
+[725] at 5CC7F0:
+ max-cg-scc-iterations
+[727] at 5CD580:
+ force-vector-width
+ Sets the SIMD width. Zero is autoselect.
+ cl::location(x) specified more than once!
+ force-vector-interleave
+ Sets the vectorization interleave count. Zero is autoselect.
+ cl::location(x) specified more than once!
+ runtime-memory-check-threshold
+ When performing memory disambiguation checks at runtime do not generate more than this number of comparisons (default = 8).
+ cl::location(x) specified more than once!
+ memory-check-merge-threshold
+ Maximum number of comparisons done when trying to merge runtime memory checks. (default = 100)
+ max-dependences
+ Maximum number of dependences collected by loop-access analysis (default = 100)
+ enable-mem-access-versioning
+ Enable symbolic stride memory access versioning
+ store-to-load-forwarding-conflict-detection
+ Enable conflict detection in loop-access analysis
+[728] at 5CE0D0:
+ enable-mssa-loop-dependency
+ Enable MemorySSA dependency for loop pass manager
+[731] at 5CE520:
+ AS_SECURE_LOG_FILE
+ as-secure-log-file-name
+ As secure log file name (initialized from AS_SECURE_LOG_FILE env variable)
+[733] at 5CE740:
+ asm-macro-max-nesting-depth
+ The maximum nesting depth allowed for assembly macros.
+[735] at 5D03D0:
+ enable-double-float-shrink
+ Enable unsafe double to float shrinking for math lib calls
+[739] at 5D1DD0:
+ print-schedule
+ Print 'sched: [latency:throughput]' in .s output
+[741] at 5D31F0:
+ partial-unrolling-threshold
+ Threshold for partial unrolling
+[742] at 5D3390:
+ trap-unreachable
+ Enable generating trap for unreachable
+[743] at 5D3530:
+ simplify-mir
+ Leave out unnecessary information when printing MIR
