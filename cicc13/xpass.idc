@@ -20,7 +20,7 @@ static try_ref(addr, fp, rstart, rend) {
   // find second lea str in rodata
   auto fi;
   auto i = 0;
-  for ( fi = find_text(fstart, 1, 0, 0, "lea "); fi != BADADDR; fi = find_text(fi + 7, 3, 0, 0, "lea ") ) {
+  for ( fi = find_text(fstart, 1, 0, 0, "lea "); fi != BADADDR; fi = find_text(fi, 3, 0, 0, "lea ") ) {
     if ( fi >= fend ) break;
     auto s1 = get_operand_value(fi, 1);
     if ( s1 >= rstart && s1 < rend ) {
@@ -30,6 +30,8 @@ static try_ref(addr, fp, rstart, rend) {
         return 1;
       }
     }
+    fi = next_head(fi, fend);
+    if ( fi >= fend ) break;
   }
   // not found - put function start into log
   fprintf(fp, "NOTFOUND in %X\n", fstart);
