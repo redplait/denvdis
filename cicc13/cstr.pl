@@ -21,20 +21,28 @@ sub parse1
 sub parse_cmp
 {
   my($fname, $db) = @_;
-  my($fh, $str, $idx);
+  my($fh, $str, $idx, %nf);
   open($fh, '<', $fname) or die("Cannot open %fname, $!");
+  # for stat - amount of ctors, hash for not found
+  my $ct_cnt = 0;
   while( $str = <$fh> ) {
     chomp $str;
     if ( $str =~ /^\[(\d+)\].*:$/ ) {
       $idx = int($1);
+      ++$ct_cnt;
       next;
     }
     if ( $str =~ /^ (.*)/ ) {
       next if exists( $db->{$1} );
+      $nf{$idx}++;
       printf("[%d] %s\n", $idx, $1);
     }
   }
   close $fh;
+  # dump stat
+  printf("---- total ctrs %d\n", $ct_cnt);
+  my $nf_size = scalar keys %nf;
+  printf("Not found %d (%f)\n", $nf_size, 1.0 * $nf_size / $ct_cnt) if $ct_cnt;
 }
 
 # main
