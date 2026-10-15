@@ -1,7 +1,7 @@
-debugify-quiet
-debugify-quiet
-debugify-quiet
-debugify-quiet
+debugify
+check-debugify
+debugify-function
+check-debugify-function
 targetlibinfo
 write-bitcode
 domtree
@@ -60,7 +60,7 @@ dxil-resource-type
 dxil-resources
 dxil-resource-binding
 iv-users
-NOTFOUND in 244AB00
+ir-similarity-identifier
 lazy-value-info
 phi-values
 regions
@@ -136,7 +136,7 @@ Normalize-Gep
 nvvm-printf-lowering
 Process-Restrict
 nvvm-propagate-alignment
-NOTFOUND in 2ED2E40
+remat
 NOTFOUND in 2EDF570
 NOTFOUND in 2EE7F60
 NOTFOUND in 2EE9FE0
@@ -264,7 +264,7 @@ ldgxform
 nvptx-mem2reg
 param-opt
 nvptx-isomorphic-instr-optimizer
-NOTFOUND in 32DA9E0
+DummyCGSCCPass
 barrier
 opt-arch-features
 asm-constraint
