@@ -36,7 +36,7 @@ sub parse_cmp
   }
   close $fh;
   # dump stat
-  printf("---- total ctrs %d\n", $ct_cnt);
+  printf("---- total passes %d\n", $ct_cnt);
   printf("Not found %d (%f)\n", $missed, 1.0 * $missed / $ct_cnt) if $ct_cnt;
 }
 
