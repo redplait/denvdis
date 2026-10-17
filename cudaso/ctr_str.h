@@ -30,7 +30,8 @@ class ctr_str: public decuda_base {
  protected:
    int proc_section(ELFIO::section *);
    const char *look_like_str(unsigned long);
-   int process_item(diter &, unsigned long);
+   int process_item(diter &, unsigned long, bool second = false);
+   std::unordered_set<unsigned long> m_visited;
    int m_idx;
    bool m_latch;
    std::optional<ELFIO::section *> s_ctors, s_init_array;

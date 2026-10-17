@@ -9,6 +9,8 @@
 #include "cereal/archives/json.hpp"
 #endif
 
+extern int g_opt_r;
+
 int opt_v = 0,
     opt_d = 0,
     opt_t = 0;
@@ -18,10 +20,11 @@ void usage(const char *prog)
 {
   printf("%s usage: [options] libcubin.so\n", prog);
   printf("Options:\n");
-  printf("-c - extract string from ctros\n");
+  printf("-c - extract string from ctors\n");
   printf("-d - show disasm\n");
   printf("-m - run de_merc\n");
   printf("-p - hack ptxas\n");
+  printf("-r - recursive\n");
   printf("-s - dump in json via cereal\n");
   printf("-t - dump symbols\n");
   printf("-v - verbose mode\n");
@@ -56,7 +59,7 @@ int main(int argc, char **argv) {
       do_cupti = 0,
       hack_ptx = 0;
   while(1) {
-    c = getopt(argc, argv, "s:cCDdmtpv");
+    c = getopt(argc, argv, "s:cCDdmtrpv");
     if ( c == -1 ) break;
     switch(c) {
       case 'c': do_ctors = 1; break;
@@ -66,6 +69,7 @@ int main(int argc, char **argv) {
       case 'D': do_dbg = 1; break;
       case 'm': hack_merc = 1; break;
       case 'p': hack_ptx = 1; break;
+      case 'r': g_opt_r = 1; break;
       case 't': opt_t = 1; break;
       case 'v': opt_v = 1; break;
       default: usage(argv[0]);

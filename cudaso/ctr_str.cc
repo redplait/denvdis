@@ -1,6 +1,8 @@
 #include "ctr_str.h"
 #include "x64arch.h"
 
+int g_opt_r = 0;
+
 const char *ctr_str::look_like_str(unsigned long sa) {
   if ( !in_sec(s_rodata, sa) ) return nullptr;
   const unsigned char *s = (const unsigned char *)sdata(s_rodata, sa);
@@ -30,11 +32,18 @@ int ctr_str::proc_section(ELFIO::section *s) {
   return res;
 }
 
-int ctr_str::process_item(diter &di, unsigned long ca) {
+int ctr_str::process_item(diter &di, unsigned long ca, bool second) {
+  auto vi = m_visited.find(ca);
+  if ( vi != m_visited.end() ) return 0;
+  m_visited.insert(ca);
   if ( !di.setup(ca) ) return 0;
   int dumped = 0;
   while(1) {
     if ( !di.next() ) break;
+    if ( di.is_jxx_jimm(UD_Ijmp) && g_opt_r && !second ) {
+      auto what = di.get_jmp(0);
+      return process_item(di, what, true);
+    }
     if ( di.is_end() ) break;
     if ( di.is_lea() && di.is_r1() ) {
       auto what = di.get_jmp(1);
