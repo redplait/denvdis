@@ -1133,6 +1133,32 @@ bool NV_renderer::check_lut(const struct nv_instr *ins, const NV_rlist *rend, co
   return false;
 }
 
+static bool copy_rdesc(const render_desc *rt, std::vector<const char *> *out_fields) {
+  out_fields->push_back(rt->left.arg);
+  std::for_each(rt->right.cbegin(), rt->right.cend(), [out_fields](const ve_base &vb) {
+    out_fields->push_back(vb.arg);
+   });
+  return !out_fields->empty();
+}
+
+bool NV_renderer::is_desc(const NV_rlist *rend, std::vector<const char *> *out_fields) const {
+  int state = 0;
+  for ( auto &r: *rend ) {
+    if ( r->type == R_opcode ) {
+      state = 1;
+      continue;
+    }
+    if ( state && r->type == R_desc ) {
+      if ( out_fields ) {
+        const render_desc *rt = (const render_desc *)r;
+        copy_rdesc(rt, out_fields);
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 static NVP_ops get_rf_op(const std::string_view &what) {
  if ( what.starts_with("IDEST") ) return IDEST;
  if ( what.starts_with("ISRC_A") ) return ISRC_A;

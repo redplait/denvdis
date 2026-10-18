@@ -232,6 +232,8 @@ class NV_renderer {
    // cb0 names
    int asgn_cb0(); // must be called from ::load
    const char *cb0_name(unsigned short idx) const;
+   // desc
+   bool is_desc(const NV_rlist *, std::vector<const char *> *) const;
    // RF
    bool is_rf(const struct nv_instr *ins, std::pair<nv_pred, NVP_ops> &) const;
    // fields types
