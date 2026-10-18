@@ -408,6 +408,10 @@ class Ced_perl: public CEd_base {
     if ( !field ) return &PL_sv_undef;
     return newSVpv(field->name.data(), field->name.size());
   }
+  bool ins_mem(std::vector<const char *> *out_fields) const {
+    if ( !ins() || !m_rend ) return false;
+    return is_mem(m_rend, out_fields);
+  }
   bool ins_desc(std::vector<const char *> *out_fields) const {
     if ( !ins() || !m_rend ) return false;
     return is_desc(m_rend, out_fields);
@@ -2699,6 +2703,8 @@ ins_prmt(SV *obj)
 
 void
 ins_desc(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_mem = 1
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
@@ -2710,7 +2716,7 @@ ins_desc(SV *obj)
   } else {
     if ( gimme == G_ARRAY ) {
       std::vector<const char *> fnames;
-      bool res = e->ins_desc(&fnames);
+      bool res = (ix == 1) ? e->ins_mem(&fnames) : e->ins_desc(&fnames);
       if ( !res ) { EMPTY_RES } else {
         res_size = fnames.size();
         EXTEND(SP, res_size);
@@ -2719,7 +2725,7 @@ ins_desc(SV *obj)
         XSRETURN(res_size);
       }
     } else {
-      bool res = e->ins_desc(nullptr);
+      bool res = (ix == 1) ? e->ins_mem(nullptr) : e->ins_desc(nullptr);
       ST(0) = res ? &PL_sv_yes : &PL_sv_no;
       XSRETURN(1);
     }
