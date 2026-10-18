@@ -408,6 +408,10 @@ class Ced_perl: public CEd_base {
     if ( !field ) return &PL_sv_undef;
     return newSVpv(field->name.data(), field->name.size());
   }
+  bool ins_desc(std::vector<const char *> *out_fields) const {
+    if ( !ins() || !m_rend ) return false;
+    return is_desc(m_rend, out_fields);
+  }
   template <auto nv_instr::*fptr>
   SV *ins_intxxx() const {
     if ( !ins() ) return &PL_sv_undef;
@@ -2693,6 +2697,33 @@ ins_prmt(SV *obj)
     XSRETURN(stack_size);
   }
 
+void
+ins_desc(SV *obj)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  int res_size = 1;
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ PPCODE:
+  if ( !e->has_ins() ) {
+    EMPTY_RES
+  } else {
+    if ( gimme == G_ARRAY ) {
+      std::vector<const char *> fnames;
+      bool res = e->ins_desc(&fnames);
+      if ( !res ) { EMPTY_RES } else {
+        res_size = fnames.size();
+        EXTEND(SP, res_size);
+        for ( auto fn: fnames )
+          mPUSHp(fn, strlen(fn));
+        XSRETURN(res_size);
+      }
+    } else {
+      bool res = e->ins_desc(nullptr);
+      ST(0) = res ? &PL_sv_yes : &PL_sv_no;
+      XSRETURN(1);
+    }
+  }
 
 void
 ins_cbank(SV *obj)
