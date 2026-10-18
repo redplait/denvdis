@@ -1141,6 +1141,26 @@ static bool copy_rdesc(const render_desc *rt, std::vector<const char *> *out_fie
   return !out_fields->empty();
 }
 
+bool NV_renderer::is_mem(const NV_rlist *rend, std::vector<const char *> *out_fields) const {
+  int state = 0;
+  for ( auto &r: *rend ) {
+    if ( r->type == R_opcode ) {
+      state = 1;
+      continue;
+    }
+    if ( state && r->type == R_mem ) {
+      if ( out_fields ) {
+        const render_mem *rm = (const render_mem *)r;
+        std::for_each(rm->right.cbegin(), rm->right.cend(), [out_fields](const ve_base &vb) {
+          out_fields->push_back(vb.arg);
+        });
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 bool NV_renderer::is_desc(const NV_rlist *rend, std::vector<const char *> *out_fields) const {
   int state = 0;
   for ( auto &r: *rend ) {
