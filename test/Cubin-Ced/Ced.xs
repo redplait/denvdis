@@ -133,6 +133,25 @@ static SV *get_ritem(const RItem &ri)
     return newRV_noinc((SV*)res);
 }
 
+static const render_base *try_comp(const NV_rlist *rlist, int type) {
+  int state = 0;
+  for ( auto &r: *rlist ) {
+    if ( r->type == R_opcode ) {
+      state = 1;
+      continue;
+    }
+    if ( state && r->type == type ) return r;
+  }
+  return nullptr;
+}
+
+static SV *_rend_comp(const NV_rlist *rlist, int type) {
+  auto res = try_comp(rlist, type);
+  if ( !res ) return &PL_sv_undef;
+  RItem ri{ res, {} };
+  return get_ritem(ri);
+}
+
 static SV *
 form_float_conv(const NV_conv *fc) {
   if ( !fc ) return &PL_sv_undef;
@@ -241,6 +260,9 @@ class Ced_perl: public CEd_base {
   }
   const char *sm_name() const {
     return m_sm_name;
+  }
+  const NV_rlist *rend() const {
+    return m_rend;
   }
   const NV_field *field_at(IV off) const {
     if ( !has_ins() ) return nullptr;
@@ -3289,6 +3311,20 @@ has_comp(SV *obj)
  OUTPUT:
   RETVAL
 
+SV *
+rend_comp(SV *obj, int kind)
+ INIT:
+  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+    if ( kind <= R_opcode )
+    {
+      croak("rend_comp: bad kind %d", kind);
+      RETVAL = &PL_sv_undef;
+    } else
+      RETVAL = _rend_comp(e->rend(), kind);
+ OUTPUT:
+  RETVAL
+
 MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::Instr
 
 SV *
@@ -3388,6 +3424,20 @@ ins_m1(SV *obj)
    else RETVAL = newSVpv( res, strlen(res) );
 OUTPUT:
  RETVAL
+
+SV *
+rend_comp(SV *obj, int kind)
+ INIT:
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ CODE:
+    if ( kind <= R_opcode )
+    {
+      croak("rend_comp: bad kind %d", kind);
+      RETVAL = &PL_sv_undef;
+    } else
+      RETVAL = _rend_comp(e->rend, kind);
+ OUTPUT:
+  RETVAL
 
 SV *
 ins_conv(SV *obj)
