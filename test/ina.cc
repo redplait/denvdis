@@ -259,6 +259,16 @@ struct INA: public NV_renderer {
   }
   INA(): NV_renderer()
   { }
+  int load(const char *what) {
+    if ( NV_renderer::load(what) ) return 1;
+    // try SM_DIR
+    const char *sm_dir = getenv("SM_DIR");
+    if ( !sm_dir ) return 0;
+    std::string sm = sm_dir;
+    if ( !sm.ends_with("/") ) sm += '/';
+    sm += what;
+    return NV_renderer::load(sm.c_str());
+  }
   // pair to hold instruction MD and it's render
   typedef std::pair<const nv_instr *, const NV_rlist *> IRPair;
   typedef std::function<ptrApply()> FApply;
