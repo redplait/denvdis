@@ -122,6 +122,22 @@ ok( $tl_res == 0, 'track_lat'); # for MOV R20,c[0][0x140] there are no src refs
 
 $t_num+=9;
 
+# R_mem - at 0x218
+$cub->off(0x218);
+my @mar = $cub->ins_mem();
+is( scalar(@mar), 2, "ins_mem size");
+is( $mar[0], 'Ra', "ins_mem op0");
+is( $mar[1], 'sImm', "ins_mem op1");
+my $rkind = $cub->has_comp();
+ok( $rkind, "has_comp");
+my $rend = $cub->rend_comp($rkind);
+ok( defined $rend, "rend_comp");
+is( ref $rend, 'ARRAY', "rend_comp ref");
+is( ref $rend->[8], 'ARRAY', "rend_comp tail ref");
+is( $rend->[8]->[0]->[2], 'Ra', "rend_comp op0");
+is( $rend->[8]->[1]->[2], 'sImm', "rend_comp op1");
+$t_num+=9;
+
 # ins_preds - at 0x398 Pd
 $cub->off(0x398);
 my @p1 = $cub->ins_preds(1);
