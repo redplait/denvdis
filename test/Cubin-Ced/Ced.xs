@@ -412,6 +412,14 @@ class Ced_perl: public CEd_base {
     if ( !ins() || !m_rend ) return false;
     return is_mem(m_rend, out_fields);
   }
+  const char *ins_m1() const {
+    if ( !ins() || !m_rend ) return nullptr;
+    return is_m1(m_rend);
+  }
+  const char *ins_ttu() const {
+    if ( !ins() || !m_rend ) return nullptr;
+    return is_ttu(m_rend);
+  }
   bool ins_desc(std::vector<const char *> *out_fields) const {
     if ( !ins() || !m_rend ) return false;
     return is_desc(m_rend, out_fields);
@@ -2700,6 +2708,23 @@ ins_prmt(SV *obj)
     SPAGAIN;
     XSRETURN(stack_size);
   }
+
+SV *
+ins_m1(SV *obj)
+ ALIAS:
+  Cubin::Ced::ins_ttu = 1
+ INIT:
+   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+ CODE:
+   if ( !e->has_ins() ) {
+     RETVAL = &PL_sv_undef;
+   } else {
+     const char *res = (1 == ix) ? e->ins_ttu() : e->ins_m1();
+     if ( !res ) RETVAL = &PL_sv_undef;
+     else RETVAL = newSVpv( res, strlen(res) );
+   }
+ OUTPUT:
+  RETVAL
 
 void
 ins_desc(SV *obj)
