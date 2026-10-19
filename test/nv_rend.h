@@ -184,6 +184,13 @@ class NV_renderer {
     bool delay_plop(const struct nv_instr *, const NV_extracted &) const;
     // arrange instructions by queue
     bool arr_by_vq(std::map<int, std::list<const nv_instr *> > &) const;
+   // R_mem
+   static bool is_mem(const NV_rlist *, std::vector<const char *> *);
+   // desc
+   static bool is_desc(const NV_rlist *, std::vector<const char *> *);
+   // R_M1 & TTU
+   static const char *is_m1(const NV_rlist *);
+   static const char *is_ttu(const NV_rlist *);
   protected:
    template <typename T, typename I>
    const T& get_it(const std::initializer_list<T>& list, I index) const {
@@ -232,10 +239,6 @@ class NV_renderer {
    // cb0 names
    int asgn_cb0(); // must be called from ::load
    const char *cb0_name(unsigned short idx) const;
-   // R_mem
-   bool is_mem(const NV_rlist *, std::vector<const char *> *) const;
-   // desc
-   bool is_desc(const NV_rlist *, std::vector<const char *> *) const;
    // RF
    bool is_rf(const struct nv_instr *ins, std::pair<nv_pred, NVP_ops> &) const;
    // fields types

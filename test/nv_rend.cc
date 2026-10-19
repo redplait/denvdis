@@ -636,7 +636,7 @@ int NV_renderer::load(const char *sm_name)
 {
      void *dh = dlopen(sm_name, RTLD_NOW);
      if ( !dh ) {
-       Err("cannot load %s, errno %d (%s)\n", sm_name, errno, strerror(errno));
+       Err("cannot load %s, errno %d (%s)\n", sm_name, errno, dlerror());
        return 0;
      }
      m_vq = (Dvq_name)dlsym(dh, "get_vq_name");
@@ -1133,6 +1133,34 @@ bool NV_renderer::check_lut(const struct nv_instr *ins, const NV_rlist *rend, co
   return false;
 }
 
+static const char *is_rxxx(const NV_rlist *rend, NV_rend what) {
+  int state = 0;
+  for ( auto &r: *rend ) {
+    if ( r->type == R_opcode ) {
+      state = 1;
+      continue;
+    }
+    if ( state && r->type == what ) {
+      if ( what == R_TTU ) {
+        const render_TTU *rt = (const render_TTU *)r;
+        return rt->left.arg;
+      } else {
+        const render_M1 *rm = (const render_M1 *)r;
+        return rm->left.arg;
+      }
+    }
+  }
+  return nullptr;
+}
+
+const char *NV_renderer::is_ttu(const NV_rlist *rend) {
+  return is_rxxx(rend, R_TTU);
+}
+
+const char *NV_renderer::is_m1(const NV_rlist *rend) {
+  return is_rxxx(rend, R_M1);
+}
+
 static bool copy_rdesc(const render_desc *rt, std::vector<const char *> *out_fields) {
   out_fields->push_back(rt->left.arg);
   std::for_each(rt->right.cbegin(), rt->right.cend(), [out_fields](const ve_base &vb) {
@@ -1141,7 +1169,7 @@ static bool copy_rdesc(const render_desc *rt, std::vector<const char *> *out_fie
   return !out_fields->empty();
 }
 
-bool NV_renderer::is_mem(const NV_rlist *rend, std::vector<const char *> *out_fields) const {
+bool NV_renderer::is_mem(const NV_rlist *rend, std::vector<const char *> *out_fields) {
   int state = 0;
   for ( auto &r: *rend ) {
     if ( r->type == R_opcode ) {
@@ -1161,7 +1189,7 @@ bool NV_renderer::is_mem(const NV_rlist *rend, std::vector<const char *> *out_fi
   return false;
 }
 
-bool NV_renderer::is_desc(const NV_rlist *rend, std::vector<const char *> *out_fields) const {
+bool NV_renderer::is_desc(const NV_rlist *rend, std::vector<const char *> *out_fields) {
   int state = 0;
   for ( auto &r: *rend ) {
     if ( r->type == R_opcode ) {
