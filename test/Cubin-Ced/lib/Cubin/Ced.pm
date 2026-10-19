@@ -511,6 +511,10 @@ You can check if you still have pending tables with $cub->ptabs method
 =item * ins_cbank - if instruction has Const Bank in form c[I][X] where I is number - returns ref to array [I, X] if X is also number
  or just [I] otherwise. Supports B<wantarray>
 
+=item * ins_desc & ins_mem - check if instruction has desc/mem operands, in wantarray it returns list of field names
+
+=item * ins_m1 & ins_ttu - check if instruction has m1/ttu operands, if yes - returns field name
+
 =item * efields - returns ref to hash of enum-based fields, key is field name, value is array where
   a[0] - is_ignore
   a[1] - print

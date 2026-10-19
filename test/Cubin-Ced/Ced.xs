@@ -3350,6 +3350,45 @@ line(SV *obj)
  OUTPUT:
   RETVAL
 
+void
+ins_desc(SV *obj)
+ ALIAS:
+  Cubin::Ced::Instr:::ins_mem = 1
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  int res_size = 1;
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ PPCODE:
+   if ( gimme == G_ARRAY ) {
+     std::vector<const char *> fnames;
+     bool res = (ix == 1) ? e->base->is_mem(e->rend, &fnames) : e->base->is_desc(e->rend, &fnames);
+     if ( !res ) { EMPTY_RES } else {
+       res_size = fnames.size();
+       EXTEND(SP, res_size);
+       for ( auto fn: fnames )
+          mPUSHp(fn, strlen(fn));
+       XSRETURN(res_size);
+     }
+   } else {
+     bool res = (ix == 1) ? e->base->is_mem(e->rend, nullptr) : e->base->is_desc(e->rend, nullptr);
+     ST(0) = res ? &PL_sv_yes : &PL_sv_no;
+     XSRETURN(1);
+   }
+
+SV *
+ins_m1(SV *obj)
+ ALIAS:
+  Cubin::Ced::Instr::ins_ttu = 1
+ INIT:
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ CODE:
+   const char *res = (1 == ix) ? e->base->is_ttu(e->rend) : e->base->is_m1(e->rend);
+   if ( !res ) RETVAL = &PL_sv_undef;
+   else RETVAL = newSVpv( res, strlen(res) );
+OUTPUT:
+ RETVAL
+
 SV *
 ins_conv(SV *obj)
  INIT:
