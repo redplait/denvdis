@@ -497,8 +497,10 @@ static int is_rend_type(const char *buf)
   if ( buf[1] ) return 0;
   switch(buf[0]) {
     case 'C': // R_C || R_CX
+    case 'R': // R_M1 with name "RF"
     case 'T': // R_TTU
     case 'M': // R_M1
+    case 'a': // R_mem with name "attr"
     case 'd': // R_desc
     case 'm': // R_mem
     case 'u': // uniform register
@@ -542,6 +544,16 @@ printf("filter %c%s\n", plus ? '+' : '-', buf);
           case 'M': return rb->type == R_M1;
           case 'd': return rb->type == R_desc;
           case 'm': return rb->type == R_mem;
+          case 'R': if ( rb->type == R_M1 ) {
+            struct render_named *rn = (struct render_named *)rb;
+            if ( !rn->name ) return false;
+            return !strcmp(rn->name, "RF");
+          } else return false;
+          case 'a': if ( rb->type == R_mem ) {
+            struct render_named *rn = (struct render_named *)rb;
+            if ( !rn->name ) return false;
+            return !strcmp(rn->name, "attr");
+          } else return false;
           case 'u': if ( rb->type == R_enum ) {
             struct render_named *rn = (struct render_named *)rb;
             const nv_eattr *ea = find_ea(ip, rn->name);
