@@ -618,6 +618,7 @@ void NV_renderer::dis_stat() const
      dis_total, dis_notfound, dis_dups, missed_enums);
 }
 
+
 // in sm5x there are lots of registers enums with names like hfma2__v1_Ra
 // last letters are always Rd Ra Rb Rc and v can be 0, 1 or 2
 // so it's enough to check last 5 letters of ename
@@ -1167,6 +1168,18 @@ static bool copy_rdesc(const render_desc *rt, std::vector<const char *> *out_fie
     out_fields->push_back(vb.arg);
    });
   return !out_fields->empty();
+}
+
+bool NV_renderer::is_named(const NV_rend r) {
+  switch(r) {
+    case R_M1:
+    case R_mem:
+    case R_C:
+    case R_CX:
+      return true;
+    default:
+      return false;
+  }
 }
 
 bool NV_renderer::is_mem(const NV_rlist *rend, std::vector<const char *> *out_fields) {

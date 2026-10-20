@@ -191,6 +191,18 @@ class NV_renderer {
    // R_M1 & TTU
    static const char *is_m1(const NV_rlist *);
    static const char *is_ttu(const NV_rlist *);
+   static bool is_named(NV_rend);
+   template <typename F>
+   static bool crany(const NV_rlist *rlist, F &f) {
+     int state = 0;
+     for ( auto &r: *rlist ) {
+       if ( R_opcode == r->type ) { state = 1; continue; }
+       if ( state && is_named(r->type) ) {
+         if ( f((const render_named *)r) ) return true;
+       }
+     }
+     return false;
+   }
   protected:
    template <typename T, typename I>
    const T& get_it(const std::initializer_list<T>& list, I index) const {

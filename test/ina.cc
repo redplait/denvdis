@@ -323,6 +323,13 @@ struct INA: public NV_renderer {
         if ( res ) dump_irs();
         continue;
       }
+      if ( buf[0] == '~' ) { // like perl =~
+        char *what = rstrip(buf + 1);
+        int res = apply_crany(what, what[0] ? strlen(what) : 0);
+        free(buf);
+        if ( res ) dump_irs();
+        continue;
+      }
       char *end = nullptr;
       auto idx = strtol(buf, &end, 10);
       if ( *end ) { printf("bad index %s\n", buf); free(buf); continue; }
@@ -454,6 +461,8 @@ printf("flush res %d\n", res);
     dirty = false;
     return 1;
   }
+  // return 1 if m_irs was changed (and so must be redrawn)
+  int apply_crany(const char *what, int wlen);
   int apply_sel_filter(bool plus, const char *);
   void reset_irs() {
     g_found = nullptr;
@@ -509,7 +518,36 @@ static int is_rend_type(const char *buf)
   return 0;
 }
 
-// return 1 if m_irs was changed (and so must be redrawn)
+int INA::apply_crany(const char *what, int what_len) {
+  std::vector<IRPair> new_irs;
+  if ( what_len ) {
+   auto cl = [what, what_len](const render_named *rn) -> bool {
+      if ( !rn->name ) return false;
+// printf("rn name %s\n", rn->name);
+      return !strncasecmp(what, rn->name, what_len);
+   };
+   std::copy_if( m_irs.begin(), m_irs.end(), std::back_inserter(new_irs), [&](const IRPair &p) -> bool {
+      return crany(p.second, cl);
+    });
+  } else {
+   auto cl = [](const render_named *rn) -> bool {
+     return rn->name != nullptr;
+   };
+   std::copy_if( m_irs.begin(), m_irs.end(), std::back_inserter(new_irs), [&](const IRPair &p) -> bool {
+      return crany(p.second, cl);
+    });
+  }
+  if ( new_irs.empty() ) {
+    if ( !what_len )
+     printf("no named items found\n");
+    else
+     printf("no named items %s found\n", what);
+    return 0;
+  }
+  m_irs = std::move(new_irs);
+  return 1;
+}
+
 int INA::apply_sel_filter(bool plus, const char *buf)
 {
   std::vector<IRPair> new_irs;
