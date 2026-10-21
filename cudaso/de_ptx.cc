@@ -738,7 +738,8 @@ int de_ptx::_read() {
   // ptxas V13.1.80 md5 f38e5732c94163b96cf797eef252b4cb
   // string from get_pseudo_prototype switch case, size 1078
 //  extr_sw_strs(0x1E66DB8, 1078);
-//  hack_ptx_ops(0xC2341C, 0xC3C014, 0xC210C0, 0x2971260 + 8, 0x2971AD0);
+  // from 13.4: release 13.4, V13.4.46
+  hack_ptx_ops(0x8D4DDC, 0x8F3621, 0x8C8440, 0x338B448, 0x338BCC0);
  // yet another couple of latency tables, totally identical to c17.txt
   // hack_ops(0x7357B7, 0x1E01480, "ops1.txt");
   // hack_ops(0xEE17A7, 0x1E01480, "ops2.txt");
@@ -752,12 +753,12 @@ int de_ptx::_read() {
   // for 12.8 md5 14dc7bbb0bafae1313489c389e9486eb - NPDOHYX
 //  hack_ctor(0x582500, "c15.txt");
 //  hack_ctor(0x598620, "c17.txt");
-    hack_ctor(0xEE17A7, "c17_2.txt", 0);
-    hack_ctor(0x7357B7, "c17_l.txt", 0);
+//    hack_ctor(0xEE17A7, "c17_2.txt", 0);
+//    hack_ctor(0x7357B7, "c17_l.txt", 0);
 //  hack_ctor(0x59D4A0, "c18.txt");
 //  hack_ctor(0x41A8E0, "c5.txt");
-  hack_sp(0x11BCB51, "c1.txt");
-  hack_sp(0xA6C239, "c2.txt");
+//  hack_sp(0x11BCB51, "c1.txt");
+//  hack_sp(0xA6C239, "c2.txt");
   // offsets from V13.1.80
   // md5: f38e5732c94163b96cf797eef252b4cb
 //  hack_ctor(0x1BAC80, "c4.txt");
