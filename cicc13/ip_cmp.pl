@@ -1,5 +1,5 @@
 #!perl -w
-# script to compare ptx instructions from 13.4 with old format implented in iptx.pl - in file ptx_ops2.txt
+# script to compare ptx instructions from 13.4 with old format implemented in iptx.pl - in file ptx_ops2.txt
 # borrowed some functions like bcnt & read_ops2
 use strict;
 use warnings;
@@ -55,6 +55,7 @@ sub read_ops
   my($fh, $str, $m, $rest, $iname, $max_op);
   open($fh, '<', $fname) or die("Cannot open $fname, error $!");
   my $ln = 0;
+  my $res_cnt = 0;
   my $max_mask = 0;
   while( $str = <$fh> ) {
     chomp $str;
@@ -76,6 +77,7 @@ sub read_ops
       $max_op = [ $ln, \@tmp, $tail ];
     }
     # make array with mask & tail
+    ++$res_cnt;
     my $curr_i = [ $ln, \@tmp, $tail, $iname ];
     if ( exists $hri->{$iname} ) {
       my $ar = $hri->{$iname};
@@ -99,6 +101,7 @@ sub read_ops
       printf("at %d %s\n", $max_op->[0], $max_op->[2]);
     }
   }
+  $res_cnt;
 }
 
 # compare new instrunction in nh missed in oh
@@ -108,6 +111,7 @@ sub cmp_ops {
  my $latch = 0;
  my $added = 0;
  my $removed = 0;
+ my $n_forms = 0;
  # grab new instructions
  foreach my $iname ( sort keys %$nh ) {
    if ( exists $oh->{$iname} ) {
@@ -115,10 +119,13 @@ sub cmp_ops {
      next;
    }
    printf("--- new:\n") if ( !$latch++ );
-   printf(" %s\n", $iname);
+   my $ar = $nh->{$iname};
+   my $f_size = scalar @$ar;
+   $n_forms += $f_size;
+   printf(" %s (%d forms)\n", $iname, $f_size);
    ++$added;
  }
- printf("Total %d new instructions\n", $added);
+ printf("Total %d new instructions (%d forns)\n", $added, $n_forms);
  # check removed
  $latch++;
  foreach my $iname ( sort keys %$oh ) {
@@ -138,6 +145,7 @@ if ( 1 != scalar @ARGV ) {
   exit(8);
 }
 my(%old, %n);
-read_ops('ptx_ops2.txt', \%old);
-read_ops($ARGV[0], \%n);
+my $ocnt = read_ops('ptx_ops2.txt', \%old);
+my $ncnt = read_ops($ARGV[0], \%n);
+printf("--- %d lines\n", $ncnt - $ocnt);
 cmp_ops(\%old, \%n);
