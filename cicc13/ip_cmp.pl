@@ -7,13 +7,14 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_v $opt_w/;
+use vars qw/$opt_f $opt_v $opt_w/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] ptx_ops
  Options:
+   -f - compare forms
    -v - verbose mode
    -w - skip wmma & friends
 EOF
@@ -104,7 +105,18 @@ sub read_ops
   $res_cnt;
 }
 
-# compare new instrunction in nh missed in oh
+sub cmp_forms {
+  my($oar, $nar) = @_;
+  # to avoid quadratic lookup for each new form in nar against all forms in oar lets build dictionary of tails from oar
+  my %tails;
+  $tails{$_->[2]}++ for @$oar;
+  foreach my $f ( @$nar ) {
+    next if ( exists $tails{ $f->[2] } );
+    printf(" line %d: %s\n", $f->[0], $f->[2]);
+  }
+}
+
+# compare new instructions in nh missed in oh
 sub cmp_ops {
  my($oh, $nh) = @_;
  my %visited;
@@ -116,8 +128,18 @@ sub cmp_ops {
  foreach my $iname ( sort keys %$nh ) {
    if ( exists $oh->{$iname} ) {
      $visited{$iname}++;
+     if ( defined $opt_f ) {
+       # check if we have the same number of forms
+       my $old_ar = $oh->{$iname};
+       my $new_ar = $nh->{$iname};
+       next if ( scalar(@$old_ar) == scalar(@$new_ar) );
+       printf("%s: %d old forms, %d new\n", $iname, scalar(@$old_ar), scalar(@$new_ar));
+       $n_forms += scalar(@$new_ar) - scalar(@$old_ar);
+       cmp_forms($old_ar, $new_ar);
+     }
      next;
    }
+   next if ( defined $opt_f );
    printf("--- new:\n") if ( !$latch++ );
    my $ar = $nh->{$iname};
    my $f_size = scalar @$ar;
@@ -125,7 +147,7 @@ sub cmp_ops {
    printf(" %s (%d forms)\n", $iname, $f_size);
    ++$added;
  }
- printf("Total %d new instructions (%d forns)\n", $added, $n_forms);
+ printf("Total %d new instructions (%d forms)\n", $added, $n_forms) if ( $n_forms );
  # check removed
  $latch++;
  foreach my $iname ( sort keys %$oh ) {
@@ -138,7 +160,7 @@ sub cmp_ops {
 }
 
 # main
-my $status = getopts("vw");
+my $status = getopts("fvw");
 usage() if ( !$status );
 if ( 1 != scalar @ARGV ) {
   printf("where is file name?\n");
