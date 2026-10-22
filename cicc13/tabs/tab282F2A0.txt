@@ -1,4 +1,14 @@
 
-.fc
+.sp
 .sp::ordered_metadata
-.fc::2gb4
+.sp::1:2
+.sp::1:4
+.sp::1:8
+.sp::1:16
+.sp::2:4
+.sp::2:8
+.sp::2:16
+.sp::4:8
+.sp::4:16
+.sp::8:16
+.sp::2gb4

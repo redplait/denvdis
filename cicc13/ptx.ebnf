@@ -283,7 +283,7 @@ mma28 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp tab282F2F0 
 
 mma29 = "mma" [ tab282F560 tab282FA00 vec sync aligned tab282ECE0 sp tab282F2F0 ] ; mma	hddhdC	F16Q8Q8F16
 
-tab282F2A0 = [ ".fc" | ".sp::ordered_metadata" | ".fc::2gb4" ]
+tab282F2A0 = [ ".sp" | ".sp::ordered_metadata" | ".sp::1:2" | ".sp::1:4" | ".sp::1:8" | ".sp::1:16" | ".sp::2:4" | ".sp::2:8" | ".sp::2:16" | ".sp::4:8" | ".sp::4:16" | ".sp::8:16" | ".sp::2gb4" ]
 
 tab282F8E0 = [ ".scale_vec::1X" | ".scale_vec::2X" | ".scale_vec::4X" ]
 
@@ -2187,7 +2187,7 @@ _tcgen05_guardrails.sp_consistency_across_idesc_mod0 = "_tcgen05.guardrails.sp_c
 
 _tcgen05_guardrails.check_sparse_usage0 = "_tcgen05.guardrails.check_sparse_usage" [ tab282FA00 ] ; _tcgen05.guardrails.check_sparse_usage	du	
 
-tab282F4E0 = [ ".sync_restrict::shared::cluster" | ".sync_restrict::shared::cta" | ".sync_restrict::shared::read::mma::a" ]
+tab282F4E0 = [ ".sync_restrict::shared::cluster" | ".sync_restrict::shared::cluster::read" | ".sync_restrict::shared::cta" | ".sync_restrict::shared::read::mma::a" | ".sync_restrict::reads" ]
 
 tcgen05_commit0 = "tcgen05.commit" [ tab282EC40 tab282E620 tab282E520 tab282F4E0 ] ; tcgen05.commit	M	B64
 
