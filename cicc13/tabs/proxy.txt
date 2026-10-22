@@ -1,0 +1,3 @@
+
+.proxy::ordered
+.proxy::readonly
