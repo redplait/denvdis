@@ -36,7 +36,7 @@ EOF
   exit(8);
 }
 
-use constant MaskSize => 19;
+use constant MaskSize => 17;
 
 # instr names from ptx_ops2.txt
 my %g_ins;
@@ -861,7 +861,8 @@ sub gen_ebnf
 }
 
 use constant TabsDir => 'tabs/';
-use constant TabLen => 96;
+use constant TabLen => 96; # max len for make_trow
+use constant MTIndex => 16; # max used byte index in gk_tabs
 
 sub tab_fname { TabsDir . shift . '.txt'; }
 
@@ -1201,7 +1202,7 @@ sub gen_C {
  printf("// Dont edit this file - it was generated %s by %s -C\n", scalar(localtime), $0);
  # populate mask array
  my @mask;
- foreach my $i8 ( 0 .. 16 ) {
+ foreach my $i8 ( 0 .. MTIndex ) {
    foreach my $j ( 0 .. 7 ) {
      my $k = $i8 * 8 + $j;
      unless ( exists $gk_tabs{$k} ) {
@@ -1227,7 +1228,7 @@ sub gen_C {
  }
  # dump tabs
  printf("\nconst static %s *s_tabs[] = {\n", $g_tab_type);
- foreach my $i8 ( 0 .. 16 ) {
+ foreach my $i8 ( 0 .. MTIndex ) {
    foreach my $j ( 0 .. 7 ) {
      my $k = $i8 * 8 + $j;
      printf("// %d:%d %d\n", $i8, $j, $k);
@@ -1262,10 +1263,10 @@ sub gen_C {
  }
  # types stat - key - letter, value - number of occurences
  my %st_map;
- my %t10; # first 10 instructions for letter
- my %gn_names; # name is table name, value is generated name
+ my %t10; # first 10 instructions for each type letter
+ my %gn_names; # key is table name, value is generated name
  # dump instructions
- foreach my $op_name ( keys %sorted ) {
+ foreach my $op_name ( sort { $a cmp $b } keys %sorted ) {
    my $with_gn;
    if ( exists $gn_tabs{$op_name} ) {
      my $tgn = $gn_tabs{$op_name};
@@ -1323,7 +1324,7 @@ sub gen_C {
      # line number - for debugging
      printf(", %d,\n", $op->[0]);
      # dump mask array
-     my @masks = @{$op->[1]}[0 .. 16];
+     my @masks = @{$op->[1]}[0 .. MTIndex];
      printf("{ %s }\n", join ',', map { sprintf("0x%X",$_); } @masks);
      printf("};\n");
      push @names_ar, $s_name;

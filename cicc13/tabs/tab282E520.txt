@@ -4,3 +4,4 @@
 .mbarrier::complete_tx::bytes
 .bulk_group
 .mbarrier::arrive::one
+.mbarrier::complete_tx::16B

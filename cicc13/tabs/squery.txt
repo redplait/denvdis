@@ -10,3 +10,5 @@
 .channel_order
 .array_size
 .memory_layout
+.num_mipmap_levels
+.num_samples
