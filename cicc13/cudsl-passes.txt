@@ -1,0 +1,632 @@
+> External Alias Analysis
+external-aa
+> Function Alias Analysis Results
+aa
+> Assumption Cache Tracker
+assumption-cache-tracker
+> Basic Alias Analysis (stateless AA impl)
+basic-aa
+> Block Frequency Analysis
+block-freq
+> Branch Probability Analysis
+branch-prob
+> CallGraph Construction
+basiccg
+DummyCGSCCPass
+> View call graph
+view-callgraph
+> Print call graph to 'dot' file
+dot-callgraph
+> Cycle Info Analysis
+cycles
+> Dependence Analysis
+da
+> View dominance tree of function
+view-dom
+> View dominance tree of function (with no function bodies)
+view-dom-only
+> View postdominance tree of function
+view-postdom
+> View postdominance tree of function (with no function bodies)
+view-postdom-only
+> Print dominance tree of function to 'dot' file
+dot-dom
+> Print dominance tree of function to 'dot' file (with no function bodies)
+dot-dom-only
+> Print postdominance tree of function to 'dot' file
+dot-postdom
+> Print postdominance tree of function to 'dot' file (with no function bodies)
+dot-postdom-only
+> Dominance Frontier Construction
+domfrontier
+> DXIL Resource analysis
+dxil-resource
+> Globals Alias Analysis
+globals-aa
+> Induction Variable Users
+iv-users
+ir-similarity-identifier
+> Lazy Block Frequency Analysis
+lazy-block-freq
+> Lazy Branch Probability Analysis
+lazy-branch-prob
+> Lazy Value Information Analysis
+lazy-value-info
+> Natural Loop Information
+loops
+> LCSSA Verifier
+lcssa-verification
+> Memory Dependence Analysis
+memdep
+> Memory SSA
+memoryssa
+> Module Summary Analysis
+module-summary-analysis
+> Module summary info
+module-summary-info
+> Optimization Remark Emitter
+opt-remark-emitter
+> Phi Values Analysis
+phi-values
+> Post-Dominator Tree Construction
+postdomtree
+> Profile summary info
+profile-summary-info
+> Detect single entry single exit regions
+regions
+> Print regions of function to 'dot' file
+dot-regions
+> Print regions of function to 'dot' file (with no function bodies)
+dot-regions-only
+> View regions of function
+view-regions
+> View regions of function (with no function bodies)
+view-regions-only
+> Stack Safety Local Analysis
+stack-safety-local
+> Stack Safety Analysis
+stack-safety
+> Scalar Evolution Analysis
+scalar-evolution
+> ScalarEvolution-based Alias Analysis
+scev-aa
+> Scoped NoAlias Alias Analysis
+scoped-noalias-aa
+> Target Library Information
+targetlibinfo
+> Target Transform Information
+tti
+> Type-Based Alias Analysis
+tbaa
+> Uniformity Analysis
+uniformity
+> Write Bitcode
+write-bitcode
+> Dominator Tree Construction
+domtree
+> Print module to stderr
+print-module
+> Print function to stderr
+print-function
+> Safepoint IR Verifier
+verify-safepoint-ir
+> Module Verifier
+verify
+> Combine redundant instructions
+instcombine
+> Inliner for always_inline functions
+always-inline
+> A No-Op Barrier Pass
+barrier
+> Dead Argument Elimination
+deadargelim
+> Dead Argument Hacking (BUGPOINT USE ONLY; DO NOT USE)
+deadarghaX0r
+> Dead Global Elimination
+globaldce
+> Extract loops into new functions
+loop-extract
+> Extract at most one loop into a new function
+loop-extract-single
+> ObjC ARC contraction
+objc-arc-contract
+> Aggressive Dead Code Elimination
+adce
+> Constant Hoisting
+consthoist
+> Dead Code Elimination
+dce
+> Early CSE
+early-cse
+> Early CSE w/ MemorySSA
+early-cse-memssa
+> Flatten the CFG
+flattencfg
+> Global Value Numbering
+gvn
+> Infer address spaces
+infer-address-spaces
+> Remove redundant instructions
+instsimplify
+> Loop Invariant Code Motion
+licm
+> Loop Data Prefetch
+loop-data-prefetch
+> Loop Strength Reduction
+loop-reduce
+> Loop Terminator Folding
+loop-term-fold
+> Unroll loops
+loop-unroll
+> Lower atomic intrinsics to non-atomic form
+loweratomic
+> Merge contiguous icmps into a memcmp
+mergeicmps
+> Nary reassociation
+nary-reassociate
+> Partially inline calls to library functions
+partially-inline-libcalls
+> Place Backedge Safepoints
+place-backedge-safepoints-impl
+> Reassociate expressions
+reassociate
+> Scalar Replacement Of Aggregates
+sroa
+> Scalarize vector operations
+scalarizer
+> Scalarize unsupported masked memory intrinsics
+scalarize-masked-mem-intrin
+> Split GEPs to a variadic base and a constant offset for better CSE
+separate-const-offset-from-gep
+> Simplify the CFG
+simplifycfg
+> Code sinking
+sink
+> Speculatively execute instructions
+speculative-execution
+> Straight line strength reduction
+slsr
+> Structurize the CFG
+structurizecfg
+> Tail Call Elimination
+tailcallelim
+> Break critical edges in CFG
+break-crit-edges
+> Canonicalize Freeze Instructions in Loops
+canon-freeze
+> Attach debug info to everything
+debugify
+> Check debug info from -debugify
+check-debugify
+> Attach debug info to a function
+debugify-function
+> Check debug info from -debugify-function
+check-debugify-function
+> Instrument function entry/exit with calls to e.g. mcount() (post inlining)
+post-inline-ee-instrument
+> Convert irreducible control-flow into natural loops
+fix-irreducible
+> Loop-Closed SSA Form Pass
+lcssa
+> Canonicalize natural loops
+loop-simplify
+> Lower @llvm.global_dtors via `__cxa_atexit`
+lower-global-dtors
+> Lower invoke and unwind, for unwindless code generators
+lowerinvoke
+> Lower SwitchInst's to branches
+lowerswitch
+> Promote Memory to Register
+mem2reg
+> Unify function exit nodes
+mergereturn
+> Fixup each natural loop to have a single exit block
+unify-loop-exits
+> Vectorize load and store instructions
+load-store-vectorizer
+> Live Analysis
+LiveAnalysis
+> Merge sets
+merge-sets
+> Container for architecture-dependent features
+opt-arch-features
+> Register pressure analysis
+rpa
+> AttributeTransplant
+attribute-trans
+> Extra Print Function Pass
+ExtraPrintFunctionPass
+> Extra Print Loop Pass
+ExtraPrintLoopPass
+> NVVM IR Verifier
+nvvm-verify
+> Handle 'n' asm constraint for NVPTX
+asm-constraint
+> Dead Barrier Elimination
+dbe
+> BypassSlowDivision to bypass slow divisions
+bypass-slow-division
+> Optimize address mode with Scalar Evolution
+codegenpreparescev
+> Insert phi elim copies
+do-cssa
+> NVVM Peephole Optimizer
+nvvm-peephole-optimizer
+> Treat non-kernel functions as having internal linkage scope (NVPTX)
+check-kernel-functions
+> Mark must inline functions for NVVM
+nv-inline-must
+> Index Split Loops
+loop-index-split
+> Lower Aggregate Copies
+lower-aggr-copies
+> Lower structure arguments
+lower-struct-args
+> Eliminate byval allocas
+byval-mem2reg
+> Memory Space Opt
+memory-space-opt-pass
+> Name Unnamed Global Variables
+NameUnnamedGVs
+> Check functions with no 64-bit subscripts
+check-gep-index
+> Normalize 64-bit Gep
+Normalize-Gep
+> Lower printf to PTX vprintf instruction
+nvvm-printf-lowering
+> Process __restrict__ keyword.
+Process-Restrict
+> Propagate access properties
+prop-ap
+> Propagate alignment information
+nvvm-propagate-alignment
+> Replace occurences of __nvvm_reflect() calls with 0/1
+nvvm-reflect
+> Register Rematerialization on NVVM IR
+remat
+> Legacy IR Remat
+nvvmrematerialize
+> Simplify Live Out
+nvvmsimplifyliveout
+> Reuses local memory if possible
+nvvm-reuse-local-memory
+> Optimize selected kernels and their call chains
+selectkernels
+> Find good alignment for statically sized global/shared arrays
+set-global-array-alignment
+> Find good alignment for statically sized local arrays
+set-local-array-alignment
+> Post-processing pass for NVVM Reflection
+nvvm-reflect-pp
+> Code sinking
+sink2
+> Check CNP launch calls for legality
+cnp-launch-check
+> Libdevice library specific checking phase
+nvvm-libdevice-check
+> early NVVM specific catchall phase
+nvvm-pretreat
+> Ensure that the global variables are in the global address space
+generic-to-nvvm
+> Add !range metadata to NVVM intrinsics.
+nvvm-intr-range
+> Live DEBUG_VALUE analysis
+livedebugvalues
+> Assignment Tracking Analysis
+debug-ata
+> Expand Atomic instructions
+atomic-expand
+> Applies path clonings for the -basic-block-sections=list option
+bb-path-cloning
+> Prepares for basic block sections, by splitting functions into clusters of basic blocks.
+bbsections-prepare
+> Reads and parses a basic block sections profile.
+bbsections-profile-reader
+> Control Flow Optimizer
+branch-folder
+> Branch relaxation pass
+branch-relaxation
+> BreakFalseDeps
+break-false-deps
+> Prepare callbr
+callbrprepare
+> Insert symbols at valid longjmp targets for /guard:cf
+CFGuardLongjmp
+> Insert CFI remember/restore state instructions
+cfi-fixup
+> Check CFA info and insert CFI instructions if needed
+cfi-instr-inserter
+> Optimize for code generation
+codegenprepare
+> Remove dead machine instructions
+dead-mi-elimination
+> Detect Dead Lanes
+detect-dead-lanes
+> Prepare DWARF exceptions
+dwarf-eh-prepare
+> Early If Converter
+early-ifcvt
+> Early If Predicator
+early-if-predicator
+> Bundle Machine CFG Edges
+edge-bundles
+> Expand large div/rem
+expand-large-div-rem
+> Expand large fp convert
+expand-large-fp-convert
+> Expand memcmp() to load/stores
+expand-memcmp
+> Post-RA pseudo instruction expansion pass
+postrapseudos
+> Expand reduction intrinsics
+expand-reductions
+> Insert fentry calls
+fentry-insert
+> Finalize ISel and expand pseudo-instructions
+finalize-isel
+> Fixup Statepoint Caller Saved
+fixup-statepoint-caller-saved
+> Contiguously Lay Out Funclets
+funclet-layout
+> Removes empty basic blocks and redirects their uses to their fallthrough blocks.
+gc-empty-basic-blocks
+> Create Garbage Collector Module Metadata
+collector-metadata
+> GC Lowering
+gc-lowering
+> Analyze Machine Code For Garbage Collection
+gc-analysis
+> Merge global variables
+global-merge
+> Global merge function pass
+global-merge-func
+> Hardware Loop Insertion
+hardware-loops
+> If Converter
+if-converter
+> Implicit null checks
+implicit-null-checks
+> Expand indirectbr instructions
+indirectbr-expand
+> Init Undef Pass
+init-undef
+> Lower interleaved memory accesses to target specific intrinsics
+interleaved-access
+> Combine interleaved loads into wide loads and shufflevector instructions
+interleaved-load-combine
+> Instrument function entry with call to __CheckForDebuggerJustMyCode
+jmc-instrumenter
+> Lazy Machine Block Frequency Analysis
+lazy-machine-block-freq
+> Debug Variable Analysis
+livedebugvars
+> Live Interval Analysis
+liveintervals
+> Live Range Shrink Pass
+lrshrink
+> Live Register Matrix
+liveregmatrix
+> Live Stack Slot Analysis
+livestacks
+> Live Variable Analysis
+livevars
+> Local Stack Slot Allocation
+localstackalloc
+> Add __emutls_[vt]. variables for emultated TLS model
+lower-emutls
+> Machine Block Frequency Analysis
+machine-block-freq
+> Branch Probability Basic Block Placement
+block-placement
+> Basic Block Placement Stats
+block-placement-stats
+> Machine Branch Probability Analysis
+machine-branch-prob
+> Machine CFG Printer Pass
+dot-machine-cfg
+> Machine Check Debug Module
+mir-check-debugify
+> Machine InstCombiner
+machine-combiner
+> Machine Copy Propagation Pass
+machine-cp
+> Machine Common Subexpression Elimination
+machine-cse
+> Machine Cycle Info Analysis
+machine-cycles
+> Print Machine Cycle Info Analysis
+print-machine-cycles
+> Machine Debugify Module
+mir-debugify
+> Machine Dominance Frontier Construction
+machine-domfrontier
+> MachineDominator Tree Construction
+machinedomtree
+> Machine Function Printer
+machineinstr-printer
+> Split machine functions using profile information
+machine-function-splitter
+> Unpack machine instruction bundles
+unpack-mi-bundles
+> Finalize machine instruction bundles
+finalize-mi-bundles
+> Machine Late Instructions Cleanup Pass
+machine-latecleanup
+> Machine Loop Invariant Code Motion
+machinelicm
+> Early Machine Loop Invariant Code Motion
+early-machinelicm
+> Machine Natural Loop Construction
+machine-loops
+> Machine Module Information
+machinemoduleinfo
+> Machine Optimization Remark Emitter
+machine-opt-remark-emitter
+> Machine Function Outliner
+machine-outliner
+> Modulo Software Pipelining
+pipeliner
+> MachinePostDominator Tree Construction
+machinepostdomtree
+> Detect single entry single exit regions
+machine-region-info
+> Machine Instruction Scheduler
+machine-scheduler
+> PostRA Machine Instruction Scheduler
+postmisched
+> Machine code sinking
+machine-sink
+> PostRA Machine Sink
+postra-machine-sink
+> Machine Strip Debug Module
+mir-strip-debug
+> Machine Trace Metrics
+machine-trace-metrics
+> Machine Uniformity Info Analysis
+machine-uniformity
+> Print Machine Uniformity Info Analysis
+print-machine-uniformity
+> Verify generated machine code
+machineverifier
+> Rename Register Operands Canonically
+mir-canonicalizer
+> Add MIR Flow Sensitive Discriminators
+mirfs-discriminators
+> Rename Register Operands
+mir-namer
+> Load MIR Sample Profile
+fs-profile-loader
+> Register Allocation Scoring Pass
+regallocscoringpass
+> Modulo Schedule test pass
+modulo-schedule-test
+> Optimize machine instruction PHIs
+opt-phis
+> Implement the 'patchable-function' attribute
+patchable-function
+> Peephole Optimizations
+peephole-opt
+> Eliminate PHI nodes for register allocation
+phi-node-elimination
+> Post RA hazard recognizer
+post-RA-hazard-rec
+> Post RA top-down list latency scheduler
+post-RA-sched
+> Pre-ISel Intrinsic Lowering
+pre-isel-intrinsic-lowering
+> Process Implicit Definitions
+processimpdefs
+> Prologue/Epilogue Insertion & Frame Finalization
+prologepilog
+> ReachingDefAnalysis
+reaching-deps-analysis
+> Basic Register Allocator
+regallocbasic
+> Regalloc eviction policy
+regalloc-evict
+> Fast Register Allocator
+regallocfast
+> Greedy Register Allocator
+greedy
+> Regalloc priority policy
+regalloc-priority
+> Register Coalescer
+register-coalescer
+> Scavenge virtual registers inside basic blocks
+scavenger-test
+> Register Usage Information Storage
+reg-usage-info
+> Register Usage Information Collector
+RegUsageInfoCollector
+> Register Usage Information Propagation
+reg-usage-propagation
+> Remove Redundant DEBUG_VALUE analysis
+removeredundantdebugvalues
+> Remove Loads Into Fake Uses
+remove-loads-into-fake-uses
+> Rename Independent Subregisters
+rename-independent-subregs
+> Replace intrinsics with calls to vector library
+replace-with-veclib
+> Safe Stack instrumentation pass
+safe-stack
+> Machine Sanitizer Binary Metadata
+machine-sanmd
+> Optimize selects
+select-optimize
+> Shadow Stack GC Lowering
+shadow-stack-gc-lowering
+> Shrink Wrap Pass
+shrink-wrap
+> Prepare SjLj exceptions
+sjlj-eh-prepare
+> Slot index numbering
+slotindexes
+> Spill Code Placement Analysis
+spill-code-placement
+> Merge disjoint stack slots
+stack-coloring
+> Stack Frame Layout
+stack-frame-layout
+> StackMap Liveness Analysis
+stackmap-liveness
+> Insert stack protectors
+stack-protector
+> Stack Slot Coloring
+stack-slot-coloring
+> Tail Duplication
+tailduplication
+> Early Tail Duplication
+early-tailduplication
+> Target Pass Configuration
+targetpassconfig
+> Two-Address instruction pass
+twoaddressinstruction
+> Type Promotion
+type-promotion
+> Remove unreachable blocks from the CFG
+unreachableblockelim
+> Remove unreachable machine basic blocks
+unreachable-mbb-elimination
+> Virtual Register Map
+virtregmap
+> Virtual Register Rewriter
+virtregrewriter
+> Prepare WebAssembly exceptions
+wasm-eh-prepare
+> Prepare Windows exceptions
+win-eh-prepare
+> Insert XRay ops
+xray-instrumentation
+> Find good alignment for statically sized global/shared arrays
+nvptx-set-global-array-alignment
+> Find good alignment for statically sized alloca arrays
+nvptx-set-local-array-alignment
+> Lower atomics of local memory to simple load/stores
+nvptx-atomic-lower
+> NVPTX Address space based Alias Analysis
+nvptx-aa
+> NVPTX Address space based Alias Analysis Wrapper
+nvptx-aa-wrapper
+> Hoisting alloca instructions in non-entry blocks to the entry block
+alloca-hoisting
+> Assign valid PTX names to globals
+nvptx-assign-valid-global-names
+> NVPTX DAG->DAG Pattern Instruction Selection
+nvptx-isel
+> NVPTX Peephole
+nvptx-peephole
+> NVPTX ProxyReg Erasure
+nvptx-proxyreg-erasure
+> Machine Function Extra Printer
+extra-machineinstr-printer
+> Register pressure analysis on Machine IRs
+machine-rpa
+> Ldg Transformation
+ldgxform
+> Mem2Reg on Machine Instructions to remove local stack objects
+nvptx-mem2reg
+> Optimize NVPTX ld.param
+param-opt
+> Optimize redundant ANDb16ri instrunctions
+nvptx-trunc-opts
