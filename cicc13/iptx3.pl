@@ -645,6 +645,7 @@ my %gk_tabs = (
   1 * 8 + 6 => 'satfinite',  # -> test    byte ptr [r13+1], 40h
 # 2
   2 * 8 + 0 => 'tab282FA00', # -> test    byte ptr [r13+2], 1
+  2 * 8 + 1 => 'tab282FA00', # -> test    byte ptr [rax+2], 2
   2 * 8 + 2 => 'ashift',     # -> test    byte ptr [rax+2], 4
   2 * 8 + 3 => 'tab282F9C0', # .collector::a -> test    byte ptr [rax+2], 8
   2 * 8 + 4 => 'tab282F900', # .collector::b -> test    byte ptr [rax+2], 10h
@@ -658,10 +659,10 @@ my %gk_tabs = (
   3 * 8 + 3 => 'shiftamt',
   3 * 8 + 4 => 'tab282E820', # frnd
   3 * 8 + 5 => 'tab282E820', # rnd
-  3 * 8 + 6 => 'uni',
-  3 * 8 + 7 => 'tab282E7E0', # cmp     byte ptr [r12+3], 0/js
+  3 * 8 + 7 => 'uni',        # cmp     byte ptr [rax+3], 0/js
 # 4
-  4 * 8 + 0 => 'tab282E7C0', # test    byte ptr [r12+4], 1
+  4 * 8 + 0 => 'tab282E7E0', # -> test    byte ptr [rcx+4], 1
+  4 * 8 + 1 => 'tab282E7C0', # -> test    byte ptr [rax+4], 2
 # 4 * 8 + 4 => mul.wide/mad.wide
   4 * 8 + 6 => 'tab282DFE0', # mov.type & cvt 01 - type with .pred
   4 * 8 + 7 => 'tab282EC40', # scope/ss like .gpu .cluster
@@ -739,10 +740,10 @@ my %gk_tabs = (
  13 * 8 + 0 => 'expand',     # -> test    byte ptr [rsi+0Dh], 1
  13 * 8 + 1 => 'tab282ECA0', # thread_group -> test    byte ptr [r13+0Dh], 2
  13 * 8 + 2 => 'tab282F2A0', # -> test    byte ptr [rsi+0Dh], 4
- 13 * 8 + 3 => 'layout',     # this is pure guess - layouta/layoutb called from parse_mma -> test    byte ptr [r13+0Dh], 4
+ 13 * 8 + 3 => 'layout',     # this is pure guess - layouta/layoutb called from parse_mma -> test    byte ptr [r13+0Dh], 8
  13 * 8 + 4 => 'tab282F280', # movzx edx, byte ptr [r12+0Dh]/test dl, 2
  13 * 8 + 6 => 'desc',       # -> test    byte ptr [rdx+0Dh], 40h
- 13 * 8 + 7 => 'nan',        # test    byte ptr [r12+0Dh], 20h
+ 13 * 8 + 7 => 'nan',        # -> cmp     byte ptr [rax+0Dh], 0/js
 # 14 - full
  14 * 8 + 0 => 'xorsign',    # -> test    byte ptr [rax+0Eh], 1
  14 * 8 + 1 => 'transA',
@@ -1213,6 +1214,8 @@ sub C_tabname {
 sub gen_C {
  # header
  printf("// Dont edit this file - it was generated %s by %s -C\n", scalar(localtime), $0);
+ printf("// to distinguish from 13.1\n");
+ printf('#define PTX_13_4' . "\n");
  # populate mask array
  my @mask;
  foreach my $i8 ( 0 .. MTIndex ) {
