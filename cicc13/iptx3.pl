@@ -1,0 +1,1514 @@
+#!perl -w
+# clone of iptx.pl to work with ptx_ops3.txt (extracted from ptxas 13.4)
+# mask shifts:
+#  since 8 + 1
+#  since 10 + 2
+# -f for mask frequency analysis
+use strict;
+use warnings;
+use Getopt::Std;
+use Data::Dumper;
+
+# options
+use vars qw/$opt_a $opt_B $opt_b $opt_C $opt_d $opt_e $opt_f $opt_i $opt_m $opt_N $opt_o $opt_k $opt_L $opt_l $opt_t $opt_T $opt_U $opt_w/;
+
+sub usage()
+{
+  print STDERR<<EOF;
+Usage: $0 [options] md.txt
+ Options:
+ -b idx:shift
+ -B list of idx:shift
+ -C - gen tables for ptx parser
+ -d - dump known tables rows
+ -e - generate EBNF
+ -f - mask frequency analysis
+ -a ins1 ins2 ... - make and mask of instructions
+ -i ins1 ins2 ... - make and mask of instructions - remained
+ -o ins1 ins2 ... - make or mask of instructions - remained
+ -k - exclude known
+ -l - generate fake ptx with all tables
+ -L process output from ptx/colsetp.pl
+ -m - ignore psedo-instructions
+ -N - try compare NVPTX*.td
+ -t - verify tabs and dump still unused
+ -T - filter by type
+ -U - dump instruction not presented in cicc
+ -w - ignore obscure _mma.warpgroup & _mma
+EOF
+  exit(8);
+}
+
+use constant MaskSize => 18;
+
+# instr names from ptx_ops3.txt
+my %g_ins;
+# array of ops, each element is [ line number, mask array, rest of op, op name ]
+my @g_ops;
+# neg mask of known
+my $gk_neg;
+
+# pseudo-instructions - for -m
+my %g_mpi;
+
+use constant ExpFName => 'ptx_expand.txt';
+
+# read pseudo-instructions from ptx_expand.txt
+sub read_expands
+{
+  my($fh, $str, $name);
+  open($fh, '<', ExpFName) or die("cannot open expands, error $!");
+  my $res = 0;
+  while($str = <$fh>) {
+    chomp $str;
+    next if ( $str !~ /^\w+\s+(.*)$/ );
+    $name = $1;
+    # ignore names contained only digits
+    next if ( $name =~ /^\d+$/ );
+    $g_mpi{$name}++;
+    ++$res;
+  }
+  close($fh);
+  $res;
+}
+
+# check if this is pseudo-instruction
+sub is_mpi {
+  my $name = shift;
+  return defined($opt_m) && exists($g_mpi{$name});
+}
+
+sub apply_k
+{
+  my $ar = shift;
+  return $ar unless($gk_neg);
+  my @tmp = @$ar;
+  my $res = 0;
+  foreach my $i ( 0 .. MaskSize ) {
+    $tmp[$i] &= $gk_neg->[$i];
+    $res++ if ( $tmp[$i] );
+  }
+  return undef unless($res);
+  \@tmp;
+}
+
+sub do_freq
+{
+  my(%lsk, %ins_k, $u_name);
+  foreach my $i ( 0 .. MaskSize ) {
+    foreach my $bi ( 0 .. 7 ) {
+      my $mask = 1 << $bi;
+      my $latch = 0;
+      my @and_mask;
+      foreach my $op ( @g_ops ) {
+        my $ar = apply_k($op->[1]);
+        next unless $ar;
+        next unless( $ar->[$i] & $mask );
+        next if is_mpi($op->[3]);
+        if ( defined $opt_k ) {
+          $lsk{ $op->[0] }++;
+          $ins_k{ $op->[3] }++;
+        }
+        unless($latch) {
+          printf("idx %d bit %d:\n", $i, $bi);
+          $latch++;
+          @and_mask = @$ar;
+        } else {
+          foreach my $mi ( 0 .. MaskSize ) {
+            $and_mask[$mi] &= $ar->[$mi];
+          }
+        }
+        printf(" line %d: %s\n", $op->[0], $op->[2]);
+      }
+      # dump and mask
+      if ( $latch ) {
+        printf("and_mask: ");
+        dump_mask(\@and_mask);
+        dump_mtabs(\@and_mask, '') if defined($opt_d);
+      }
+    }
+  }
+  # dump stat
+  if ( $opt_k ) {
+    my $o_size = scalar(@g_ops);
+    my $l_size = scalar keys %lsk;
+    printf("%d forms from %d, %f\n", $l_size, $o_size, 100.0 * $l_size / $o_size);
+    # try to find most unknown instruction
+    my $u_max = 0;
+    while ( my($in, $iv) = each %ins_k ) {
+      if ( $iv > $u_max ) {
+        $u_name = $in;
+        $u_max = $iv;
+      }
+    }
+    my $ik = scalar keys %ins_k;
+    printf("%d ins, %f\n", $ik, 100.0 * $ik / scalar(keys %g_ins));
+    printf("obscuriest %s (%d)\n", $u_name, $u_max) if $u_name;
+  }
+}
+
+# for -b. args: index shift
+sub try_mask
+{
+  my($idx, $sh) = @_;
+  my $mask = 1 << $sh;
+  my @and_mask;
+  foreach my $op ( @g_ops ) {
+    my $ar = apply_k($op->[1]);
+    next unless($ar);
+    next if is_mpi($op->[3]);
+    next unless( $ar->[$idx] & $mask );
+    printf(" line %d: %s\n", $op->[0], $op->[2]);
+    unless( scalar @and_mask ) {
+      @and_mask = @$ar;
+    } else {
+      foreach my $mi ( 0 .. MaskSize ) {
+        $and_mask[$mi] &= $ar->[$mi];
+      }
+    }
+  }
+  if ( scalar @and_mask ) {
+    printf("and_mask: ");
+    dump_mask(\@and_mask);
+    dump_mtabs(\@and_mask, '') if defined($opt_d);
+  }
+}
+
+# for -B. args - hash where keys are indexes and values - masks
+sub try_maskB
+{
+  my($hr) = @_;
+  my @and_mask;
+OUTER:
+  foreach my $op ( @g_ops ) {
+    my $ar = apply_k($op->[1]);
+    next unless($ar);
+    next if is_mpi($op->[3]);
+    foreach my $idx ( keys %$hr ) {
+      my $mask = $hr->{$idx};
+      next OUTER unless( $ar->[$idx] & $mask );
+    }
+    printf(" line %d: %s\n", $op->[0], $op->[2]);
+    unless( scalar @and_mask ) {
+      @and_mask = @$ar;
+    } else {
+      foreach my $mi ( 0 .. MaskSize ) {
+        $and_mask[$mi] &= $ar->[$mi];
+      }
+    }
+  }
+  if ( scalar @and_mask ) {
+    printf("and_mask: ");
+    dump_mask(\@and_mask);
+    dump_mtabs(\@and_mask, '') if defined($opt_d);
+  }
+}
+
+# boring mask logic
+sub _dump_mask {
+  my $mr = shift;
+  foreach my $mi ( @$mr ) {
+    printf("%2.2X ", $mi);
+  }
+}
+
+sub dump_mask
+{
+  _dump_mask(@_);
+  printf("\n");
+}
+
+sub bcnt
+{
+  my $ar = shift;
+  my $res = 0;
+  foreach my $m ( @$ar ) {
+    foreach my $i ( 0 .. 7 ) {
+      $res++ if ( $m & (1 << $i) );
+    }
+  }
+  $res;
+}
+
+# apply not and of remaning masks in $rm
+sub nand
+{
+  my($m, $rm) = @_;
+  foreach my $mi ( @$rm ) {
+    foreach my $i ( 0 .. MaskSize ) {
+      $m->[$i] &= ~( $mi->[$i] );
+    }
+  }
+}
+
+sub filter_and
+{
+  my $hr = shift;
+  my @res;
+  my $found = 0;
+  foreach my $o ( @g_ops ) {
+    # check name in hash
+    next unless ( exists $hr->{ $o->[3] } );
+    my $ar = apply_k($o->[1]);
+    next unless($ar);
+    if ( !$found ) {
+      @res = @$ar; # copy first mask array
+    } else {
+      # apply and
+      foreach my $ai ( 0 .. MaskSize ) {
+        $res[$ai] &= $ar->[$ai];
+      }
+    }
+    $found++;
+  }
+  if ( !$found ) {
+    printf("not found\n");
+  } else {
+    dump_mask(\@res);
+    dump_mtabs(\@res, '') if defined($opt_d);
+  }
+  $found;
+}
+
+sub filter_or
+{
+  my $hr = shift;
+  my(@res, @rem);
+  my $found = 0;
+  foreach my $o ( @g_ops ) {
+    my $ar = apply_k($o->[1]);
+    next unless($ar);
+    # check name in hash
+    unless ( exists $hr->{ $o->[3] } ) {
+      push @rem, $ar;
+      next;
+    }
+    if ( !$found ) {
+      @res = @$ar; # copy first mask array
+    } else {
+      # apply or
+      foreach my $ai ( 0 .. MaskSize ) {
+        $res[$ai] |= $ar->[$ai];
+      }
+    }
+    $found++;
+  }
+  if ( !$found ) {
+    printf("not found\n");
+  } else {
+    dump_mask(\@res);
+    dump_mtabs(\@res, '') if defined($opt_d);
+  }
+  $found;
+}
+
+sub filter_ins
+{
+  my $hr = shift;
+  my(@res, @rem);
+  my $found = 0;
+  foreach my $o ( @g_ops ) {
+    # check name in hash
+    unless ( exists $hr->{ $o->[3] } ) {
+      push @rem, $o->[1];
+      next;
+    }
+    my $ar = $o->[1];
+    if ( !$found ) {
+      @res = @$ar; # copy first mask array
+    } else {
+      # apply and
+      foreach my $ai ( 0 .. MaskSize ) {
+        $res[$ai] &= $ar->[$ai];
+      }
+    }
+    $found++;
+  }
+  if ( !$found ) {
+    printf("not found\n");
+  } else {
+    nand(\@res, \@rem);
+    dump_mask(\@res);
+    dump_mtabs(\@res, '') if defined($opt_d);
+  }
+  $found;
+}
+
+# assigned in read_ops2
+my $g_total_mask;
+
+sub read_ops2
+{
+  my $fname = shift;
+  my @mask = ( 0 ) x (MaskSize + 1);
+  my($fh, $str, $m, $rest, $iname, $max_op);
+  open($fh, '<', $fname) or die("Cannot open $fname, error $!");
+  my $ln = 0;
+  # place masks to g_ops? seems that it's better not have big array with 1420 masks if you don't use it
+  my $add = defined($opt_f) || defined($opt_b) || defined($opt_B) || defined($opt_C) || defined($opt_e) || defined($opt_i) ||
+    defined($opt_a) || defined($opt_o) || defined($opt_T);
+  my $max_mask = 0;
+  while( $str = <$fh> ) {
+    chomp $str;
+    $ln++;
+    next if ( $str !~ /^\d+\s+(.*)$/ );
+    $str = $1;
+    # opcode name and tail starts at 48
+    my $tail = substr($str, 60);
+    $iname = (split /\t/, $tail)[0];
+    # skip _mma.warpgroup
+    next if ( defined($opt_w) && ( $iname eq '_mma.warpgroup' or $iname eq '_mma' ) );
+    $g_ins{$iname}++; # insert into g_ins
+    # make mask
+    $m = substr($str, 0, 59);
+    my @tmp = map { hex $_; } split /\s+/, $m;
+    # calc bitlen
+    my $blen = bcnt(\@tmp);
+    if ( $blen > $max_mask ) {
+      $max_mask = $blen;
+      $max_op = [ $ln, \@tmp, $tail ];
+    }
+    # add to g_ops if needed
+    push @g_ops, [ $ln, \@tmp, $tail, $iname ] if ( $add );
+    # or with total mask
+    foreach my $mi ( 0 .. MaskSize ) {
+      $mask[$mi] |= $tmp[$mi] if $tmp[$mi];
+    }
+  }
+  close $fh;
+  # dump results
+  if ( defined $opt_U ) {
+    printf("%d uniq ins\n", scalar keys %g_ins);
+  } else {
+    $g_total_mask = \@mask;
+    unless ( defined($opt_e) || defined($opt_C) ) {
+      dump_mask(\@mask);
+      printf("length of mask %d\n", bcnt(\@mask));
+      printf("%d uniq ins\n", scalar keys %g_ins);
+      if ( $max_op ) {
+        printf("longest mask: %d ", $max_mask);
+        printf("at %d %s\n", $max_op->[0], $max_op->[2]);
+      }
+    }
+  }
+}
+
+# args: hash to applied map, str
+sub try_ins {
+  my($ah, $str) = @_;
+  # filter
+  return 0 unless defined($str);
+  $str =~ s/^\s+//;
+  $str =~ s/\s+$//;
+  return 0 if ( $str =~ /^\/\// );
+  return 0 if ( $str eq '}}' || $str eq '1' || $str eq '2' || $str eq '_' || $str eq '[' );
+  return 0 if ( $str eq 'f16' || $str eq 'f32' || $str eq 'f64' );
+  return 0 if ( $str eq 's16' || $str eq 's32' || $str eq 's64' );
+  return 0 if ( $str eq 'b16' || $str eq 'bf16' || $str eq 'b32' || $str eq 'b64' );
+  return 0 if ( $str =~ /^\.pred/ );
+  return 0 if ( $str =~ /^\.reg/ );
+  return 0 if ( $str =~ /^\.param/ );
+  return 0 if ( $str =~ /^(?:64|32|16)/ );
+  my @chain = split /(?:\.|::)/, $str;
+  my $name = $chain[0];
+  return 0 unless( $name );
+  my $res = 0;
+  if ( exists $g_ins{$name} ) {
+    $ah->{$name}++;
+    $res |= 1;
+  }
+  for ( my $i = 1; $i <= 5 && $i < scalar(@chain); $i++ ) {
+     $name .= '.' . $chain[$i];
+     if ( exists $g_ins{$name} ) {
+       $ah->{$name}++;
+       $res |= 1;
+     }
+  }
+  return $res if ( $res );
+  # dump unknown
+  printf("unknwn instr %s\n", $str) unless defined($opt_U);
+  0;
+}
+
+# arg - hash with used instructions
+sub dump_unused_ptx
+{
+  my $ur = shift;
+  my $latch = 0;
+  foreach my $iname ( sort keys %g_ins ) {
+    next if ( exists $ur->{$iname} );
+    printf("--- not used instructions:\n") unless ( $latch++ );
+    printf(" %s\n", $iname);
+  }
+  my $klen = scalar(keys %g_ins);
+  printf("total %d from %d (cov %f)\n", $latch, $klen, 1.0 - (1.0 * $latch / $klen));
+
+}
+
+# parse .td files from ARGV and check against g_ins
+sub apply_nvptx
+{
+  unless( scalar @ARGV ) {
+    printf("where is list of .td files?\n");
+    return 0;
+  }
+  my %applied; # key is instruction name
+  foreach my $fn ( @ARGV ) {
+    my($fh, $str, $what);
+    if ( !open($fh, '<', $fn) ) {
+      carp("can't open $fn");
+      next;
+    }
+    while( $str = <$fh> ) {
+      chomp $str;
+      next if ( $str =~ /^\s*\/\// );
+      # <"instr">
+      if ( $str =~ /<\"([^\"]+)\"/ ) {
+        try_ins(\%applied, $1);
+        next;
+      }
+      # < something ""
+      if ( $str =~ /<([^\"]*)\"([^\"]+)\"/ ) {
+        try_ins(\%applied, $2);
+        next;
+      }
+      # strconcat - skip all till first "
+      if ( $str =~ /strconcat\s*\(([^\"]*)\"([^\"]+)/ ) {
+        try_ins(\%applied, $2);
+        next;
+      }
+      # inst_name = ""
+      if ( $str =~ /inst_name\s*=\s*\"([^\"]+)/ ) {
+        try_ins(\%applied, $1);
+        next;
+      }
+      # asm_str = ""
+      if ( $str =~ /asm_str\s*=\s*\"([^\"]+)/ ) {
+        try_ins(\%applied, $1);
+        next;
+      }
+      if ( $str =~ /^\s*\"([^\$]+)\$/ ) {
+        try_ins(\%applied, $1);
+        next;
+      }
+      if ( $str =~ /^\s+\"([^\"]+)\"/ ) {
+        try_ins(\%applied, $1);
+        next;
+      }
+    }
+    close $fh;
+  }
+  # actually it used shf.l & shf.r
+  $applied{'shf.l'}++;
+  $applied{'shf.r'}++;
+  # setmaxnreg too
+  $applied{'setmaxnreg.inc'}++;
+  $applied{'setmaxnreg.dec'}++;
+
+  # dump instructions not in .td files
+  dump_unused_ptx(\%applied);
+}
+
+# read ptx.txt and check in g_ins every instruction
+sub apply_ptx
+{
+  my $fname = shift;
+  my($fh, $str);
+  open($fh, '<', $fname) or die("Cannot open $fname, error $!");
+  my $ln = 0;
+  # some stat
+  my $found = 0;
+  my $bad = 0;
+  my %in_cicc;
+OUTER:
+  while( $str = <$fh> ) {
+    chomp $str;
+    $ln++;
+    my $last;
+    # filter some trash
+    next if ( $str eq ';' || $str eq '' );
+    next if ( $str =~ /\{/ );
+    $str =~ s/^\s+//;
+    my $body = ( split /\s+/, $str )[0];
+    next unless $body;
+    $body =~ s/\s+$//;
+    $body =~ s/;$//;
+    next if ( $body =~ /\.reg/ );
+    next if ( $body eq ',' or $body eq '}' or $body eq ';' or $body eq '//' or $body eq '@' or $body eq '#' or $body eq '' );
+    next if ( $body =~ /^\}/ );
+    next if ( $body =~ /^\]/ );
+    next if ( $body =~ /^\.row/ );
+    next if ( $body =~ /^\.col/ );
+    next if ( $body =~ /^\.v2/ );
+    next if ( $body =~ /^\.v4/ );
+    next if ( $body =~ /^\.pred/ );
+    next if ( $body =~ /^\.param/ );
+    # split on '.'
+    my $need_dot = 0;
+    if ( $body =~ /^\./ ) {
+      $need_dot = 1;
+      $body = substr($body, 1);
+    }
+    my @chain = split /\./, $body;
+    my $name = $chain[0];
+    $name = '.' . $name if ( $need_dot );
+    if ( exists $g_ins{$name} ) {
+      if ( defined $opt_U ) {
+        $last = $name;
+      } else {
+        $found++;
+        next;
+      }
+    }
+    # try tail
+    foreach my $i ( 1 .. scalar(@chain) - 1 ) {
+      $name = $name . '.' . $chain[$i];
+      if ( exists $g_ins{$name} ) {
+        if ( defined $opt_U ) {
+          $last = $name;
+        } else {
+          $found++;
+          next OUTER;
+        }
+      }
+    }
+    if ( defined($opt_U) && $last ) {
+      $in_cicc{$last}++;
+      $found++;
+      next OUTER;
+    }
+    # finally dump
+    printf("line %d: %s\n", $ln, $str) unless( defined $opt_U );
+    $bad++;
+  }
+  close $fh;
+  printf("found %d bad %d\n", $found, $bad);
+  if ( defined $opt_U ) {
+    dump_unused_ptx(\%in_cicc);
+  }
+}
+
+# for instructions with zero mask for unknown reason
+# key is instruction name, value - table name
+# I can only hope there will be single attribute per instruction
+# pls keep this hash ordered by key
+my %gn_tabs = (
+ # ds
+ 'getctarank' => 'ds',
+ # nosleep
+ 'mbarrier.try_wait' => 'nosleep',
+ 'mbarrier.try_wait.parity' => 'nosleep',
+ 'istypep' => 'istypep',
+ 'pmevent' => 'tab282E1E0',
+ # wmma layout - in tab282F2F0
+ 'wmma.load.a' => 'tab282F2F0',
+ 'wmma.load.b' => 'tab282F2F0',
+ 'wmma.load.c' => 'tab282F2F0',
+ 'wmma.store.d' => 'tab282F2F0',
+ 'mma' => 'tab282F2F0',
+ '_mma' => 'tab282F2F0',
+);
+
+=pod
+=begin text
+
+table for bits decoding
+ 01 - 0
+ 02 - 1
+ 04 - 2
+ 08 - 3
+ 10 - 4
+ 20 - 5
+ 40 - 6
+ 80 - 7
+
+=end text
+=cut
+
+# key idx * 8 + shift, value - name of table in tabs sub-dir without .txt extension
+my %gk_tabs = (
+# idx 0
+  0 => 'tab282FC80', # BoolOp
+  1 => 'bsel',
+  2 => 'tab282FBC0', # CmpOp
+  3 => 'keeprefcount',  # test    byte ptr [r12], 8
+  4 => 'evp',        # .level::eviction_priority - prefetch only
+  5 => 'no_atexit',
+  6 => 'tab282F560', # dst type
+# 1
+  1 * 8 + 0  => 'approx',   # -> movzx   eax, byte ptr [r13+1]
+  1 * 8 + 1 => 'relu', # cvt/fma/min/max, test    byte ptr [r12+1], 1
+  1 * 8 + 2 => 'ftz',        # -> test    byte ptr [r13+1], 4
+  1 * 8 + 3 => 'noftz',      # -> test    byte ptr [r13+1], 8
+  1 * 8 + 4 => 'pzo',        # -> test    byte ptr [rdx+1], 10h
+  1 * 8 + 5 => 'sat',        # -> test    byte ptr [rcx+1], 20h
+  1 * 8 + 6 => 'satfinite',  # -> test    byte ptr [r13+1], 40h
+# 2
+  2 * 8 + 0 => 'tab282FA00', # -> test    byte ptr [r13+2], 1
+  2 * 8 + 2 => 'ashift',     # -> test    byte ptr [rax+2], 4
+  2 * 8 + 3 => 'tab282F9C0', # .collector::a -> test    byte ptr [rax+2], 8
+  2 * 8 + 4 => 'tab282F900', # .collector::b -> test    byte ptr [rax+2], 10h
+  2 * 8 + 5 => 'tab282F8E0', # scale_vectorsize -> test    byte ptr [rax+2], 20h
+  2 * 8 + 6 => 'tab282F8B0', # -> test    byte ptr [rax+2], 40h
+  2 * 8 + 7 => 'dec',        # -> cmp     byte ptr [r13+2], 0/js
+# 3
+  3 * 8 + 0 => 'tab282F890', # -> test    byte ptr [r13+3], 1
+  3 * 8 + 1 => 'sat',
+  3 * 8 + 2 => 'cc',
+  3 * 8 + 3 => 'shiftamt',
+  3 * 8 + 4 => 'tab282E820', # frnd
+  3 * 8 + 5 => 'tab282E820', # rnd
+  3 * 8 + 6 => 'uni',
+  3 * 8 + 7 => 'tab282E7E0', # cmp     byte ptr [r12+3], 0/js
+# 4
+  4 * 8 + 0 => 'tab282E7C0', # test    byte ptr [r12+4], 1
+# 4 * 8 + 4 => mul.wide/mad.wide
+  4 * 8 + 6 => 'tab282DFE0', # mov.type & cvt 01 - type with .pred
+  4 * 8 + 7 => 'tab282EC40', # scope/ss like .gpu .cluster
+# 5 - full
+  5 * 8 + 0 => 'tab282E6A0', # im2col
+  5 * 8 + 1 => 'testp',
+  5 * 8 + 2 => 'tab282E960', # .cop
+  5 * 8 + 3 => 'tab282E900', # .sem + barrier.cluster
+  5 * 8 + 4 => 'tab282E8D0', # .to_proxykind::from_proxykind = {.tensormap::generic}
+  5 * 8 + 5 => 'mmio',       # ld/st/red.async
+  5 * 8 + 6 => 'tab282EC20', # cache level like .l1
+  5 * 8 + 7 => 'tab282EB80', # eviction, since v7.4 also for ld/st/prefetch
+# 6 -> test    al, 0D - block_scale
+  6 * 8 + 0 => 'tab282EC40', # scope - test    byte ptr [r12+6], 1
+  6 * 8 + 1 => 'vec',
+#  6 * 8 + 2 - texture address?
+  6 * 8 + 3 => 'tab282E760', # geom - texture mode?
+  6 * 8 + 4 => 'tab282E720', # .dim = { .1d, .2d, .3d, .4d, .5d }
+  6 * 8 + 5 => 'ds',
+  6 * 8 + 6 => 'tab282E640', # occurs only in print handler for cp.async.bulk.tensor
+  6 * 8 + 7 => 'tab282E620', # cta_group
+# 7 - full
+  7 * 8 + 0 => 'tab282E600', # multicast for tcgen05.cp
+  7 * 8 + 1 => 'tab282E5E0', # src_fmt/dst_fmt for tcgen05.cp & ldmatrix
+  7 * 8 + 2 => 'packed_offsets', # test    byte ptr [rdx+7], 4
+  7 * 8 + 3 => 'multicast',  # -> test    byte ptr [r13+7], 8
+  7 * 8 + 4 => 'multicast_cluster',  # tcgen05.commit & cp.async.bulk.tensor
+  7 * 8 + 5 => 'tab282E680', # -> test    byte ptr [r13+7], 20h
+  7 * 8 + 6 => 'tab282E660', # -> test    byte ptr [r13+7], 40h
+  7 * 8 + 7 => 'tab282E550', # occurs only in print handler for cp.async.bulk
+# 8
+  8 * 8 + 0 => 'fabric_cb',  # -> test    byte ptr [rdx+8], 1
+  8 * 8 + 1 => 'tab282E520', # .completion_mechanism -> test    byte ptr [r13+8], 2
+  8 * 8 + 2 => 'fabric' ,    # -> test    byte ptr [r13+8], 4
+  8 * 8 + 4 => 'tiled',      # fabric.try_put.async.tensor
+  8 * 8 + 5 => 'tab282E4C0', # .comp = { .r, .g, .b, .a };
+  8 * 8 + 6 => 'squery',     # common for txq & suq
+# 9 - full
+  9 * 8 + 0 => 'tquery',     # tlquery is first 3 row from tquery
+  9 * 8 + 1 => 'tab282E360', # vote mode -> test    byte ptr [r13+9], 2
+  9 * 8 + 2 => 'tab282F3A0',
+  9 * 8 + 3 => 'tab282F3A0', # redOp with popc
+  9 * 8 + 4 => 'tab282FC80', # .add, .min, .max
+  9 * 8 + 5 => 'cas', # atom with 0M00
+  9 * 8 + 6 => 'tab282E480', # clamp
+  9 * 8 + 7 => 'po',
+# 10 - full
+ 10 * 8 + 0 => 'tab282E440',  # -> movzx   eax, byte ptr [rax+0Ah]/test    al, 1
+ 10 * 8 + 1 => 'tab282E460', # scale = { .shr7, .shr15 }
+ 10 * 8 + 2 => 'prmt',
+ 10 * 8 + 3 => 'tab282E400', # bfly - shfl mode -> test    byte ptr [r13+0Ah], 8
+ 10 * 8 + 4 => 'down', # for tcgen05.shift -> movzx   eax, byte ptr [r13+0Ah]/test al, 10h
+ 10 * 8 + 5 => 'nc',
+ 10 * 8 + 6 => 'rand', # movzx   eax, byte ptr [r12+0Ah]/test al, 10h
+ 10 * 8 + 7 => 'sync', # from setmaxnreg.inc
+# 11 - full
+ 11 * 8 + 0 => 'noinc',      # -> test    byte ptr [r13+0Bh], 1
+ 11 * 8 + 1 => 'noComplete', # mbarrier.arrive & mbarrier.arrive_drop -> test byte ptr [rdx+0Bh], 2
+ 11 * 8 + 2 => 'tab282F800', # isspacep/cvta/cvt.to
+ 11 * 8 + 3 => 'tab282F310', # test    byte ptr [r12+0Bh], 2
+ 11 * 8 + 4 => 'aligned',
+ 11 * 8 + 5 => 'tab282F830', # just speculation - tcgen05.alloc is only good place for it
+ 11 * 8 + 6 => 'dual',       # -> test    byte ptr [rsi+0Bh], 40h
+ 11 * 8 + 7 => 'close',      # test    byte ptr [r12+0Bh], 20h
+# 12 - full
+ 12 * 8 + 0 => 'tab282ECE0', # test byte ptr [r12+0Bh], 40h - shape
+ 12 * 8 + 1 => 'tab282EB40', # ld/cp.async .level::prefetch_size
+ 12 * 8 + 2 => 'tab282EB60', # test    byte ptr [r12+0Ch], 1
+ 12 * 8 + 3 => 'trans',      # -> test    byte ptr [rax+0Ch], 8
+ 12 * 8 + 4 => 'tab282F7A0', # num for tcgen05.ld/tcgen05.st
+ 12 * 8 + 5 => 'frd',        # -> test    byte ptr [rax+0Ch], 20h
+ 12 * 8 + 6 => 'grp',        # -> test    byte ptr [rax+0Ch], 40h
+ 12 * 8 + 7 => 'tab282F360', # test    byte ptr [r12+0Ch], 20h
+# 13
+ 13 * 8 + 0 => 'expand',     # -> test    byte ptr [rsi+0Dh], 1
+ 13 * 8 + 1 => 'tab282ECA0', # thread_group -> test    byte ptr [r13+0Dh], 2
+ 13 * 8 + 2 => 'tab282F2A0', # -> test    byte ptr [rsi+0Dh], 4
+ 13 * 8 + 3 => 'layout',     # this is pure guess - layouta/layoutb called from parse_mma -> test    byte ptr [r13+0Dh], 4
+ 13 * 8 + 4 => 'tab282F280', # movzx edx, byte ptr [r12+0Dh]/test dl, 2
+ 13 * 8 + 6 => 'desc',       # -> test    byte ptr [rdx+0Dh], 40h
+ 13 * 8 + 7 => 'nan',        # test    byte ptr [r12+0Dh], 20h
+# 14 - full
+ 14 * 8 + 0 => 'xorsign',    # -> test    byte ptr [rax+0Eh], 1
+ 14 * 8 + 1 => 'transA',
+ 14 * 8 + 2 => 'negA',       # test    byte ptr [r12+0Eh], 1
+ 14 * 8 + 3 => 'transB',
+ 14 * 8 + 4 => 'negB',       # test    byte ptr [r12+0Eh], 4
+ 14 * 8 + 5 => 'ignoreC',    # -> test    byte ptr [rax+0Eh], 20h
+ 14 * 8 + 6 => 'ignoreC_pred', # -> test    byte ptr [rax+0Eh], 40h
+ 14 * 8 + 7 => 'frel',       # addr type -> cmp     byte ptr [rsi+0Eh], 0/js
+# 15 - full
+ 15 * 8 + 0 => 'abs',        # -> test    byte ptr [rax+0Fh], 1
+ 15 * 8 + 1 => 'cache_hint', # cmp     byte ptr [r12+0Eh], 0/jns
+ 15 * 8 + 2 => 'f4',    # -> test    byte ptr [r13+0Fh], 4
+ 15 * 8 + 3 => 'multimem',   # -> test    byte ptr [r13+0Fh], 8
+ 15 * 8 + 4 => 'fab',   # -> test    byte ptr [r13+0Fh], 10h
+ 15 * 8 + 5 => 'oob',   # fma only -> test    byte ptr [r13+0Fh], 20h
+ 15 * 8 + 6 => 'proxykind',
+ 15 * 8 + 7 => 'proxy',
+# 16 - shift 5
+ 16 * 8 + 0 => 'mbarrier_init', # test byte ptr [r12+10h], 1
+ 16 * 8 + 1 => 'tab282F4E0', # sync_restrict::shared:* -> test byte ptr [r13+10h], 2
+ 16 * 8 + 2 => 'tab282F460', # launch_dependents -> test byte ptr [r13+10h], 4
+ 16 * 8 + 3 => 'tab282F4A0', # get_first_ctaid{::dimension} -> test byte ptr [r13+10h], 8
+ 16 * 8 + 4 => 'tab282F480', # -> test    byte ptr [rax+10h], 10h
+ 16 * 8 + 5 => 'tab282F440', # test    byte ptr [r14+10h], 1
+ 16 * 8 + 6 => 'tab282F3E0',
+ 16 * 8 + 7 => 'b1024',
+# 17 - new
+ 17 * 8 + 0 => 'tf', # tcgen05.fence
+ 17 * 8 + 1 => 'wait', # ::ld/::st for tcgen05.wait
+ 17 * 8 + 3 => 'tab282E2C0', # -> test    byte ptr [r13+11h], 8
+ 17 * 8 + 4 => 'tab282E280', # -> test    byte ptr [r13+11h], 10h
+ 17 * 8 + 5 => 'cp_mask',    # -> test    byte ptr [r13+11h], 20h
+ 17 * 8 + 6 => 'tab3185F88', # -> test    byte ptr [r13+11h], 40h
+ 17 * 8 + 7 => 'layout_v',
+# 18
+ 18 * 8 + 0 => 'phase_type', # test    byte ptr [r13+12h], 1
+ 18 * 8 + 1 => 'report',     # test    byte ptr [rdx+12h], 2
+ 18 * 8 + 2 => 'l2',         # test    byte ptr [rdx+12h], 4
+ 18 * 8 + 5 => 'ignore_oob', # test    byte ptr [r13+12h], 20h
+);
+
+# collect all uniq tables for some instruction
+# args: arr from g_ops
+sub gather_tabs
+{
+  my $op = shift;
+  my $ar = $op->[1];
+  my(@res, %stored);
+  my $idx = 0;
+  foreach my $m ( @$ar ) {
+    foreach my $i ( 0 .. 7 ) {
+      next unless ( $m & (1 << $i) );
+      my $key = $idx * 8 + $i;
+      next unless exists $gk_tabs{$key};
+      my $tname = $gk_tabs{$key};
+      push @res, $tname;
+      $stored{$tname} //= 1;
+    }
+    ++$idx;
+  }
+  # check gn_tabs
+  if ( exists($gn_tabs{ $op->[3] }) ) {
+    my $tname = $gn_tabs{ $op->[3] };
+    push @res, $tname unless ( exists($stored{$tname}) );
+  }
+  return scalar(@res) ? \@res : undef;
+}
+
+# tabs cache, key - name, value - array of rows
+my %g_tcache;
+
+# args - hash with instruction names (or undef for all)
+sub gen_ebnf
+{
+  my $ih = shift;
+  my $res = 0;
+  my @total;
+  my %nums;
+  foreach my $op ( @g_ops ) {
+    my $op_name = $op->[3];
+    next if ( defined($ih) && !exists($ih->{$op_name}) );
+    next if ( is_mpi($op_name) );
+     my $add_alias = sub {
+       # compose ins alias
+       my $alias = $op->[3];
+       $alias =~ s/\./_/;
+       $alias .= $nums{$alias}++;
+       # and push to total
+       push @total, $alias;
+       $alias;
+    };
+# printf("line %d %s\n", $op->[0], $op->[3]);
+    # yep, our client
+    my $tr = gather_tabs($op);
+    unless( defined $tr ) {
+      my $an = $add_alias->();
+      printf("%s = \"%s\" ; %s\n", $an, $op->[3], $op->[2]);
+      next;
+    }
+    # and we have some tables
+    foreach my $tab ( @$tr ) {
+      # I use dirty hack here - if tables was not read yet - it not in g_tcache and so need to be dumped
+      next if ( exists $g_tcache{$tab} );
+      my $ar = get_trows($tab);
+      unless( defined $ar ) {
+        printf("cannot read table %s for %s\n", $tab, $op->[3]);
+        next;
+      }
+      # produce name = [ ... ] for table - see grammar at https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form
+      printf("\n%s = [ ", $tab);
+      my $or_str = join ' | ', map { '"' . $_ . '"'; } @$ar;
+      printf("%s ]\n", $or_str);
+    }
+    my $an = $add_alias->();
+    # finally dump instruction name = [ | ]
+    printf("\n%s = \"%s\" [ ", $an, $op->[3]);
+    my $tabs = join ' ', @$tr;
+    printf("%s ] ; %s\n", $tabs, $op->[2]);
+  }
+  # dump total
+  printf("\ninsn = ");
+  my $idx = 0;
+  foreach my $ins ( @total ) {
+    printf(" | ") if ( $idx++ );
+    printf("%s\n", $ins);
+  }
+  $res;
+}
+
+use constant TabsDir => 'tabs/';
+use constant TabLen => 96; # max len for make_trow
+use constant MTIndex => 18; # max used byte index in gk_tabs
+
+sub tab_fname { TabsDir . shift . '.txt'; }
+
+sub read_tab {
+  my $tn = shift;
+  my $fn = tab_fname($tn);
+  my(@res, $fh, $str);
+  open($fh, '<', $fn) or die("cannot open $fn for table $tn, error $!");
+  my $ln = -1;
+  while( $str = <$fh> ) {
+    chomp $str;
+    $ln++;
+    # skip first empty line
+    next if ( !$ln && $str eq '' );
+    push @res, $str;
+  }
+  close $fh;
+  return \@res;
+}
+
+# args: table name, prefix string
+sub read_dump_tab {
+  my($tn, $pfx) = @_;
+  my $ar = read_tab($tn);
+  next unless defined $ar;
+  foreach my $str ( @$ar ) { printf("%s%s\n", $pfx, $str); }
+}
+
+# return array of table rows
+# if not in cache - read it
+# args: name of table
+sub get_trows {
+  my $tn = shift;
+  return $g_tcache{$tn} if ( exists $g_tcache{$tn} );
+  my $ar = read_tab($tn);
+  return unless defined $ar;
+  $g_tcache{$tn} = $ar;
+  $ar;
+}
+
+sub make_trow {
+  my $row = shift;
+  my $res = $row->[0];
+  my $rlen = scalar @$row;
+  my $len = length($res);
+  for ( my $i = 1; $i < $rlen && $len < TabLen; ++$i ) {
+    $res .= ' ' . $row->[$i];
+    $len = length($res);
+  }
+  $res;
+}
+
+# dump tabs
+# args: bitmask, prefix string
+sub dump_mtabs {
+  my($mask, $pfx) = @_;
+  my $res = 0;
+  my $idx = 0;
+  foreach my $m ( @$mask ) {
+    foreach my $i ( 0 .. 7 ) {
+      next unless ( $m & (1 << $i) );
+      my $tab_idx = $idx * 8 + $i;
+      next unless exists $gk_tabs{$tab_idx};
+      my $ar = get_trows($gk_tabs{$tab_idx});
+      next unless defined($ar);
+      # dump them
+      printf("%s%2.2d:%d: %s\n", $pfx, $idx, $i, make_trow($ar));
+      ++$res;
+    }
+    ++$idx;
+  }
+  $res;
+}
+
+sub get_not_used_tabs
+{
+  my($str, $dh, %tabs);
+  opendir($dh, TabsDir) or die("cannot open tabs sub-dir, error $!");
+  while($str = readdir($dh)) {
+    next if ( $str eq '.' || $str eq '..' );
+    if ( $str !~ /^(.*)\.txt$/ ) {
+      printf("bad tab %s\n", $str);
+      next;
+    }
+    $tabs{$1}++;
+  }
+  closedir($dh);
+  my %seen;
+  # traverse gk_tabs values
+  foreach my $t ( values %gk_tabs ) {
+    if ( exists $tabs{$t} ) {
+      delete $tabs{$t};
+      $seen{$t} //= 1;
+    } else {
+      printf("unknown tab %s\n", $t) unless(exists $seen{$t});
+    }
+  }
+  # traverse gn_tabs values
+  foreach my $t ( values %gn_tabs ) {
+    if ( exists $tabs{$t} ) {
+      delete $tabs{$t};
+      $seen{$t} //= 1;
+    } else {
+      printf("unknown gn tab %s\n", $t) unless(exists $seen{$t});
+    }
+  }
+  return \%tabs;
+}
+
+sub v_tabs
+{
+  my $tabs = get_not_used_tabs();
+  return unless defined $tabs;
+  # sort remainings and dump
+  my @rem = sort { $a cmp $b } keys %$tabs;
+  return unless( scalar @rem );
+  printf("%d unused tabs:\n", scalar @rem);
+  foreach my $tn ( @rem ) {
+    printf(" %s\n", $tn);
+    read_dump_tab($tn, '   ') if ( $tn =~ /^tab/ );
+  }
+}
+
+# collect used tables
+sub collect_used_attrs
+{
+  my %res;
+  foreach my $t ( values %gk_tabs ) { $res{$t}++; }
+  \%res;
+}
+
+# collect uniq attributes from all tables
+sub collect_attrs
+{
+  my($str, $dh, %attrs);
+  my $ktabs;
+  $ktabs = collect_used_attrs() if defined($opt_k);
+  opendir($dh, TabsDir) or die("cannot open tabs sub-dir, error $!");
+  while($str = readdir($dh)) {
+    next if ( $str eq '.' || $str eq '..' );
+    if ( $str !~ /^(.*)\.txt$/ ) {
+      printf("bad tab %s\n", $str);
+      next;
+    }
+    $str = $1;
+    # skip known tables
+    next if ( defined($ktabs) && exists $ktabs->{$str} );
+    # skip strange .1t
+    next if ( $str eq 'tab282F780' );
+    my $ar = get_trows($str);
+    unless( defined $ar ) {
+      printf("ignore %s\b", $str);
+      next;
+    }
+    foreach my $a ( @$ar ) {
+      # skip <>= etc
+      next if ( $a =~ /<|>|=|\||%|&|\*|\!|\/|~/ );
+      # and digits
+      next if ( $a =~ /^-?(\d+)$/ );
+      next if exists $attrs{$a};
+      $attrs{$a} = $str;
+    }
+  }
+  closedir($dh);
+  return \%attrs;
+}
+
+# collect all suffixes after . from g_ins keys
+sub collect_sfx {
+  my %res;
+  my $cnt = 0;
+  foreach my $name ( keys %g_ins ) {
+    next if ( $name !~ /^[^\.]+\.(.*)$/ );
+    $res{'.' . $_}++ for ( split /\./, $1 );
+    $cnt++;
+  }
+  return $cnt ? \%res : undef;
+}
+
+# args - hash ref from collect_attrs, out file name, hash ref from collect_sfx
+sub force_attrs
+{
+  my($hr, $fname, $sr) = @_;
+  my($fh, $ai);
+  open($fh, '>', $fname) or die("force_attrs: cannot create $fname, $!");
+  # prolog
+  print $fh <<'PRLOG';
+.version 9.1
+.target sm_101
+.address_size 64
+
+.visible .func  (.param .s32 func_retval0) _Z15test(
+        .param .b32 param_0
+)
+{
+        .reg .pred      %p<2>;
+        .reg .b32       %r<3>;
+        ld.param.u32    %r2, [param_0];
+PRLOG
+  # variants of setp with collected attrs
+  my $lock = 0;
+  if ( defined $sr ) {
+    foreach $ai ( sort keys %$sr ) {
+      next if ( exists $hr->{$ai} );
+      printf($fh ' @%%p1 ') if ( $lock == 1 );
+      printf($fh " setp%s %%p1, %%r2, %%r2;\n", $ai);
+      ++$lock;
+    }
+  } else {
+    foreach $ai ( sort keys %$hr ) {
+      printf($fh ' @%%p1 ') if ( $lock == 1 );
+      printf($fh " setp%s %%p1, %%r2, %%r2;\n", $ai);
+      ++$lock;
+    }
+  }
+  # epilog
+print $fh <<EPLOG;
+        ret;
+
+}
+EPLOG
+  close $fh;
+}
+
+# parse log from ptx/colsetp.pl to get
+# 1) mapping lex token to table
+# 2) find not used tables
+# args - hash from get_not_used_tabs, hash from collect_sfx
+sub parse_L
+{
+  my($tr, $sr) = @_;
+  # read all tabs bodies
+  my %kh; # key - attribute name, value - table name
+  foreach my $t ( keys %$tr ) {
+    my $ar = get_trows($t);
+    next unless defined $ar; # wtf?
+    # put every name in kh, check for duplicates
+    foreach my $ak ( @$ar ) {
+       if ( exists $kh{$ak} ) {
+         printf("duplicated %s from %s, already got from %s\n", $ak, $t, $kh{$ak});
+         next;
+       }
+       $kh{$ak} = $t;
+    }
+    # mark table as unused
+    $tr->{$t} = 0;
+  }
+  # read log and parse attributes
+  my $line = 0;
+  my $res = 0;
+  while(my $str = <> ) {
+    ++$line;
+    chomp $str;
+    #              1 - number           2 - rest of list
+    if ( $str !~ /^(\d+)\/(?:[^:]+):\s*(.*)$/ ) {
+      printf("bad string line %d: %s\n", $line, $str);
+      next;
+    }
+    my $num = int($1);
+    # see https://gh.evko.io/nvopen-tools/ptxas/pipeline/ptx-parser.html#token-categories
+    # 58 is ':' symbol
+    # 275 is just symbols like '&' or '%'
+    next if ( $num == 58 || $num == 275 );
+    my @res = split /\s+/, $2;
+    # traverse list of attributes
+    my $old_tab;
+    foreach my $ma ( @res ) {
+      next if exists $sr->{$ma};
+      if ( !exists $kh{$ma} ) {
+        # printf("unknown attr %s for %d, line %d\n", $ma, $num, $line);
+        next;
+      }
+      $res++;
+      # mark table as used
+      my $tname = $kh{$ma};
+      $tr->{ $tname }++;
+      # check if this is first
+      unless ( defined $old_tab ) {
+        printf("%d: %s (%s)", $num, $tname, $ma);
+        $old_tab = $tname;
+        next;
+      }
+      next if ( $old_tab eq $tname );
+      printf(" %s (%s)", $tname, $ma);
+      $old_tab = $tname;
+    }
+    printf("\n") if defined($old_tab);
+  }
+  # dump unused tables
+  my $latch = 0;
+  foreach my $tn ( keys %$tr ) {
+    next if ( $tr->{$tn} );
+    unless($latch) { ++$latch;
+      printf("--- still unused tables:\n");
+      printf(" %s\n", $tn);
+    }
+  }
+  return $res;
+}
+
+# boring gen C stuff
+# I need 3 types
+my $g_tab_type = 'PTXTab'; # for tables
+my $g_ins_type = 'PTXIns'; # for instructions descriptor
+my $g_ins_map  = 'PTXOps';
+
+sub dump_C_tab
+{
+  my($tab_name, $ar) = @_;
+  my $res = 0;
+  printf("const static %s %s = {\n", $g_tab_type, $tab_name);
+  foreach my $str ( @$ar ) {
+    next if ( $str eq '' );
+    $str =~ s/^\.//;
+    # skip <>= etc
+    next if ( $str =~ /<|>|=|\||%|&|\*|\!|\/|~/ );
+    $str =~ s/\./::/g;
+    printf(" \"%s\",\n", lc($str));
+    ++$res;
+  }
+  printf("};\n");
+  $res;
+}
+
+# gen table name
+sub C_tabname {
+ my $tgn = shift;
+ if ( $tgn =~ /^tab/ ) {
+   return 's_' . $tgn;
+  } else {
+   return 's_tab_' . $tgn;
+  }
+}
+
+sub gen_C {
+ # header
+ printf("// Dont edit this file - it was generated %s by %s -C\n", scalar(localtime), $0);
+ # populate mask array
+ my @mask;
+ foreach my $i8 ( 0 .. MTIndex ) {
+   foreach my $j ( 0 .. 7 ) {
+     my $k = $i8 * 8 + $j;
+     unless ( exists $gk_tabs{$k} ) {
+       push @mask, undef;
+       next;
+     }
+     my $tab = $gk_tabs{$k};
+     my $tab_name = C_tabname($tab);
+     if ( exists $g_tcache{$tab} ) {
+       push @mask, $tab_name;
+       next;
+     }
+     my $ar = get_trows($tab);
+     unless( defined $ar ) {
+       printf("cant read table %s, idx %d:%d\n", $tab, $i8, $j);
+       push @mask, undef;
+       next;
+     }
+     # dump this table
+     dump_C_tab($tab_name, $ar);
+     push @mask, $tab_name;
+   }
+ }
+ # dump tabs
+ printf("\nconst static %s *s_tabs[] = {\n", $g_tab_type);
+ foreach my $i8 ( 0 .. MTIndex ) {
+   foreach my $j ( 0 .. 7 ) {
+     my $k = $i8 * 8 + $j;
+     printf("// %d:%d %d\n", $i8, $j, $k);
+     if ( defined $mask[$k] ) {
+       printf(" &%s", $mask[$k]);
+     } else {
+       printf(" nullptr");
+     }
+     printf(",\n");
+   }
+ }
+ printf("};\n");
+ # order instructions by name
+ # key - name, value - [ array from g_ops ]
+ my %sorted;
+ my $max_dot = 0;
+ my $max_name;
+ foreach my $op ( @g_ops ) {
+   my $op_name = $op->[3];
+   # strange () = stolen from https://stackoverflow.com/questions/43719236/count-characters-in-perl
+   my $c = () = $op_name =~ /\./g;
+   if ( $c > $max_dot ) {
+     $max_dot = $c;
+     $max_name = $op_name;
+   }
+   if ( exists $sorted{$op_name} ) {
+     my $ar = $sorted{$op_name};
+     push @$ar, $op;
+   } else {
+     $sorted{$op_name} = [ $op ];
+   }
+ }
+ # types stat - key - letter, value - number of occurences
+ my %st_map;
+ my %t10; # first 10 instructions for each type letter
+ my %gn_names; # key is table name, value is generated name
+ # dump instructions
+ foreach my $op_name ( sort { $a cmp $b } keys %sorted ) {
+   my $with_gn;
+   if ( exists $gn_tabs{$op_name} ) {
+     my $tgn = $gn_tabs{$op_name};
+     my $tab_name;
+     if ( exists $gn_names{$tgn} ) {
+       $tab_name = $gn_names{$tgn};
+     } else {
+       my $dumped = exists $g_tcache{$tgn};
+       my $ar = get_trows($gn_tabs{$op_name});
+       unless( defined $ar ) {
+         printf("cant read known table for %s\n", $gn_tabs{$op_name});
+       } else {
+         $tab_name = C_tabname($tgn);
+         dump_C_tab($tab_name, $ar) unless( $dumped );
+         $gn_names{$tgn} = $tab_name;
+       }
+     }
+     $with_gn = $tab_name;
+   }
+   my @names_ar;
+   my $idx = 0;
+   my $ar = $sorted{$op_name};
+   foreach my $op ( @$ar ) {
+     my $oname = $op->[3];
+     $oname =~ s/\./_/g;
+     my $s_name = 's_' . $oname . '_' . $idx++;
+     printf("static const %s %s = {\n", $g_ins_type, $s_name); # single descriptor
+     printf(" \"%s\",\n", $op->[3]);
+     printf(" %s,\n", defined($with_gn) ? '&' . $with_gn : 'nullptr');
+     # dump tail
+     my @tail = split /\t/, $op->[2];
+     # ops
+     if ( defined $tail[1] ) {
+       printf(" \"%s\", ",$tail[1]);
+     } else {
+       printf(" nullptr, ");
+     }
+     # types
+     if ( defined $tail[2] && $tail[2] ne '(null)') {
+       printf(" \"%s\"",$tail[2]);
+       # add types stat
+       my @t = $tail[2] =~ /[a-zA-Z]/g;
+       foreach my $l ( @t ) {
+         $st_map{$l}++;
+         if ( exists $t10{$l} ) {
+           my $ar = $t10{$l};
+           push @$ar, [ $op->[3], $op->[0] ] if ( scalar @$ar < 10 );
+         } else {
+           $t10{$l} = [ [ $op->[3], $op->[0] ] ];
+         }
+       }
+     } else {
+       printf(" nullptr");
+     }
+     # line number - for debugging
+     printf(", %d,\n", $op->[0]);
+     # dump mask array
+     my @masks = @{$op->[1]}[0 .. MTIndex];
+     printf("{ %s }\n", join ',', map { sprintf("0x%X",$_); } @masks);
+     printf("};\n");
+     push @names_ar, $s_name;
+   }
+   # replace key with names_ar
+   $sorted{$op_name} = \@names_ar;
+ }
+ # dump types map
+ my @st = sort { $b->[1] <=> $a->[1] } map { [ $_, $st_map{$_} ]; } keys %st_map;
+ printf("// Used Types stat:\n");
+ foreach my $l ( @st ) {
+   printf("// %s - %d:", $l->[0], $l->[1]);
+   my $ar = $t10{$l->[0]};
+   printf(" %s\n", join ',', map{ sprintf("%s %d", $_->[0], $_->[1]); } @$ar);
+ }
+ # dump instructions map
+ printf("static const int s_max_dot = %d; // %s\n", $max_dot, $max_name);
+ printf("const %s g_ops = {\n", $g_ins_map);
+ my $ins_cnt = 0;
+ my $total_ins = 0;
+ foreach my $op_name ( sort { $a cmp $b } keys %sorted ) {
+   ++$ins_cnt;
+   printf(" { \"%s\", {", $op_name);
+   my $ar = $sorted{$op_name};
+   printf("%s", join ',', map { '&' . $_} @$ar );
+   printf("} }, // %d\n", scalar @$ar);
+   $total_ins += scalar @$ar;
+ }
+ printf("};\n");
+ printf("// %d keys, total %d ins\n", $ins_cnt, $total_ins);
+}
+
+sub filter_types
+{
+  my @idx;
+  foreach my $op ( @g_ops ) {
+    my @tail = split /\t/, $op->[2];
+    next if ( !defined($tail[2]) || $tail[2] eq '(null)');
+    next if ( -1 == index($tail[2], $opt_T) );
+    # dump
+    _dump_mask($op->[1]);
+    printf(" %s %s ln %d\n", $op->[3], $tail[2], $op->[0]);
+    push @idx, $op;
+  }
+  my $size = scalar @idx;
+  return unless($size);
+  return unless ( defined($opt_a) || defined($opt_o) );
+  my @res = @{ $idx[0]->[1] };
+  for my $i ( 1 .. $size - 1 ) {
+     my $ar = $idx[$i]->[1];
+     if ( defined $opt_a ) {
+        foreach my $ai ( 0 .. MaskSize ) {
+          $res[$ai] &= $ar->[$ai];
+         }
+       } else {
+        foreach my $oi ( 0 .. MaskSize ) {
+          $res[$oi] |= $ar->[$oi];
+        }
+     }
+  }
+  dump_mask(\@res);
+  if ( defined $opt_k ) {
+    printf("try apply_k\n");
+    my $ar = apply_k(\@res);
+    dump_mask($ar) if defined($ar);
+  }
+}
+
+# main
+my $status = getopts("Bb:aCdefikLl:mNotT:Uw");
+usage() if ( !$status );
+
+read_ops2('ptx_ops3.txt');
+if ( defined $opt_t ) {
+  v_tabs();
+  exit;
+}
+read_expands() if defined($opt_m);
+# -e - just generate EBNF
+if ( defined $opt_e ) {
+  # read for what instructions
+  my %ins;
+  $ins{$_} = 1 foreach @ARGV;
+  gen_ebnf(scalar(keys %ins) ? \%ins : undef);
+  exit;
+}
+# -C - gen tabs for parser
+if ( defined $opt_C ) {
+  gen_C();
+  exit;
+}
+# -l - make ptx for lexer brute-force
+if ( defined $opt_l ) {
+  my $hr = collect_attrs();
+  my $sr;
+  $sr = collect_sfx() if ( defined $opt_i );
+  force_attrs($hr, $opt_l, $sr);
+  exit;
+}
+# -L parse file from colsetp.pl
+if ( defined $opt_L ) {
+  parse_L(get_not_used_tabs(), collect_sfx());
+  exit;
+}
+# build neg known mask
+if ( defined $opt_k ) {
+  my @k = ( 0 ) x (MaskSize + 1);
+  foreach my $kt ( keys %gk_tabs ) {
+    my $idx = $kt >> 3;
+    my $mask = 1 << ($kt & 0x7);
+    $k[$idx] |= $mask;
+  }
+  # dump it
+  printf("size of known mask %d\n", bcnt(\@k));
+  printf("known mask:    ");
+  dump_mask(\@k);
+  # make negative
+  my @kn = map { (~$_) & 0xff; } @k;
+  printf("negative mask: ");
+  dump_mask(\@kn);
+  $gk_neg = \@kn;
+  # union with $g_total_mask
+  my @still_unk = ( 0 ) x (MaskSize + 1);
+  for my $i ( 0 .. MaskSize ) { $still_unk[$i] = $g_total_mask->[$i] & $kn[$i]; }
+  printf("unknown mask:  ");
+  dump_mask(\@still_unk);
+  printf("unk size %d\n", bcnt(\@still_unk));
+}
+if ( defined $opt_T ) {
+  filter_types();
+  exit;
+}
+
+my %ins;
+my $ga = sub {
+  my $what = shift;
+  $ins{$_} = 1 foreach @ARGV;
+  die("no ins for $what") unless( scalar keys %ins );
+};
+if ( defined $opt_i ) {
+ $ga->('-i');
+ filter_ins(\%ins);
+} elsif ( defined $opt_a ) {
+  $ga->('-a');
+  filter_and(\%ins);
+} elsif ( defined $opt_o ) {
+  $ga->('-o');
+  filter_or(\%ins);
+} elsif ( defined $opt_b ) {
+ # parse and check -b option
+ die("bad -b option") if ( $opt_b !~ /^(\d+):(\d)$/ );
+ my $idx = int($1);
+ die("bad idx") if ( $idx > MaskSize );
+ my $sh = int($2);
+ die("bad shift") if ( $sh > 7 );
+ try_mask($idx, $sh);
+} elsif ( defined $opt_B ) {
+  my %mh;
+   # parse list of args for -B
+  foreach my $ba ( @ARGV ) {
+     die("bad -B option $ba") if ( $ba !~ /^(\d+):(\d)$/ );
+     my $idx = int($1);
+     die("bad idx in $ba") if ( $idx > MaskSize );
+     my $sh = int($2);
+     die("bad shift in $ba") if ( $sh > 7 );
+     $mh{$idx} |= 1 << $sh;
+  }
+  die("no args for -B") unless( scalar keys %mh );
+  try_maskB(\%mh);
+} elsif ( defined $opt_f ) {
+  do_freq();
+} elsif ( defined $opt_N ) {
+  apply_nvptx();
+} else { apply_ptx('ptx.txt'); }
