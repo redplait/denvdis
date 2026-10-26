@@ -1,5 +1,5 @@
 #include "ptx_types.h"
-#include "ops.inc"
+#include OPS_INC
 #include <string.h>
 #include <stdarg.h>
 #include <algorithm>

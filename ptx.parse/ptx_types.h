@@ -16,7 +16,8 @@ struct PTXIns {
   const PTXTab *spec_tab = nullptr;
   const char *fmt, *ops;
   int ln;
-  static constexpr int MaskSize = 17;
+  static constexpr int MaskSize = MaskWIDTH;
+
   unsigned char mask[MaskSize];
   // some masks presents just properties of instruction
   inline bool has_bit(int maj, int min) const {
