@@ -4,6 +4,32 @@
 #include <stdarg.h>
 #include <algorithm>
 
+#ifdef PTX_13_4
+bool PTXIns::pred_dest() const {
+  return has_bit(0, 7); // modify predicate register
+}
+
+bool PTXIns::is_signed() const {
+  return has_bit(3, 6); // operands are signed
+}
+
+bool PTXIns::is_txq() const {
+  return has_bit(8, 7); // official doc don't show nothing special for TXQ vs txq.level
+}
+#else
+bool PTXIns::pred_dest() const {
+  return has_bit(0, 6); // modify predicate register
+}
+
+bool PTXIns::is_signed() const {
+  return has_bit(3, 5); // operands are signed
+}
+
+bool PTXIns::is_txq() const {
+  return has_bit(8, 5); // official doc don't show nothing special for TXQ vs txq.level
+}
+#endif
+
 // from https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces-state-spaces-tab
 const static PTXTab SpaceTab = {
  "param",
