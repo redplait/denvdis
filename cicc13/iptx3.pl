@@ -51,9 +51,9 @@ my $gk_neg;
 # pseudo-instructions - for -m
 my %g_mpi;
 
-use constant ExpFName => 'ptx_expand.txt';
+use constant ExpFName => 'ptx134_expand.txt';
 
-# read pseudo-instructions from ptx_expand.txt
+# read pseudo-instructions from ptx134_expand.txt
 sub read_expands
 {
   my($fh, $str, $name);
