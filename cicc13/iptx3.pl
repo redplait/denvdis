@@ -671,7 +671,7 @@ my %gk_tabs = (
   5 * 8 + 1 => 'testp',
   5 * 8 + 2 => 'tab282E960', # .cop
   5 * 8 + 3 => 'tab282E900', # .sem + barrier.cluster
-  5 * 8 + 4 => 'tab282E8D0', # .to_proxykind::from_proxykind = {.tensormap::generic}
+  5 * 8 + 4 => 'tab282E8D0', # .to_proxykind::from_proxykind = {.tensormap::generic} <- test    byte ptr [r13+5], 10h
   5 * 8 + 5 => 'mmio',       # ld/st/red.async
   5 * 8 + 6 => 'tab282EC20', # cache level like .l1
   5 * 8 + 7 => 'tab282EB80', # eviction, since v7.4 also for ld/st/prefetch

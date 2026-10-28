@@ -3385,7 +3385,7 @@ mbarrier_init = [ ".mbarrier_init" ]
 
 fence0 = "fence" [ tab282E900 tab282EC40 mbarrier_init tab282F4E0 ] ; fence		P
 
-tab282E8D0 = [ ".async::generic" | ".tensormap::generic" ]
+tab282E8D0 = [ ".async::generic" | ".tensormap::generic" | ".fabric::generic" | ".fabric::fabric" | ".generic::fabric" ]
 
 proxykind = [ ".alias" | ".async" | ".async.global" | ".async.shared::cta" | ".async.shared::cluster" ]
 

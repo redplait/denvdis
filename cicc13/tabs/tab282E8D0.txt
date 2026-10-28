@@ -1,3 +1,6 @@
 
 .async::generic
 .tensormap::generic
+.fabric::generic
+.fabric::fabric
+.generic::fabric
