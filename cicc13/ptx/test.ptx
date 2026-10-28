@@ -1,5 +1,5 @@
 .version 6.4             // PTX version 6.5 is enough for Volta GPUs
-.target sm_70            // Target architecture (SM 7.0 - Volta GPUs)
+.target sm_75            // Target architecture (SM 7.0 - Volta GPUs)
 .address_size 64         // 64-bit addressing
 
 .visible .entry tops_f16f16_sm70mma_8x8x4_loop128_ptx_kernel()
