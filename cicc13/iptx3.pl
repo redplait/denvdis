@@ -600,6 +600,8 @@ my %gn_tabs = (
  'mbarrier.try_wait.parity' => 'nosleep',
  'istypep' => 'istypep',
  'pmevent' => 'tab282E1E0',
+ # from macros
+ 'prefetch' => 'valid_addr',
  # wmma layout - in tab282F2F0
  'wmma.load.a' => 'tab282F2F0',
  'wmma.load.b' => 'tab282F2F0',
@@ -643,6 +645,7 @@ my %gk_tabs = (
   1 * 8 + 4 => 'pzo',        # -> test    byte ptr [rdx+1], 10h
   1 * 8 + 5 => 'sat',        # -> test    byte ptr [rcx+1], 20h
   1 * 8 + 6 => 'satfinite',  # -> test    byte ptr [r13+1], 40h
+  1 * 8 + 7 => 'satnarrow',  # just guess - cvt only
 # 2
   2 * 8 + 0 => 'tab282FA00', # -> test    byte ptr [r13+2], 1
   2 * 8 + 1 => 'tab282FA00', # -> test    byte ptr [rax+2], 2
@@ -663,6 +666,7 @@ my %gk_tabs = (
 # 4
   4 * 8 + 0 => 'tab282E7E0', # -> test    byte ptr [rcx+4], 1
   4 * 8 + 1 => 'tab282E7C0', # -> test    byte ptr [rax+4], 2
+  4 * 8 + 3 => 'exclusive',
 # 4 * 8 + 4 => mul.wide/mad.wide
   4 * 8 + 6 => 'tab282DFE0', # mov.type & cvt 01 - type with .pred
   4 * 8 + 7 => 'tab282EC40', # scope/ss like .gpu .cluster

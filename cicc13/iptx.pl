@@ -640,6 +640,7 @@ my %gk_tabs = (
   1 * 8 + 3 => 'sat', # hz why not next but used for cvt only
   1 * 8 + 4 => 'sat',        # test    byte ptr [r12+1], 10h
   1 * 8 + 5 => 'satfinite',  # test    byte ptr [r12+1], 20h
+  1 * 8 + 6 => 'satnarrow',
   1 * 8 + 7 => 'tab282F2A0', # mma/tcgen05.mma .sp/.sp::ordered_metadata
 # 2
   2 * 8 + 0 => 'tab282FA00', # test    byte ptr [r12+2], 1

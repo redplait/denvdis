@@ -163,7 +163,9 @@ tab282DFE0 = [ ".b1" | ".b2" | ".b4" | ".b8" | ".b16" | ".b32" | ".b64" | ".b128
 
 cvt8 = "cvt" [ tab282F560 sat tab282DFE0 ] ; cvt	01	I[8|16|32|64]I[8|16|32|64]
 
-cvt9 = "cvt" [ tab282F560 relu pzo satfinite tab282E820 ] ; cvt	c11	Q16F32
+satnarrow = [ ".satnarrow" ]
+
+cvt9 = "cvt" [ tab282F560 relu pzo satfinite satnarrow tab282E820 ] ; cvt	c11	Q16F32
 
 cvt10 = "cvt" [ tab282F560 relu pzo satfinite tab282E820 ] ; cvt	c1	Q16H32
 
@@ -187,15 +189,15 @@ cvt19 = "cvt" [ tab282F560 relu tab282E820 ] ; cvt	0b	H32R8
 
 cvt20 = "cvt" [ tab282F560 relu satfinite tab282E820 ] ; cvt	01	E32Q16
 
-cvt21 = "cvt" [ tab282F560 relu pzo satfinite tab282E820 ] ; cvt	01	Q16E32
+cvt21 = "cvt" [ tab282F560 relu pzo satfinite satnarrow tab282E820 ] ; cvt	01	Q16E32
 
 tab282F890 = [ ".scaled::n1::ue8m0" | ".scaled::n2::ue8m0" ]
 
-cvt22 = "cvt" [ tab282F560 relu pzo satfinite tab282F890 tab282E820 ] ; cvt	011x	Q16F32
+cvt22 = "cvt" [ tab282F560 relu pzo satfinite satnarrow tab282F890 tab282E820 ] ; cvt	011x	Q16F32
 
 cvt23 = "cvt" [ tab282F560 relu satfinite tab282F890 tab282E820 ] ; cvt	01x	E32Q16
 
-cvt24 = "cvt" [ tab282F560 relu pzo satfinite tab282F890 tab282E820 ] ; cvt	01x	Q16E32
+cvt24 = "cvt" [ tab282F560 relu pzo satfinite satnarrow tab282F890 tab282E820 ] ; cvt	01x	Q16E32
 
 cvt25 = "cvt" [ tab282F560 relu pzo satfinite tab282E820 ] ; cvt	011d	H32F32
 
@@ -2124,7 +2126,9 @@ st_bulk1 = "st.bulk" [ tab282EC40 tab282E900 ] ; st.bulk	MuC
 
 evp = [ ".level::eviction_priority" ]
 
-prefetch0 = "prefetch" [ evp tab282EC40 tab282EC20 tab282EB80 tab282EB40 ] ; prefetch	M	
+valid_addr = [ ".valid_addr" ]
+
+prefetch0 = "prefetch" [ evp tab282EC40 tab282EC20 tab282EB80 tab282EB40 valid_addr ] ; prefetch	M	
 
 prefetchu0 = "prefetchu" [ tab282EC40 tab282EC20 ] ; prefetchu	M	
 
@@ -2442,11 +2446,13 @@ tab282F830 = [ ".self" | ".clustershared" ]
 
 tcgen05_alloc0 = "tcgen05.alloc" [ tab282EC40 tab282E620 sync aligned tab282F830 ] ; tcgen05.alloc	Mu	B32
 
-tcgen05_alloc1 = "tcgen05.alloc" [ tab282EC40 tab282E620 sync aligned tab282F830 ] ; tcgen05.alloc	Mu	B32
+exclusive = [ ".exclusive" ]
+
+tcgen05_alloc1 = "tcgen05.alloc" [ exclusive tab282EC40 tab282E620 sync aligned tab282F830 ] ; tcgen05.alloc	Mu	B32
 
 tcgen05_dealloc0 = "tcgen05.dealloc" [ tab282E620 sync aligned ] ; tcgen05.dealloc	uu	B32
 
-tcgen05_dealloc1 = "tcgen05.dealloc" [ tab282E620 sync aligned ] ; tcgen05.dealloc	uu	B32
+tcgen05_dealloc1 = "tcgen05.dealloc" [ exclusive tab282E620 sync aligned ] ; tcgen05.dealloc	uu	B32
 
 tcgen05_relinquish_alloc_permit0 = "tcgen05.relinquish_alloc_permit" [ tab282E620 sync aligned ] ; tcgen05.relinquish_alloc_permit		B32
 

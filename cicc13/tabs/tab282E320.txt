@@ -1,5 +1,0 @@
-
-_all
-_any
-_ballot
-_uni
