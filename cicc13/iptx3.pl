@@ -867,7 +867,10 @@ sub gen_ebnf
     # finally dump instruction name = [ | ]
     printf("\n%s = \"%s\" [ ", $an, $op->[3]);
     my $tabs = join ' ', @$tr;
-    printf("%s ] ; %s\n", $tabs, $op->[2]);
+    # remove trailing whitespaces
+    my $tail = $op->[2];
+    $tail =~ s/\s+$//;
+    printf("%s ] ; %s\n", $tabs, $tail);
   }
   # dump total
   printf("\ninsn = ");
