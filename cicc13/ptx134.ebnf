@@ -1039,63 +1039,65 @@ tab282E520 = [ ".mbarrier" | ".mbarrier::meet_tx::bytes" | ".mbarrier::complete_
 
 tab3185F88 = [ ".report_disabled" | ".report_valid::none" | ".report_valid::per_16bytes::80000000" | ".report_valid::per_16bytes::8000" | ".report_valid::per_16bytes::80" | ".report_valid::per_16bytes::8" | ".report_valid::per_element::ff" | ".report_valid::per_element::80000000" | ".report_valid::per_element::8000" | ".report_valid::per_element::80" | ".report_valid::per_element::8" | ".report_valid::per_16bytes::80000000::paired" | ".mbarrier::report::disabled" | ".mbarrier::report::validity::per_16bytes::80000000" | ".mbarrier::report::validity::per_16bytes::8000" | ".mbarrier::report::validity::per_16bytes::80" | ".mbarrier::report::validity::per_16bytes::8" | ".mbarrier::report::validity::per_element::ff" | ".mbarrier::report::validity::per_element::80000000" | ".mbarrier::report::validity::per_element::8000" | ".mbarrier::report::validity::per_element::80" | ".mbarrier::report::validity::per_element::8" | ".mbarrier::report::validity::per_16bytes::80000000::paired" ]
 
-cp_async.bulk.tensor0 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMsM	
+report_mechanism = [ ".report_mechanism" ]
+
+cp_async.bulk.tensor0 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsM	
 
 packed_offsets = [ ".packed_offsets" ]
 
-cp_async.bulk.tensor1 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMsMx	
+cp_async.bulk.tensor1 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMx	
 
 cp_async.bulk.tensor2 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MsM	
 
-cp_async.bulk.tensor3 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMsMU	
+cp_async.bulk.tensor3 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMU	
 
-cp_async.bulk.tensor4 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMsMxU	
+cp_async.bulk.tensor4 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMxU	
 
 cp_async.bulk.tensor5 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MsMU	
 
 multicast_cluster = [ ".multicast::cluster" | ".multicast::cluster::all" | ".multicast::cluster::16b" | ".multicast::cluster::32b" ]
 
-cp_async.bulk.tensor6 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMsMx	
+cp_async.bulk.tensor6 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMx	
 
-cp_async.bulk.tensor7 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMsMxx	
+cp_async.bulk.tensor7 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMxx	
 
-cp_async.bulk.tensor8 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMsMxU	
+cp_async.bulk.tensor8 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMxU	
 
-cp_async.bulk.tensor9 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMsMxxU	
+cp_async.bulk.tensor9 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMxxU	
 
-cp_async.bulk.tensor10 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMsMu	
+cp_async.bulk.tensor10 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMu	
 
-cp_async.bulk.tensor11 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMsMxu	
+cp_async.bulk.tensor11 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMxu	
 
-cp_async.bulk.tensor12 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMsMuU	
+cp_async.bulk.tensor12 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMuU	
 
-cp_async.bulk.tensor13 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMsMxuU	
+cp_async.bulk.tensor13 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMxuU	
 
 tab282E680 = [ ".override::global_address" ]
 
-cp_async.bulk.tensor14 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUsM	
+cp_async.bulk.tensor14 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsM	
 
-cp_async.bulk.tensor15 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E680 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUsMx	
+cp_async.bulk.tensor15 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E680 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsMx	
 
-cp_async.bulk.tensor16 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUsMU	
+cp_async.bulk.tensor16 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsMU	
 
-cp_async.bulk.tensor17 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E680 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUsMxU	
+cp_async.bulk.tensor17 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E680 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsMxU	
 
-cp_async.bulk.tensor18 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUsMx	
+cp_async.bulk.tensor18 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsMx	
 
-cp_async.bulk.tensor19 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E680 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUsMxx	
+cp_async.bulk.tensor19 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E680 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsMxx	
 
-cp_async.bulk.tensor20 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUsMxU	
+cp_async.bulk.tensor20 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsMxU	
 
-cp_async.bulk.tensor21 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E680 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUsMxxU	
+cp_async.bulk.tensor21 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E680 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsMxxU	
 
-cp_async.bulk.tensor22 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUsMu	
+cp_async.bulk.tensor22 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsMu	
 
-cp_async.bulk.tensor23 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E680 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUsMxu	
+cp_async.bulk.tensor23 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E680 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsMxu	
 
-cp_async.bulk.tensor24 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUsMuU	
+cp_async.bulk.tensor24 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsMuU	
 
-cp_async.bulk.tensor25 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E680 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUsMxuU	
+cp_async.bulk.tensor25 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets multicast_cluster tab282E680 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUsMxuU	
 
 cp_async.bulk.tensor26 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E680 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MUsM	
 
@@ -1103,21 +1105,21 @@ cp_async.bulk.tensor27 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab28
 
 tab282E660 = [ ".override::global_dim" | ".override::global_dim::global_stride" | ".override::global_dim_stride" ]
 
-cp_async.bulk.tensor28 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUbsM	
+cp_async.bulk.tensor28 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUbsM	
 
-cp_async.bulk.tensor29 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUxsM	
+cp_async.bulk.tensor29 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUxsM	
 
-cp_async.bulk.tensor30 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUbsMU	
+cp_async.bulk.tensor30 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUbsMU	
 
-cp_async.bulk.tensor31 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUxsMU	
+cp_async.bulk.tensor31 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUxsMU	
 
-cp_async.bulk.tensor32 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUbsMu	
+cp_async.bulk.tensor32 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUbsMu	
 
-cp_async.bulk.tensor33 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUxsMu	
+cp_async.bulk.tensor33 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUxsMu	
 
-cp_async.bulk.tensor34 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUbsMuU	
+cp_async.bulk.tensor34 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUbsMuU	
 
-cp_async.bulk.tensor35 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUxsMuU	
+cp_async.bulk.tensor35 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUxsMuU	
 
 cp_async.bulk.tensor36 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E680 tab282E660 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MUbsM	
 
@@ -1127,21 +1129,21 @@ cp_async.bulk.tensor38 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab28
 
 cp_async.bulk.tensor39 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MUxsMU	
 
-cp_async.bulk.tensor40 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUbdxsM	
+cp_async.bulk.tensor40 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUbdxsM	
 
-cp_async.bulk.tensor41 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUxdxsM	
+cp_async.bulk.tensor41 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUxdxsM	
 
-cp_async.bulk.tensor42 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUbdxsMU	
+cp_async.bulk.tensor42 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUbdxsMU	
 
-cp_async.bulk.tensor43 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUxdxsMU	
+cp_async.bulk.tensor43 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUxdxsMU	
 
-cp_async.bulk.tensor44 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUbdxsMu	
+cp_async.bulk.tensor44 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUbdxsMu	
 
-cp_async.bulk.tensor45 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMUxdxsMu	
+cp_async.bulk.tensor45 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUxdxsMu	
 
-cp_async.bulk.tensor46 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUbdxsMuU	
+cp_async.bulk.tensor46 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUbdxsMuU	
 
-cp_async.bulk.tensor47 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMUxdxsMuU	
+cp_async.bulk.tensor47 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 multicast_cluster tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMUxdxsMuU	
 
 cp_async.bulk.tensor48 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E680 tab282E660 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MUbdxsM	
 
@@ -1151,9 +1153,9 @@ cp_async.bulk.tensor50 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab28
 
 cp_async.bulk.tensor51 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E680 tab282E660 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MUxdxsMU	
 
-cp_async.bulk.tensor52 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMsM	
+cp_async.bulk.tensor52 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsM	
 
-cp_async.bulk.tensor53 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MMsMx	
+cp_async.bulk.tensor53 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMx	
 
 multicast = [ ".multicast" ]
 
@@ -1163,9 +1165,9 @@ cp_async.bulk.tensor55 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab28
 
 cp_async.bulk.tensor56 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E520 tab3185F88 ] ; cp.async.bulk.tensor	MsM	
 
-cp_async.bulk.tensor57 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMsMU	
+cp_async.bulk.tensor57 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMU	
 
-cp_async.bulk.tensor58 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMsMxU	
+cp_async.bulk.tensor58 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 tab282E620 packed_offsets tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk.tensor	MMsMxU	
 
 cp_async.bulk.tensor59 = "cp.async.bulk.tensor" [ tab282E6A0 tab282E720 ds tab282E640 multicast tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk.tensor	MMsMxU	
 
@@ -1205,23 +1207,23 @@ cp_reduce.async.bulk.tensor13 = "cp.reduce.async.bulk.tensor" [ tab282E6A0 tab28
 
 tab282E550 = [ ".asc::b32" | ".asc::b64" | ".ascending" ]
 
-cp_async.bulk0 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 tab3185F88 ] ; cp.async.bulk	MMuM	B[0|128]
+cp_async.bulk0 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk	MMuM	B[0|128]
 
-cp_async.bulk1 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk	MMuMU	B[0|128]
+cp_async.bulk1 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk	MMuMU	B[0|128]
 
 cp_async.bulk2 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 tab3185F88 ] ; cp.async.bulk	MMu	B[0|128]
 
 cp_async.bulk3 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk	MMuU	B[0|128]
 
-cp_async.bulk4 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 multicast_cluster tab282E550 tab282E520 tab3185F88 ] ; cp.async.bulk	MMuMx	B[0|128]
+cp_async.bulk4 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 multicast_cluster tab282E550 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk	MMuMx	B[0|128]
 
-cp_async.bulk5 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 multicast_cluster tab282E550 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk	MMuMxU	B[0|128]
+cp_async.bulk5 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 multicast_cluster tab282E550 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk	MMuMxU	B[0|128]
 
 ignore_oob = [ ".ignore_oob" ]
 
-cp_async.bulk6 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 tab3185F88 ignore_oob ] ; cp.async.bulk	MMuuuM	B[0|128]
+cp_async.bulk6 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 tab3185F88 report_mechanism ignore_oob ] ; cp.async.bulk	MMuuuM	B[0|128]
 
-cp_async.bulk7 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 cache_hint tab3185F88 ignore_oob ] ; cp.async.bulk	MMuuuMU	B[0|128]
+cp_async.bulk7 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 cache_hint tab3185F88 report_mechanism ignore_oob ] ; cp.async.bulk	MMuuuMU	B[0|128]
 
 cp_mask = [ ".cp_mask" ]
 
@@ -1229,17 +1231,17 @@ cp_async.bulk8 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 t
 
 cp_async.bulk9 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 cache_hint cp_mask tab3185F88 ] ; cp.async.bulk	MMuUx	B[0|128]
 
-cp_async.bulk10 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 multicast_cluster tab282E550 tab282E520 tab3185F88 ] ; cp.async.bulk	MMuMu	B[0|128]
+cp_async.bulk10 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 multicast_cluster tab282E550 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk	MMuMu	B[0|128]
 
-cp_async.bulk11 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 multicast_cluster tab282E550 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk	MMuMuU	B[0|128]
+cp_async.bulk11 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 multicast_cluster tab282E550 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk	MMuMuU	B[0|128]
 
 cp_async.bulk12 = "cp.async.bulk" [ tab282E6A0 multicast tab282E520 tab3185F88 ] ; cp.async.bulk	MMuMx	
 
 cp_async.bulk13 = "cp.async.bulk" [ tab282E6A0 multicast tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk	MMuMxU	
 
-cp_async.bulk14 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 tab3185F88 ] ; cp.async.bulk	MMuM	B[0|128]
+cp_async.bulk14 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 tab3185F88 report_mechanism ] ; cp.async.bulk	MMuM	B[0|128]
 
-cp_async.bulk15 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 cache_hint tab3185F88 ] ; cp.async.bulk	MMuMU	B[0|128]
+cp_async.bulk15 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 cache_hint tab3185F88 report_mechanism ] ; cp.async.bulk	MMuMU	B[0|128]
 
 cp_async.bulk16 = "cp.async.bulk" [ tab282E6A0 tab282E900 tab282EC40 tab282E550 tab282E520 tab3185F88 ] ; cp.async.bulk	MMu	B[0|128]
 
@@ -2498,11 +2500,13 @@ tab282E600 = [ ".warpx2::02_13" | ".warpx2::01_23" | ".warpx4" ]
 
 tcgen05_cp0 = "tcgen05.cp" [ tab282E620 tab282E600 tab282E5E0 tab282ECE0 ] ; tcgen05.cp	MU	
 
+tf = [ "::after_thread_sync" | "::before_thread_sync" ]
+
+tcgen05_fence0 = "tcgen05.fence" [ tf ] ; tcgen05.fence		
+
 wait = [ "::ld" | "::st" ]
 
-tcgen05_fence0 = "tcgen05.fence" [ wait ] ; tcgen05.fence		
-
-tcgen05_wait0 = "tcgen05.wait" [ sync aligned ] ; tcgen05.wait		
+tcgen05_wait0 = "tcgen05.wait" [ sync aligned wait ] ; tcgen05.wait		
 
 tcgen05_ld0 = "tcgen05.ld" [ tab282F560 sync aligned tab282ECE0 tab282F7A0 tab282F360 ] ; tcgen05.ld	dM	B32
 
@@ -2784,11 +2788,9 @@ tab282F3E0 = [ ".global_address" | ".rank" | ".box_dim" | ".global_dim" | ".glob
 
 b1024 = [ ".b1024" ]
 
-tf = [ "::after_thread_sync" | "::before_thread_sync" ]
+tensormap_replace0 = "tensormap.replace" [ tab282EC40 ds tab282F3E0 b1024 ] ; tensormap.replace	M0	B[32|64]
 
-tensormap_replace0 = "tensormap.replace" [ tab282EC40 ds tab282F3E0 b1024 tf ] ; tensormap.replace	M0	B[32|64]
-
-tensormap_replace1 = "tensormap.replace" [ tab282EC40 ds tab282F3E0 b1024 tf ] ; tensormap.replace	MC0	B[32|64]
+tensormap_replace1 = "tensormap.replace" [ tab282EC40 ds tab282F3E0 b1024 ] ; tensormap.replace	MC0	B[32|64]
 cp_async.wait_all0 = "cp.async.wait_all" ; cp.async.wait_all		
 cp_async.commit_group0 = "cp.async.commit_group" ; cp.async.commit_group		
 cp_async.wait_group0 = "cp.async.wait_group" ; cp.async.wait_group	C	

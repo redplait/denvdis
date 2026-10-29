@@ -776,8 +776,8 @@ my %gk_tabs = (
  16 * 8 + 6 => 'tab282F3E0',
  16 * 8 + 7 => 'b1024',
 # 17 - new
- 17 * 8 + 0 => 'tf', # tcgen05.fence
- 17 * 8 + 1 => 'wait', # ::ld/::st for tcgen05.wait
+ 17 * 8 + 1 => 'tf', # tcgen05.fence
+ 17 * 8 + 2 => 'wait', # ::ld/::st for tcgen05.wait
  17 * 8 + 3 => 'tab282E2C0', # -> test    byte ptr [r13+11h], 8
  17 * 8 + 4 => 'tab282E280', # -> test    byte ptr [r13+11h], 10h
  17 * 8 + 5 => 'cp_mask',    # -> test    byte ptr [r13+11h], 20h
@@ -787,6 +787,7 @@ my %gk_tabs = (
  18 * 8 + 0 => 'phase_type', # test    byte ptr [r13+12h], 1
  18 * 8 + 1 => 'report',     # test    byte ptr [rdx+12h], 2
  18 * 8 + 2 => 'l2',         # test    byte ptr [rdx+12h], 4
+ 18 * 8 + 3 => 'report_mechanism',
  18 * 8 + 5 => 'ignore_oob', # test    byte ptr [r13+12h], 20h
 );
 
