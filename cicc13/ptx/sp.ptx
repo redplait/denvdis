@@ -1,0 +1,35 @@
+.version 9.4
+.target sm_107a
+.address_size 64         // 64-bit addressing
+
+.visible .func  (.param .b32 func_retval0) _Z15warp_reduce_xorj(
+        .param .b64 ptr_param_0, .param .b64 ptr_param_1
+)
+{
+.reg .b64       %r<2>;
+.reg .b32 mdata_<2>, cdata_<4>, data_<8>, spdesc;
+mov.b32 spdesc, 0x5; // MAXABS op, .s8 datatype
+
+ld.param.u64    %r0, [ptr_param_0];
+ld.b32 mdata_0, [%r0];
+ld.b32 mdata_1, [%r0 + 4];
+
+ld.param.u64    %r1, [ptr_param_1];
+ld.b32 data_0, [%r1];
+ld.b32 data_1, [%r1 + 4];
+ld.b32 data_2, [%r1 + 8];
+ld.b32 data_3, [%r1 + 0xc];
+ld.b32 data_4, [%r1 + 0x10];
+ld.b32 data_5, [%r1 + 0x14];
+ld.b32 data_6, [%r1 + 0x18];
+ld.b32 data_7, [%r1 + 0x1c];
+
+
+spcompress.b8.b2.sp::2:4.x4 {mdata_0},
+   {cdata_0, cdata_1, cdata_2, cdata_3},
+   {data_0, data_1, data_2, data_3, data_4, data_5, data_6, data_7},
+   spdesc;
+
+    st.param.b32    [func_retval0+0], cdata_0;
+    ret;
+}
