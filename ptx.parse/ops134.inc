@@ -1,4 +1,4 @@
-// Dont edit this file - it was generated Mon Oct 26 07:21:20 2026 by iptx3.pl -C
+// Dont edit this file - it was generated Thu Oct 29 08:33:07 2026 by iptx3.pl -C
 // to distinguish from 13.1
 #define PTX_13_4
 const static PTXTab s_tab282FC80 = {
@@ -141,6 +141,9 @@ const static PTXTab s_tab_sat = {
 const static PTXTab s_tab_satfinite = {
  "satfinite",
 };
+const static PTXTab s_tab_satnarrow = {
+ "satnarrow",
+};
 const static PTXTab s_tab282FA00 = {
  "kind::mx8",
  "kind::int8",
@@ -233,6 +236,9 @@ const static PTXTab s_tab282E7E0 = {
 };
 const static PTXTab s_tab282E7C0 = {
  "no_membermask_overlap",
+};
+const static PTXTab s_tab_exclusive = {
+ "exclusive",
 };
 const static PTXTab s_tab282DFE0 = {
  "b1",
@@ -352,6 +358,9 @@ const static PTXTab s_tab282E900 = {
 const static PTXTab s_tab282E8D0 = {
  "async::generic",
  "tensormap::generic",
+ "fabric::generic",
+ "fabric::fabric",
+ "generic::fabric",
 };
 const static PTXTab s_tab_mmio = {
  "mmio",
@@ -1007,6 +1016,9 @@ const static PTXTab s_tab_l2 = {
  "l2::far",
  "l2::near",
 };
+const static PTXTab s_tab_report_mechanism = {
+ "report_mechanism",
+};
 const static PTXTab s_tab_ignore_oob = {
  "ignore_oob",
 };
@@ -1043,7 +1055,7 @@ const static PTXTab *s_tabs[] = {
 // 1:6 14
  &s_tab_satfinite,
 // 1:7 15
- nullptr,
+ &s_tab_satnarrow,
 // 2:0 16
  &s_tab282FA00,
 // 2:1 17
@@ -1083,7 +1095,7 @@ const static PTXTab *s_tabs[] = {
 // 4:2 34
  nullptr,
 // 4:3 35
- nullptr,
+ &s_tab_exclusive,
 // 4:4 36
  nullptr,
 // 4:5 37
@@ -1285,11 +1297,11 @@ const static PTXTab *s_tabs[] = {
 // 16:7 135
  &s_tab_b1024,
 // 17:0 136
- &s_tab_tf,
-// 17:1 137
- &s_tab_wait,
-// 17:2 138
  nullptr,
+// 17:1 137
+ &s_tab_tf,
+// 17:2 138
+ &s_tab_wait,
 // 17:3 139
  &s_tab282E2C0,
 // 17:4 140
@@ -1307,7 +1319,7 @@ const static PTXTab *s_tabs[] = {
 // 18:2 146
  &s_tab_l2,
 // 18:3 147
- nullptr,
+ &s_tab_report_mechanism,
 // 18:4 148
  nullptr,
 // 18:5 149
@@ -7798,9 +7810,12 @@ static const PTXIns s_popc_0 = {
  "u0",  "B[32|64]", 868,
 { 0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
 };
+const static PTXTab s_tab_valid_addr = {
+ "valid_addr",
+};
 static const PTXIns s_prefetch_0 = {
  "prefetch",
- nullptr,
+ &s_tab_valid_addr,
  "M",  nullptr, 992,
 { 0x10,0x0,0x0,0x0,0x80,0xC0,0x0,0x0,0x0,0x0,0x0,0x0,0x2,0x0,0x0,0x0,0x0,0x0,0x0 }
 };
