@@ -1223,7 +1223,17 @@ sub gen_C {
  # header
  printf("// Dont edit this file - it was generated %s by %s -C\n", scalar(localtime), $0);
  printf("// to distinguish from 13.1\n");
- printf('#define PTX_13_4' . "\n");
+ printf('#define PTX_13_4' . "\n\n");
+ # lets try to find some indices - for now index of nc
+ my $nc_idx;
+ foreach my $tidx ( keys %gk_tabs ) {
+   if ( 'nc' eq $gk_tabs{$tidx} ) {
+     $nc_idx = $tidx;
+     last;
+   }
+ }
+ # dump found indices
+ printf("constexpr int s_nc_idx = %d;\n", $nc_idx) if defined($nc_idx);
  # populate mask array
  my @mask;
  foreach my $i8 ( 0 .. MTIndex ) {
