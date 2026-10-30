@@ -1,6 +1,8 @@
-// Dont edit this file - it was generated Thu Oct 29 08:33:07 2026 by iptx3.pl -C
+// Dont edit this file - it was generated Fri Oct 30 09:14:30 2026 by iptx3.pl -C
 // to distinguish from 13.1
 #define PTX_13_4
+
+constexpr int s_nc_idx = 85;
 const static PTXTab s_tab282FC80 = {
  "or",
  "and",

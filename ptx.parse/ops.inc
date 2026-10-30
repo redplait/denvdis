@@ -1,4 +1,5 @@
-// Dont edit this file - it was generated Sun Oct 25 06:56:02 2026 by iptx.pl -C
+// Dont edit this file - it was generated Fri Oct 30 09:14:23 2026 by iptx.pl -C
+constexpr int s_nc_idx = 83;
 const static PTXTab s_tab282FC80 = {
  "or",
  "and",
@@ -132,6 +133,9 @@ const static PTXTab s_tab_sat = {
 };
 const static PTXTab s_tab_satfinite = {
  "satfinite",
+};
+const static PTXTab s_tab_satnarrow = {
+ "satnarrow",
 };
 const static PTXTab s_tab282F2A0 = {
  "sp",
@@ -356,6 +360,9 @@ const static PTXTab s_tab282E900 = {
 const static PTXTab s_tab282E8D0 = {
  "async::generic",
  "tensormap::generic",
+ "fabric::generic",
+ "fabric::fabric",
+ "generic::fabric",
 };
 const static PTXTab s_tab_mmio = {
  "mmio",
@@ -974,7 +981,7 @@ const static PTXTab *s_tabs[] = {
 // 1:5 13
  &s_tab_satfinite,
 // 1:6 14
- nullptr,
+ &s_tab_satnarrow,
 // 1:7 15
  &s_tab282F2A0,
 // 2:0 16
