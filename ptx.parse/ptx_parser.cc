@@ -213,7 +213,7 @@ int PTXParser::fill_attrs() {
   }
   // always use SpaceTab
   collected.push_back( { -2, &SpaceTab } );
-  // check 4:7 & 6:0
+  // check 4:7 (39) & 6:0 (48) - they are the same in PTX from 13.4
   int add39 = 0;
   if ( ored_mask[39] || ored_mask[48] ) {
     add39 = 1;
@@ -231,7 +231,7 @@ int PTXParser::fill_attrs() {
     collected.push_back( { -5, &wait_tab } );
     collected.push_back( { -6, &defer_tab } );
   } else if ( !strcmp("ld", first->name) ) {
-    collected.push_back( { 83, &s_tab_nc } );
+    collected.push_back( { s_nc_idx, &s_tab_nc } );
   }
   // traverse tabs in non-zero masks
   for ( int i = 0; i < PTXIns::MaskSize; ++i ) {
