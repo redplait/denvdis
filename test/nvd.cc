@@ -34,6 +34,11 @@ static std::map<char, const char *> s_ei = {
 #include "eiattrs.inc"
 };
 
+static std::map<char, const char *> s_compat = {
+#include "eicompat.inc"
+};
+
+
 // from sht.txt
 static std::map<unsigned int, const char *> s_sht = {
  { 0x70000000, "SHT_CUDA_INFO" },
@@ -188,7 +193,7 @@ class nv_dis: public CElf<NV_renderer>
    void dump_mrelocs(section *);
    void dump_crelocs(section *);
    void parse_attrs(Elf_Half idx, section *);
-   void _parse_attrs(Elf_Half idx, section *);
+   void _parse_attrs(Elf_Half idx, section *, int is_compat = 0);
    int read_symbols();
    // debug info
    void dump_sass_regs(section *);
@@ -695,7 +700,7 @@ void nv_dis::parse_attrs(Elf_Half idx, section *sec)
   finalize_cparams(sec->get_info());
 }
 
-void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
+void nv_dis::_parse_attrs(Elf_Half idx, section *sec, int is_compat)
 {
   if ( !opt_e ) return;
   if ( sec->get_type() == SHT_NOBITS ) return;
@@ -715,7 +720,7 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
     char attr = data[1];
     unsigned short a_len;
     const char *kp = nullptr;
-    auto a_i = s_ei.find(attr);
+    auto a_i = is_compat ? s_compat.find(attr) : s_ei.find(attr);
     int ltype = 0;
     if ( a_i != s_ei.end() )
       fprintf(m_out, "%lX: %s", data - start, a_i->second);
@@ -744,6 +749,7 @@ void nv_dis::_parse_attrs(Elf_Half idx, section *sec)
         if ( data + 4 + a_len <= end && opt_h )
           HexDump(m_out, (const unsigned char *)(data + 4), a_len);
         kp = data + 4;
+        if ( is_compat ) goto skip_unk;
         if (
              attr == 5    || // EIATTR_MAX_THREADS
              attr == 0x3d    // EIATTR_CTA_PER_CLUSTER
@@ -1055,6 +1061,7 @@ void nv_dis::process()
     if ( st_i != s_sht.end() ) {
       fprintf(m_out, "[%d] %s type %X [%s] flags %lX\n", i, sname.c_str(), st, st_i->second, sf);
       if ( st == 0x70000000 ) parse_attrs(i, sec);
+      else if ( st == 0x70000086 ) _parse_attrs(i, sec, 1);
       else if ( st > 0x70000000 ) hdump_section(sec);
       if ( opt_r && st == 0x7000000B ) // SHT_CUDA_RELOCINFO
         cmp_srels(m_out, sec);
