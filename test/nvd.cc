@@ -16,6 +16,7 @@ int opt_c = 0,
     opt_r = 0,
     opt_S = 0,
     opt_q = 0,
+    opt_n = 0,
     opt_N = 0,
     opt_O = 0;
 
@@ -188,8 +189,10 @@ class nv_dis: public CElf<NV_renderer>
    void try_dis(Elf_Word idx);
    void dump_ins(const NV_pair &p, uint32_t, NV_labels *);
    // boring ELF related stuff
-   void hdump_section(section *);
+   void hdump_section(section *) const;
    void dump_merc_syms(section *);
+   void dump_notes(section *, int is_tk);
+   int safe_dump_tk(const char *, size_t, uint32_t, const char *pfx) const;
    void dump_mrelocs(section *);
    void dump_crelocs(section *);
    void parse_attrs(Elf_Half idx, section *);
@@ -232,7 +235,7 @@ class nv_dis: public CElf<NV_renderer>
        return a.offset < b.offset;
      });
      // dump them
-     for ( auto &cp: cb->second->params ) printf("sorted cparam(%d): ord %d size %X off %d\n", idx, cp.ordinal, cp.size, cp.offset);
+     for ( auto &cp: cb->second->params ) fprintf(m_out, "sorted cparam(%d): ord %d size %X off %d\n", idx, cp.ordinal, cp.size, cp.offset);
    }
    std::unordered_map<Elf_Word, cbank_per_section *> m_cbanks;
    // regs track db
@@ -686,7 +689,57 @@ void nv_dis::try_dis(Elf_Word idx)
   }
 }
 
-void nv_dis::hdump_section(section *sec)
+int nv_dis::safe_dump_tk(const char *base, size_t size, uint32_t off, const char *pfx) const {
+  fprintf(m_out, "  %s (off %X): ", pfx, off);
+  if ( off >= size ) {
+    fputc('\n', m_out);
+    return 0;
+  }
+  for ( const char *ptr = base + off; *ptr && ptr < base + size; ++ptr ) fputc(*ptr, m_out);
+  fputc('\n', m_out);
+  return 1;
+}
+
+struct nv_tkinfo {
+  uint64_t flags;
+  uint32_t name_off, version_off, build_off, cmdline_off;
+};
+
+void nv_dis::dump_notes(section *sec, int is_tk) {
+  note_section_accessor nsa{*m_reader, sec};
+  auto num = nsa.get_notes_num();
+  if ( 1 != num || !is_tk ) {
+    for ( Elf_Word i = 0; i < num; ++i ) {
+       Elf_Word type, d_size = 0;
+       std::string name;
+       void* desc = nullptr;
+       if ( nsa.get_note(i, type, name, desc, d_size) ) {
+         fprintf(m_out, " [%d] type %X desc_size %X %s\n", i, type, d_size, name.c_str());
+         if ( opt_h && d_size )
+           HexDump(m_out, (const unsigned char *)desc, d_size);
+       }
+    }
+  } else {
+    Elf_Word type, d_size = 0;
+    std::string name;
+    void* desc = nullptr;
+    if ( !nsa.get_note(0, type, name, desc, d_size) ) {
+      return;
+    }
+    fprintf(m_out, " Tk type %X desc_size %X %s\n", type, d_size, name.c_str());
+    if ( d_size <= sizeof(nv_tkinfo) ) return;
+    const nv_tkinfo *tki = (const nv_tkinfo *)desc;
+    fprintf(m_out, "  Flags %lX\n", tki->flags);
+    size_t rest_size = d_size - sizeof(nv_tkinfo);
+    const char *nstart = (const char *)desc + sizeof(nv_tkinfo);
+    safe_dump_tk(nstart, rest_size, tki->name_off, "Name");
+    safe_dump_tk(nstart, rest_size, tki->version_off, "Version");
+    safe_dump_tk(nstart, rest_size, tki->build_off, "Build");
+    safe_dump_tk(nstart, rest_size, tki->cmdline_off, "CmdLine");
+  }
+}
+
+void nv_dis::hdump_section(section *sec) const
 {
   if ( !opt_h ) return;
   if ( sec->get_type() == SHT_NOBITS ) return;
@@ -1074,12 +1127,17 @@ void nv_dis::process()
         auto tf = sf & 0xFF00000;
         if ( tf == 0x1000000 ) {
           fprintf(m_out, "[%d] %s type %X [NOTE] flags %lX SHF_NOTE_NV_CUVER\n", i, sec->get_name().c_str(), st, sf);
-          hdump_section(sec);
+          if ( opt_n ) dump_notes(sec, 0);
+          else hdump_section(sec);
         } else if ( tf == 0x2000000 ) {
           fprintf(m_out, "[%d] %s type %X [NOTE] flags %lX SHF_NOTE_NV_TKINFO\n", i, sec->get_name().c_str(), st, sf);
-          hdump_section(sec);
-        } else
+          if ( opt_n ) dump_notes(sec, 1);
+          else hdump_section(sec);
+        } else {
           fprintf(m_out, "[%d] %s type %X [NOTE] flags %lX SHF_NOTE_NV_UNKNOWN\n", i, sec->get_name().c_str(), st, sf);
+          if ( opt_n ) dump_notes(sec, 0);
+          else hdump_section(sec);
+        }
       } else {
        fprintf(m_out, "[%d] %s type %X flags %lX\n", i, sec->get_name().c_str(), st, sf);
        if ( st == 0x70000083 ) parse_attrs(i, sec);
@@ -1122,6 +1180,7 @@ void usage(const char *prog)
   printf("-L - dump reg track tabs\n");
   printf("-m - dump missed fields\n");
   printf("-M - dump cword mask\n");
+  printf("-n - dump notes\n");
   printf("-N - dump not found masks\n");
   printf("-o output file\n");
   printf("-O - dump operands\n");
@@ -1142,7 +1201,7 @@ int main(int argc, char **argv)
   int s = -1;
   const char *o_fname = nullptr;
   while(1) {
-    c = getopt(argc, argv, "ceghLlmMqrtTNOpPSf:s:o:");
+    c = getopt(argc, argv, "ceghLlmMnNqrtTOpPSf:s:o:");
     if ( c == -1 ) break;
     switch(c) {
       case 'c': opt_c = 1; break;
@@ -1153,6 +1212,8 @@ int main(int argc, char **argv)
       case 'L': opt_L = 1; break;
       case 'm': opt_m = 1; break;
       case 'M': opt_M = 1; break;
+      case 'n': opt_n = 1; break;
+      case 'N': opt_N = 1; break;
       case 't': opt_t = 1; break;
       case 'T': opt_T = 1; break;
       case 'O': opt_O = 1; break;
@@ -1160,7 +1221,6 @@ int main(int argc, char **argv)
       case 'p': opt_p = 1; break;
       case 'P': opt_P = 1; break;
       case 'r': opt_r = 1; break;
-      case 'N': opt_N = 1; break;
       case 'S': opt_S = 1; break;
       // options with args
       case 'f': s_sec_filters.push_back(optarg); break;
