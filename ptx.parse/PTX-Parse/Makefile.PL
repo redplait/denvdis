@@ -12,7 +12,7 @@ WriteMakefile(
     #Value must be from legacy list of licenses here
     #http://search.cpan.org/perldoc?Module%3A%3ABuild%3A%3AAPI
     XSOPT             => '-C++',
-    CC                => 'g++ -std=c++20',
+    CC                => 'g++ -std=c++20 -DMaskWIDTH=17',
     LIBS              => ['-L.. -lparse -lstdc++'], # e.g., '-lm'
     DEFINE            => '', # e.g., '-DHAVE_SOMETHING'
     INC               => '-I.', # e.g., '-I. -I/usr/include/other'
