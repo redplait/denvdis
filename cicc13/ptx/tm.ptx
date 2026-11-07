@@ -1,0 +1,27 @@
+.version 9.5
+.target sm_107f
+.address_size 64         // 64-bit addressing
+
+.metadata_section {
+  .metadata_domain 1
+  .metadata 1 { "kernel: event1", "init portion", .b32 1 }
+  .metadata 2 { "associate_label1_event1", .b32 0, .metadata_label "event_label1", .metadata_index 1 }
+  .metadata 3 { "associate_label2_event2", .b32 0, .metadata_label "event_label2", .metadata_index 2 }
+  .metadata 4 { "associate_label3_event3", .b32 0, .metadata_label "event_label3", .metadata_index 3 }
+}
+
+.visible .func  (.param .b32 func_retval0) _Z15warp_reduce_xorj(
+        .param .b64 ptr_param_0, .param .b64 ptr_param_1
+)
+{
+.reg .b64       %r<2>;
+.reg .b32 mdata_<2>, cdata_<4>, data_<8>, spdesc;
+
+ld.param.u64    %r0, [ptr_param_0];
+trace.mark 0, event_label1;
+ld.b32 mdata_0, [%r0];
+ld.b32 mdata_1, [%r0 + 4];
+
+    st.param.b32    [func_retval0+0], cdata_0;
+    ret;
+}
