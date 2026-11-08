@@ -50,7 +50,7 @@ class de_ptx: public decuda_base {
        *fptr = v;
      }
    };
-   int hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call, uint64_t ops_tab, uint64_t ops_tab_end);
+   int hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call, uint64_t ops_tab, uint64_t ops_tab_end, int is_rpb = 0);
    typedef std::pair<uint32_t, const char *> kw_type;
  protected:
    virtual int _read();

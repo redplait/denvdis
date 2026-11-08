@@ -344,14 +344,29 @@ static int is_add_mask(diter &di) {
   return res;
 }
 
+// check if this is mov [rbp - 0x50], dword - for main big registration
+static int is_rbpsr(diter &di) {
+  if ( di.ud_obj.operand[0].type != UD_OP_MEM ) return -1;
+  if ( di.ud_obj.operand[0].base != UD_R_RBP )  return -1;
+  // all offsets in range -0x50..-0!x3c are encoded in byte
+  if ( di.ud_obj.operand[0].offset != 8 ) return -1;
+  int off = di.ud_obj.operand[0].lval.sbyte + 0x50;
+//  printf("rpbsr %d - %d off %d\n", di.ud_obj.operand[0].lval.sbyte, off, di.ud_obj.operand[0].offset);
+  if ( off < 0 ) return -1;
+  if ( off >= 20 ) return -1;
+  return off;
+}
+
 // check if operand 0 is OP_MEM sp based and offset fit in 0x20 - 0x30 - for tables func
 static int in_sr20(diter &di) {
   if ( di.ud_obj.operand[0].type != UD_OP_MEM ) return -1;
   if ( di.ud_obj.operand[0].base != UD_R_RSP )  return -1;
   auto off = di.ud_obj.operand[0].lval.sdword;
   if ( off < 0x20 ) return -1;
-  if ( off >= 0x30 ) return -1;
-  return off - 0x20;
+  if ( off >= 0x34 ) return -1;
+  int res = off - 0x20;
+//printf("in_sr20 %X\n", res);
+  return res;
 }
 
 // check if this is mov [rsp + 0x30], dword - for single registration
@@ -368,22 +383,28 @@ static int is_add_mask10(diter &di) {
 
 template <typename G, typename T, typename A>
 int de_ptx::cmn_ptx_op(diter &di, ptx_op &curr, G &regs, T t, A add) {
-  // or reg, imm
-  if ( di.is_or_rimm() ) {
-   auto tgt = di.normalize_reg(di.ud_obj.operand[0].base, di.ud_obj.operand[0].size);
-   regs.add(tgt, di.ud_obj.operand[1].lval.udword);
-   return 1;
-  }
   // mov reg, imm
   if ( di.is_mov_rimm(UD_R_R8D) ) {
     curr.idx = di.ud_obj.operand[1].lval.sdword;
     return 1;
   }
+  // or reg, imm
+  if ( di.is_or_rimm() || di.is_mov_rimm() ) {
+   auto s0 = di.ud_obj.operand[0].size;
+   if ( !s0 ) s0 = di.ud_obj.operand[1].size;
+   auto tgt = di.normalize_reg(di.ud_obj.operand[0].base, s0);
+ if ( opt_d ) printf("tgt %X size %X value %X RAX %X\n", tgt, s0, di.ud_obj.operand[1].lval.udword, UD_R_RAX);
+   if ( s0 == 64 )
+     regs.add(tgt, di.ud_obj.operand[1].lval.uqword);
+   else
+     regs.add(tgt, di.ud_obj.operand[1].lval.udword);
+   return 1;
+  }
   // mov [mem], imm/reg
   if ( di.ud_obj.mnemonic == UD_Imov ) {
     int off = add(di);
     if ( off ) {
-      if ( opt_d ) printf("add mask[%d], sizr %d, %X\n", off, di.ud_obj.operand[0].size,
+      if ( opt_d ) printf("add mask[%d], size %d, %X\n", off, di.ud_obj.operand[0].size,
        32 == di.ud_obj.operand[0].size ? di.ud_obj.operand[1].lval.udword : di.ud_obj.operand[1].lval.ubyte);
       // check zeroing
       if ( 32 == di.ud_obj.operand[0].size ) {
@@ -394,13 +415,39 @@ int de_ptx::cmn_ptx_op(diter &di, ptx_op &curr, G &regs, T t, A add) {
       return 1;
     }
     off = t(di);
+ if ( opt_d ) printf("t off %d\n", off);
     if ( off >= 0 ) {
       if ( di.ud_obj.operand[1].type == UD_OP_REG ) {
-        auto src = di.normalize_reg(di.ud_obj.operand[1].base, di.ud_obj.operand[1].size);
-        uint32_t rval = 0;
-        if ( regs.asgn(src, rval) ) curr.st[off] = rval & 0xff;
-      } else
-        curr.st[off] = di.ud_obj.operand[1].lval.ubyte;
+        auto s1 = di.ud_obj.operand[1].size;
+        auto src = di.normalize_reg(di.ud_obj.operand[1].base, s1);
+ if ( opt_d ) printf("normalized %X, size %X\n", src, s1);
+        uint64_t rval = 0;
+        if ( regs.asgn(src, rval) ) {
+ if ( opt_d ) printf("reg32 mask[%d], size %X %lX\n", off, s1, rval);
+          if ( s1 == 64 ) {
+            uint64_t *hack = (uint64_t *)&curr.st[off];
+            *hack = rval;
+          } if ( s1 == 32 ) {
+            uint32_t *hack = (uint32_t *)&curr.st[off];
+            *hack = (uint32_t)rval;
+          } else if ( s1 == 16 ) {
+            uint16_t *hack = (uint16_t *)&curr.st[off];
+            *hack |= rval & 0xffff;
+          } else curr.st[off] = rval & 0xff;
+        }
+      } else {
+        auto s1 = di.ud_obj.operand[1].size;
+        if ( s1 == 64 ) {
+ if ( opt_d ) printf("mov64 mask[%d], %X\n", off, di.ud_obj.operand[1].lval.uqword);
+          uint64_t *hack = (uint64_t *)&curr.st[off];
+          *hack = di.ud_obj.operand[1].lval.uqword;
+        } else if ( s1 == 32 ) {
+ if ( opt_d ) printf("mov32 mask[%d], %X\n", off, di.ud_obj.operand[1].lval.udword);
+          uint32_t *hack = (uint32_t *)&curr.st[off];
+          *hack = di.ud_obj.operand[1].lval.udword;
+        } else
+          curr.st[off] = di.ud_obj.operand[1].lval.ubyte;
+      }
       return 1;
     }
   }
@@ -408,12 +455,28 @@ int de_ptx::cmn_ptx_op(diter &di, ptx_op &curr, G &regs, T t, A add) {
   if ( di.ud_obj.mnemonic == UD_Ior ) {
     int off = t(di);
     if ( off >= 0 ) {
+      auto s1 = di.ud_obj.operand[1].size;
       if ( di.ud_obj.operand[1].type == UD_OP_REG ) {
-        auto src = di.normalize_reg(di.ud_obj.operand[1].base, di.ud_obj.operand[1].size);
-        uint32_t rval = 0;
-        if ( regs.asgn(src, rval) ) curr.st[off] |= rval & 0xff;
-      } else
+        auto src = di.normalize_reg(di.ud_obj.operand[1].base, s1);
+        uint64_t rval = 0;
+ if ( opt_d ) printf("or%d normalized %X, size %X\n", off, src, s1);
+        if ( regs.asgn(src, rval) ) {
+          if ( s1 == 64 ) {
+            uint64_t *hack = (uint64_t *)&curr.st[off];
+            *hack |= rval;
+          } else if ( s1 == 32 ) {
+            uint32_t *hack = (uint32_t *)&curr.st[off];
+            *hack |= (uint32_t)rval;
+          } else
+            curr.st[off] |= rval & 0xff;
+        }
+      } else {
+        if ( s1 == 32 ) {
+          uint32_t *hack = (uint32_t *)&curr.st[off];
+          *hack |= di.ud_obj.operand[1].lval.udword;
+        } else
         curr.st[off] |= di.ud_obj.operand[1].lval.ubyte;
+      }
       return 1;
     }
   }
@@ -432,7 +495,7 @@ void de_ptx::gather_string(diter &di, de_ptx::ptx_op &curr) {
 
 int de_ptx::process_one_ptx_op(diter &di, std::list<ptx_op> &res) {
   ptx_op curr;
-  used_regs<uint32_t> regs;
+  used_regs<uint64_t> regs;
   while(1) {
     if ( !di.next() ) return 0;
     di.dasm();
@@ -452,18 +515,22 @@ int de_ptx::process_one_ptx_op(diter &di, std::list<ptx_op> &res) {
   return 0;
 }
 
-int de_ptx::hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call, uint64_t ops_tab, uint64_t ops_tab_end) {
+int de_ptx::hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call, uint64_t ops_tab, uint64_t ops_tab_end, int is_rbp) {
   diter di(*s_text);
   std::list<ptx_op> res;
   ptx_op curr;
   if ( !di.setup(start) ) return 0;
-  used_regs<uint32_t> regs;
+  used_regs<uint64_t> regs;
   do {
     if ( !di.next() ) break;
     di.dasm();
     // check lea reg
     if ( di.is_lea() && di.is_r1() ) {
       gather_string(di, curr);
+      continue;
+    }
+    if ( is_rbp && di.ud_obj.mnemonic == UD_Imovups ) {
+      if ( is_rbpsr(di) >= 0 ) curr.re_st();
       continue;
     }
     if ( di.ud_obj.mnemonic == UD_Imovaps ) {
@@ -478,7 +545,11 @@ int de_ptx::hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call, uint64
       regs.clear();
       continue;
     }
-    if ( cmn_ptx_op(di, curr, regs, in_sr, is_add_mask) ) continue;
+    if ( is_rbp ) {
+      if ( cmn_ptx_op(di, curr, regs, is_rbpsr, is_add_mask) ) continue;
+    } else {
+     if ( cmn_ptx_op(di, curr, regs, in_sr, is_add_mask) ) continue;
+    }
   } while( di.pc() < end );
   if ( res.empty() ) return 0;
   // read ops_tab
@@ -612,6 +683,7 @@ int de_ptx::hack_dumpers(diter &di, uint64_t reg_func, dump_map &res) {
     // must be last
     if ( di.is_end() ) break;
   }
+  if ( opt_d ) printf("res size %ld\n", res.size());
   return !res.empty();
 }
 
@@ -737,17 +809,19 @@ int de_ptx::_read() {
   if ( !s_bss.has_value() || !s_text.has_value() || !s_rodata.has_value() ) return 0;
   // ptxas V13.1.80 md5 f38e5732c94163b96cf797eef252b4cb
   // string from get_pseudo_prototype switch case, size 1078
-//  extr_sw_strs(0x1E66DB8, 1078);
+//13.4  extr_sw_strs(0x2498060, 1075);
   // from 13.4: release 13.4, V13.4.46
-  hack_ptx_ops(0x8D4DDC, 0x8F3621, 0x8C8440, 0x338B448, 0x338BCC0);
+//  hack_ptx_ops(0x8D4DDC, 0x8F3621, 0x8C8440, 0x338B448, 0x338BCC0);
+  // from 13.5, V13.5.37
+  hack_ptx_ops(0x8BEE90, 0x8DB143, 0x8B1F10, 0x305F128, 0x305F9A0, 1);
  // yet another couple of latency tables, totally identical to c17.txt
   // hack_ops(0x7357B7, 0x1E01480, "ops1.txt");
   // hack_ops(0xEE17A7, 0x1E01480, "ops2.txt");
  // extract dumpers
-//  hack_dumpers(0xE32420, 0x1E4A20);
+//  hack_dumpers(0x81B180, 0x2deb20);
 //  hack_ptx_kws(0x391FA0);
  // extract ptx_intr.txt
-//  hack_intr(0xE2F4A5, 0x1E4A20);
+//13.5  hack_intr(0x7FA59B, 0x2F0240);
   // cicc 13.1 - md5 f3638b32a8740eda5e8cd5e5fe9decfb
   // hack_cicc_intr(0xA8BD00, "intr.txt");
   // for 12.8 md5 14dc7bbb0bafae1313489c389e9486eb - NPDOHYX
