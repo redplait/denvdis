@@ -345,16 +345,20 @@ static int is_add_mask(diter &di) {
 }
 
 // check if this is mov [rbp - 0x50], dword - for main big registration
-static int is_rbpsr(diter &di) {
-  if ( di.ud_obj.operand[0].type != UD_OP_MEM ) return -1;
-  if ( di.ud_obj.operand[0].base != UD_R_RBP )  return -1;
+static int _is_rbpsr(diter &di, int idx) {
+  if ( di.ud_obj.operand[idx].type != UD_OP_MEM ) return -1;
+  if ( di.ud_obj.operand[idx].base != UD_R_RBP )  return -1;
   // all offsets in range -0x50..-0!x3c are encoded in byte
-  if ( di.ud_obj.operand[0].offset != 8 ) return -1;
-  int off = di.ud_obj.operand[0].lval.sbyte + 0x50;
-//  printf("rpbsr %d - %d off %d\n", di.ud_obj.operand[0].lval.sbyte, off, di.ud_obj.operand[0].offset);
+  if ( di.ud_obj.operand[idx].offset != 8 ) return -1;
+  int off = di.ud_obj.operand[idx].lval.sbyte + 0x50;
+//  printf("rpbsr %d - %d off %d\n", di.ud_obj.operand[idx].lval.sbyte, off, di.ud_obj.operand[idx].offset);
   if ( off < 0 ) return -1;
   if ( off >= 20 ) return -1;
   return off;
+}
+
+static int is_rbpsr(diter &di) {
+  return _is_rbpsr(di, 0);
 }
 
 // check if operand 0 is OP_MEM sp based and offset fit in 0x20 - 0x30 - for tables func
@@ -530,19 +534,65 @@ int de_ptx::hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call, uint64
       continue;
     }
     if ( is_rbp && di.ud_obj.mnemonic == UD_Imovups ) {
-      if ( is_rbpsr(di) >= 0 ) curr.re_st();
+      if ( is_rbpsr(di) >= 0 ) curr.re_st16();
       continue;
     }
     if ( di.ud_obj.mnemonic == UD_Imovaps ) {
       if ( in_sr(di) >= 0 ) curr.re_st16();
       continue;
     }
+    // and reg, []
+    if ( is_rbp ) {
+      if ( di.ud_obj.mnemonic == UD_Iand &&
+           di.ud_obj.operand[0].type == UD_OP_REG  &&
+           di.ud_obj.operand[0].size == 64 )
+      {
+        auto sr = _is_rbpsr(di, 1);
+        uint64_t rval = 0;
+        if ( sr >= 0 && regs.asgn(di.ud_obj.operand[0].base, rval)) {
+          rval &= *(uint64_t *)&curr.st[sr];
+if ( opt_d ) printf("rval %lX off %d\n", rval, sr);
+          regs.add(di.ud_obj.operand[0].base, rval);
+          continue;
+        }
+      }
+      // or/and reg, reg
+      if ( (di.ud_obj.mnemonic == UD_Ior || di.ud_obj.mnemonic == UD_Iand || di.ud_obj.mnemonic == UD_Imov) &&
+           di.ud_obj.operand[0].type == UD_OP_REG  &&
+           di.ud_obj.operand[1].type == UD_OP_REG  &&
+           di.ud_obj.operand[0].size == 64 )
+      {
+        if ( di.ud_obj.mnemonic == UD_Imov )
+          regs.mov(di.ud_obj.operand[1].base, di.ud_obj.operand[0].base);
+        else {
+          uint64_t r1 = 0, r2 = 0;
+          if ( regs.asgn(di.ud_obj.operand[0].base, r1) && regs.asgn(di.ud_obj.operand[1].base, r2) )
+            regs.add(di.ud_obj.operand[0].base, di.ud_obj.mnemonic == UD_Ior ? r1 | r2 : r1 & r2);
+        }
+        continue;
+      }
+      // mov reg, []
+      if ( di.ud_obj.mnemonic == UD_Imov &&
+           di.ud_obj.operand[0].type == UD_OP_REG  &&
+           di.ud_obj.operand[0].size == 64 )
+      {
+        auto sr = _is_rbpsr(di, 1);
+        if ( sr >= 0 )
+        {
+          uint64_t *ptr = (uint64_t *)&curr.st[sr];
+if ( opt_d ) printf("mreg %lX off %d\n", *ptr, sr);
+          regs.add(di.ud_obj.operand[0].base, *ptr);
+          continue;
+        }
+      }
+    }
     // check call
     if ( di.is_call_jimm() ) {
       auto saddr = di.get_addr(0);
       if ( saddr != reg_call ) continue;
       res.push_back(curr);
-      regs.clear();
+      if ( is_rbp ) { regs.erase(UD_R_RAX); regs.erase(UD_R_RSI); regs.erase(UD_R_RDI); }
+      else regs.clear();
       continue;
     }
     if ( is_rbp ) {
@@ -810,6 +860,7 @@ int de_ptx::_read() {
   // ptxas V13.1.80 md5 f38e5732c94163b96cf797eef252b4cb
   // string from get_pseudo_prototype switch case, size 1078
 //13.4  extr_sw_strs(0x2498060, 1075);
+//  extr_sw_strs(0x2490218, 1081);
   // from 13.4: release 13.4, V13.4.46
 //  hack_ptx_ops(0x8D4DDC, 0x8F3621, 0x8C8440, 0x338B448, 0x338BCC0);
   // from 13.5, V13.5.37
