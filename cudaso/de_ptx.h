@@ -49,6 +49,11 @@ class de_ptx: public decuda_base {
        uint32_t *fptr = (uint32_t *)(st + 0x10);
        *fptr = v;
      }
+     template <typename T>
+     void store(T v, int idx) {
+       T *fptr = (T *)(st + idx);
+       *fptr = v;
+     }
    };
    int hack_ptx_ops(uint64_t start, uint64_t end, uint64_t reg_call, uint64_t ops_tab, uint64_t ops_tab_end, int is_rpb = 0);
    typedef std::pair<uint32_t, const char *> kw_type;

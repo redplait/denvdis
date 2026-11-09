@@ -428,28 +428,22 @@ int de_ptx::cmn_ptx_op(diter &di, ptx_op &curr, G &regs, T t, A add) {
         uint64_t rval = 0;
         if ( regs.asgn(src, rval) ) {
  if ( opt_d ) printf("reg32 mask[%d], size %X %lX\n", off, s1, rval);
-          if ( s1 == 64 ) {
-            uint64_t *hack = (uint64_t *)&curr.st[off];
-            *hack = rval;
-          } if ( s1 == 32 ) {
-            uint32_t *hack = (uint32_t *)&curr.st[off];
-            *hack = (uint32_t)rval;
-          } else if ( s1 == 16 ) {
-            uint16_t *hack = (uint16_t *)&curr.st[off];
-            *hack |= rval & 0xffff;
-          } else curr.st[off] = rval & 0xff;
+          if ( s1 == 64 ) curr.store(rval, off);
+          else if ( s1 == 32 ) curr.store((uint32_t)rval, off);
+          else if ( s1 == 16 ) curr.store((uint16_t)rval, off);
+          else curr.st[off] = rval & 0xff;
         }
       } else {
         auto s1 = di.ud_obj.operand[1].size;
         if ( s1 == 64 ) {
  if ( opt_d ) printf("mov64 mask[%d], %X\n", off, di.ud_obj.operand[1].lval.uqword);
-          uint64_t *hack = (uint64_t *)&curr.st[off];
-          *hack = di.ud_obj.operand[1].lval.uqword;
+          curr.store(di.ud_obj.operand[1].lval.uqword, off);
         } else if ( s1 == 32 ) {
  if ( opt_d ) printf("mov32 mask[%d], %X\n", off, di.ud_obj.operand[1].lval.udword);
-          uint32_t *hack = (uint32_t *)&curr.st[off];
-          *hack = di.ud_obj.operand[1].lval.udword;
-        } else
+          curr.store(di.ud_obj.operand[1].lval.udword, off);
+        } else if ( s1 == 16 )
+          curr.store(di.ud_obj.operand[1].lval.uword, off);
+        else
           curr.st[off] = di.ud_obj.operand[1].lval.ubyte;
       }
       return 1;
@@ -471,6 +465,9 @@ int de_ptx::cmn_ptx_op(diter &di, ptx_op &curr, G &regs, T t, A add) {
           } else if ( s1 == 32 ) {
             uint32_t *hack = (uint32_t *)&curr.st[off];
             *hack |= (uint32_t)rval;
+          } else if ( s1 == 16 ) {
+            uint16_t *hack = (uint16_t *)&curr.st[off];
+            *hack |= (uint16_t)rval;
           } else
             curr.st[off] |= rval & 0xff;
         }
@@ -478,6 +475,9 @@ int de_ptx::cmn_ptx_op(diter &di, ptx_op &curr, G &regs, T t, A add) {
         if ( s1 == 32 ) {
           uint32_t *hack = (uint32_t *)&curr.st[off];
           *hack |= di.ud_obj.operand[1].lval.udword;
+        } else if ( s1 == 16 ) {
+          uint16_t *hack = (uint16_t *)&curr.st[off];
+          *hack |= di.ud_obj.operand[1].lval.uword;
         } else
         curr.st[off] |= di.ud_obj.operand[1].lval.ubyte;
       }
