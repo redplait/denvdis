@@ -348,6 +348,7 @@ sub read_ops2
   my $add = defined($opt_f) || defined($opt_b) || defined($opt_B) || defined($opt_C) || defined($opt_e) || defined($opt_i) ||
     defined($opt_a) || defined($opt_o) || defined($opt_T);
   my $max_mask = 0;
+  my $sum_mask = 0;
   while( $str = <$fh> ) {
     chomp $str;
     $ln++;
@@ -364,6 +365,7 @@ sub read_ops2
     my @tmp = map { hex $_; } split /\s+/, $m;
     # calc bitlen
     my $blen = bcnt(\@tmp);
+    $sum_mask += $blen;
     if ( $blen > $max_mask ) {
       $max_mask = $blen;
       $max_op = [ $ln, \@tmp, $tail ];
@@ -389,6 +391,7 @@ sub read_ops2
         printf("longest mask: %d ", $max_mask);
         printf("at %d %s\n", $max_op->[0], $max_op->[2]);
       }
+      printf("total %d masks, avg %f\n", $sum_mask, 1.0 * $sum_mask / scalar(@g_ops));
     }
   }
 }
