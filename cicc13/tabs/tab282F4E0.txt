@@ -4,3 +4,4 @@
 .sync_restrict::shared::cta
 .sync_restrict::shared::read::mma::a
 .sync_restrict::reads
+.sync_restrict::read

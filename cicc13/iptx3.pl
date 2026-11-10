@@ -4,19 +4,21 @@
 #  since 8 + 1
 #  since 10 + 2
 # -f for mask frequency analysis
+# -5 to read 3 added in 13.5 instructions
 use strict;
 use warnings;
 use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_B $opt_b $opt_C $opt_d $opt_e $opt_f $opt_i $opt_m $opt_N $opt_o $opt_k $opt_L $opt_l $opt_t $opt_T $opt_U $opt_w/;
+use vars qw/$opt_5 $opt_a $opt_B $opt_b $opt_C $opt_d $opt_e $opt_f $opt_i $opt_m $opt_N $opt_o $opt_k $opt_L $opt_l $opt_t $opt_T $opt_U $opt_w/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] md.txt
  Options:
+ -5 - dirty hack for instructions from 13.5
  -b idx:shift
  -B list of idx:shift
  -C - gen tables for ptx parser
@@ -334,10 +336,10 @@ sub filter_ins
   $found;
 }
 
-# assigned in read_ops2
+# assigned in read_ops3
 my $g_total_mask;
 
-sub read_ops2
+sub read_ops3
 {
   my $fname = shift;
   my @mask = ( 0 ) x (MaskSize + 1);
@@ -352,6 +354,10 @@ sub read_ops2
   while( $str = <$fh> ) {
     chomp $str;
     $ln++;
+    if ( $str =~ /^#/ ) {
+      last unless defined($opt_5);
+      next;
+    }
     next if ( $str !~ /^\d+\s+(.*)$/ );
     $str = $1;
     # opcode name and tail starts at 48
@@ -612,6 +618,11 @@ my %gn_tabs = (
  'wmma.store.d' => 'tab282F2F0',
  'mma' => 'tab282F2F0',
  '_mma' => 'tab282F2F0',
+ # trace.mark from 13.5 dirty hack
+ 'trace.mark' => 'trace',
+ 'trace.mark.cond' => 'trace',
+ # tensormap.replace from 13.5, test byte ptr [r13+11h], 4
+ 'tensormap.replace' => 'ac',
 );
 
 =pod
@@ -792,6 +803,7 @@ my %gk_tabs = (
  18 * 8 + 2 => 'l2',         # test    byte ptr [rdx+12h], 4
  18 * 8 + 3 => 'report_mechanism',
  18 * 8 + 5 => 'ignore_oob', # test    byte ptr [r13+12h], 20h
+ 18 * 8 + 6 => '2pi', # from 13.5 - in original 1:1, like test    byte ptr [r13+1], 2
 );
 
 # collect all uniq tables for some instruction
@@ -1431,10 +1443,10 @@ sub filter_types
 }
 
 # main
-my $status = getopts("Bb:aCdefikLl:mNotT:Uw");
+my $status = getopts("5b:aCdefikLl:mNotT:Uw");
 usage() if ( !$status );
 
-read_ops2('ptx_ops3.txt');
+read_ops3('ptx_ops3.txt');
 if ( defined $opt_t ) {
   v_tabs();
   exit;

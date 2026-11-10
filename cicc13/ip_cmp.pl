@@ -7,13 +7,14 @@ use Getopt::Std;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_f $opt_v $opt_w/;
+use vars qw/$opt_5 $opt_f $opt_v $opt_w/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] ptx_ops
  Options:
+   -5 - dirty hack for 13.5
    -f - compare forms
    -v - verbose mode
    -w - skip wmma & friends
@@ -61,6 +62,10 @@ sub read_ops
   while( $str = <$fh> ) {
     chomp $str;
     $ln++;
+   if ( $str =~ /^#/ ) {
+      last unless defined($opt_5);
+      next;
+    }
     next if ( $str !~ /^\d+\s+(.*)$/ );
     $str = $1;
     # opcode name and tail starts at 48
@@ -160,7 +165,7 @@ sub cmp_ops {
 }
 
 # main
-my $status = getopts("fvw");
+my $status = getopts("5fvw");
 usage() if ( !$status );
 if ( 1 != scalar @ARGV ) {
   printf("where is file name?\n");
