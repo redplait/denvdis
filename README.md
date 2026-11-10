@@ -55,7 +55,7 @@ Currently [iptx.pl -kf](https://github.com/redplait/denvdis/blob/master/cicc13/i
 
 I was able to identify 5 of them as instructions properties - so in total 3 masks are still unknown - this is 2.5%
 
- * [EBNF](https://github.com/redplait/denvdis/blob/master/cicc13/ptx.ebnf) grammar, [version](https://github.com/redplait/denvdis/blob/master/cicc13/ptx134.ebnf) for 13.4
+ * [EBNF](https://github.com/redplait/denvdis/blob/master/cicc13/ptx.ebnf) grammar, versions for [13.4](https://github.com/redplait/denvdis/blob/master/cicc13/ptx134.ebnf) & [13.5](https://github.com/redplait/denvdis/blob/master/cicc13/ptx135.ebnf)
  * [PTX parser](https://github.com/redplait/denvdis/tree/master/ptx.parse) + some [doc](https://redplait.blogspot.com/2026/08/parser-of-ptx-instructions.html)
  * [test](https://redplait.blogspot.com/2026/09/ptx-asm-in-llvm-ir.html) ptx parser on cicc shows that it uses 5-7% of instructions with undocumented attributes
  * [Perl binding](https://github.com/redplait/denvdis/tree/master/ptx.parse/PTX-Parse)
