@@ -1,4 +1,4 @@
-// Dont edit this file - it was generated Fri Oct 30 09:14:30 2026 by iptx3.pl -C
+// Dont edit this file - it was generated Wed Nov 11 09:00:04 2026 by iptx3.pl -C
 // to distinguish from 13.1
 #define PTX_13_4
 
@@ -915,6 +915,7 @@ const static PTXTab s_tab282F4E0 = {
  "sync_restrict::shared::cta",
  "sync_restrict::shared::read::mma::a",
  "sync_restrict::reads",
+ "sync_restrict::read",
 };
 const static PTXTab s_tab282F460 = {
  "launch_dependents",
@@ -1023,6 +1024,9 @@ const static PTXTab s_tab_report_mechanism = {
 };
 const static PTXTab s_tab_ignore_oob = {
  "ignore_oob",
+};
+const static PTXTab s_tab_2pi = {
+ "2pi",
 };
 
 const static PTXTab *s_tabs[] = {
@@ -1327,7 +1331,7 @@ const static PTXTab *s_tabs[] = {
 // 18:5 149
  &s_tab_ignore_oob,
 // 18:6 150
- nullptr,
+ &s_tab_2pi,
 // 18:7 151
  nullptr,
 };
@@ -4393,7 +4397,7 @@ static const PTXIns s_cos_0 = {
  "cos",
  nullptr,
  "00",  "F32", 833,
-{ 0x40,0x5,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+{ 0x40,0x5,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x40 }
 };
 static const PTXIns s_cp_async_0 = {
  "cp.async",
@@ -5787,6 +5791,12 @@ static const PTXIns s_fabric_submit_0 = {
  "",  "E16", 1232,
 { 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x4,0x0,0x0,0x0 }
 };
+static const PTXIns s_fabric_submit_commit_group_0 = {
+ "fabric.submit.commit_group",
+ nullptr,
+ "",  "E16", 1680,
+{ 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+};
 static const PTXIns s_fabric_try_atom_async_0 = {
  "fabric.try_atom.async",
  nullptr,
@@ -6666,7 +6676,7 @@ static const PTXIns s_lg2_0 = {
  "lg2",
  nullptr,
  "00",  "F32", 834,
-{ 0x40,0x5,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+{ 0x40,0x5,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x40 }
 };
 static const PTXIns s_lop3_0 = {
  "lop3",
@@ -8629,7 +8639,7 @@ static const PTXIns s_sin_0 = {
  "sin",
  nullptr,
  "00",  "F32", 832,
-{ 0x40,0x5,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+{ 0x40,0x5,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x40 }
 };
 static const PTXIns s_slct_0 = {
  "slct",
@@ -9375,15 +9385,26 @@ static const PTXIns s_tensormap_cp_fenceproxy_0 = {
  "MMC",  nullptr, 1591,
 { 0x0,0x0,0x0,0x0,0x0,0x19,0x1,0x0,0x0,0x0,0x80,0x10,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
 };
+static const PTXIns s_tensormap_query_alloc_class_large_0 = {
+ "tensormap.query.alloc_class_large",
+ nullptr,
+ "PM",  nullptr, 1682,
+{ 0x0,0x0,0x0,0x0,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x80,0x0,0x0 }
+};
+const static PTXTab s_tab_ac = {
+ "alloc_small",
+ "alloc_large",
+ "alloc_same",
+};
 static const PTXIns s_tensormap_replace_0 = {
  "tensormap.replace",
- nullptr,
+ &s_tab_ac,
  "M0",  "B[32|64]", 1297,
 { 0x0,0x0,0x0,0x0,0x80,0x0,0x20,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xC0,0x1,0x0 }
 };
 static const PTXIns s_tensormap_replace_1 = {
  "tensormap.replace",
- nullptr,
+ &s_tab_ac,
  "MC0",  "B[32|64]", 1298,
 { 0x0,0x0,0x0,0x0,0x80,0x0,0x20,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xC0,0x1,0x0 }
 };
@@ -10641,6 +10662,58 @@ static const PTXIns s_tld4_15 = {
  "0ii1sl",  "F32F32", 1522,
 { 0xC0,0x0,0x0,0x80,0x0,0x0,0xE,0x0,0x20,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
 };
+const static PTXTab s_tab_trace = {
+ "b32",
+ "b64",
+};
+static const PTXIns s_trace_mark_0 = {
+ "trace.mark",
+ &s_tab_trace,
+ "CL",  nullptr, 1671,
+{ 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+};
+static const PTXIns s_trace_mark_1 = {
+ "trace.mark",
+ &s_tab_trace,
+ "C0L",  "B[32|64]", 1673,
+{ 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+};
+static const PTXIns s_trace_mark_2 = {
+ "trace.mark",
+ &s_tab_trace,
+ "C",  nullptr, 1675,
+{ 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+};
+static const PTXIns s_trace_mark_3 = {
+ "trace.mark",
+ &s_tab_trace,
+ "C0",  "B[32|64]", 1677,
+{ 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+};
+static const PTXIns s_trace_mark_cond_0 = {
+ "trace.mark.cond",
+ &s_tab_trace,
+ "CPL",  nullptr, 1672,
+{ 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+};
+static const PTXIns s_trace_mark_cond_1 = {
+ "trace.mark.cond",
+ &s_tab_trace,
+ "CP0L",  "B[32|64]", 1674,
+{ 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+};
+static const PTXIns s_trace_mark_cond_2 = {
+ "trace.mark.cond",
+ &s_tab_trace,
+ "CP",  nullptr, 1676,
+{ 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+};
+static const PTXIns s_trace_mark_cond_3 = {
+ "trace.mark.cond",
+ &s_tab_trace,
+ "CP0",  "B[32|64]", 1678,
+{ 0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0 }
+};
 static const PTXIns s_trap_0 = {
  "trap",
  nullptr,
@@ -11382,9 +11455,9 @@ static const PTXIns s_xor_1 = {
 // Used Types stat:
 // F - 1309: _checkfp.divide 1537,_mma 139,_mma 139,_mma 140,_mma 140,_mma 141,_mma 141,_mma 142,_mma 142,_mma 146
 // I - 656: _ldsm 648,_ldsm 648,_ldsm 649,_ldsm 649,_ldsm 652,_ldsm 652,_ldsm 653,_ldsm 653,_mma 143,_mma 143
-// B - 302: _createpolicy.fractional 1013,_createpolicy.range 1014,_ldldu 989,_ldldu 989,_ldsm 647,_ldsm 651,_match 1592,_mma.warpgroup 325,_mma.warpgroup 325,_mma.warpgroup 326
+// B - 306: _createpolicy.fractional 1013,_createpolicy.range 1014,_ldldu 989,_ldldu 989,_ldsm 647,_ldsm 651,_match 1592,_mma.warpgroup 325,_mma.warpgroup 325,_mma.warpgroup 326
 // Q - 271: _mma 154,_mma 154,_mma 155,_mma 155,_mma 156,_mma 156,_mma 157,_mma 157,_mma 158,_mma 159
-// E - 195: _mma.warpgroup 217,_mma.warpgroup 217,_mma.warpgroup 218,_mma.warpgroup 218,_mma.warpgroup 219,_mma.warpgroup 219,_mma.warpgroup 223,_mma.warpgroup 223,_mma.warpgroup 224,_mma.warpgroup 224
+// E - 196: _mma.warpgroup 217,_mma.warpgroup 217,_mma.warpgroup 218,_mma.warpgroup 218,_mma.warpgroup 219,_mma.warpgroup 219,_mma.warpgroup 223,_mma.warpgroup 223,_mma.warpgroup 224,_mma.warpgroup 224
 // H - 127: abs 836,add 741,add 748,add 753,add 753,add 753,add 754,add 754,add 755,add 755
 // T - 83: _mma.warpgroup 220,_mma.warpgroup 220,_mma.warpgroup 221,_mma.warpgroup 221,_mma.warpgroup 222,_mma.warpgroup 222,_mma.warpgroup 226,_mma.warpgroup 226,_mma.warpgroup 227,_mma.warpgroup 227
 // R - 72: _mma 158,_mma 159,_mma 160,_mma 161,_mma 162,_mma 162,_mma 163,_mma 163,_mma 164,_mma 165
@@ -11495,6 +11568,7 @@ const PTXOps g_ops = {
  { "ex2", {&s_ex2_0,&s_ex2_1,&s_ex2_2,&s_ex2_3,&s_ex2_4,&s_ex2_5,&s_ex2_6} }, // 7
  { "exit", {&s_exit_0} }, // 1
  { "fabric.submit", {&s_fabric_submit_0} }, // 1
+ { "fabric.submit.commit_group", {&s_fabric_submit_commit_group_0} }, // 1
  { "fabric.try_atom.async", {&s_fabric_try_atom_async_0,&s_fabric_try_atom_async_1,&s_fabric_try_atom_async_2,&s_fabric_try_atom_async_3,&s_fabric_try_atom_async_4,&s_fabric_try_atom_async_5,&s_fabric_try_atom_async_6,&s_fabric_try_atom_async_7,&s_fabric_try_atom_async_8,&s_fabric_try_atom_async_9,&s_fabric_try_atom_async_10,&s_fabric_try_atom_async_11,&s_fabric_try_atom_async_12} }, // 13
  { "fabric.try_get.async", {&s_fabric_try_get_async_0,&s_fabric_try_get_async_1} }, // 2
  { "fabric.try_get.async.tensor", {&s_fabric_try_get_async_tensor_0,&s_fabric_try_get_async_tensor_1,&s_fabric_try_get_async_tensor_2,&s_fabric_try_get_async_tensor_3,&s_fabric_try_get_async_tensor_4,&s_fabric_try_get_async_tensor_5,&s_fabric_try_get_async_tensor_6,&s_fabric_try_get_async_tensor_7,&s_fabric_try_get_async_tensor_8,&s_fabric_try_get_async_tensor_9} }, // 10
@@ -11640,6 +11714,7 @@ const PTXOps g_ops = {
  { "tcgen05.st", {&s_tcgen05_st_0,&s_tcgen05_st_1} }, // 2
  { "tcgen05.wait", {&s_tcgen05_wait_0} }, // 1
  { "tensormap.cp_fenceproxy", {&s_tensormap_cp_fenceproxy_0} }, // 1
+ { "tensormap.query.alloc_class_large", {&s_tensormap_query_alloc_class_large_0} }, // 1
  { "tensormap.replace", {&s_tensormap_replace_0,&s_tensormap_replace_1} }, // 2
  { "testp", {&s_testp_0} }, // 1
  { "tex", {&s_tex_0,&s_tex_1,&s_tex_2,&s_tex_3,&s_tex_4,&s_tex_5,&s_tex_6,&s_tex_7,&s_tex_8,&s_tex_9,&s_tex_10,&s_tex_11,&s_tex_12,&s_tex_13,&s_tex_14,&s_tex_15,&s_tex_16,&s_tex_17,&s_tex_18,&s_tex_19,&s_tex_20,&s_tex_21,&s_tex_22,&s_tex_23,&s_tex_24,&s_tex_25,&s_tex_26,&s_tex_27,&s_tex_28,&s_tex_29,&s_tex_30,&s_tex_31,&s_tex_32,&s_tex_33,&s_tex_34,&s_tex_35,&s_tex_36,&s_tex_37,&s_tex_38,&s_tex_39,&s_tex_40,&s_tex_41,&s_tex_42,&s_tex_43,&s_tex_44,&s_tex_45,&s_tex_46,&s_tex_47} }, // 48
@@ -11647,6 +11722,8 @@ const PTXOps g_ops = {
  { "tex.grad", {&s_tex_grad_0,&s_tex_grad_1,&s_tex_grad_2,&s_tex_grad_3,&s_tex_grad_4,&s_tex_grad_5,&s_tex_grad_6,&s_tex_grad_7,&s_tex_grad_8,&s_tex_grad_9,&s_tex_grad_10,&s_tex_grad_11,&s_tex_grad_12,&s_tex_grad_13,&s_tex_grad_14,&s_tex_grad_15,&s_tex_grad_16,&s_tex_grad_17,&s_tex_grad_18,&s_tex_grad_19,&s_tex_grad_20,&s_tex_grad_21,&s_tex_grad_22,&s_tex_grad_23,&s_tex_grad_24,&s_tex_grad_25,&s_tex_grad_26,&s_tex_grad_27,&s_tex_grad_28,&s_tex_grad_29,&s_tex_grad_30,&s_tex_grad_31,&s_tex_grad_32,&s_tex_grad_33,&s_tex_grad_34,&s_tex_grad_35,&s_tex_grad_36,&s_tex_grad_37,&s_tex_grad_38,&s_tex_grad_39,&s_tex_grad_40,&s_tex_grad_41,&s_tex_grad_42,&s_tex_grad_43,&s_tex_grad_44,&s_tex_grad_45,&s_tex_grad_46,&s_tex_grad_47} }, // 48
  { "tex.level", {&s_tex_level_0,&s_tex_level_1,&s_tex_level_2,&s_tex_level_3,&s_tex_level_4,&s_tex_level_5,&s_tex_level_6,&s_tex_level_7,&s_tex_level_8,&s_tex_level_9,&s_tex_level_10,&s_tex_level_11,&s_tex_level_12,&s_tex_level_13,&s_tex_level_14,&s_tex_level_15,&s_tex_level_16,&s_tex_level_17,&s_tex_level_18,&s_tex_level_19,&s_tex_level_20,&s_tex_level_21,&s_tex_level_22,&s_tex_level_23,&s_tex_level_24,&s_tex_level_25,&s_tex_level_26,&s_tex_level_27,&s_tex_level_28,&s_tex_level_29,&s_tex_level_30,&s_tex_level_31,&s_tex_level_32,&s_tex_level_33,&s_tex_level_34,&s_tex_level_35,&s_tex_level_36,&s_tex_level_37,&s_tex_level_38,&s_tex_level_39,&s_tex_level_40,&s_tex_level_41,&s_tex_level_42,&s_tex_level_43,&s_tex_level_44,&s_tex_level_45,&s_tex_level_46,&s_tex_level_47} }, // 48
  { "tld4", {&s_tld4_0,&s_tld4_1,&s_tld4_2,&s_tld4_3,&s_tld4_4,&s_tld4_5,&s_tld4_6,&s_tld4_7,&s_tld4_8,&s_tld4_9,&s_tld4_10,&s_tld4_11,&s_tld4_12,&s_tld4_13,&s_tld4_14,&s_tld4_15} }, // 16
+ { "trace.mark", {&s_trace_mark_0,&s_trace_mark_1,&s_trace_mark_2,&s_trace_mark_3} }, // 4
+ { "trace.mark.cond", {&s_trace_mark_cond_0,&s_trace_mark_cond_1,&s_trace_mark_cond_2,&s_trace_mark_cond_3} }, // 4
  { "trap", {&s_trap_0} }, // 1
  { "txq", {&s_txq_0} }, // 1
  { "txq.level", {&s_txq_level_0} }, // 1
@@ -11685,4 +11762,4 @@ const PTXOps g_ops = {
  { "wmma.store.d", {&s_wmma_store_d_0,&s_wmma_store_d_1,&s_wmma_store_d_2,&s_wmma_store_d_3,&s_wmma_store_d_4,&s_wmma_store_d_5,&s_wmma_store_d_6,&s_wmma_store_d_7} }, // 8
  { "xor", {&s_xor_0,&s_xor_1} }, // 2
 };
-// 291 keys, total 1669 ins
+// 295 keys, total 1679 ins
