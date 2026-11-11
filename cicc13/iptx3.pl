@@ -1236,7 +1236,7 @@ sub C_tabname {
 
 sub gen_C {
  # header
- printf("// Dont edit this file - it was generated %s by %s -C\n", scalar(localtime), $0);
+ printf("// Dont edit this file - it was generated %s by %s -%s\n", scalar(localtime), $0, defined($opt_5) ? 'C5' : 'C');
  printf("// to distinguish from 13.1\n");
  printf('#define PTX_13_4' . "\n\n");
  # lets try to find some indices - for now index of nc
