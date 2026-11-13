@@ -14,30 +14,44 @@ class elf_extr: public decuda_base {
    virtual int _read() override {
      if ( !s_rodata.has_value() ) return 0;
      unsigned long from = 0x134C440;
-     const unsigned char *ptr = (const unsigned char *)sdata(s_rodata, from);
-     if ( !ptr ) return 0;
      auto *s = s_rodata.value();
-     size_t len = s->get_size();
-     const unsigned char * end = len + (const unsigned char *)s->get_data();
-     const unsigned char sign[4] = { 0x7F, 'E', 'L', 'F' };
-     bm_search bm(sign, sizeof(sign));
+     const unsigned char *start = (const unsigned char *)s->get_data();
+     const unsigned char *ptr = (const unsigned char *)start + from - s->get_address();
+     if ( !ptr ) return 0;
+     const unsigned char *end = (const unsigned char *)start + s->get_size();
      const unsigned char *prev = nullptr;
      int cnt = 0;
-     for ( ptr = bm.search(ptr, end - ptr); ptr; ptr = bm.search(ptr + 4, end - ptr - 4) )
+     for ( ptr = search(ptr, end); ptr; ptr = search(ptr + sign_len, end) )
      {
        if ( prev ) {
-         dump(ptr, ptr - prev); ++cnt;
+         dump(prev, s, ptr - prev); ++cnt;
        }
        prev = ptr;
      }
      if ( prev ) {
-       dump(prev, end - prev); ++cnt;
+       dump(prev, s, end - prev); ++cnt;
      }
      return cnt;
    }
  protected:
-   int dump(const unsigned char *ptr, size_t len) {
+  const unsigned char sign[4] = { 0x7F, 'E', 'L', 'F' };
+   const int sign_len = 4;
+   const unsigned char *search(const unsigned char *from, const unsigned char *upto) {
+     while ( from < upto - sign_len ) {
+       if ( from[0] != 0x7f ) { from++; continue; }
+       if ( from[1] == 'E' && from[2] == 'L' && from[3] == 'F' ) return from;
+       ++from;
+     }
+     return nullptr;
+   }
+   int dump(const unsigned char *ptr, const ELFIO::section *s, size_t len) {
+     if ( !len ) return 0;
+     auto s_start = s->get_address();
+     auto diff = ptr - (const unsigned char *)s->get_data();
+     char buf[50];
+     sprintf(buf, ".%X-%d", s_start + diff, len);
      std::string fname = std::to_string(++m_idx);
+     fname += buf;
      fname += ".elf";
      FILE *fp = fopen(fname.c_str(), "wn");
      if ( !fp ) {
