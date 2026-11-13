@@ -1,6 +1,8 @@
 #pragma once
 #include "decuda_base.h"
 
+extern int opt_d;
+
 class ctr_str: public decuda_base {
  public:
   ctr_str(ELFIO::elfio *rdr):
@@ -20,11 +22,13 @@ class ctr_str: public decuda_base {
         continue;
       }
     }
-    if ( s_ctors.has_value() )
+    if ( s_ctors.has_value() ) {
+      if ( opt_d ) printf("process ctors section %s\n", s_ctors.value()->get_name().c_str());
       return proc_section(s_ctors.value());
-    else if ( s_init_array.has_value() )
+    } else if ( s_init_array.has_value() ) {
+      if ( opt_d ) printf("process section %s\n", s_ctors.value()->get_name().c_str());
       return proc_section(s_init_array.value() );
-    else
+    } else
       return 0;
    }
  protected:

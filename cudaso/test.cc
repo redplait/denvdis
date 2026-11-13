@@ -4,6 +4,7 @@
 #include "de_cupti.h"
 #include "de_merc.h"
 #include "de_ptx.h"
+#include "elf_extr.h"
 #include <unistd.h>
 #ifdef WITH_CEREAL
 #include "cereal/archives/json.hpp"
@@ -48,21 +49,23 @@ void process(T *dc) {
     dc->store(archive);
   } else
 #endif
-    dc->dump_res();
+  dc->dump_res();
 }
 
 int main(int argc, char **argv) {
   int c;
   int do_dbg = 0,
       do_ctors = 0,
+      do_elfs = 0,
       hack_merc = 0,
       do_cupti = 0,
       hack_ptx = 0;
   while(1) {
-    c = getopt(argc, argv, "s:cCDdmtrpv");
+    c = getopt(argc, argv, "s:cCDdemtrpv");
     if ( c == -1 ) break;
     switch(c) {
       case 'c': do_ctors = 1; break;
+      case 'e': do_elfs = 1; break;
       case 's': s_arg = optarg; break;
       case 'd': opt_d = 1; break;
       case 'C': do_cupti = 1; break;
@@ -79,14 +82,17 @@ int main(int argc, char **argv) {
     usage(argv[0]);
     return 6;
   }
-  if ( do_dbg || do_cupti || hack_ptx || hack_merc || do_ctors ) {
+  if ( do_dbg || do_cupti || hack_ptx || hack_merc || do_ctors || do_elfs ) {
     ELFIO::elfio *rdr = new ELFIO::elfio;
     if ( !rdr->load(argv[optind]) ) {
       delete rdr;
       fprintf(stderr, "cannot load ELF %s\n", argv[optind]);
       return 2;
     }
-    if ( do_ctors ) {
+    if ( do_elfs ) {
+      elf_extr p(rdr);
+      proc_hack(p);
+    } else if ( do_ctors ) {
       ctr_str p(rdr);
       proc_hack(p);
     } else if ( hack_ptx ) {

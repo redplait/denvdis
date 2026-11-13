@@ -864,13 +864,15 @@ int de_ptx::_read() {
   // from 13.4: release 13.4, V13.4.46
 //  hack_ptx_ops(0x8D4DDC, 0x8F3621, 0x8C8440, 0x338B448, 0x338BCC0);
   // from 13.5, V13.5.37
-  hack_ptx_ops(0x8BEE90, 0x8DB143, 0x8B1F10, 0x305F128, 0x305F9A0, 1);
+//  hack_ptx_ops(0x8BEE90, 0x8DB143, 0x8B1F10, 0x305F128, 0x305F9A0, 1);
  // yet another couple of latency tables, totally identical to c17.txt
   // hack_ops(0x7357B7, 0x1E01480, "ops1.txt");
   // hack_ops(0xEE17A7, 0x1E01480, "ops2.txt");
  // extract dumpers
 //  hack_dumpers(0x81B180, 0x2deb20);
+//  hack_dumpers(0x7FD537, 0x2F0240);
 //  hack_ptx_kws(0x391FA0);
+hack_ptx_kws(0x1D1C5D0);
  // extract ptx_intr.txt
 //13.5  hack_intr(0x7FA59B, 0x2F0240);
   // cicc 13.1 - md5 f3638b32a8740eda5e8cd5e5fe9decfb
