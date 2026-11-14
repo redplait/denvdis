@@ -4,9 +4,23 @@ use strict;
 use warnings;
 use Elf::Reader;
 use Cubin::Attrs;
+use Getopt::Std;
 
 # total
 my %g_total;
+my %g_ann_total;
+
+use vars qw/$opt_a/;
+
+sub usage()
+{
+  print STDERR<<EOF;
+Usage: $0 [options] file.cubin
+ Options:
+   -a - collect annotations stat
+EOF
+  exit(8);
+}
 
 sub sort_dump {
   my($atr, $hm, $margin) = @_;
@@ -18,6 +32,8 @@ sub sort_dump {
 }
 
 # main
+my $state = getopts("a");
+usage() if ( !$state );
 foreach my $fn ( @ARGV ) {
   my $elf = Elf::Reader->new($fn);
   unless( defined $elf ) {
@@ -38,6 +54,16 @@ foreach my $fn ( @ARGV ) {
     my $sh = $attr->stat();
     next unless( defined $sh );
     sort_dump($attr, $sh, '  ');
+    if ( defined($opt_a) && $attr->has_ann() ) {
+      my $an = $attr->ann_stat();
+      if ( defined $an ) {
+        printf("-- annotations: %d\n", scalar keys %$an );
+        while( my($t, $c) = each(%$an) ) {
+          $g_ann_total{$t} += $c;
+          printf(" %d -> %d\n", $t, $c);
+        }
+      }
+    }
   }
 }
 
@@ -45,6 +71,13 @@ foreach my $fn ( @ARGV ) {
 if ( keys %g_total ) {
   printf("-- total:\n");
   my @what = sort { $b->[1] <=> $a->[1] || $a->[0] cmp $b->[0] } map { [ $_, $g_total{$_} ] } keys %g_total;
+  foreach my $pair ( @what ) {
+    printf(" %s: %d\n", $pair->[0], $pair->[1]);
+  }
+}
+if ( defined($opt_a) && scalar keys %g_ann_total ) {
+  printf("-- annotations:\n");
+  my @what = sort { $b->[1] <=> $a->[1] } map { [ $_, $g_ann_total{$_} ] } keys %g_ann_total;
   foreach my $pair ( @what ) {
     printf(" %s: %d\n", $pair->[0], $pair->[1]);
   }
