@@ -10,13 +10,14 @@ use Carp;
 use Data::Dumper;
 
 # options
-use vars qw/$opt_a $opt_b $opt_C $opt_d $opt_e $opt_f $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_T $opt_u $opt_U $opt_v $opt_w $opt_Y $opt_z/;
+use vars qw/$opt_A $opt_a $opt_b $opt_C $opt_d $opt_e $opt_f $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_T $opt_u $opt_U $opt_v $opt_w $opt_Y $opt_z/;
 
 sub usage()
 {
   print STDERR<<EOF;
 Usage: $0 [options] file.cubin
  Options:
+  -A - process annotations
   -a - try apply all instructions
   -b - track read/write barriers
   -C config.file
@@ -65,6 +66,8 @@ sub limit_stall
 
 ### globals
 my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm, $g_urz, $g_gattrs);
+# annotations - for -A
+my($g_sann);
 # if we need to patch attributes in nv_info with patch_sym_pair - we need keep index of .nv.info section and current symbol index
 # g_start_sym - first symbol for this section (zeroing in sym_reset)
 my($g_nv_idx, $g_currsym, $g_start_sym);
@@ -267,6 +270,13 @@ sub add_Ynoreq
     $g_ynoreq{$iname}++;
   }
   $g_ystat[2]++;
+}
+
+# for -A - check if instruction with offset arg has annotation
+sub has_ann {
+  my $off = shift;
+  return 0 unless defined($g_sann);
+  exists $g_sann->{$off};
 }
 
 # instructions stat
@@ -1766,6 +1776,9 @@ sub dump_ins
   # process scheduling/find dual instr
   process_sched($off, $sctx, $block);
   my $dual = get_dual($sctx);
+  if ( has_ann($off) ) {
+    printf("; ANN\n");
+  }
   # dump body
   printf("/*%X*/%s", $off, get_spfx($dual));
   printf("%s%s;", $i_text, get_ssfx($dual));
@@ -4162,7 +4175,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("abdeGglmPpRrSsTtUuvwYzC:f:");
+my $state = getopts("AabdeGglmPpRrSsTtUuvwYzC:f:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -4246,6 +4259,7 @@ foreach my $s ( @es ) {
  # try to extract externals
  next if ( !$g_attrs->read($a_idx) );
  my $ext = $g_attrs->grep(0xf);
+ $g_sann = $g_attrs->ann() if ( defined $opt_A );
  # section setup
  setup_syms($s->[0]);
  dump_ext($ext->[0]) if defined($ext);
