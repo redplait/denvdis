@@ -498,6 +498,8 @@ void NV_renderer::render_rel(std::string &res, const NV_rel *nr, const C &c) con
     case 0x37: // R_CUDA_ABS32_32
     case 0x3a: // R_CUDA_ABS47_34
     case 0x3c: // R_CUDA_ABS24_32
+    case 0x35: // R_CUDA_INSTRUCTION64
+    case 0x43: // R_CUDA_INSTRUCTION128
     case 0x4a: // R_CUDA_ABS24_40
     case 0x64: // R_CUDA_ABS20_44
      res += '`';
