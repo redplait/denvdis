@@ -66,8 +66,8 @@ sub limit_stall
 
 ### globals
 my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm, $g_urz, $g_gattrs);
-# annotations - for -A
-my($g_sann);
+# annotations - for -A; stat - key is instuction name
+my($g_sann, %g_ann_stat);
 # if we need to patch attributes in nv_info with patch_sym_pair - we need keep index of .nv.info section and current symbol index
 # g_start_sym - first symbol for this section (zeroing in sym_reset)
 my($g_nv_idx, $g_currsym, $g_start_sym);
@@ -228,6 +228,15 @@ sub dump_swap_stat
   printf(" overall stalls %d, %f\n", $g_bl[1], $gs_gain * 1.0 / $g_bl[1]) if ( $g_bl[1] );
   printf(" total gain %d (%f avg) gain/old ratio %f\n", $gs_gain, $gs_gain * 1.0 / $gs_ords, $gs_gain * 1.0 / $gs_old_stall);
   printf(" skipped %d, patched %d, bad %d, bad attrs %d\n", $gsp_skipped, $gsp_patched, $gsp_bad, $gsp_bad_attrs) if defined($opt_P);
+}
+
+# -A stat
+sub dump_anns
+{
+  my @tmp = sort { $b->[1] <=> $a->[1] } map { [ $_, $g_ann_stat{$_} ]; } keys %g_ann_stat;
+  return unless(scalar @tmp);
+  printf("--- Annotated instructions %d:\n", scalar @tmp);
+  printf(" %s - %d\n", $_->[0], $_->[1]) for @tmp;
 }
 
 # -Y stat
@@ -1777,6 +1786,7 @@ sub dump_ins
   process_sched($off, $sctx, $block);
   my $dual = get_dual($sctx);
   if ( has_ann($off) ) {
+    $g_ann_stat{ $g_ced->ins_name() }++;
     printf("; ANN\n");
   }
   # dump body
@@ -4309,3 +4319,4 @@ if ( in_lmode() ) {
   dump_estat() if defined($opt_e);
   dump_lmode_stat();
 }
+dump_anns() if defined($opt_A);
