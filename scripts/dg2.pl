@@ -734,6 +734,23 @@ sub post_process_swaps
     # previous & next instructions offsets
     my $p_off = $sr->[0]->[0];
     my $c_off = $sr->[1]->[0];
+    # check annotations
+    my $as1 = has_ann($p_off);
+    my $as2 = has_ann($c_off);
+    if ( $as1 != $as2 ) {
+      $sr->[3] = 1;
+      my $sub_ann;
+      if ( $as1 ) {
+        $sub_ann = sub {
+          $g_attrs->patch_ann($p_off, $c_off);
+        };
+      } else {
+        $sub_ann = sub {
+          $g_attrs->patch_ann($c_off, $p_off);
+        };
+      }
+      push @$sr, $sub_ann;
+    }
     # check INSTR_OFFSETs
     # patch data [ 1, attribute, old offset, new offset ]
     if ( defined($gs_loffs) ) {
@@ -819,19 +836,28 @@ sub post_process_swaps
     # we have some tail for post-patching?
     next if ( $sr->[3] < 0 );
     # need patch relocs/attrs/something else
-    my $what = ref $sr->[4];
-    if ( 'CODE' eq $what ) {
-      $gsp_bad_attrs++ unless ( $sr->[4]->() );
-      next;
-    }
-    if ( 'ARRAY' ne $what ) {
-      carp("unknown post-action $what");
-      next;
+    my $rest = 4;
+    my $sr_size = scalar @$sr;
+    # there can be several subs
+    for ( ; $rest < $sr_size - 1; ++$rest ) {
+       my $what = ref $sr->[$rest];
+       if ( 'CODE' eq $what ) {
+         $gsp_bad_attrs++ unless ( $what->() );
+         next;
+       }
+       if ( 'ARRAY' ne $what ) {
+        carp("unknown post-action $what");
+        next;
+       }
+       last;
     }
     # some attributes - can be several
-    my $sr_size = scalar @$sr;
-    for my $i ( 4 .. $sr_size - 1 ) {
+    for my $i ( $rest .. $sr_size - 1 ) {
       my $ap = $sr->[$i];
+      if ( 'CODE' eq $ap ) {
+        $gsp_bad_attrs++ unless ( $ap->() );
+        next;
+      }
       my $atr = $ap->[1];
       next unless($atr); # skip zeros
       next unless ( $g_attrs->is_addr_list($atr) );
