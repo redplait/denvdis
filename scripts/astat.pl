@@ -79,6 +79,6 @@ if ( defined($opt_a) && scalar keys %g_ann_total ) {
   printf("-- annotations:\n");
   my @what = sort { $b->[1] <=> $a->[1] } map { [ $_, $g_ann_total{$_} ] } keys %g_ann_total;
   foreach my $pair ( @what ) {
-    printf(" %s: %d\n", $pair->[0], $pair->[1]);
+    printf(" %d: %d\n", $pair->[0], $pair->[1]);
   }
 }

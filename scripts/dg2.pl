@@ -4263,13 +4263,19 @@ $g_gattrs = $g_attrs->get_sym_attrs($g_nv_idx = Cubin::Attrs::nv_info($g_elf));
 # we have list of sections in @es
 foreach my $s ( @es ) {
  next unless( sect_filt($s) );
+ my $ext;
  my $a_idx = $g_attrs->try($s->[0]);
- # dump current section
- printf("[%d] attrs in %d size %X %s\n", $s->[0], $a_idx, $s->[9], $s->[1]);
- # try to extract externals
- next if ( !$g_attrs->read($a_idx) );
- my $ext = $g_attrs->grep(0xf);
- $g_sann = $g_attrs->ann() if ( defined $opt_A );
+ if ( defined $a_idx ) {
+   # dump current section
+   printf("[%d] attrs in %d size %X %s\n", $s->[0], $a_idx, $s->[9], $s->[1]);
+   # try to extract externals
+   next if ( !$g_attrs->read($a_idx) );
+   $ext = $g_attrs->grep(0xf);
+   $g_sann = $g_attrs->ann() if ( defined $opt_A );
+ } else {
+   $g_attrs->clear();
+   undef $g_sann;
+ }
  # section setup
  setup_syms($s->[0]);
  dump_ext($ext->[0]) if defined($ext);
