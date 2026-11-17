@@ -842,7 +842,7 @@ sub post_process_swaps
     for ( ; $rest < $sr_size - 1; ++$rest ) {
        my $what = ref $sr->[$rest];
        if ( 'CODE' eq $what ) {
-         $gsp_bad_attrs++ unless ( $what->() );
+         $gsp_bad_attrs++ unless ( $sr->[$rest]->() );
          next;
        }
        if ( 'ARRAY' ne $what ) {
@@ -854,7 +854,7 @@ sub post_process_swaps
     # some attributes - can be several
     for my $i ( $rest .. $sr_size - 1 ) {
       my $ap = $sr->[$i];
-      if ( 'CODE' eq $ap ) {
+      if ( 'CODE' eq ref $ap ) {
         $gsp_bad_attrs++ unless ( $ap->() );
         next;
       }
