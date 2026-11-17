@@ -839,7 +839,7 @@ sub post_process_swaps
     my $rest = 4;
     my $sr_size = scalar @$sr;
     # there can be several subs
-    for ( ; $rest < $sr_size - 1; ++$rest ) {
+    for ( ; $rest < $sr_size; ++$rest ) {
        my $what = ref $sr->[$rest];
        if ( 'CODE' eq $what ) {
          $gsp_bad_attrs++ unless ( $sr->[$rest]->() );
