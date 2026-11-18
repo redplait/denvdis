@@ -749,10 +749,12 @@ sub post_process_swaps
       my $sub_ann;
       if ( $as1 ) {
         $sub_ann = sub {
+          printf("patch ann1 for %X to %X\n", $p_off, $c_off) if defined($opt_v);
           $g_attrs->patch_ann($p_off, $c_off);
         };
       } else {
         $sub_ann = sub {
+          printf("patch ann2 for %X to %X\n", $c_off, $p_off) if defined($opt_v);
           $g_attrs->patch_ann($c_off, $p_off);
         };
       }
@@ -785,9 +787,8 @@ sub post_process_swaps
       my $p_attr = exists($c_ibt->{$p_off}) ? 1 : 0;
       my $c_attr = exists($c_ibt->{$c_off}) ? 1 : 0;
       if ( $p_attr && $c_attr ) {
-        # both side has IBT, oops
-          $sr->[3] = 0;
-          printf("Adjacent pair has IBT at %X, skipping\n", $p_off);
+        # both side has IBT - no patch needed
+        printf("Adjacent pair has IBT at %X, skipping\n", $p_off);
       } elsif ( $p_attr ) { # patch prev IBT
         $sr->[3] = 1;
         my $pleft_ibt = sub {
@@ -798,7 +799,7 @@ sub post_process_swaps
       } elsif ( $c_attr ) { # patch next IBT
         $sr->[3] = 1;
         my $pc_ibt = sub {
-          print("patch prev IBT at %X to %X\n", $c_off, $p_off) if defined($opt_v);
+          print("patch next IBT at %X to %X\n", $c_off, $p_off) if defined($opt_v);
           $g_attrs->patch_ib_addr($c_off, $p_off);
         };
         push @$sr, $pc_ibt;
@@ -896,6 +897,7 @@ sub post_process_swaps
       }
       # sort
       my @sorted = sort { $a <=> $b } @new_ar;
+      printf("patch %d attrs for %X\n", scalar(@sorted), $at) if ( defined $opt_v );
       # finally patch whole attr list
       unless( $g_attrs->patch_alist($old_at->[0]->{'id'}, \@sorted) ) {
         printf("Cannot patch_alist for %X\n", $at);
@@ -1436,7 +1438,7 @@ sub can_swap
   # 2.7) one of instructions is DEPBAR
   return 0 if ( $curr->[21] || $prev->[21] );
   # 3) has rela
-  return 0 if ( $curr->[4] || $prev->[4] );
+  return 0 if ( defined($curr->[4]) || defined($prev->[4]) );
   # 4) share CC on old SMs
   return 0 if ( inter_CC($curr, $prev) );
   # 5) one of instructions scbd is SINK
@@ -1783,8 +1785,8 @@ sub dump_ins
     # store data for -s
     if ( defined($block) && defined($opt_s) && defined($rel) ) {
       my $ar = $block->[13];
-      if ( $is_a ) { $ar->[4] = 1; }
-      else { $ar->[3] = 1; }
+      if ( $is_a ) { $ar->[4] = $rel; }
+      else { $ar->[3] = $rel; }
     }
     # ignore instr having relocs
     unless($rel) {
