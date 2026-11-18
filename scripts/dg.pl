@@ -67,7 +67,7 @@ my($gs_rel, $gs_rela, $gs_rel_idx, $gs_rela_idx);
 # cb params
 my(@gs_cbs, $gs_cb_size, $gs_cb_off);
 # labels from attrs
-my($gs_loffs, $gs_ibt);
+my($gs_loffs, $gs_ibt, $gs_mbar);
 # some cyclomatic stat: count of blocks, back-edges, total instrs, total edges. filled in dg
 # index 4 is public symbols count - filled in head_syms
 my @g_cycls = ( 0, 0, 0, 0, 0 );
@@ -338,6 +338,13 @@ sub is_mbar
   return 0 unless defined($gs_loffs);
   return 0 unless exists($gs_loffs->{$addr});
   0x39 == $gs_loffs->{$addr};
+}
+
+sub has_mbar {
+  my $off = shift;
+  return undef unless defined($gs_mbar);
+  return undef unless( exists $gs_mbar->{$off} );
+  $gs_mbar->{$off};
 }
 
 # process swap candidates list - swap instructions and patch usched_info (unless -z option was used)
@@ -1547,6 +1554,10 @@ sub dump_ins
   # process scheduling/find dual instr
   process_sched($off, $sctx, $block);
   my $dual = get_dual($sctx);
+  my $mbar = has_mbar($off);
+  if ( defined $mbar ) {
+    printf("; MBAR reg %d mem %X mask %X ureg %d\n", $mbar->[0], $mbar->[1], $mbar->[2], $mbar->[3]);
+  }
   # dump body
   printf("/*%X*/%s", $off, get_spfx($dual));
   printf("%s%s;", $i_text, get_ssfx($dual));
@@ -3096,6 +3107,7 @@ foreach my $s ( @es ) {
  dump_ext($ext->[0]) if defined($ext);
  dump_cparams();
  ($gs_loffs, $gs_ibt) = $g_attrs->collect();
+ $gs_mbar = $g_attrs->mbars();
  # relocs
  if ( defined $opt_r ) {
    $gs_rel_idx = $g_attrs->try_rel($s->[0]);

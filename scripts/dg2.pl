@@ -81,7 +81,7 @@ my($gs_rel, $gs_rela, $gs_rel_idx, $gs_rela_idx);
 # cb params
 my(@gs_cbs, $gs_cb_size, $gs_cb_off);
 # labels from attrs
-my($gs_loffs, $gs_ibt);
+my($gs_loffs, $gs_ibt, $gs_mbar);
 # for -T
 # some cyclomatic stat: count of blocks, back-edges, total instrs, total edges. filled in dg
 # index 4 is public symbols count - filled in head_syms
@@ -286,6 +286,13 @@ sub has_ann {
   my $off = shift;
   return 0 unless defined($g_sann);
   exists $g_sann->{$off};
+}
+
+sub has_mbar {
+  my $off = shift;
+  return undef unless defined($gs_mbar);
+  return undef unless( exists $gs_mbar->{$off} );
+  $gs_mbar->{$off};
 }
 
 # instructions stat
@@ -1814,6 +1821,10 @@ sub dump_ins
   if ( has_ann($off) ) {
     $g_ann_stat{ $g_ced->ins_name() }++;
     printf("; ANN\n");
+  }
+  my $mbar = has_mbar($off);
+  if ( defined $mbar ) {
+    printf("; MBAR reg %d mem %X mask %X ureg %d\n", $mbar->[0], $mbar->[1], $mbar->[2], $mbar->[3]);
   }
   # dump body
   printf("/*%X*/%s", $off, get_spfx($dual));
@@ -4309,6 +4320,7 @@ foreach my $s ( @es ) {
  dump_ext($ext->[0]) if defined($ext);
  dump_cparams();
  ($gs_loffs, $gs_ibt) = $g_attrs->collect();
+ $gs_mbar = $g_attrs->mbars();
  # relocs
  if ( defined $opt_r ) {
    $gs_rel_idx = $g_attrs->try_rel($s->[0]);
