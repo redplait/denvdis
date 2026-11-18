@@ -7,6 +7,7 @@ use Cubin::Ced;
 use Cubin::Attrs;
 use Getopt::Std;
 use Carp;
+use Time::HiRes qw(gettimeofday tv_interval);
 use Data::Dumper;
 
 # options
@@ -2916,7 +2917,7 @@ printf("%X scbd_type %d\n", $off, $scbd_type) if ($scbd_type && defined($opt_d))
           }
         }
       }
-      $close_block->($cop->[0]-1) if ( $need_close );
+      $close_block->($cop->[0]-1) if ( $need_close && $cop->[0] > $code_off );
       $cb = $add_block->($cop->[0])  unless $cb;
       if ( $need_close && defined($prev_block) ) { # add link from prev block to this
         $prev_blink->($prev_block);
