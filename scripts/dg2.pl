@@ -224,7 +224,7 @@ sub dump_swap_stat
 {
   return unless($gs_ords);
   printf("Reordering stat: total %d swappable %d (%f)\n", $gs_total, $gs_ords, $gs_ords * 1.0 / $gs_total);
-  printf(" skipped too narrow %d (%f)\n", $gs_too_narrow, $gs_too_narrow * 1.0 / $gs_total);
+  printf(" skipped too narrow %d (%f)\n", $gs_too_narrow, $gs_too_narrow * 1.0 / $gs_total) if ( defined $gs_too_narrow );
   printf(" overall stalls %d, %f\n", $g_bl[1], $gs_gain * 1.0 / $g_bl[1]) if ( $g_bl[1] );
   printf(" total gain %d (%f avg) gain/old ratio %f\n", $gs_gain, $gs_gain * 1.0 / $gs_ords, $gs_gain * 1.0 / $gs_old_stall);
   printf(" skipped %d, patched %d, bad %d, bad attrs %d\n", $gsp_skipped, $gsp_patched, $gsp_bad, $gsp_bad_attrs) if defined($opt_P);
@@ -4083,12 +4083,14 @@ TI:
     my $type = 0;
     $type = 2 if ( $cb->[0] == $code_off );
     $type = 1 if ( exists $back_edges{$cb->[0]} );
+printf("close_block addr %X type %d\n", $addr, $type) if ( defined $opt_d );
     $cb->[1] = [ $type, $addr ];
     undef $cb;
   };
   # check if we need to add first block
   my $need_firstb = 1;
   $need_firstb = 0 if ( scalar(@sorted) && 'ARRAY' eq $sorted[0]->[1] && $sorted[0]->[0] <= $code_off );
+printf("need_firstb %d\n", $need_firstb) if ( defined $opt_d );
   $cb = $add_block->($code_off) if ( $need_firstb );
   # closure to link curr block in $cb with some prev
   my $prev_blink = sub {
@@ -4118,7 +4120,7 @@ TI:
           }
         }
       }
-      $close_block->($cop->[0]-1) if ( $need_close );
+      $close_block->($cop->[0]-1) if ( $need_close && $cop->[0] > $code_off );
       $cb = $add_block->($cop->[0])  unless $cb;
 printf("cop %X need_close %d prev %s\n", $cop->[0], $need_close, defined($prev_block) ? 'Y' : 'N') if defined($opt_d);
       if ( $need_close && defined($prev_block) ) { # add link from prev block to this
