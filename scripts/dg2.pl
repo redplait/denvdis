@@ -8,9 +8,10 @@ use Cubin::Attrs;
 use Getopt::Std;
 use Carp;
 use Data::Dumper;
+use Time::HiRes qw(gettimeofday tv_interval);
 
 # options
-use vars qw/$opt_A $opt_a $opt_b $opt_C $opt_d $opt_e $opt_f $opt_g $opt_G $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_T $opt_u $opt_U $opt_v $opt_w $opt_Y $opt_z/;
+use vars qw/$opt_A $opt_a $opt_b $opt_C $opt_d $opt_e $opt_f $opt_g $opt_G $opt_i $opt_l $opt_m $opt_p $opt_P $opt_r $opt_R $opt_S $opt_s $opt_t $opt_T $opt_u $opt_U $opt_v $opt_w $opt_Y $opt_z/;
 
 sub usage()
 {
@@ -26,6 +27,7 @@ Usage: $0 [options] file.cubin
   -f section1,section2,... - filter for section names, like in nvd
   -G - generate initial config file and exit
   -g - build cf graph
+  -i - profile
   -l - check latency and try to reduce stall counts
   -m - ignore instructions having min wait
   -P - do real patch. Don't forget to backup your CUBIN files
@@ -141,6 +143,43 @@ my %gc_ranges;
 my($gc_war, $gc_waw);
 # per-section filter, forms in filter_gcd, assigned in main sections loop
 my $gcdf;
+### profile data for -i options
+# cumulative TV
+my @gi_tvs;
+# names
+my @gi_names = (
+ 'attrs parsing',
+ 'dg',
+ 'disasm',
+ 'stall reducing',
+ 'swap'
+);
+
+sub dump_prof {
+  return unless defined($opt_i);
+  my $nlen = scalar(@gi_names);
+  my $latch = 0;
+  for my $i ( 0 .. $nlen - 1 ) {
+    next unless defined($gi_tvs[$i]);
+    printf("--- profile data\n") if ( !$latch++ );
+    printf(" %s: %f\n", $gi_names[$i], $gi_tvs[$i]);
+  }
+}
+
+# return sub to stop profiling
+# arg - index into gi_tvs
+sub prof {
+  return undef unless(defined $opt_i);
+  my $idx = shift;
+  my $ts = [ gettimeofday() ];
+  return sub {
+    my $diff = tv_interval($ts, [gettimeofday()]);
+    printf(";TS %s: %f\n", $gi_names[$idx], $diff) if ( defined $opt_v );
+    if ( defined $gi_tvs[$idx] ) { $gi_tvs[$idx] += $diff; }
+    else { $gi_tvs[$idx] = $diff; }
+    $diff;
+  };
+}
 
 sub in_lmode { defined($opt_l); }
 
@@ -2449,11 +2488,14 @@ printf("wk %X what %X old %d new %d\n", $wk, $what, $old_wra, $new_wra) if defin
     dump_waw_hash($bl) if ( defined($opt_d) && $efiltered );
   }
   unless( defined $opt_s ) {
+    my $prof = prof(3);
     process_lat($bl, $lsize);
+    $prof->() if defined $prof;
     return;
   }
   # check if we have swap candidtes list
   return unless ( defined $bl->[19] );
+  my $prof = prof(4);
   if ( defined $waw ) {
     # filter out swap candidates where second item in WaW
     my @filt;
@@ -2661,6 +2703,7 @@ ROLLB:
       delete $bl->[14]->{$second_adr};
     }
   }
+  $prof->() if defined $prof;
 }
 
 # args: block, size of instructions array in block->[18]
@@ -3577,6 +3620,7 @@ sub gdisasm
     $rt = Cubin::Ced::RegTrack->new() if defined($opt_t);
     my $idx = 0;
     # disasm every instruction in this block
+    my $prof = prof(2) if defined $opt_i;
     do {
       my $may_swap = 0;
       $off = $g_ced->get_off();
@@ -3658,6 +3702,7 @@ sub gdisasm
       $rt->snap_clear() if ( defined $rt );
       $idx++;
     } while( $g_ced->next_off() < $block->[1]->[1] && $g_ced->next() );
+    $prof->() if defined $prof;
     # do block post-processing of block here
     if ( defined $rt ) {
       $rt->finalize();
@@ -4226,7 +4271,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("AabdeGglmPpRrSsTtUuvwYzC:f:");
+my $state = getopts("AabdeGgilmPpRrSsTtUuvwYzC:f:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -4239,6 +4284,7 @@ croak("-U must be used with -t option") if ( defined($opt_U) && !defined($opt_t)
 croak("-Y must be used with -g option") if ( defined($opt_Y) && !defined($opt_g) );
 if ( defined $opt_s ) {
  croak("-s must be used with -l option") unless defined($opt_l);
+ croak("-s and -P for real patch must process relocs with -r") if ( defined($opt_P) && !defined($opt_r) );
 }
 if ( defined $opt_l ) {
  croak("you can use -l only with CFG -g option") unless defined($opt_g);
@@ -4307,12 +4353,14 @@ foreach my $s ( @es ) {
  my $ext;
  my $a_idx = $g_attrs->try($s->[0]);
  if ( defined $a_idx ) {
+   my $prof = prof(0);
    # dump current section
    printf("[%d] attrs in %d size %X %s\n", $s->[0], $a_idx, $s->[9], $s->[1]);
    # try to extract externals
    next if ( !$g_attrs->read($a_idx) );
    $ext = $g_attrs->grep(0xf);
    $g_sann = $g_attrs->ann() if ( defined $opt_A );
+   $prof->() if defined($prof);
  } else {
    $g_attrs->clear();
    undef $g_sann;
@@ -4342,7 +4390,9 @@ foreach my $s ( @es ) {
  die("initial offset") unless $g_ced->off($off);
  if ( defined $opt_g ) {
    reseT();
+   my $prof = prof(1);
    my $graph = dg($off, $s->[9]); # args - start of code offset bcs we need at least 2 passes, section size
+   $prof->() if defined $prof;
    sym_reset();
    gdisasm($graph);
    dump_T($graph) if defined($opt_T);
@@ -4368,3 +4418,4 @@ if ( in_lmode() ) {
   dump_lmode_stat();
 }
 dump_anns() if defined($opt_A);
+dump_prof() if defined($opt_i);
