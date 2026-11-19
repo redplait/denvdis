@@ -416,8 +416,7 @@ sub post_process_swaps
       my $c_attr = exists($c_ibt->{$c_off}) ? 1 : 0;
       if ( $p_attr && $c_attr ) {
         # both side has IBT, oops
-          $sr->[2] = 0;
-          printf("Adjacent pair has IBT at %X, skipping\n", $p_off);
+        printf("Adjacent pair has IBT at %X, skipping\n", $p_off);
       } elsif ( $p_attr ) { # patch prev IBT
         $sr->[2] = 1;
         my $pleft_ibt = sub {
@@ -428,7 +427,7 @@ sub post_process_swaps
       } elsif ( $c_attr ) { # patch next IBT
         $sr->[2] = 1;
         my $pc_ibt = sub {
-          print("patch prev IBT at %X to %X\n", $c_off, $p_off) if defined($opt_v);
+          print("patch next IBT at %X to %X\n", $c_off, $p_off) if defined($opt_v);
           $g_attrs->patch_ib_addr($c_off, $p_off);
         };
         push @$sr, $pc_ibt;
@@ -1146,7 +1145,7 @@ sub can_swap
   # 2.6) one of instructions is MBAR
   return 0 if ( is_mbar($curr->[0]) || is_mbar($prev->[0]) );
   # 3) has rela
-  return 0 if ( $curr->[4] || $prev->[4] );
+  return 0 if ( defined($curr->[4]) || defined($prev->[4]) );
   # 4) share CC on old SMs
   return 0 if ( inter_CC($curr, $prev) );
   # 5) one of instructions scbd is SINK
@@ -1519,8 +1518,8 @@ sub dump_ins
     # store data for -s
     if ( defined($block) && defined($opt_s) && defined($rel) ) {
       my $ar = $block->[13];
-      if ( $is_a ) { $ar->[4] = 1; }
-      else { $ar->[3] = 1; }
+      if ( $is_a ) { $ar->[4] = $rel; }
+      else { $ar->[3] = $rel; }
     }
     # ignore instr having relocs
     unless($rel) {
