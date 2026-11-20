@@ -37,7 +37,7 @@ my $state = getopts("ag:");
 usage() if ( !$state );
 # check arg for -g option
 if ( defined($opt_g) ) {
- if (  $opt_g =~ /^0x([0-9a-f]+)/ ) { $opt_g = hex($1); }
+ if (  $opt_g =~ /^0x([0-9a-f]+)/i ) { $opt_g = hex($1); }
  else { $opt_g = int($opt_g); }
 }
 
