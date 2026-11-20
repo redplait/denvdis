@@ -10,7 +10,7 @@ use Getopt::Std;
 my %g_total;
 my %g_ann_total;
 
-use vars qw/$opt_a/;
+use vars qw/$opt_a $opt_g/;
 
 sub usage()
 {
@@ -18,6 +18,7 @@ sub usage()
 Usage: $0 [options] file.cubin
  Options:
    -a - collect annotations stat
+   -g - grep specific attr
 EOF
   exit(8);
 }
@@ -32,15 +33,23 @@ sub sort_dump {
 }
 
 # main
-my $state = getopts("a");
+my $state = getopts("ag:");
 usage() if ( !$state );
+# check arg for -g option
+if ( defined($opt_g) ) {
+ if (  $opt_g =~ /^0x([0-9a-f]+)/ ) { $opt_g = hex($1); }
+ else { $opt_g = int($opt_g); }
+}
+
+my $found = 0;
 foreach my $fn ( @ARGV ) {
   my $elf = Elf::Reader->new($fn);
   unless( defined $elf ) {
     printf("cannot open %s\n", $fn);
     next;
   }
-  printf("%s:\n", $fn);
+  my $gtotal = 0;
+  printf("%s:\n", $fn) unless defined($opt_g);
   my $slist = Cubin::Attrs::attr_sects($elf);
   next unless(defined $slist);
   my $attr = Cubin::Attrs->new($elf);
@@ -50,6 +59,13 @@ foreach my $fn ( @ARGV ) {
   }
   foreach my $s ( @$slist ) {
     next if ( !$attr->read($s->[0]) );
+    if ( defined $opt_g ) {
+      my $res = $attr->grep($opt_g);
+      next unless defined($res);
+      $gtotal += scalar(@$res);
+      ++$found;
+      next;
+    }
     printf(" %s:\n", $s->[1]);
     my $sh = $attr->stat();
     next unless( defined $sh );
@@ -65,7 +81,10 @@ foreach my $fn ( @ARGV ) {
       }
     }
   }
+  printf("%s: %d\n", $fn, $gtotal) if ( $gtotal );
 }
+
+exit($found ? 0 : 1) if ( defined $opt_g );
 
 # dump total
 if ( keys %g_total ) {
