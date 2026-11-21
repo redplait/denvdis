@@ -52,6 +52,8 @@ EOF
 use constant STAT_LIM => 15;
 use constant MAX_REUSE_DIST => 0x70;
 use constant MAX_SWAP_DIST => 0xa0;
+# set to 0 to avoid swapping instructions having RELA
+use constant DO_RELA => 1;
 # 2 for swapping pair, 2 instructions at left and 2 at right
 use constant MIN_SWAP_WINDOW => 6;
 use constant USCHED => 'usched_info';
@@ -786,6 +788,31 @@ sub post_process_swaps
          push @$sr, $curr_rel;
        }
     }
+    # check if any side has rela
+    if ( defined($sr->[0]->[4]) || defined($sr->[1]->[4]) ) {
+      if ( defined($sr->[0]->[4]) && defined($sr->[1]->[4]) ) { # both - call swap_rel, it works with rela too
+         $sr->[3] = 1;
+         my $both_rel = sub {
+           printf("swap rela in section %d, %X & %X\n", $gs_rela_idx, $sr->[0]->[0], $sr->[1]->[0]) if defined($opt_v);
+           $g_attrs->swap_rel($gs_rela_idx, $sr->[0]->[4]->[0], $sr->[1]->[4]->[0]);
+         };
+         push @$sr, $both_rel;
+       } elsif ( defined($sr->[0]->[4]) ) { # patch prev rela - new offset at curr
+         $sr->[3] = 1;
+         my $prev_rel = sub {
+           printf("patch prev rela at %X section %d\n", $sr->[0]->[0], $gs_rela_idx) if defined($opt_v);
+           $g_attrs->patch_foffa($gs_rela_idx, $sr->[0]->[4]->[0], $sr->[1]->[0]);
+         };
+         push @$sr, $prev_rel;
+       } else { # patch curr - new offser at prev
+         $sr->[3] = 1;
+         my $curr_rel = sub {
+           printf("patch next rela at %X section %d\n", $sr->[1]->[0], $gs_rela_idx) if defined($opt_v);
+           $g_attrs->patch_foffa($gs_rela_idx, $sr->[1]->[4]->[0], $sr->[0]->[0]);
+         };
+         push @$sr, $curr_rel;
+       }
+    }
     # previous & next instructions offsets
     my $p_off = $sr->[0]->[0];
     my $c_off = $sr->[1]->[0];
@@ -1456,6 +1483,15 @@ sub inter_CC
   0;
 }
 
+# check if instruction has RELA of denied type (or must be skipped for zero DO_RELA)
+sub has_rela {
+  my $inst = shift;
+  return 0 unless defined($inst->[4]);
+  return 1 unless ( DO_RELA );
+  # reloc type at index 2, 0x28 - R_CUDA_PCREL_IMM24_26, 0x29 - R_CUDA_PCREL_IMM24_23
+  $inst->[4]->[2] == 0x28 || $inst->[4]->[2] == 0x29;
+}
+
 # check if two adjacent instructions can be swapped
 # Warning! this function should be called after checking that they are truly independent - it just estimate if they can be swapped
 # args: block ref
@@ -1486,7 +1522,7 @@ sub can_swap
   # 2.7) one of instructions is DEPBAR
   return 0 if ( $curr->[21] || $prev->[21] );
   # 3) has rela
-  return 0 if ( defined($curr->[4]) || defined($prev->[4]) );
+  return 0 if ( has_rela($curr->[4]) || has_rela($prev->[4]) );
   # 4) share CC on old SMs
   return 0 if ( inter_CC($curr, $prev) );
   # 5) one of instructions scbd is SINK
