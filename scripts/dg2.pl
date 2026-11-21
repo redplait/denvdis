@@ -835,6 +835,36 @@ sub post_process_swaps
       }
       push @$sr, $sub_ann;
     }
+    # check ULB
+    my $ulb1 = has_ulb($p_off);
+    my $ulb2 = has_ulb($c_off);
+    $as1 = defined($ulb1);
+    $as2 = defined($ulb2);
+    if ( $as1 == $as2 ) {
+      if ( $as1 ) { # both instruction has ULB - swap them
+        $sr->[3] = 1;
+        my $sulb = sub {
+          printf("swap ULB for %X - %X\n", $p_off, $c_off) if defined($opt_v);
+          $g_attrs->swap_ulb($g_ulb_idx, $p_off, $ulb2, $c_off, $ulb1);
+        };
+        push @$sr, $sulb;
+      }
+    } else {
+      $sr->[3] = 1;
+      my $sub_ulb;
+      if ( $as1 ) {
+        $sub_ulb = sub {
+          printf("patch ulb1 for %X to %X\n", $p_off, $c_off) if defined($opt_v);
+          $g_attrs->patch_ulb($g_ulb_idx, $p_off, $c_off);
+        };
+      } else {
+        $sub_ulb = sub {
+          printf("patch ulb2 for %X to %X\n", $c_off, $p_off) if defined($opt_v);
+          $g_attrs->patch_ulb($g_ulb_idx, $c_off, $p_off);
+        };
+      }
+      push @$sr, $sub_ulb;
+    }
     # check INSTR_OFFSETs
     # patch data [ 1, attribute, old offset, new offset ]
     if ( defined($gs_loffs) ) {
