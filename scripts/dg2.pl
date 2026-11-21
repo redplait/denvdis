@@ -70,6 +70,8 @@ sub limit_stall
 my($g_elf, $g_attrs, $g_ced, $g_syms, $g_w, $g_sm, $g_urz, $g_gattrs);
 # annotations - for -A; stat - key is instuction name
 my($g_sann, %g_ann_stat);
+# ulb data (for EIATTR_UNUSED_LOAD_BYTE_OFFSET) - index of attribute & hash from get_ulb
+my($g_ulb_idx, $g_ulb);
 # if we need to patch attributes in nv_info with patch_sym_pair - we need keep index of .nv.info section and current symbol index
 # g_start_sym - first symbol for this section (zeroing in sym_reset)
 my($g_nv_idx, $g_currsym, $g_start_sym);
@@ -322,9 +324,16 @@ sub add_Ynoreq
 
 # for -A - check if instruction with offset arg has annotation
 sub has_ann {
-  my $off = shift;
   return 0 unless defined($g_sann);
+  my $off = shift;
   exists $g_sann->{$off};
+}
+
+sub has_ulb {
+  return undef unless defined($g_ulb);
+  my $off = shift;
+  return undef unless exists $g_ulb->{$off};
+  $g_ulb->{$off}
 }
 
 sub has_mbar {
@@ -1863,6 +1872,8 @@ sub dump_ins
     $g_ann_stat{ $g_ced->ins_name() }++;
     printf("; ANN\n");
   }
+  my $ulb = has_ulb($off);
+  printf("; ULB %X\n", $ulb) if ( defined($ulb) );
   my $mbar = has_mbar($off);
   if ( defined $mbar ) {
     printf("; MBAR reg %d mem %X mask %X ureg %d\n", $mbar->[0], $mbar->[1], $mbar->[2], $mbar->[3]);
@@ -4359,11 +4370,15 @@ foreach my $s ( @es ) {
    # try to extract externals
    next if ( !$g_attrs->read($a_idx) );
    $ext = $g_attrs->grep(0xf);
-   $g_sann = $g_attrs->ann() if ( defined $opt_A );
+   if ( defined $opt_A ) {
+     $g_sann = $g_attrs->ann();
+     ($g_ulb_idx, $g_ulb) = $g_attrs->get_ulb();
+   }
    $prof->() if defined($prof);
  } else {
    $g_attrs->clear();
    undef $g_sann;
+   undef $g_ulb_idx; undef $g_ulb;
  }
  # section setup
  setup_syms($s->[0]);
