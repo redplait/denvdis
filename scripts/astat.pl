@@ -39,6 +39,8 @@ usage() if ( !$state );
 if ( defined($opt_g) ) {
  if (  $opt_g =~ /^0x([0-9a-f]+)/i ) { $opt_g = hex($1); }
  else { $opt_g = int($opt_g); }
+ # there is not EIATTR with zero value
+ die("bad -g option") unless( $opt_g );
 }
 
 my $found = 0;
