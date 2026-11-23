@@ -557,19 +557,16 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return always_false(ins(), m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
   }
-  SV *get_pred() const {
-    if ( !has_ins() ) return &PL_sv_undef;
-    auto res = NV_renderer::get_pred(m_rend, cex());
-    if ( !res.has_value() ) return &PL_sv_undef;
-    AV *av = newAV();
-    auto &pred = res.value();
-    av_push(av, pred.first ? &PL_sv_yes : &PL_sv_no );
-    av_push(av, newSViv(pred.second) );
-    return newRV_noinc((SV*)av);
-  }
+  int get_pred(pTHX_ bool warray) const;
   SV *has_pred() const {
     if ( !has_ins() ) return &PL_sv_undef;
     return has_predicate(m_rend, cex()) ? &PL_sv_yes : &PL_sv_no;
+  }
+  SV *has_not() const {
+    if ( !has_ins() ) return &PL_sv_undef;
+    auto pres = NV_renderer::get_pred(m_rend, cex());
+    if ( !pres.has_value() ) return &PL_sv_no;
+    return pres.value().first ? &PL_sv_yes : &PL_sv_no;
   }
   SV *check_pred(const NV_rlist *rl) const {
     auto pred_name = has_predicate(rl);
@@ -888,6 +885,35 @@ int Ced_perl::ins_prmt(pTHX_ bool warray)
       EXTEND(SP, sres);
       mPUSHu(res.value().first);
       mPUSHp(res.value().second, strlen(res.value().second));
+    }
+  }
+  PUTBACK;
+  return sres;
+}
+
+int Ced_perl::get_pred(pTHX_ bool warray) const {
+  dSP;
+  int sres = 1;
+  if ( !has_ins() ) {
+    mXPUSHs(&PL_sv_undef);
+  } else {
+    auto res = NV_renderer::get_pred(m_rend, cex());
+    if ( !res.has_value() ) {
+      mXPUSHs(&PL_sv_undef);
+    } else {
+      auto &pred = res.value();
+      if ( !warray )
+      {
+        AV *av = newAV();
+        av_push(av, pred.first ? &PL_sv_yes : &PL_sv_no );
+        av_push(av, newSViv(pred.second) );
+        mXPUSHs(newRV_noinc((SV*)av));
+      } else {
+        sres = 2;
+        EXTEND(SP, sres);
+        mPUSHs(pred.first ? &PL_sv_yes : &PL_sv_no);
+        mPUSHs(newSViv(pred.second));
+      }
     }
   }
   PUTBACK;
@@ -2720,13 +2746,22 @@ SV *cb0_names(SV *obj)
  OUTPUT:
   RETVAL
 
-SV *get_pred(SV *obj)
+void
+get_pred(SV *obj)
+ PREINIT:
+  U8 gimme = GIMME_V;
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   RETVAL = e->get_pred();
- OUTPUT:
-  RETVAL
+ PPCODE:
+  if ( !e->has_ins() ) {
+    EMPTY_RES
+  } else {
+    // stolen from https://www.reddit.com/r/perl/comments/lom4l7/perlxs_how_to_make_a_common_subroutine/
+    PUTBACK;
+    int stack_size = e->get_pred(aTHX_ gimme == G_ARRAY);
+    SPAGAIN;
+    XSRETURN(stack_size);
+  }
 
 void
 ins_rf(SV *obj)
@@ -2988,10 +3023,13 @@ SV *
 has_pred(SV *obj)
  ALIAS:
   Cubin::Ced::pred_name = 1
+  Cubin::Ced::pred_not = 2
  INIT:
    Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
  CODE:
-   RETVAL = 1 == ix ? e->check_pred() : e->has_pred();
+   if ( 2 == ix ) RETVAL = e->has_not();
+   else
+    RETVAL = 1 == ix ? e->check_pred() : e->has_pred();
  OUTPUT:
   RETVAL
 
