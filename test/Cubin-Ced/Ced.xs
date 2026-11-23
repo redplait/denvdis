@@ -726,12 +726,14 @@ class Ced_perl: public CEd_base {
     if ( !has_ins() ) return &PL_sv_undef;
     return newSViv(ins()->tab_fields.size());
   }
-  SV *has_tfield(const nv_instr *inst, std::string_view &) const;
-  SV *has_tfield(std::string_view &sv) const {
+  std::optional<const NV_tab_fields *> try_tfield(const nv_instr *inst, const std::string_view &) const;
+  SV *has_tfield(const nv_instr *inst, const std::string_view &) const;
+  SV *has_tfield(const std::string_view &sv) const {
     if ( !has_ins() ) return &PL_sv_undef;
     return has_tfield(ins(), sv);
   }
   bool get_tab(IV, SV **n, SV **d) const;
+  bool find_tab(const nv_instr *,const std::string_view &, SV **n, SV **d) const;
   bool get_tab(const nv_instr *,IV, SV **n, SV **d) const;
   inline int apply(reg_pad *rt) {
     return has_ins() ? track_regs(rt, m_rend, curr_dis, m_dis->offset()) : 0;
@@ -1229,7 +1231,7 @@ int Ced_perl::patch_cb(unsigned long v1, unsigned long v2)
 
 // check if some table contains field with name tfname
 // returns index of table or undef
-SV *Ced_perl::has_tfield(const nv_instr *inst, std::string_view &tfname) const
+SV *Ced_perl::has_tfield(const nv_instr *inst, const std::string_view &tfname) const
 {
   for ( size_t idx = 0; idx < inst->tab_fields.size(); ++idx ) {
     auto t = get_it(inst->tab_fields, idx);
@@ -1239,6 +1241,18 @@ SV *Ced_perl::has_tfield(const nv_instr *inst, std::string_view &tfname) const
     }
   }
   return &PL_sv_undef;
+}
+
+std::optional<const NV_tab_fields *> Ced_perl::try_tfield(const nv_instr *inst, const std::string_view &tfname) const {
+  std::optional<const NV_tab_fields *> res;
+  for ( size_t idx = 0; idx < inst->tab_fields.size(); ++idx ) {
+    auto t = get_it(inst->tab_fields, idx);
+    for ( size_t ni = 0; ni < t->fields.size(); ++ni ) {
+      auto &nf = get_it(t->fields, ni);
+      if ( !nf.compare(tfname) ) { res.emplace(t); return res; }
+    }
+  }
+  return res;
 }
 
 SV *Ced_perl::fill_tab(const NV_tab_fields *t) const {
@@ -1262,6 +1276,23 @@ SV *Ced_perl::tab_map(const nv_instr *inst, IV idx) const {
 bool Ced_perl::get_tab(const nv_instr *inst, IV idx, SV **n, SV **d) const {
   if ( idx < 0 || idx >= inst->tab_fields.size() ) return false;
   auto t = get_it(inst->tab_fields, idx);
+  // fill names
+  AV *av = newAV();
+  for ( size_t ni = 0; ni < t->fields.size(); ++ni ) {
+    auto &nf = get_it(t->fields, ni);
+    av_push(av, newSVpv( nf.data(), nf.size() ));
+  }
+  *n = newRV_noinc((SV*)av);
+  if ( d ) *d = fill_tab(t);
+  return true;
+}
+
+// like prev get_tab but try to find by name
+bool Ced_perl::find_tab(const nv_instr *inst, const std::string_view &fname, SV **n, SV **d) const {
+  if ( !has_ins() ) return false;
+  auto tres = try_tfield(inst, fname);
+  if ( !tres.has_value() ) return false;
+  const NV_tab_fields *t = tres.value();
   // fill names
   AV *av = newAV();
   for ( size_t ni = 0; ni < t->fields.size(); ++ni ) {
@@ -3522,6 +3553,34 @@ tab_map(SV *obj, IV key)
    RETVAL = e->base->tab_map(e->ins, key);
  OUTPUT:
   RETVAL
+
+void
+grep_tab(SV *obj, const char *name)
+ PREINIT:
+  U8 gimme = GIMME_V;
+ INIT:
+  std::string_view sv{name, strlen(name)};
+  bool res;
+  SV *names = nullptr, *dict = nullptr;
+  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+ PPCODE:
+  res = e->base->find_tab(e->ins, sv, &names, &dict);
+  if ( !res ) {
+    EMPTY_RES
+  } else {
+    if ( gimme == G_ARRAY) {
+      EXTEND(SP, 2);
+      mPUSHs(names);
+      mPUSHs(dict);
+      XSRETURN(1);
+    } else {
+      AV *av = newAV();
+      av_push(av, names);
+      av_push(av, dict);
+      mXPUSHs(newRV_noinc((SV*)av));
+      XSRETURN(1);
+    }
+  }
 
 void
 tab(SV *obj, IV key)
