@@ -142,13 +142,16 @@ my @g_ystat = ( 0, 0, 0, 0, 0, 0 );
 # 1 - total number of rolling distances
 # 2 - current section name
 # 3 - start of current block
-# 4 - current dist
-my @g_ydist = ( 0, 0, undef, 0, 0 );
+# 4 - current distance
+# 5 - curr stall sum
+my @g_ydist = ( 0, 0, undef, 0, 0, 0 );
 # max distance, indices are
 # 0 - value (number of instructions)
 # 1 - section name
 # 2 - offset
 my @g_ymax_dist = ( 0, undef, 0 );
+# and the same for stall sum
+my @g_ymax_stall = ( 0, undef, 0 );
 ### config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -239,14 +242,15 @@ sub dump_cycls
 sub next_yblock {
   my $off = shift;
   $g_ydist[3] = $off;
-  $g_ydist[4] = 0;
+  $g_ydist[4] = $g_ydist[5] = 0;
 }
 
 # process single instruction for -Y
-# args: offset of instruction, is_yield
+# args: offset of instruction, is_yield, stall count
 sub roll_y {
-  my($off, $is_y) = @_;
+  my($off, $is_y, $stall) = @_;
   $g_ydist[4]++;
+  $g_ydist[5] += $stall if defined($stall);
   return if ( $off == $g_ydist[3] ); # first instruction in block
   if ( $is_y ) {
 printf("YYYY: %X %d %d %d\n", $off, $g_ydist[0], $g_ydist[1], $g_ydist[4]) if ( defined $opt_d );
@@ -257,7 +261,12 @@ printf("YYYY: %X %d %d %d\n", $off, $g_ydist[0], $g_ydist[1], $g_ydist[4]) if ( 
       $g_ymax_dist[1] = $g_ydist[2]; # section name
       $g_ymax_dist[2] = $off; # offset
     }
-    $g_ydist[4] = 0;
+    if ( $g_ydist[5] && $g_ydist[5] > $g_ymax_stall[0] ) {
+      $g_ymax_stall[0] = $g_ydist[5]; # value
+      $g_ymax_stall[1] = $g_ydist[2]; # section name
+      $g_ymax_stall[2] = $off; # offset
+    }
+    $g_ydist[4] = $g_ydist[5] = 0;
   }
 }
 
@@ -1763,7 +1772,7 @@ sub process_sched
       if ( defined $opt_Y ) {
         my $yield = ($ctrl & 0x00010) >> 4;
         $yield = $yield ? 0 : 1;
-        roll_y($off, $yield);
+        roll_y($off, $yield, $stall);
         add_Ynoreq($g_ced->ins_name(), $g_ced->has_pred()) if ( $yield && !$watdb );
         add_noY($g_ced->ins_name(), $g_ced->has_pred()) if ( !$yield && $watdb );
         $g_ystat[0]++;
@@ -4533,6 +4542,7 @@ if ( defined $opt_Y ) {
   if ( $g_ydist[0] && $g_ydist[1] ) {
     printf("Avg distance between yields %f (%d yields, roll %d)\n", $g_ydist[1] * 1.0 / $g_ydist[0], $g_ydist[0], $g_ydist[1]);
     printf("Max distance %d in %s offset %X\n", $g_ymax_dist[0], $g_ymax_dist[1], $g_ymax_dist[2]) if ( $g_ymax_dist[0] );
+    printf("Max stall %d in %s offset %X\n", $g_ymax_stall[0], $g_ymax_stall[1], $g_ymax_stall[2]) if ( $g_ymax_stall[0] );
   }
 }
 dump_ins_stat() if defined($opt_S);
