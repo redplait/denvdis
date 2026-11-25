@@ -136,6 +136,19 @@ my @ge_stat = ( 0, 0, 0, 0, 0 );
 my(%g_ynoY, %g_ynoY_p, %g_ynoreq, %g_ynoreq_p);
 # per-function yields stat - rolling and total. next 2 is yield without wait & 3 - wait without yield + 2 for their totals
 my @g_ystat = ( 0, 0, 0, 0, 0, 0 );
+# for max distance between two yields
+# indices are
+# 0 - total number of yield instructions
+# 1 - total number of rolling distances
+# 2 - current section name
+# 3 - start of current block
+# 4 - current dist
+my @g_ydist = ( 0, 0, undef, 0, 0 );
+# max distance, indices are
+# 0 - value (number of instructions)
+# 1 - section name
+# 2 - offset
+my @g_ymax_dist = ( 0, undef, 0 );
 ### config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -219,6 +232,32 @@ sub dump_cycls
     printf("; total %d yields, avg %f per function\n", $g_ystat[1], 1.0 * $g_ystat[1] / $g_cycls[4]) if $g_ystat[1];
     printf(";  total %d yields without waits, avg %f per function\n", $g_ystat[4], 1.0 * $g_ystat[4] / $g_cycls[4]) if $g_ystat[4];
     printf(";  total %d waits without yields, avg %f per function\n", $g_ystat[5], 1.0 * $g_ystat[5] / $g_cycls[4]) if $g_ystat[5];
+  }
+}
+
+# arg: offset of new block
+sub next_yblock {
+  my $off = shift;
+  $g_ydist[3] = $off;
+  $g_ydist[4] = 0;
+}
+
+# process single instruction for -Y
+# args: offset of instruction, is_yield
+sub roll_y {
+  my($off, $is_y) = @_;
+  $g_ydist[4]++;
+  return if ( $off == $g_ydist[3] ); # first instruction in block
+  if ( $is_y ) {
+printf("YYYY: %X %d %d %d\n", $off, $g_ydist[0], $g_ydist[1], $g_ydist[4]) if ( defined $opt_d );
+    $g_ydist[0]++;
+    $g_ydist[1] += $g_ydist[4];
+    if ( $g_ydist[4] > $g_ymax_dist[0] ) {
+      $g_ymax_dist[0] = $g_ydist[4]; # value
+      $g_ymax_dist[1] = $g_ydist[2]; # section name
+      $g_ymax_dist[2] = $off; # offset
+    }
+    $g_ydist[4] = 0;
   }
 }
 
@@ -1709,7 +1748,7 @@ sub process_sched
       my @stat = (0, 0, 0);
       my $curr_stall = $sctx->{'roll'};
       my $s = $g_ced->render_cword($ctrl);
-      $stall = ($ctrl & 0x0000f) >> 0;
+      $stall = ($ctrl & 0x0000f);
       store_s_idx($b, 7, [ $stall, , $g_ced->get(USCHED)]);
       store_lat($b, $stall, $lat, $is_dual);
       # previous & current stall
@@ -1723,6 +1762,8 @@ sub process_sched
       my $watdb = ($ctrl & 0x1f800) >> 11; # 6bit wait on dependency barrier
       if ( defined $opt_Y ) {
         my $yield = ($ctrl & 0x00010) >> 4;
+        $yield = $yield ? 0 : 1;
+        roll_y($off, $yield);
         add_Ynoreq($g_ced->ins_name(), $g_ced->has_pred()) if ( $yield && !$watdb );
         add_noY($g_ced->ins_name(), $g_ced->has_pred()) if ( !$yield && $watdb );
         $g_ystat[0]++;
@@ -3690,6 +3731,7 @@ sub gdisasm
       carp("cannot set offset $off");
       next;
     }
+    next_yblock($off) if defined($opt_Y);
     # per-block data
     my $sctx = make_sctx();
     head_syms($block_off, $off);
@@ -4469,6 +4511,7 @@ foreach my $s ( @es ) {
  die("cannot setup section $s->[0]") unless $g_ced->set_s($s->[0]);
  my $off = $g_w == 128 ? 0: 8;
  die("initial offset") unless $g_ced->off($off);
+ $g_ydist[2] = $s->[1]; # store section name
  if ( defined $opt_g ) {
    reseT();
    my $prof = prof(1);
@@ -4487,6 +4530,10 @@ if ( defined $opt_Y ) {
   dump_yhash(\%g_ynoY_p, 'Instructions with predicates having req_bit_set without yield');
   dump_yhash(\%g_ynoreq, 'Instructions having yield without req_bit_set');
   dump_yhash(\%g_ynoreq_p, 'Instructions with predicates having yield without req_bit_set');
+  if ( $g_ydist[0] && $g_ydist[1] ) {
+    printf("Avg distance between yields %f (%d yields, roll %d)\n", $g_ydist[1] * 1.0 / $g_ydist[0], $g_ydist[0], $g_ydist[1]);
+    printf("Max distance %d in %s offset %X\n", $g_ymax_dist[0], $g_ymax_dist[1], $g_ymax_dist[2]) if ( $g_ymax_dist[0] );
+  }
 }
 dump_ins_stat() if defined($opt_S);
 if ( defined $opt_T ) {
