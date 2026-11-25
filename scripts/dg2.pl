@@ -144,7 +144,8 @@ my @g_ystat = ( 0, 0, 0, 0, 0, 0 );
 # 3 - start of current block
 # 4 - current distance
 # 5 - curr stall sum
-my @g_ydist = ( 0, 0, undef, 0, 0, 0 );
+# 6 - total stalls
+my @g_ydist = ( 0, 0, undef, 0, 0, 0, 0 );
 # max distance, indices are
 # 0 - value (number of instructions)
 # 1 - section name
@@ -256,6 +257,7 @@ sub roll_y {
 printf("YYYY: %X %d %d %d\n", $off, $g_ydist[0], $g_ydist[1], $g_ydist[4]) if ( defined $opt_d );
     $g_ydist[0]++;
     $g_ydist[1] += $g_ydist[4];
+    $g_ydist[6] += $g_ydist[5];
     if ( $g_ydist[4] > $g_ymax_dist[0] ) {
       $g_ymax_dist[0] = $g_ydist[4]; # value
       $g_ymax_dist[1] = $g_ydist[2]; # section name
@@ -4541,6 +4543,7 @@ if ( defined $opt_Y ) {
   dump_yhash(\%g_ynoreq_p, 'Instructions with predicates having yield without req_bit_set');
   if ( $g_ydist[0] && $g_ydist[1] ) {
     printf("Avg distance between yields %f (%d yields, roll %d)\n", $g_ydist[1] * 1.0 / $g_ydist[0], $g_ydist[0], $g_ydist[1]);
+    printf("Avg stalls between yields %f (total %d)\n", $g_ydist[6] * 1.0 / $g_ydist[0], $g_ydist[6]) if $g_ydist[6];
     printf("Max distance %d in %s offset %X\n", $g_ymax_dist[0], $g_ymax_dist[1], $g_ymax_dist[2]) if ( $g_ymax_dist[0] );
     printf("Max stall %d in %s offset %X\n", $g_ymax_stall[0], $g_ymax_stall[1], $g_ymax_stall[2]) if ( $g_ymax_stall[0] );
   }
