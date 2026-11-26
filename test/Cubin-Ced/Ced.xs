@@ -1900,6 +1900,26 @@ static SV * new_enum_dualvar(pTHX_ IV ival, SV *name) {
         return name;
 }
 
+static Ced_perl *get_ced(SV *obj) {
+  return get_magic_ext<Ced_perl>(obj, 1, &ca_magic_vt);
+}
+
+static reg_pad *get_rp(SV *obj) {
+  return get_magic_ext<reg_pad>(obj, 1, &ca_regtrack_magic_vt);
+}
+
+static lat_idx *get_lat_idx(SV *obj) {
+  return get_magic_ext<lat_idx>(obj, 1, &ca_latindex_magic_vt);
+}
+
+static found_tab_cross *get_found_tab_cross(SV *obj) {
+  return get_magic_ext<found_tab_cross>(obj, 1, &ca_latcross_magic_vt);
+}
+
+static one_instr *get_one_instr(SV *obj) {
+  return get_magic_ext<one_instr>(obj, 1, &ca_instr_magic_vt);
+}
+
 #define EMPTY_RES if ( gimme == G_ARRAY) { \
       XSRETURN_EMPTY; \
     } else { \
@@ -1951,7 +1971,7 @@ new(obj_or_pkg, SV *elsv)
 SV *
 set_f(SV *obj, const char *fname)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->sef_func(fname) ? &PL_sv_yes : &PL_sv_no;
  OUTPUT:
@@ -1960,7 +1980,7 @@ set_f(SV *obj, const char *fname)
 SV *
 set_s(SV *obj, SV *sv)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    int res = 0;
    if ( SvPOK(sv) ) {
@@ -1992,7 +2012,7 @@ optv(SV *obj, int v)
 SV *
 off(SV *obj, UV off)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->set_off(off) ? &PL_sv_yes : &PL_sv_no;
  OUTPUT:
@@ -2000,7 +2020,7 @@ off(SV *obj, UV off)
 
 IV swap(SV *obj, UV off)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->try_swap(off);
  OUTPUT:
@@ -2010,7 +2030,7 @@ SV *relax_lat(SV *obj)
  ALIAS:
   Cubin::Ced::delay_plop = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (1 == ix) ? e->delay_plop() : e->relax_lat();
  OUTPUT:
@@ -2019,7 +2039,7 @@ SV *relax_lat(SV *obj)
 SV *
 next(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->next() ? &PL_sv_yes : &PL_sv_no;
  OUTPUT:
@@ -2028,7 +2048,7 @@ next(SV *obj)
 SV *
 get_off(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->get_off();
  OUTPUT:
@@ -2037,7 +2057,7 @@ get_off(SV *obj)
 SV *
 next_off(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->next_off();
  OUTPUT:
@@ -2048,7 +2068,7 @@ prev_off(SV *obj, UV off)
  ALIAS:
   Cubin::Ced::block_off = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (ix == 1) ? e->block_off(off) : e->prev_off(off);
  OUTPUT:
@@ -2059,7 +2079,7 @@ start(SV *obj)
  ALIAS:
   Cubin::Ced::end = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (ix == 1) ? e->get_end() : e->get_start();
  OUTPUT:
@@ -2070,7 +2090,7 @@ ctrl(SV *obj)
  ALIAS:
   Cubin::Ced::opcode = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() )
      RETVAL = &PL_sv_undef;
@@ -2082,7 +2102,7 @@ ctrl(SV *obj)
 SV *
 cword(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() )
      RETVAL = &PL_sv_undef;
@@ -2094,7 +2114,7 @@ cword(SV *obj)
 SV *
 render_cword(SV *obj, UV v)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
   RETVAL = e->rend_cword(v);
  OUTPUT:
@@ -2103,7 +2123,7 @@ render_cword(SV *obj, UV v)
 SV *
 print_cword(SV *obj, unsigned long cword)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    char buffer[128];
  CODE:
   e->render_cword(cword, buffer, 127);
@@ -2115,7 +2135,7 @@ print_cword(SV *obj, unsigned long cword)
 int
 width(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->width();
  OUTPUT:
@@ -2124,7 +2144,7 @@ width(SV *obj)
 UV
 block_mask(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->block_mask();
  OUTPUT:
@@ -2133,7 +2153,7 @@ block_mask(SV *obj)
 SV *
 reloc_name(SV *obj, IV rt)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    auto rt_name = get_cuda_reloc_name(rt);
    if ( !rt_name )
@@ -2146,7 +2166,7 @@ reloc_name(SV *obj, IV rt)
 SV *
 instrs(SV *obj, SV *re = nullptr)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    REGEXP *rx = nullptr;
  CODE:
    // check if we have re
@@ -2168,7 +2188,7 @@ by_name(SV *obj, const char *name)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    std::vector<SV *> res;
  PPCODE:
   if ( !e->extract_insn(name, res) ) {
@@ -2195,7 +2215,7 @@ field_at(SV *obj, IV off)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    auto *f = e->field_at(off);
  PPCODE:
    if ( !f ) {
@@ -2222,7 +2242,7 @@ ins_rall(SV *obj)
   Cubin::Ced::ins_sball = 4
   Cubin::Ced::ins_bdall = 5
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    std::unordered_map<std::string_view, long> res;
    bool ret = false;
    const char *called_name = GvNAME(CvGV(cv));
@@ -2262,7 +2282,7 @@ ins_rlist(SV *obj, SV *ar)
   Cubin::Ced::ins_plist = 2
   Cubin::Ced::ins_uplist = 3
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    std::unordered_map<std::string_view, long> res;
    std::set<long> keys;
    AV* array;
@@ -2318,7 +2338,7 @@ ins_regs(SV *obj, IV key)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    std::vector<std::string_view> res;
    bool ret;
  PPCODE:
@@ -2351,34 +2371,27 @@ ins_regs(SV *obj, IV key)
    }
 
 int rz(SV *obj)
+ ALIAS:
+  Cubin::Ced::sm_num = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
-   RETVAL = e->get_rz();
+   RETVAL = (1 == ix) ? e->sm_num() : e->get_rz();
  OUTPUT:
   RETVAL
 
 SV *urz(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->get_urz();
- OUTPUT:
-  RETVAL
-
-int
-sm_num(SV *obj)
- INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
- CODE:
-   RETVAL = e->sm_num();
  OUTPUT:
   RETVAL
 
 const char *
 sm_name(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->sm_name();
  OUTPUT:
@@ -2387,7 +2400,7 @@ sm_name(SV *obj)
 SV *
 ins_dual(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->ins_dual();
  OUTPUT:
@@ -2398,7 +2411,7 @@ ins_name(SV *obj)
  ALIAS:
   Cubin::Ced::ins_class = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (ix == 1) ? e->ins_class() : e->ins_name();
  OUTPUT:
@@ -2407,7 +2420,7 @@ ins_name(SV *obj)
 SV *
 ins_clabs(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
   if ( !e->has_ins() )
    RETVAL = &PL_sv_undef;
@@ -2424,7 +2437,7 @@ ins_clabs(SV *obj)
 SV *
 ins_conv(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
   if ( !e->has_ins() )
    RETVAL = &PL_sv_undef;
@@ -2438,7 +2451,7 @@ ins_false(SV *obj)
  ALIAS:
   Cubin::Ced::has_prmt = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (1 == ix) ? e->prmt() : e->check_false();
  OUTPUT:
@@ -2449,7 +2462,7 @@ ins_target(SV *obj)
  ALIAS:
   Cubin::Ced::ins_rsimm = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (ix == 1) ? e->ins_rsimm() : e->ins_target();
  OUTPUT:
@@ -2458,7 +2471,7 @@ ins_target(SV *obj)
 SV *
 ins_brt(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->ins_brt();
  OUTPUT:
@@ -2469,7 +2482,7 @@ ins_scbd(SV *obj)
  ALIAS:
   Cubin::Ced::ins_scbd_type = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (ix == 1) ? e->ins_scbd_type() : e->ins_scbd();
  OUTPUT:
@@ -2478,7 +2491,7 @@ ins_scbd(SV *obj)
 SV *
 ins_type_name(SV *obj, IV v)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    auto res = e->ins_type_name(v);
    if ( !res )
@@ -2495,7 +2508,7 @@ ins_min_wait(SV *obj)
   Cubin::Ced::ins_itype = 1
   Cubin::Ced::ins_type = 2
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( 2 == ix )
     RETVAL = e->ins_type();
@@ -2510,7 +2523,7 @@ ins_cc(SV *obj)
  ALIAS:
   Cubin::Ced::ins_sidl = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (ix == 1) ? e->ins_sidl() : e->ins_cc();
  OUTPUT:
@@ -2521,7 +2534,7 @@ ins_line(SV *obj)
  ALIAS:
   Cubin::Ced::ins_alt = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (1 == ix) ? e->ins_alt() : e->ins_line();
  OUTPUT:
@@ -2532,7 +2545,7 @@ ins_mask(SV *obj)
  ALIAS:
   Cubin::Ced::mask = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    std::string mask;
  CODE:
    bool res = 1 == ix ? e->gen_mask(mask) : e->ins_mask(mask);
@@ -2546,7 +2559,7 @@ ins_mask(SV *obj)
 SV *
 ins_text(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    std::string mask;
  CODE:
    bool res = e->ins_text(mask);
@@ -2562,7 +2575,7 @@ ins_pred(SV *obj)
  ALIAS:
   Cubin::Ced::ins_dcnt = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (1 == ix) ? e->ins_dcnt() : e->ins_pred();
  OUTPUT:
@@ -2571,7 +2584,7 @@ ins_pred(SV *obj)
 SV *
 grep_pred(SV *obj, const char *key)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->ins_pred(key);
  OUTPUT:
@@ -2582,7 +2595,7 @@ ins_lat(SV *obj)
  ALIAS:
   Cubin::Ced::ins_latency = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
   if ( !e->has_ins() )
    RETVAL = &PL_sv_undef;
@@ -2596,7 +2609,7 @@ ins_reuse(SV *obj)
  ALIAS:
   Cubin::Ced::ins_reuse2 = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
   if ( !e->has_ins() )
    RETVAL = &PL_sv_undef;
@@ -2610,7 +2623,7 @@ ins_keep(SV *obj)
  ALIAS:
   Cubin::Ced::ins_keep2 = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
   if ( !e->has_ins() )
    RETVAL = &PL_sv_undef;
@@ -2622,7 +2635,7 @@ ins_keep(SV *obj)
 SV *
 ins_prop(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->ins_prop();
  OUTPUT:
@@ -2631,7 +2644,7 @@ ins_prop(SV *obj)
 SV *
 grep_prop(SV *obj, IV key)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->grep_prop(key);
  OUTPUT:
@@ -2642,7 +2655,7 @@ efield(SV *obj, const char *fname)
  ALIAS:
   Cubin::Ced::vfield = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (ix == 1) ? e->extract_vfield(fname) : e->extract_efield(fname);
  OUTPUT:
@@ -2653,7 +2666,7 @@ efields(SV *obj)
  ALIAS:
   Cubin::Ced::vfields = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = (ix == 1) ? e->extract_vfields() : e->extract_efields();
  OUTPUT:
@@ -2662,7 +2675,7 @@ efields(SV *obj)
 SV *
 grep_efield(SV *obj, SV *re)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    REGEXP *rx = nullptr;
  CODE:
    if ( !SvROK(re) || SvTYPE(SvRV(re)) != SVt_REGEXP ) {
@@ -2679,7 +2692,7 @@ grep_efield(SV *obj, SV *re)
 SV *
 has_tfield(SV *obj, const char *tfname)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    std::string_view tmp{tfname};
  CODE:
    RETVAL = e->has_tfield(tmp);
@@ -2689,7 +2702,7 @@ has_tfield(SV *obj, const char *tfname)
 SV *
 check_tab(SV *obj, const char *tfname, int do_filter = 0)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->check_tab(tfname, do_filter);
  OUTPUT:
@@ -2700,7 +2713,7 @@ ins_branch(SV *obj)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  PPCODE:
   if ( !e->has_ins() ) {
     EMPTY_RES
@@ -2724,7 +2737,7 @@ ins_branch(SV *obj)
 
 SV *tab_count(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->tab_count();
  OUTPUT:
@@ -2732,7 +2745,7 @@ SV *tab_count(SV *obj)
 
 SV *cb0_name(SV *obj, unsigned short idx)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->cb0_name(idx);
  OUTPUT:
@@ -2740,7 +2753,7 @@ SV *cb0_name(SV *obj, unsigned short idx)
 
 SV *cb0_names(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->cb0_names();
  OUTPUT:
@@ -2751,7 +2764,7 @@ get_pred(SV *obj)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  PPCODE:
   if ( !e->has_ins() ) {
     EMPTY_RES
@@ -2768,7 +2781,7 @@ ins_rf(SV *obj)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  PPCODE:
   if ( !e->has_ins() ) {
     EMPTY_RES
@@ -2785,7 +2798,7 @@ ins_prmt(SV *obj)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  PPCODE:
   if ( !e->has_ins() || !e->is_prmt() ) {
     EMPTY_RES
@@ -2802,7 +2815,7 @@ ins_m1(SV *obj)
  ALIAS:
   Cubin::Ced::ins_ttu = 1
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() ) {
      RETVAL = &PL_sv_undef;
@@ -2822,7 +2835,7 @@ ins_desc(SV *obj)
   U8 gimme = GIMME_V;
  INIT:
   int res_size = 1;
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  PPCODE:
   if ( !e->has_ins() ) {
     EMPTY_RES
@@ -2853,7 +2866,7 @@ ins_cbank(SV *obj)
  INIT:
   int res_size = 1;
   unsigned short cb_idx = 0xffff;
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  PPCODE:
   if ( !e->has_ins() ) {
     EMPTY_RES
@@ -2888,7 +2901,7 @@ tab(SV *obj, IV key)
  INIT:
   bool res;
   SV *names = nullptr, *dict = nullptr;
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  PPCODE:
   res = e->get_tab(key, &names, &dict);
   if ( !res ) {
@@ -2911,7 +2924,7 @@ tab(SV *obj, IV key)
 SV *
 tab_map(SV *obj, IV key)
  INIT:
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->tab_map(key);
  OUTPUT:
@@ -2923,7 +2936,7 @@ tab_fields(SV *obj, IV key)
   U8 gimme = GIMME_V;
  INIT:
   std::vector<std::string_view> names;
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  PPCODE:
   e->tab_fields(key, names);
   if ( names.empty() ) {
@@ -2950,7 +2963,7 @@ lcols(SV *obj)
   U8 gimme = GIMME_V;
  INIT:
   std::vector<SV *> indexes;
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  PPCODE:
   if ( !e->get_lxx(indexes, !ix) ) {
     EMPTY_RES
@@ -2970,7 +2983,7 @@ lcols(SV *obj)
 
 SV *dirty(SV *obj)
  INIT:
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() )
     RETVAL = &PL_sv_undef;
@@ -2984,7 +2997,7 @@ stat(SV *obj)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  PPCODE:
   if ( gimme == G_ARRAY) {
       EXTEND(SP, 3);
@@ -3004,7 +3017,7 @@ stat(SV *obj)
 SV *
 get_enum(SV *obj, const char *ename)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->make_enum(ename);
  OUTPUT:
@@ -3013,7 +3026,7 @@ get_enum(SV *obj, const char *ename)
 SV *
 ins_cb(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->extract_cb();
  OUTPUT:
@@ -3025,7 +3038,7 @@ has_pred(SV *obj)
   Cubin::Ced::pred_name = 1
   Cubin::Ced::pred_not = 2
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( 2 == ix ) RETVAL = e->has_not();
    else
@@ -3036,7 +3049,7 @@ has_pred(SV *obj)
 SV *
 has_lut(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->check_lut();
  OUTPUT:
@@ -3045,7 +3058,7 @@ has_lut(SV *obj)
 SV *
 lut(SV *obj, int idx)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->lut_name(idx);
  OUTPUT:
@@ -3054,7 +3067,7 @@ lut(SV *obj, int idx)
 SV *
 get(SV *obj, const char *field_name)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() )
      RETVAL = &PL_sv_undef;
@@ -3066,7 +3079,7 @@ get(SV *obj, const char *field_name)
 SV *
 kv(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() )
      RETVAL = &PL_sv_undef;
@@ -3080,7 +3093,7 @@ grep(SV *obj, SV *re)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
    std::vector<std::string_view> res;
    REGEXP *rx;
  PPCODE:
@@ -3112,7 +3125,7 @@ grep(SV *obj, SV *re)
 SV *
 nop(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->nop();
  OUTPUT:
@@ -3121,7 +3134,7 @@ nop(SV *obj)
 SV *
 replace(SV *obj, const char *s)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() )
      RETVAL = &PL_sv_undef;
@@ -3133,7 +3146,7 @@ replace(SV *obj, const char *s)
 SV *
 patch_pred(SV *obj, int is_not, int pred)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() )
      RETVAL = &PL_sv_undef;
@@ -3145,7 +3158,7 @@ patch_pred(SV *obj, int is_not, int pred)
 SV *
 patch_cb(SV *obj, unsigned long l1, unsigned long l2)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() )
      RETVAL = &PL_sv_undef;
@@ -3157,7 +3170,7 @@ patch_cb(SV *obj, unsigned long l1, unsigned long l2)
 SV *
 patch_tab(SV *obj, int idx, int v)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() )
      RETVAL = &PL_sv_undef;
@@ -3169,7 +3182,7 @@ patch_tab(SV *obj, int idx, int v)
 SV *
 patch_jimm(SV *obj, long new_addr)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    RETVAL = e->try_patch_jimm(new_addr);
  OUTPUT:
@@ -3178,7 +3191,7 @@ patch_jimm(SV *obj, long new_addr)
 SV *
 patch(SV *obj, const char *fname, SV *v)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() )
      RETVAL = &PL_sv_undef;
@@ -3190,7 +3203,7 @@ patch(SV *obj, const char *fname, SV *v)
 SV *
 ptabs(SV *obj)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+   Ced_perl *e= get_ced(obj);
  CODE:
    if ( !e->has_ins() )
      RETVAL = &PL_sv_undef;
@@ -3206,7 +3219,7 @@ render(SV *obj)
   SV *objref= NULL;
   MAGIC* magic;
   RItems *res;
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  PPCODE:
   res = new RItems;
   if ( e->make_render(*res) ) {
@@ -3225,8 +3238,8 @@ render(SV *obj)
 SV *
 track(SV *obj, SV *rt)
  INIT:
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
-  reg_pad *r= get_magic_ext<reg_pad>(rt, &ca_regtrack_magic_vt);
+  Ced_perl *e= get_ced(obj);
+  reg_pad *r= get_rp(rt);
  CODE:
   if ( !e->has_ins() || !r )
     RETVAL = &PL_sv_undef;
@@ -3238,8 +3251,8 @@ track(SV *obj, SV *rt)
 int
 track_waw(SV *obj, SV *rp, HV *hm)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
-   reg_pad *r= get_magic_ext<reg_pad>(rp, &ca_regtrack_magic_vt);
+   Ced_perl *e= get_ced(obj);
+   reg_pad *r= get_rp(rp);
  CODE:
    if ( !r->snap || !e->has_ins() ) RETVAL = -1;
    else {
@@ -3283,8 +3296,8 @@ track_waw(SV *obj, SV *rp, HV *hm)
 int
 track_war(SV *obj, SV *rp, HV *hm, int debug = 0)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
-   reg_pad *r= get_magic_ext<reg_pad>(rp, &ca_regtrack_magic_vt);
+   Ced_perl *e= get_ced(obj);
+   reg_pad *r= get_rp(rp);
  CODE:
    if ( !e->has_ins() ) RETVAL = -1;
    else {
@@ -3329,8 +3342,8 @@ track_war(SV *obj, SV *rp, HV *hm, int debug = 0)
 int
 track_lat(SV *obj, SV *rp, HV *hm, int debug = 0)
  INIT:
-   Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
-   reg_pad *r= get_magic_ext<reg_pad>(rp, &ca_regtrack_magic_vt);
+   Ced_perl *e= get_ced(obj);
+   reg_pad *r= get_rp(rp);
  CODE:
    if ( !r->snap || !e->has_ins() ) RETVAL = -1;
    else {
@@ -3374,7 +3387,7 @@ track_lat(SV *obj, SV *rp, HV *hm, int debug = 0)
 SV *
 has_comp(SV *obj)
  INIT:
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  CODE:
     RETVAL = e->has_comp();
  OUTPUT:
@@ -3383,7 +3396,7 @@ has_comp(SV *obj)
 SV *
 rend_comp(SV *obj, int kind)
  INIT:
-  Ced_perl *e= get_magic_ext<Ced_perl>(obj, &ca_magic_vt);
+  Ced_perl *e= get_ced(obj);
  CODE:
     if ( kind <= R_opcode )
     {
@@ -3415,7 +3428,7 @@ line(SV *obj)
   Cubin::Ced::Instr::pred_name = 14
   Cubin::Ced::Instr::itype = 15
  INIT:
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  CODE:
     switch(ix) {
      case 0: RETVAL = e->iv<&nv_instr::line>();
@@ -3463,7 +3476,7 @@ ins_desc(SV *obj)
   U8 gimme = GIMME_V;
  INIT:
   int res_size = 1;
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  PPCODE:
    if ( gimme == G_ARRAY ) {
      std::vector<const char *> fnames;
@@ -3486,7 +3499,7 @@ ins_m1(SV *obj)
  ALIAS:
   Cubin::Ced::Instr::ins_ttu = 1
  INIT:
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  CODE:
    const char *res = (1 == ix) ? e->base->is_ttu(e->rend) : e->base->is_m1(e->rend);
    if ( !res ) RETVAL = &PL_sv_undef;
@@ -3497,7 +3510,7 @@ OUTPUT:
 SV *
 rend_comp(SV *obj, int kind)
  INIT:
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  CODE:
     if ( kind <= R_opcode )
     {
@@ -3511,7 +3524,7 @@ rend_comp(SV *obj, int kind)
 SV *
 ins_conv(SV *obj)
  INIT:
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  CODE:
    RETVAL = form_float_conv(e->ins->vf_conv);
  OUTPUT:
@@ -3520,7 +3533,7 @@ ins_conv(SV *obj)
 SV *
 ins_cb(SV *obj)
  INIT:
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  CODE:
    RETVAL = e->base->extract_cb(e->ins);
  OUTPUT:
@@ -3531,7 +3544,7 @@ efield(SV *obj, const char *fname)
  ALIAS:
   Cubin::Ced::Instr::vfield = 1
  INIT:
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  CODE:
    RETVAL = (ix == 1) ? e->base->extract_vfield(e->ins, fname) : e->base->extract_efield(e->ins, fname);
  OUTPUT:
@@ -3542,7 +3555,7 @@ efields(SV *obj)
  ALIAS:
   Cubin::Ced::Instr::vfields = 1
  INIT:
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  CODE:
    RETVAL = (ix == 1) ? e->base->extract_vfields(e->ins) : e->base->extract_efields(e->ins);
  OUTPUT:
@@ -3551,7 +3564,7 @@ efields(SV *obj)
 SV *
 has_tfield(SV *obj, const char *tfname)
  INIT:
-   one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+   one_instr *e= get_one_instr(obj);
    std::string_view tmp{tfname};
  CODE:
    RETVAL = e->base->has_tfield(e->ins, tmp);
@@ -3564,7 +3577,7 @@ tab_fields(SV *obj, IV key)
   U8 gimme = GIMME_V;
  INIT:
   std::vector<std::string_view> names;
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  PPCODE:
   e->base->tab_fields(e->ins, key, names);
   if ( names.empty() ) {
@@ -3586,7 +3599,7 @@ tab_fields(SV *obj, IV key)
 SV *
 tab_map(SV *obj, IV key)
  INIT:
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  CODE:
    RETVAL = e->base->tab_map(e->ins, key);
  OUTPUT:
@@ -3600,7 +3613,7 @@ grep_tab(SV *obj, const char *name)
   std::string_view sv{name, strlen(name)};
   bool res;
   SV *names = nullptr, *dict = nullptr;
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  PPCODE:
   res = e->base->find_tab(e->ins, sv, &names, &dict);
   if ( !res ) {
@@ -3627,7 +3640,7 @@ tab(SV *obj, IV key)
  INIT:
   bool res;
   SV *names = nullptr, *dict = nullptr;
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  PPCODE:
   res = e->base->get_tab(e->ins, key, &names, &dict);
   if ( !res ) {
@@ -3650,7 +3663,7 @@ tab(SV *obj, IV key)
 SV *
 prop(SV *obj)
  INIT:
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  CODE:
    RETVAL = e->base->ins_prop(e->ins);
  OUTPUT:
@@ -3659,7 +3672,7 @@ prop(SV *obj)
 SV *
 grep_prop(SV *obj, IV key)
  INIT:
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
  CODE:
    RETVAL = e->base->grep_prop(key, e->ins);
  OUTPUT:
@@ -3672,7 +3685,7 @@ render(SV *obj)
   SV *objref= NULL;
   MAGIC* magic;
   RItems *res;
-  one_instr *e= get_magic_ext<one_instr>(obj, &ca_instr_magic_vt);
+  one_instr *e= get_one_instr(obj);
 PPCODE:
   res = new RItems;
   if ( e->base->make_render(*res, e->rend) ) {
@@ -3764,7 +3777,7 @@ col(SV *obj)
  ALIAS:
   Cubin::Ced::LatCross::row = 1
  INIT:
-    found_tab_cross *ftl = get_magic_ext<found_tab_cross>(obj, &ca_latcross_magic_vt);
+   found_tab_cross *ftl = get_found_tab_cross(obj);
  CODE:
    RETVAL = (ix == 1) ? ftl->row : ftl->col;
  OUTPUT:
@@ -3775,7 +3788,7 @@ name(SV *obj)
  ALIAS:
   Cubin::Ced::LatCross::conn = 1
  INIT:
-    found_tab_cross *ftl = get_magic_ext<found_tab_cross>(obj, &ca_latcross_magic_vt);
+   found_tab_cross *ftl = get_found_tab_cross(obj);
  CODE:
    RETVAL = (ix == 1) ? ftl->tab->connection : ftl->tab->name;
  OUTPUT:
@@ -3784,7 +3797,7 @@ name(SV *obj)
 int
 val(SV *obj)
  INIT:
-    found_tab_cross *ftl = get_magic_ext<found_tab_cross>(obj, &ca_latcross_magic_vt);
+   found_tab_cross *ftl = get_found_tab_cross(obj);
  CODE:
    RETVAL = ftl->value;
  OUTPUT:
@@ -3795,7 +3808,7 @@ col_name(SV *obj)
  ALIAS:
   Cubin::Ced::LatCross::row_name = 1
  INIT:
-    found_tab_cross *ftl = get_magic_ext<found_tab_cross>(obj, &ca_latcross_magic_vt);
+    found_tab_cross *ftl = get_found_tab_cross(obj);
  CODE:
    auto sv = (1 == ix) ? ftl->row_name() : ftl->col_name();
    if ( !sv ) RETVAL = &PL_sv_undef;
@@ -3811,7 +3824,7 @@ MODULE = Cubin::Ced		PACKAGE = Cubin::Ced::LatIndex
 IV
 idx(SV *obj)
  INIT:
-    lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+    lat_idx *li = get_lat_idx(obj);
  CODE:
    RETVAL = li->tr->idx;
  OUTPUT:
@@ -3822,7 +3835,7 @@ is_col(SV *obj)
  ALIAS:
   Cubin::Ced::LatIndex::is_row = 1
  INIT:
-   lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+   lat_idx *li = get_lat_idx(obj);
  CODE:
    if ( ix == 1 ) RETVAL = !li->is_col;
    else RETVAL = li->is_col;
@@ -3832,7 +3845,7 @@ is_col(SV *obj)
 SV *
 name(SV *obj)
  INIT:
-   lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+   lat_idx *li = get_lat_idx(obj);
    const NV_gnames &what = li->is_col ? li->tr->tab->cols : li->tr->tab->rows;
  CODE:
    if ( li->tr->idx >= what.size() ) RETVAL = &PL_sv_undef;
@@ -3848,7 +3861,7 @@ tab_name(SV *obj)
  ALIAS:
   Cubin::Ced::LatIndex::conn_name = 1
  INIT:
-   lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+   lat_idx *li = get_lat_idx(obj);
  CODE:
    RETVAL = (ix == 1) ? li->tr->tab->connection : li->tr->tab->name;
  OUTPUT:
@@ -3857,7 +3870,7 @@ tab_name(SV *obj)
 IV
 line(SV *obj)
  INIT:
-   lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+   lat_idx *li = get_lat_idx(obj);
  CODE:
    RETVAL = li->tr->tab->line;
  OUTPUT:
@@ -3866,7 +3879,7 @@ line(SV *obj)
 UV
 tab(SV *obj)
  INIT:
-   lat_idx *li = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt);
+   lat_idx *li = get_lat_idx(obj);
  CODE:
    // extemly bad idea but I need key to group results by real table and their names can be non-uniq
    RETVAL = (UV)li->tr->tab;
@@ -3876,8 +3889,8 @@ tab(SV *obj)
 SV *
 at(SV *obj, SV *other)
  INIT:
-   lat_idx *idx1 = get_magic_ext<lat_idx>(obj, &ca_latindex_magic_vt),
-           *idx2 = get_magic_ext<lat_idx>(other, &ca_latindex_magic_vt);
+   lat_idx *idx1 = get_lat_idx(obj),
+           *idx2 = get_lat_idx(other);
  CODE:
    // check if both indexes refers to the same table
    if ( idx1->tr->tab != idx2->tr->tab ) RETVAL = &PL_sv_undef;
@@ -3936,14 +3949,14 @@ new(obj_or_pkg)
 void
 finalize(SV *obj)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
    NV_renderer::finalize_rt(r);
 
 SV *
 empty(SV *obj)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
   RETVAL = r->empty() ? &PL_sv_yes : &PL_sv_no;
  OUTPUT:
@@ -3952,7 +3965,7 @@ empty(SV *obj)
 SV *
 snap_empty(SV *obj)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
   RETVAL = r->snap->empty() ? &PL_sv_yes : &PL_sv_no;
  OUTPUT:
@@ -3961,7 +3974,7 @@ snap_empty(SV *obj)
 void
 clear(SV *obj)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
    r->clear();
 
@@ -3970,7 +3983,7 @@ mask(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::mask2 = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
    RETVAL = (ix == 1) ? r->m_reuse.mask2 : r->m_reuse.mask;
  OUTPUT:
@@ -3980,7 +3993,7 @@ IV keep(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::keep2 = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
    RETVAL = (ix == 1) ? r->m_reuse.keep2 : r->m_reuse.keep;
  OUTPUT:
@@ -3989,7 +4002,7 @@ IV keep(SV *obj)
 void
 snap_clear(SV *obj)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
    r->snap->reset();
 
@@ -3998,7 +4011,7 @@ snap(SV *obj)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  PPCODE:
   if ( r->snap->empty() ) {
     EMPTY_RES
@@ -4024,7 +4037,7 @@ snap(SV *obj)
 SV *
 cc(SV *obj)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
    if ( !r->snap->cc.has_value() )
      RETVAL = &PL_sv_undef;
@@ -4036,7 +4049,7 @@ cc(SV *obj)
 SV *
 rpc(SV *obj)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
    if ( !r->snap->rpc.has_value() )
      RETVAL = &PL_sv_undef;
@@ -4050,7 +4063,7 @@ cgabar(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::CgaBar = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
    if ( !r->snap->cgabar.has_value() )
      RETVAL = &PL_sv_undef;
@@ -4064,7 +4077,7 @@ gsb0(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::gsb7 = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &gsb = ix ? r->snap->gsb7 : r->snap->gsb0;
  CODE:
    if ( !gsb.has_value() )
@@ -4079,7 +4092,7 @@ cbs(SV *obj)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  PPCODE:
   if ( r->cbs.empty() ) {
     EMPTY_RES
@@ -4100,7 +4113,7 @@ cbs(SV *obj)
 int
 bd_len(SV *obj, IV key)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto bd_iter = r->bds.find(key);
  CODE:
    if ( bd_iter == r->bds.end() ) RETVAL = 0;
@@ -4111,7 +4124,7 @@ bd_len(SV *obj, IV key)
 SV *
 bd(SV *obj, IV key, unsigned long from = 0)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto bd_iter = r->bds.find(key);
  CODE:
   if ( bd_iter == r->bds.end() ) RETVAL = &PL_sv_undef;
@@ -4122,7 +4135,7 @@ bd(SV *obj, IV key, unsigned long from = 0)
 SV *
 bds(SV *obj)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
   RETVAL = fill_rhash(r->bds);
  OUTPUT:
@@ -4131,7 +4144,7 @@ bds(SV *obj)
 SV *
 has_bd(SV *obj)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
    RETVAL = r->snap->empty_bd() ? &PL_sv_no : &PL_sv_yes;
  OUTPUT:
@@ -4140,7 +4153,7 @@ has_bd(SV *obj)
 SV *
 snap_bd(SV *obj)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
    if ( r->snap->empty_bd() ) {
      RETVAL = &PL_sv_undef;
@@ -4159,7 +4172,7 @@ snap_bd(SV *obj)
 SV *
 ccs(SV *obj, unsigned long from = 0)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
   RETVAL = fill_reg(r->cc, from);
  OUTPUT:
@@ -4172,7 +4185,7 @@ rs_xrefs(SV *obj, int key)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->ugpr: r->gpr;
    auto rs_iter = rs.find(key);
  PPCODE:
@@ -4206,7 +4219,7 @@ pr_xrefs(SV *obj, int key)
  PREINIT:
   U8 gimme = GIMME_V;
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->upred: r->pred;
    auto rs_iter = rs.find(key);
  PPCODE:
@@ -4238,7 +4251,7 @@ rs_nw(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::urs_nw = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->ugpr: r->gpr;
  CODE:
    if ( rs.empty() ) RETVAL = &PL_sv_undef;
@@ -4260,7 +4273,7 @@ rs(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::urs = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->ugpr: r->gpr;
  CODE:
   RETVAL = fill_rhash(rs);
@@ -4272,7 +4285,7 @@ r_cnt(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::ur_cnt = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->ugpr: r->gpr;
  CODE:
   RETVAL = rs.size();
@@ -4284,7 +4297,7 @@ ps(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::ups = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->upred: r->pred;
  CODE:
   RETVAL = fill_rhash(rs);
@@ -4296,7 +4309,7 @@ p_cnt(SV *obj)
  ALIAS:
   Cubin::Ced::RegTrack::up_cnt = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->upred: r->pred;
  CODE:
   RETVAL = rs.size();
@@ -4306,7 +4319,7 @@ p_cnt(SV *obj)
 int
 bd_cnt(SV *obj)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
   RETVAL = r->bds.size();
  OUTPUT:
@@ -4317,7 +4330,7 @@ r_len(SV *obj, IV key)
  ALIAS:
   Cubin::Ced::RegTrack::ur_len = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->ugpr: r->gpr;
    auto rs_iter = rs.find(key);
  CODE:
@@ -4331,7 +4344,7 @@ r(SV *obj, IV key, unsigned long from = 0)
  ALIAS:
   Cubin::Ced::RegTrack::ur = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->ugpr: r->gpr;
    auto rs_iter = rs.find(key);
  CODE:
@@ -4345,7 +4358,7 @@ p_len(SV *obj, IV key)
  ALIAS:
   Cubin::Ced::RegTrack::up_len = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->upred: r->pred;
    auto rs_iter = rs.find(key);
  CODE:
@@ -4359,7 +4372,7 @@ p(SV *obj, IV key, unsigned long from = 0)
  ALIAS:
   Cubin::Ced::RegTrack::up = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->upred: r->pred;
    auto rs_iter = rs.find(key);
  CODE:
@@ -4373,7 +4386,7 @@ wpr(SV *obj, int key, unsigned long from)
  ALIAS:
   Cubin::Ced::RegTrack::wupr = 1
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &rs = (ix == 1) ? r->upred: r->pred;
    auto rs_iter = rs.find(key);
  CODE:
@@ -4386,7 +4399,7 @@ wpr(SV *obj, int key, unsigned long from)
 SV *
 p_write(SV *obj, int key)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
    auto &mask = (key & 0x8000) ? r->snap->upr: r->snap->pr;
  CODE:
    key &= ~0x8000;
@@ -4401,7 +4414,7 @@ p_write(SV *obj, int key)
 SV *
 get_bd(SV *obj, int key)
  INIT:
-   reg_pad *r= get_magic_ext<reg_pad>(obj, &ca_regtrack_magic_vt);
+   reg_pad *r= get_rp(obj);
  CODE:
    if ( key < 0 || key >= r->snap->bd_size ) RETVAL = &PL_sv_undef;
    else RETVAL = newSViv(r->snap->bd[key]);
