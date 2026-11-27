@@ -8,8 +8,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
-BEGIN { use_ok('Cubin::SM') };
+use Test::More tests => 7;
+BEGIN { use_ok('Cubin::SM'); use_ok('Cubin::SM::Data'); };
 
 my $sm = Cubin::SM->new();
 ok( defined($sm), 'new' );

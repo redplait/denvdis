@@ -6,3 +6,4 @@ README
 SM.xs
 t/Cubin-SM.t
 lib/Cubin/SM.pm
+lib/Cubin/SM/Data.pm
