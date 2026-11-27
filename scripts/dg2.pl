@@ -54,6 +54,8 @@ use constant MAX_REUSE_DIST => 0x70;
 use constant MAX_SWAP_DIST => 0xa0;
 # set to 0 to avoid swapping instructions having RELA
 use constant DO_RELA => 1;
+# set to 0 to skip Statistics::Basic methods
+use constant YSTAT => 1;
 # 2 for swapping pair, 2 instructions at left and 2 at right
 use constant MIN_SWAP_WINDOW => 6;
 use constant USCHED => 'usched_info';
@@ -153,6 +155,8 @@ my @g_ydist = ( 0, 0, undef, 0, 0, 0, 0 );
 my @g_ymax_dist = ( 0, undef, 0 );
 # and the same for stall sum
 my @g_ymax_stall = ( 0, undef, 0 );
+# and couple of arrays for distrance/stall sums to process with Statistics::Basic - when YSTAT is non-zero
+my(@g_ydist_stat, @g_ystall_stat);
 ### config data
 my $has_gcd = 0; # if we have config
 # hash where key is section name and value is [ pairs of offset-end ]
@@ -263,11 +267,13 @@ printf("YYYY: %X %d %d %d\n", $off, $g_ydist[0], $g_ydist[1], $g_ydist[4]) if ( 
       $g_ymax_dist[1] = $g_ydist[2]; # section name
       $g_ymax_dist[2] = $off; # offset
     }
+    push @g_ydist_stat, $g_ydist[4] if ( $g_ydist[4] && YSTAT );
     if ( $g_ydist[5] && $g_ydist[5] > $g_ymax_stall[0] ) {
       $g_ymax_stall[0] = $g_ydist[5]; # value
       $g_ymax_stall[1] = $g_ydist[2]; # section name
       $g_ymax_stall[2] = $off; # offset
     }
+    push @g_ystall_stat, $g_ydist[5] if ( $g_ydist[5] && YSTAT );
     $g_ydist[4] = $g_ydist[5] = 0;
   }
 }
@@ -4545,7 +4551,17 @@ if ( defined $opt_Y ) {
     printf("Avg distance between yields %f (%d yields, roll %d)\n", $g_ydist[1] * 1.0 / $g_ydist[0], $g_ydist[0], $g_ydist[1]);
     printf("Avg stalls between yields %f (total %d)\n", $g_ydist[6] * 1.0 / $g_ydist[0], $g_ydist[6]) if $g_ydist[6];
     printf("Max distance %d in %s offset %X\n", $g_ymax_dist[0], $g_ymax_dist[1], $g_ymax_dist[2]) if ( $g_ymax_dist[0] );
+    if ( scalar(@g_ydist_stat) && YSTAT ) {
+      require Statistics::Basic::StdDev;
+      require Statistics::Basic::Median;
+      printf(" median %f, stddev %f\n", Statistics::Basic::median(\@g_ydist_stat), Statistics::Basic::stddev(\@g_ydist_stat));
+    }
     printf("Max stall %d in %s offset %X\n", $g_ymax_stall[0], $g_ymax_stall[1], $g_ymax_stall[2]) if ( $g_ymax_stall[0] );
+    if ( scalar(@g_ystall_stat) && YSTAT ) {
+      require Statistics::Basic::StdDev;
+      require Statistics::Basic::Median;
+      printf(" median %f, stddev %f\n", Statistics::Basic::median(\@g_ystall_stat), Statistics::Basic::stddev(\@g_ystall_stat));
+    }
   }
 }
 dump_ins_stat() if defined($opt_S);

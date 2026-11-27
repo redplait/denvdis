@@ -64,7 +64,7 @@ EOF
  printf(");\n");
  # produce trailer
  print<<'EOT';
-our @EXPORT = qw(ins ba);
+our @EXPORT = qw(%ins @ba);
 1;
 __END__
 EOT
