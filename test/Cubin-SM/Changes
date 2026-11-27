@@ -1,0 +1,6 @@
+Revision history for Perl extension Cubin::SM.
+
+0.01  Thu Nov 26 11:17:05 2026
+	- original version; created by h2xs 1.23 with options
+		-cfn Cubin::SM
+
