@@ -42,7 +42,7 @@ Usage: $0 [options] file.cubin
   -U - analyze possible registers reuse
   -v - verbose mode
   -w - skip WaR pass
-  -Y - collect yielding stat
+  -Y - collect yielding stat, output csv file name or '-'
   -z - don't patch usched_info, for debugging only
 EOF
   exit(8);
@@ -135,7 +135,7 @@ my @g_R = ( 0, 0, 0 );
 my @ge_stat = ( 0, 0, 0, 0, 0 );
 ## -Y data - two hashes - for having req_bit_set/no yield and for yield/no req_bit_set
 # key is instruction names, value - count
-my(%g_ynoY, %g_ynoY_p, %g_ynoreq, %g_ynoreq_p);
+my(%g_ynoY, %g_ynoY_p, %g_ynoreq, %g_ynoreq_p, $g_ycsv);
 # per-function yields stat - rolling and total. next 2 is yield without wait & 3 - wait without yield + 2 for their totals
 my @g_ystat = ( 0, 0, 0, 0, 0, 0 );
 # for max distance between two yields
@@ -248,6 +248,23 @@ sub next_yblock {
   my $off = shift;
   $g_ydist[3] = $off;
   $g_ydist[4] = $g_ydist[5] = 0;
+}
+
+# open csv file and put fields names for -Y
+sub open_ycsv {
+  return unless(defined $opt_Y);
+  return if ( $opt_Y eq '-' );
+  open($g_ycsv, '>', $opt_Y) or die("cannot open csv file $opt_Y, error $!");
+  # put fields
+  # 0 - yield
+  # 1 - instruction name
+  # 2 - write dep barrier
+  # 3 - read dep barrier
+  # 4 - wait dep barrier
+  # 5 - stall count
+  # 6 - min wait
+  # 7 - dual
+  printf($g_ycsv "yield,name,wdb,rdb,wait,stall,min_wait,dual\n");
 }
 
 # process single instruction for -Y
@@ -1348,6 +1365,18 @@ sub check_dual
   $ctx->{'dual'} ? 2 : 0;
 }
 
+# popcnt of wait db
+sub wait_popcnt {
+  my $v = shift;
+  my $mask = 1;
+  my $res = 0;
+  for my $i ( 0 .. 5 ) {
+    ++$res if ( $v & $mask );
+    $mask <<= 1;
+  }
+  $res;
+}
+
 # get current dual state and update it for next instruction
 sub get_dual
 {
@@ -1784,6 +1813,12 @@ sub process_sched
         add_Ynoreq($g_ced->ins_name(), $g_ced->has_pred()) if ( $yield && !$watdb );
         add_noY($g_ced->ins_name(), $g_ced->has_pred()) if ( !$yield && $watdb );
         $g_ystat[0]++;
+        # dump to csv
+        if ( defined $g_ycsv ) {
+          my $mw = $g_ced->ins_min_wait();
+          printf($g_ycsv "%d,%s,%d,%d,%d,%d,%d,%d\n", $yield, $g_ced->ins_name(), $wrtdb != 7, $readb != 7, wait_popcnt($watdb), 
+           $stall, defined($mw) ? $mw : 0, $is_dual);
+        }
       }
       # store sched data in block - array at index 4, map at 5
       if ( defined $b ) {
@@ -4407,7 +4442,7 @@ sub demangle
 }
 
 ### main
-my $state = getopts("AabdeGgilmPpRrSsTtUuvwYzC:f:");
+my $state = getopts("AabdeGgilmPpRrSsTtUuvwY:zC:f:");
 usage() if ( !$state );
 if ( -1 == $#ARGV ) {
   printf("where is arg?\n");
@@ -4477,6 +4512,7 @@ if ( defined $opt_G ) {
   }
   exit(0);
 }
+open_ycsv() if defined($opt_Y);
 $g_attrs = Cubin::Attrs->new($g_elf);
 dir("Attrs failed on $ARGV[0]") unless defined($g_attrs);
 printf("%d sections with code\n", scalar(@es)) if defined($opt_v);
@@ -4576,3 +4612,5 @@ if ( in_lmode() ) {
 }
 dump_anns() if defined($opt_A);
 dump_prof() if defined($opt_i);
+# be good boy
+close($g_ycsv) if defined($g_ycsv);
