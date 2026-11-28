@@ -8,7 +8,7 @@ use Data::Dumper;
 use Getopt::Std;
 
 # options
-use vars qw/$opt_p/;
+use vars qw/$opt_p $opt_r/;
 
 sub usage()
 {
@@ -16,12 +16,13 @@ sub usage()
 Usage: $0 [options] latency.file
  Options:
   -p generate pm
+  -r - generate R factor string
 EOF
   exit(8);
 }
 
 # main
-my $state = getopts("p");
+my $state = getopts("pr");
 usage() if ( !$state );
 my $sm = Cubin::SM->new();
 my %ins;
@@ -68,6 +69,13 @@ our @EXPORT = qw(%ins @ba);
 1;
 __END__
 EOT
+} elsif ( defined $opt_r ) {
+  printf("c(");
+  my @s;
+  foreach my $i ( sort { $a cmp $b } keys %ins ) {
+    push @s, sprintf("\"%s\"", $i);
+  }
+  printf("%s)\n", join(',', @s));
 } else {
   foreach my $i ( sort { $a cmp $b } keys %ins ) {
     printf("%s\n", $i);
