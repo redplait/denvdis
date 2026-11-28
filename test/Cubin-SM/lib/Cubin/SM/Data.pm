@@ -814,6 +814,6 @@ our @ba = (
 '__HIR0X1F2',
 '__HIR0X1F3',
 );
-our @EXPORT = qw(ins ba);
+our @EXPORT = qw(%ins @ba);
 1;
 __END__
